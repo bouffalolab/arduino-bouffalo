@@ -1,0 +1,79 @@
+{
+    "packages": [
+      {
+        "name": "BL618G0",
+        "maintainer": "BH6BAO",
+        "websiteUrl": "https://blog.strongwong.top",
+        "email": "qqwang@bouffalolab.com",
+        "platforms": [
+          {
+            "name": "BL618G0",
+            "architecture": "BL616",
+            "version": "0.0.1",
+            "deprecated": false,
+            "category": "MCU",
+            "boards": [
+              {
+                "name": "BL618G0"
+              }
+            ],
+            "help": {
+              "online": "https://blog.strongwong.top"
+            },
+            "toolsDependencies": [
+              {
+                "packager": "BL618G0",
+                "name": "bflb_fw_post_proc",
+                "version": "0.0.1"
+              },
+              {
+                "packager": "BL618G0",
+                "name": "bflb_flash_tools",
+                "version": "0.0.1"
+              },
+              {
+                "packager": "BL618G0",
+                "name": "bflb_compiler",
+                "version": "0.0.1"
+              }
+            ],
+            "discoveryDependencies": [],
+            "monitorDependencies": []
+          }
+        ],
+        "tools": [
+          {
+            "name": "bflb_fw_post_proc",
+            "version": "0.0.1",
+            "systems": [
+              {
+                "host": "i686-mingw32"
+              }
+            ]
+          },
+          {
+            "name": "bflb_flash_tools",
+            "version": "0.0.1",
+            "systems": [
+              {
+                "host": "i686-mingw32"
+              }
+            ]
+          },
+          {
+            "name": "bflb_compiler",
+            "version": "0.0.1",
+            "systems": [
+              {
+                "host": "i686-mingw32"
+              }
+            ]
+          }
+        ],
+        "help": {
+          "online": "https://blog.strongwong.top"
+        }
+      }
+    ],
+    "IsTrusted": false
+  }

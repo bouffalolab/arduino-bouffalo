@@ -1,0 +1,49 @@
+############################################################
+# BL616/8 RISC-V WiFi6 + BLE + ZigBee Chip
+############################################################
+
+BL618G0.name=BL618G0 Board
+BL618G0.platform=BouffaloLab
+
+BL618G0.build.compiler_path={runtime.tools.bflb_compiler-0.0.1.path}/bin/
+BL618G0.build.mcu=bouffalolab
+BL618G0.build.architecture=riscv
+BL618G0.build.core=bl616
+BL618G0.build.board=BL618G0
+BL618G0.build.variant=BL618G0
+BL618G0.build.ldscript=linker_script.ld
+# BL618G0.build.extra_flags = -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907
+
+BL618G0.compiler.sdk.defines={build.variant.path}/defines.txt
+BL618G0.compiler.sdk.ldflags={build.variant.path}/ldflags.txt
+BL618G0.compiler.sdk.cflags={build.variant.path}/cflags.txt
+BL618G0.compiler.sdk.cxxflags={build.variant.path}/cxxflags.txt
+BL618G0.compiler.sdk.includes={build.variant.path}/includes.txt
+BL618G0.compiler.sdk.extra_ldflags=-lm -lc -lgcc
+
+BL618G0.compiler.sdk.libapp="{build.variant.path}/libs/libapp.a"
+BL618G0.compiler.sdk.liblhal="{build.variant.path}/libs/liblhal.a"
+BL618G0.compiler.sdk.liblibc="{build.variant.path}/libs/liblibc.a"
+BL618G0.compiler.sdk.libmm="{build.variant.path}/libs/libmm.a"
+BL618G0.compiler.sdk.libstd="{build.variant.path}/libs/libstd.a"
+BL618G0.compiler.sdk.libutils="{build.variant.path}/libs/libutils.a"
+BL618G0.compiler.sdk.libpka="{build.variant.path}/libs/libpka.a"
+BL618G0.compiler.sdk.libdsp="{build.variant.path}/libs/libcsi_xt900p32f_dsp.a"
+
+BL618G0.compiler.sdk.wholebin_conf_path={build.variant.path}\config
+
+BL618G0.compiler.c.extra_flags=
+BL618G0.compiler.cpp.extra_flags=
+
+# BL618G0.vid.0=0xFFFF
+# BL618G0.pid.0=0xFFFF
+
+BL618G0.upload.tool=BLFlashCommand
+BL618G0.upload.tool.default=BLFlashCommand
+BL618G0.upload.maximum_size=4190208
+BL618G0.upload.maximum_data_size=196608
+BL618G0.upload.speed=2000000
+
+#############################################################
+
+

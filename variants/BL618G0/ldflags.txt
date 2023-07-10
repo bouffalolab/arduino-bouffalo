@@ -1,0 +1,12 @@
+-Wl,--cref
+-Wl,--gc-sections
+-nostartfiles
+-fms-extensions
+-ffunction-sections
+-fdata-sections
+-ufw_header
+-Wl,-wrap,snprintf
+-Wl,-wrap,sprintf
+-march=rv32imafcpzpsfoperand_xtheade
+-mabi=ilp32f
+-mtune=e907
