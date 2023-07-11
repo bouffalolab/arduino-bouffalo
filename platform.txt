@@ -77,15 +77,15 @@ compiler.ld.extra_flags=
 
 ## Compiler c files
 ## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-iprefix{build.core.path}" "@{compiler.sdk.includes}" -o "{object_file}" "{source_file}"
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" -o "{object_file}" "{source_file}"
 
 ## Compiler cpp files
 ## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
 
 ## Compiler S files
 ## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
 
 ## Compiler archives
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"

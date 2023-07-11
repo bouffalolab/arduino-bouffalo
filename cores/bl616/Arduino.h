@@ -22,13 +22,13 @@
 #ifndef Arduino_h
 #define Arduino_h
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>	//Added for uint_t
+// #include <stdlib.h>
+// #include <stdbool.h>
+// #include <string.h>
+// #include <math.h>
+// #include <stdint.h>	//Added for uint_t
 
-// #include "api/ArduinoAPI.h"
+#include "api/ArduinoAPI.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -59,7 +59,6 @@ extern "C"{
 #define LSBFIRST 0
 #define MSBFIRST 1
 
-//#define CHANGE 1 	//there is no change in PULPino, there's high instead
 // 0 is low 1 is high (already defined)
 #define RISING 2	//modified to be 2 instead of 3 as in AVR
 #define FALLING 3	//modified to be 3 instead of 2 as in AVR
