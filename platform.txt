@@ -3,7 +3,7 @@
 ############################################################
 
 name=BL616/8 RISC-V WiFi6 + BLE + ZigBee Chip (BouffaloLab)
-version=0.0.1
+version=1.0.0
 
 ## Compiler global definitions
 
@@ -127,11 +127,14 @@ recipe.size.regex=^(?:\.data|\.text|\.rodata)\S*?\s+([0-9]+).*
 ## BouffaloLab Flash tools
 #--------------------------------------------------------
 
-tools.bflb_flash_tools.path={runtime.tools.bflb_flash_tools.path}/v1.0.6/
+tools.bflb_flash_tools.path={runtime.tools.bflb_flash_tools.path}
 tools.bflb_flash_tools.cmd=BLFlashCommand
+tools.bflb_flash_tools.cmd.windows=BLFlashCommand.exe
+tools.bflb_flash_tools.cmd.linux=BLFlashCommand-ubuntu
+tools.bflb_flash_tools.cmd.macosx=BLFlashCommand-macos
 tools.bflb_flash_tools.upload.params.verbose=
 tools.bflb_flash_tools.upload.params.quiet=
 tools.bflb_flash_tools.upload.protocol=uart
 
-tools.bflb_flashload.upload.pattern="{path}/{cmd}" --interface={upload.protocol} --chipname=bl616 --port={serial.port} --baudrate={upload.speed} --firmware={build.core.path}\{build.project_name}.bin
+tools.bflb_flash_tools.upload.pattern="{path}/{cmd}" --interface={upload.protocol} --chipname=bl616 --port={serial.port} --baudrate={upload.speed} --firmware={build.path}\{build.project_name}.bin
 

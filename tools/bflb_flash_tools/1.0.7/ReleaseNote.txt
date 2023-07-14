@@ -1,0 +1,19 @@
+= Release 1.0.7 =
+Released: 2023-07-13
+
+== FlashCube ==
+Features:
+1. img_create目录下增加whole_flash_data.bin.hash文件  
+2. 命令行工具中用户不设置ini文件路径时会生成默认的ini文件
+3. 命令行工具支持--firmware参数烧写指定固件
+4. 增加download时根据界面是否勾选efuse按钮情况修改burn_en参数值功能
+5. 增加download时，如果勾选efuse按钮将传入的efusedata文件重命名为efusedata.bin，如果不勾选则删除efuse_bootheader和img_create目录下的efusedata.bin功能
+6. 增加download时，如果勾选efuse按钮将efusedata.bin传入pack中的efuse_bootheader目录下，如果不勾选则不放置该文件功能
+
+Changes:
+1. 同步devcube的efuse校验错误（security_write） 
+2. 同步修复devcube 616压缩烧写失败的问题
+
+Bug Fixes:
+1. 修复只烧写efuse不烧写firmware时读取ini配置文件的bug
+2. 修复flash utils界面的按钮点击会删除img_create目录下文件的bug

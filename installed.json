@@ -9,7 +9,7 @@
           {
             "name": "BL618G0",
             "architecture": "BL616",
-            "version": "0.0.1",
+            "version": "1.0.0",
             "deprecated": false,
             "category": "MCU",
             "boards": [
@@ -24,17 +24,17 @@
               {
                 "packager": "BL618G0",
                 "name": "bflb_fw_post_proc",
-                "version": "0.0.1"
+                "version": "1.0.0"
               },
               {
                 "packager": "BL618G0",
                 "name": "bflb_flash_tools",
-                "version": "0.0.1"
+                "version": "1.0.7"
               },
               {
                 "packager": "BL618G0",
                 "name": "bflb_compiler",
-                "version": "0.0.1"
+                "version": "2.6.1"
               }
             ],
             "discoveryDependencies": [],
@@ -44,7 +44,7 @@
         "tools": [
           {
             "name": "bflb_fw_post_proc",
-            "version": "0.0.1",
+            "version": "1.0.0",
             "systems": [
               {
                 "host": "i686-mingw32"
@@ -53,7 +53,7 @@
           },
           {
             "name": "bflb_flash_tools",
-            "version": "0.0.1",
+            "version": "1.0.7",
             "systems": [
               {
                 "host": "i686-mingw32"
@@ -62,7 +62,7 @@
           },
           {
             "name": "bflb_compiler",
-            "version": "0.0.1",
+            "version": "2.6.1",
             "systems": [
               {
                 "host": "i686-mingw32"

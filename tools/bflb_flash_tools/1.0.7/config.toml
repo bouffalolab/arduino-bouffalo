@@ -1,0 +1,26 @@
+[param]
+interface_type = "Uart"
+comport_uart = "COM25"
+chip = "BL808"
+chip_name = "bl808"
+chip_type = "bl808"
+speed_uart = "2000000"
+speed_jlink = "1000"
+erase = "1"
+skip_mode = "0x0, 0x0"
+boot2_isp_mode = "0"
+
+[check_box]
+efuse = false
+
+[input_path]
+efuse = ""
+config = "Z:/BouffalolabWS/bouffalo_sdk_all/chiptest/bl808/low_load_for_linux/flash_prog_cfg.ini"
+
+[FW1]
+addr = "0x000000"
+path = "Z:\\BouffalolabWS\\bouffalo_sdk_all\\chiptest\\bl808\\low_load_for_linux\\./low_load_m0/build/build_out/low_load_bl808_m0.bin"
+
+[FW2]
+addr = "0x52000"
+path = "Z:\\BouffalolabWS\\bouffalo_sdk_all\\chiptest\\bl808\\low_load_for_linux\\./low_load_d0/build/build_out/low_load_bl808_d0.bin"

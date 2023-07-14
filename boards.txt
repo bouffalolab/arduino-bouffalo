@@ -5,7 +5,7 @@
 BL618G0.name=BL618G0 Board
 BL618G0.platform=BouffaloLab
 
-BL618G0.build.compiler_path={runtime.tools.bflb_compiler-0.0.1.path}/bin/
+BL618G0.build.compiler_path={runtime.tools.Xuantie-900-gcc-2.6.1.path}/bin/
 BL618G0.build.mcu=bouffalolab
 BL618G0.build.architecture=riscv
 BL618G0.build.core=bl616
@@ -38,8 +38,8 @@ BL618G0.compiler.cpp.extra_flags=
 # BL618G0.vid.0=0xFFFF
 # BL618G0.pid.0=0xFFFF
 
-BL618G0.upload.tool=BLFlashCommand
-BL618G0.upload.tool.default=BLFlashCommand
+BL618G0.upload.tool=bflb_flash_tools
+BL618G0.upload.tool.default=bflb_flash_tools
 BL618G0.upload.maximum_size=4190208
 BL618G0.upload.maximum_data_size=196608
 BL618G0.upload.speed=2000000
