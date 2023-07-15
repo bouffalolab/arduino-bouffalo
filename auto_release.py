@@ -66,6 +66,28 @@ def create_zip(source_paths, output_path, version):
 
     print(f"生成压缩文件 {zip_filename} 成功！")
 
+def create_cores_zip(source_paths, output_path, version):
+    # 创建压缩文件名
+    zip_filename = f"{output_path}_{version}.zip"
+
+    # 创建一个新的zip文件
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for source_path in source_paths:
+            if os.path.isfile(source_path):
+                # 如果是文件，则获取文件名并添加到压缩文件中
+                file_name = os.path.basename(source_path)
+                zipf.write(source_path, arcname=os.path.join(output_path, file_name))
+            elif os.path.isdir(source_path):
+                # 如果是文件夹，则遍历文件夹并添加其中的文件到压缩文件中
+                for root, dirs, files in os.walk(source_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(file_path, source_path)
+                        arcname = os.path.join(output_path, os.path.basename(source_path), relative_path)
+                        zipf.write(file_path, arcname=arcname)
+
+    print(f"生成压缩文件 {zip_filename} 成功！")
+
 # generate index json
 def generate_index_json(package_name, maintainer, website_url, email, platforms, tools):
     data = {
@@ -147,7 +169,7 @@ bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./variants"]  # 源
 bouffalolab_path = "bouffalolab"  # 输出文件的路径和名称前缀
 cores_version = "1.0.0"  # 版本号
 
-create_zip(bouffalolab_paths, bouffalolab_path, cores_version)
+create_cores_zip(bouffalolab_paths, bouffalolab_path, cores_version)
 bouffalolab_outname = f"{bouffalolab_path}_{cores_version}.zip"
 bouffalolab_sha256 = calculate_sha256(bouffalolab_outname)
 bouffalolab_size = calculate_file_size(bouffalolab_outname)
@@ -187,7 +209,7 @@ print(f"fw_post sha:{fw_post_sha256}, size:{fw_post_size}")
 
 # 生成 JSON 数据
 
-package_name = "BL618G0"
+package_name = "bouffalolab"
 maintainer = "BH6BAO"
 website_url = "https://github.com/strongwong/arduino-bl618"
 email = "qqwang@bouffalolab.com"
@@ -195,8 +217,8 @@ index_version = "1.0.0"
 
 platforms = [
     generate_platform(
-        name="BL618G0",
-        architecture="BL616",
+        name=package_name,
+        architecture="bouffalolab",
         version=f"{cores_version}",
         category="BouffaloLab",
         url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{bouffalolab_outname}",
@@ -257,7 +279,7 @@ tools = [
     )
 ]
 
-data = generate_index_json("BouffaloLab", maintainer, website_url, email, platforms, tools)
+data = generate_index_json(package_name, maintainer, website_url, email, platforms, tools)
 # 将数据写入文件
 filename = "package_bouffalolab_index.json"
 with open(filename, "w") as f:

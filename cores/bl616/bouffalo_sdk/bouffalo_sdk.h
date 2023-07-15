@@ -12,9 +12,6 @@ extern "C" {
 #include "drivers/rfparam/Inc/rfparam_rftlv.h"
 #include "drivers/rfparam/Inc/rfparam_adapter.h"
 
-#include "drivers/pm/bl616/bl616_lp.h"
-#include "drivers/pm/bl_lp.h"
-
 #include "drivers/lhal/include/compiler/compiler_ld.h"
 #include "drivers/lhal/include/compiler/compiler_gcc.h"
 
