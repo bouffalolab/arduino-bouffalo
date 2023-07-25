@@ -77,7 +77,7 @@ compiler.ld.extra_flags=
 
 ## Compiler c files
 ## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" -o "{object_file}" "{source_file}"
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}" 
 
 ## Compiler cpp files
 ## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
@@ -94,7 +94,7 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compil
 recipe.hooks.linking.prelink.1.pattern="{compiler.path}{compiler.c.elf.cmd}" -E -P -x c {build.extra_ldflags} "{build.variant.path}/{build.ldscript}" -o "{build.path}/{build.ldscript}"
 
 ## Combine gc-section, archives, and objects
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "@{compiler.sdk.ldflags}" "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--whole-archive "{build.path}/{archive_file}" {compiler.sdk.libapp} {compiler.sdk.liblhal} {compiler.sdk.liblibc} {compiler.sdk.libmm} {compiler.sdk.libstd} {compiler.sdk.libutils} {compiler.sdk.libpka} {compiler.sdk.libdsp} -Wl,--no-whole-archive -Wl,--start-group {compiler.sdk.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "@{compiler.sdk.ldflags}" "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--whole-archive "{build.path}/{archive_file}" {compiler.sdk.libapp} {compiler.sdk.liblhal} {compiler.sdk.liblibc} {compiler.sdk.libmm} {compiler.sdk.libstd} {compiler.sdk.libutils} {compiler.sdk.libpka} {compiler.sdk.libdsp} {compiler.sdk.libfreertos} -Wl,--no-whole-archive -Wl,--start-group {compiler.sdk.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group
 
 ## Create eeprom
 recipe.objcopy.eep.pattern=

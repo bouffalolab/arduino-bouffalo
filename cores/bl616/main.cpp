@@ -21,6 +21,8 @@
 // #include <Arduino.h>
 #include "Arduino.h"
 #include "bouffalo_sdk.h"
+// #include "log.h"
+
 // // Declared weak in Arduino.h to allow user redefinitions.
 // int atexit(void (* /*func*/ )()) { return 0; }
 
@@ -29,20 +31,40 @@
 void initVariant() __attribute__((weak));
 void initVariant() { }
 
+static TaskHandle_t loop_task_handle;
+#define DBG_TAG "MAIN"
+
+void loopTask(void *pvParameters){
+
+    for(;;){
+        loop();
+        bflb_mtimer_delay_ms(1000);
+    }
+}
+
 int main(void)
 {
     init();
+
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // ARDUINO sketch
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     setup();
 
-    for (;;) {
-        loop();
-        bflb_mtimer_delay_ms(1000);
-    } // End of while loop
+    // for (;;) {
+    //     loop();
+    //     bflb_mtimer_delay_ms(1000);
+    // } // End of while loop
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    //freertos
+    xTaskCreate(loopTask, (char *)"loop_task", 512, NULL, configMAX_PRIORITIES - 1, &loop_task_handle);
+
+    vTaskStartScheduler();
+
+    while (1) {
+    }
 
     return 0;
 } // End of main()

@@ -29,6 +29,7 @@ BL618G0.compiler.sdk.libstd="{build.variant.path}/libs/libstd.a"
 BL618G0.compiler.sdk.libutils="{build.variant.path}/libs/libutils.a"
 BL618G0.compiler.sdk.libpka="{build.variant.path}/libs/libpka.a"
 BL618G0.compiler.sdk.libdsp="{build.variant.path}/libs/libcsi_xt900p32f_dsp.a"
+BL618G0.compiler.sdk.libfreertos="{build.variant.path}/libs/libfreertos.a"
 
 BL618G0.compiler.sdk.wholebin_conf_path={build.variant.path}\config
 

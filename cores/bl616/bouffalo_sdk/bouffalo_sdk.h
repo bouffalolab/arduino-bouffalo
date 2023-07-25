@@ -174,6 +174,9 @@ extern "C" {
 // #include "components/utils/log/bflb_dbg.h"
 #include "components/utils/ring_buffer/ring_buffer.h"
 
+#include "components/os/freertos/include/FreeRTOS.h"
+#include "components/os/freertos/include/task.h"
+
 #ifdef __cplusplus
 }
 #endif

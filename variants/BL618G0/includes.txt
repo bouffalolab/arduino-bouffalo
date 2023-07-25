@@ -9,6 +9,8 @@
 -Ibouffalo_sdk/components/utils/bflb_block_pool
 -Ibouffalo_sdk/components/utils/bflb_timestamp
 -Ibouffalo_sdk/components/utils/getopt
+-Ibouffalo_sdk/components/os/freertos/include
+-Ibouffalo_sdk/components/os/freertos/portable/GCC/RISC-V/common
 -Ibouffalo_sdk/drivers/lhal/include
 -Ibouffalo_sdk/drivers/lhal/include/arch
 -Ibouffalo_sdk/drivers/lhal/include/arch/risc-v/t-head
