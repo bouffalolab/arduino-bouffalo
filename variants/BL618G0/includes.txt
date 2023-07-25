@@ -11,6 +11,10 @@
 -Ibouffalo_sdk/components/utils/getopt
 -Ibouffalo_sdk/components/os/freertos/include
 -Ibouffalo_sdk/components/os/freertos/portable/GCC/RISC-V/common
+-Ibouffalo_sdk/components/os/freertos/portable/GCC/RISC-V/common/chip_specific_extensions/RISCV_MTIME_CLINT_no_extensions
+-Ibouffalo_sdk/components/os/freertos/posix/include
+-Ibouffalo_sdk/components/os/freertos/posix/FreeRTOS_POSIX
+-Ibouffalo_sdk/components/os/freertos/posix/FreeRTOS_POSIX/sys
 -Ibouffalo_sdk/drivers/lhal/include
 -Ibouffalo_sdk/drivers/lhal/include/arch
 -Ibouffalo_sdk/drivers/lhal/include/arch/risc-v/t-head

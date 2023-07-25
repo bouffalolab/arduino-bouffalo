@@ -10,7 +10,7 @@ The first version can be compiled and run, but the repository is still in the pr
 Currently it supports windows and is tested on windows. Other systems have not been tested yet.
 Install the latest [Arduino IDE](https://www.arduino.cc/en/software), 2.x or higher is recommended.
 Start Arduino and add the package URL address to the development board manager. into "**File->Preferences->Additional Boards Manager URLs**".
-Enter this URL：`https://github.com/strongwong/arduino-bl618/releases/download/1.0.0/package_bouffalolab_index.json`.
+Enter this URL：`https://github.com/strongwong/arduino-bl618/releases/latest/download/package_bouffalolab_index.json`.
 
 Open Boards Manager from  "**Tools->Board->Boards Manager**" menu; Find the bouffalolab boards and install bouffalolab platform (and don't forget to select your BL618G0 board from Tools->Board menu after installation).
 

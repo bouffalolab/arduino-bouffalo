@@ -167,7 +167,7 @@ def generate_system(host, url, archive_filename, checksum, size):
 # bouffalolab
 bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./variants"]  # 源文件或文件夹的路径列表
 bouffalolab_path = "bouffalolab"  # 输出文件的路径和名称前缀
-cores_version = "1.0.0"  # 版本号
+cores_version = "1.0.1"  # 版本号
 
 create_cores_zip(bouffalolab_paths, bouffalolab_path, cores_version)
 bouffalolab_outname = f"{bouffalolab_path}_{cores_version}.zip"
@@ -213,7 +213,7 @@ package_name = "bouffalolab"
 maintainer = "BH6BAO"
 website_url = "https://github.com/strongwong/arduino-bl618"
 email = "qqwang@bouffalolab.com"
-index_version = "1.0.0"
+index_version = "1.0.1"
 
 platforms = [
     generate_platform(
