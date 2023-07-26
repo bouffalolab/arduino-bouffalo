@@ -20,15 +20,24 @@ After the installation is complete and the correct board is selected, you can wr
 
 ```c
 #include <stdio.h>
-void setup() {
-  // put your setup code here, to run once:
+#include <Arduino.h>
+#define LED_BUILTIN (32)
+unsigned long time = 0;
 
+void setup() {
+    // put your setup code here, to run once:
+    // initialize digital pin LED_BUILTIN as an output.
+    pinMode(LED_BUILTIN, OUTPUT);
 }
-int i = 0;
+
 void loop() {
-  // put your main code here, to run repeatedly:
-  printf("hellow world %d\r\n", i);
-  i ++;
+    // put your main code here, to run repeatedly:
+    time = millis();
+    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+    delay(1000);
+    printf("hellow world! Timer:%ld\r\n", time);
 }
 ```
 
