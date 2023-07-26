@@ -22,13 +22,14 @@
 #ifndef Arduino_h
 #define Arduino_h
 
-// #include <stdlib.h>
-// #include <stdbool.h>
-// #include <string.h>
-// #include <math.h>
-// #include <stdint.h>	//Added for uint_t
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <math.h>
+#include <stdint.h>	//Added for uint_t
 
-#include "api/ArduinoAPI.h"
+// #include "api/ArduinoAPI.h"
+// #include "api/Common.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -45,6 +46,7 @@ extern "C"{
 #define INPUT 0x0
 #define OUTPUT 0x1
 #define INPUT_PULLUP 0x2	// ###check later###
+#define INPUT_PULLDOWN 0x3
 
 #define PI 3.1415926535897932384626433832795
 #define HALF_PI 1.5707963267948966192313216916398
@@ -84,6 +86,29 @@ extern "C"{
 #define radians(deg) ((deg)*DEG_TO_RAD)
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
+
+#ifndef _NOP
+#define _NOP() __asm__ volatile ("nop");
+#endif
+
+typedef bool boolean;
+typedef uint8_t byte;
+typedef unsigned int word;
+
+#define bit(b) (1UL << (b))
+
+void pinMode(uint8_t, uint8_t);
+void digitalWrite(uint8_t, uint8_t);
+int digitalRead(uint8_t);
+void analogWrite(uint8_t, int);
+
+void init(void);
+unsigned long millis(void);
+unsigned long micros(void);
+void delay(unsigned long);
+void delayMicroseconds(unsigned int us);
+
+
 
 void setup(void);
 void loop(void);
