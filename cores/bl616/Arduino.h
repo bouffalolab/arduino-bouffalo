@@ -101,6 +101,7 @@ void pinMode(uint8_t, uint8_t);
 void digitalWrite(uint8_t, uint8_t);
 int digitalRead(uint8_t);
 void analogWrite(uint8_t, int);
+int analogRead(uint8_t);
 
 void init(void);
 unsigned long millis(void);
