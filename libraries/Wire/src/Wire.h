@@ -1,9 +1,9 @@
 #pragma once
 
-#include <bouffalo_sdk.h>
+#include "bouffalo_sdk.h"
 
 
-class Wire    {
+class TwoWire    {
 private:
     struct bflb_device_s *i2c0;
     uint8_t rbuf[128];
@@ -11,7 +11,7 @@ private:
     int index;
     int wire_timeout;
     bool wire_timeout_flag;
-public: 
+public:
 
     bool getWireTimeoutFlag();
     bool clearWireTimeoutFlag();
@@ -32,10 +32,9 @@ public:
     void end();
     void begin(unsigned char addr);
     void begin();
-   
+
 };
 
-
-
-
+extern TwoWire Wire;
+// extern TwoWire Wire1;
 

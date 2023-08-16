@@ -1,5 +1,4 @@
-#include <Wire.h>
-
+#include "Wire.h"
 
 #define PUT_UINT32_LE(field, value)            \
     do {                                       \
@@ -291,7 +290,7 @@ static int bflb_i2c_read_bytes(struct bflb_device_s *dev, uint8_t *data, uint32_
 /*
  * address: the 7-bit slave address (optional); if not specified, join the bus as a controller device.
  */
-void Wire::begin(unsigned char addr) {
+void TwoWire::begin(unsigned char addr) {
     wire_timeout = 100;
     wire_timeout_flag = false;
     board_i2c_pinmux_init();
@@ -299,7 +298,7 @@ void Wire::begin(unsigned char addr) {
     bflb_i2c_init(i2c0, 50000);
 }
 
-void Wire::begin() {
+void TwoWire::begin() {
     wire_timeout = 100;
     wire_timeout_flag = false;
     board_i2c_pinmux_init();
@@ -307,19 +306,19 @@ void Wire::begin() {
     bflb_i2c_init(i2c0, 50000);
 }
 
-void Wire::end() {
+void TwoWire::end() {
     bflb_i2c_deinit(i2c0);
 }
-/* 
+/*
  * address: the 7-bit slave address of the device to request bytes from.
  *
  * quantity: the number of bytes to request.
  *
- * stop: true or false. true will send a stop message after the request, releasing the bus. 
+ * stop: true or false. true will send a stop message after the request, releasing the bus.
  * False will continually send a restart after the request, keeping the connection active.
  */
 
-int Wire::requestFrom(unsigned char addr, int quantity, bool stop) {
+int TwoWire::requestFrom(unsigned char addr, int quantity, bool stop) {
     index = 0;
     bflb_i2c_disable(i2c0);
     bflb_i2c_enable(i2c0);
@@ -334,7 +333,7 @@ int Wire::requestFrom(unsigned char addr, int quantity, bool stop) {
     return 0;
 }
 
-int Wire::requestFrom(unsigned char addr, int quantity) {
+int TwoWire::requestFrom(unsigned char addr, int quantity) {
     index = 0;
     bflb_i2c_disable(i2c0);
     bflb_i2c_enable(i2c0);
@@ -349,14 +348,14 @@ int Wire::requestFrom(unsigned char addr, int quantity) {
 /*
  * address: the 7-bit address of the device to transmit to.
  */
-void Wire::beginTransmission(unsigned char addr) {
+void TwoWire::beginTransmission(unsigned char addr) {
     //bflb_i2c_enable(i2c0);
     bflb_i2c_addr_config(i2c0, addr, 0, 0, false);
     bflb_i2c_set_dir(i2c0, 0);
 }
 
 /*
- * stop: true or false. True will send a stop message, releasing the bus after transmission. 
+ * stop: true or false. True will send a stop message, releasing the bus after transmission.
  * False will send a restart, keeping the connection active.
  *
  * Returns
@@ -368,19 +367,19 @@ void Wire::beginTransmission(unsigned char addr) {
  * 5: timeout
  */
 
-void Wire::endTransmission(bool stop) {
+void TwoWire::endTransmission(bool stop) {
     bflb_i2c_disable(i2c0);
 }
 
-void Wire::endTransmission() {
+void TwoWire::endTransmission() {
     bflb_i2c_disable(i2c0);
-    
+
 }
 
 /*
  * Description
- * This function writes data from a peripheral device in response to a request from 
- * a controller device, or queues bytes for transmission from a controller to 
+ * This function writes data from a peripheral device in response to a request from
+ * a controller device, or queues bytes for transmission from a controller to
  * peripheral device (in-between calls to beginTransmission() and endTransmission()).
  * Syntax
  * Wire.write(value) Wire.write(string) Wire.write(data, length)
@@ -392,38 +391,38 @@ void Wire::endTransmission() {
  * Returns
  * The number of bytes written (reading this number is optional).
  */
-int Wire::write(unsigned char value) {
-    bflb_i2c_set_datalen(i2c0, 1); 
+int TwoWire::write(unsigned char value) {
+    bflb_i2c_set_datalen(i2c0, 1);
     bflb_i2c_write_bytes(i2c0, &value, 1,wire_timeout);
   return 0;
 }
-int Wire::write(uint8_t *str) {
+int TwoWire::write(uint8_t *str) {
     bflb_i2c_set_datalen(i2c0, strlen((const char*)str));
     bflb_i2c_write_bytes(i2c0, str, strlen((const char*)str),wire_timeout);
   return 0;
 }
-int Wire::write(uint8_t *str, int len) {
+int TwoWire::write(uint8_t *str, int len) {
     bflb_i2c_set_datalen(i2c0, len);
     int ret = bflb_i2c_write_bytes(i2c0, str, len,wire_timeout);
   return ret;
 }
 
-/* 
+/*
  * Description
- * This function returns the number of bytes available for retrieval with read(). 
- * This function should be called on a controller device after a call to 
- * requestFrom() or on a peripheral inside the onReceive() handler. 
+ * This function returns the number of bytes available for retrieval with read().
+ * This function should be called on a controller device after a call to
+ * requestFrom() or on a peripheral inside the onReceive() handler.
  * available() inherits from the Stream utility class.
  */
 
-int Wire::available() {
+int TwoWire::available() {
     return available_count;
 }
 
 /*
  * Description
- * This function reads a byte that was transmitted from a peripheral device to 
- * a controller device after a call to requestFrom() or was transmitted from a 
+ * This function reads a byte that was transmitted from a peripheral device to
+ * a controller device after a call to requestFrom() or was transmitted from a
  * controller device to a peripheral device. read() inherits from the Stream utility class.
  * Syntax
  * Wire.read()
@@ -433,7 +432,7 @@ int Wire::available() {
  * The next byte received.
  */
 
-int Wire::read() {
+int TwoWire::read() {
     unsigned char ret;
     if(available_count){
         available_count--;
@@ -446,39 +445,39 @@ int Wire::read() {
 
 /*
  * Description
- * This function modifies the clock frequency for I2C communication. 
- * I2C peripheral devices have no minimum working clock frequency, 
+ * This function modifies the clock frequency for I2C communication.
+ * I2C peripheral devices have no minimum working clock frequency,
  * however 100KHz is usually the baseline.
  * Syntax
  * Wire.setClock(clockFrequency)
  * Parameters
- * clockFrequency: the value (in Hertz) of the desired communication clock. 
- * Accepted values are 100000 (standard mode) and 400000 (fast mode). 
- * Some processors also support 10000 (low speed mode), 1000000 (fast mode plus) 
- * and 3400000 (high speed mode). Please refer to the specific processor documentation 
+ * clockFrequency: the value (in Hertz) of the desired communication clock.
+ * Accepted values are 100000 (standard mode) and 400000 (fast mode).
+ * Some processors also support 10000 (low speed mode), 1000000 (fast mode plus)
+ * and 3400000 (high speed mode). Please refer to the specific processor documentation
  * to make sure the desired mode is supported.
  * Returns
  * None.
  */
-void Wire::setClock(int clockFrequency) {
+void TwoWire::setClock(int clockFrequency) {
     bflb_i2c_deinit(i2c0);
     bflb_i2c_init(i2c0, clockFrequency);
 }
 
 /*
  * Description
- * This function registers a function to be called when a peripheral device receives 
+ * This function registers a function to be called when a peripheral device receives
  * a transmission from a controller device.
  * Syntax
  * Wire.onReceive(handler)
  * Parameters
- * handler: the function to be called when the peripheral device receives data; 
- * this should take a single int parameter (the number of bytes read from the controller 
+ * handler: the function to be called when the peripheral device receives data;
+ * this should take a single int parameter (the number of bytes read from the controller
  * device) and return nothing.
  * Returns
  * None.
  */
-void Wire::onReceive(void (*callback)(int)) {
+void TwoWire::onReceive(void (*callback)(int)) {
     //we not support slave mode yet
 }
 
@@ -492,11 +491,11 @@ void Wire::onReceive(void (*callback)(int)) {
  * Returns
  * None.
  */
-void Wire::onRequest(void (*callback)()) {
+void TwoWire::onRequest(void (*callback)()) {
     //we not support slave mode yet
 }
 
-/* 
+/*
  * Description
  * Sets the timeout for Wire transmissions in master mode.
  * Syntax
@@ -505,19 +504,19 @@ void Wire::onRequest(void (*callback)()) {
  * Parameters
  * timeout a timeout: timeout in microseconds, if zero then timeout checking is disabled
  * reset_on_timeout: if true then Wire hardware will be automatically reset on timeout
- * When this function is called without parameters, a default timeout is configured that 
+ * When this function is called without parameters, a default timeout is configured that
  * should be sufficient to prevent lockups in a typical single-master configuration.
  * Returns
  * None.
  */
-void Wire::setWireTimeout(int timeout, bool reset_on_timeout) {
+void TwoWire::setWireTimeout(int timeout, bool reset_on_timeout) {
     wire_timeout = timeout;
     wire_timeout_flag = true;
 }
 
 /* Description
  * Clears the timeout flag.
- * Timeouts might not be enabled by default. See the documentation for Wire.setWireTimeout() 
+ * Timeouts might not be enabled by default. See the documentation for Wire.setWireTimeout()
  * for more information on how to configure timeouts and how they work.
  * Syntax
  * Wire.clearTimeout()
@@ -526,7 +525,7 @@ void Wire::setWireTimeout(int timeout, bool reset_on_timeout) {
  * Returns
  * bool: The current value of the flag
  */
-bool Wire::clearWireTimeoutFlag() {
+bool TwoWire::clearWireTimeoutFlag() {
     wire_timeout_flag = false;
   return true;
 }
@@ -534,7 +533,7 @@ bool Wire::clearWireTimeoutFlag() {
 /*
  * Description
  * Checks whether a timeout has occured since the last time the flag was cleared.
- * This flag is set is set whenever a timeout occurs and cleared when Wire.clearWireTimeoutFlag() 
+ * This flag is set is set whenever a timeout occurs and cleared when Wire.clearWireTimeoutFlag()
  * is called, or when the timeout is changed using Wire.setWireTimeout().
  * Syntax
  * Wire.getWireTimeoutFlag()
@@ -544,8 +543,10 @@ bool Wire::clearWireTimeoutFlag() {
  * bool: The current value of the flag
  */
 
-bool Wire::getWireTimeoutFlag() {
+bool TwoWire::getWireTimeoutFlag() {
   return wire_timeout_flag;
 }
 
+TwoWire Wire = TwoWire();
+// TwoWire Wire1 = TwoWire();
 

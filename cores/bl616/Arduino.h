@@ -27,6 +27,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>	//Added for uint_t
+#include <stdio.h>
 
 // #include "api/ArduinoAPI.h"
 // #include "api/Common.h"
