@@ -119,4 +119,6 @@ void loop(void);
 } // extern "C"
 #endif
 
+#include "pins_arduino.h"
+
 #endif // Arduino_h

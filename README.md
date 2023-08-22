@@ -19,26 +19,51 @@ Open Boards Manager from  "**Tools->Board->Boards Manager**" menu; Find the bouf
 After the installation is complete and the correct board is selected, you can write a simple code test in Arduino, such as the following code that outputs "*Hello World*".
 
 ```c
-#include <stdio.h>
-#include <Arduino.h>
-#define LED_BUILTIN (32)
+#include "HardwareSerial.h"
+
 unsigned long time = 0;
 
 void setup() {
-    // put your setup code here, to run once:
-    // initialize digital pin LED_BUILTIN as an output.
-    pinMode(LED_BUILTIN, OUTPUT);
+  // put your setup code here, to run once:
+  // delayMicroseconds(1000);
+  // printf("12345\r\n");
+
+  delayMicroseconds(1000);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  Serial.begin(2000000);
+  // wait 1ms
+  delayMicroseconds(1000);
+  Serial.write('\n');
+  Serial.write('a');
+  Serial.write('b');
+  Serial.write('c');
+  Serial.write('d');
+  Serial.write('\n');
+
+  Serial.println("Input something:");
+  // wait serial input something
+  while(Serial.available() == 0) {
+  }
+  Serial.write(Serial.read());
+
+  Serial.write('\n');
+  Serial.println("hello world!");
 }
 
 void loop() {
-    // put your main code here, to run repeatedly:
-    time = millis();
-    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-    delay(1000);
-    printf("hellow world! Timer:%ld\r\n", time);
+  time = millis();
+  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+  delay(1000);
+  // printf("loop!\r\n");
+  Serial.print("Timer:");
+  Serial.print(time);
+  Serial.print(" us; ");
+  Serial.println("hello world!");
 }
+
 ```
 
 After writing and clicking Verify, if it doesn't report an error it means the installation is working.
