@@ -3,6 +3,7 @@ import hashlib
 import zipfile
 import tarfile
 import json
+import argparse
 
 def calculate_sha256(file_path):
     # 创建一个SHA-256哈希对象
@@ -164,123 +165,151 @@ def generate_system(host, url, archive_filename, checksum, size):
     return system
 
 
-# bouffalolab
-bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./variants"]  # 源文件或文件夹的路径列表
-bouffalolab_path = "bouffalolab"  # 输出文件的路径和名称前缀
-cores_version = "1.0.2"  # 版本号
+def main():
+    parser = argparse.ArgumentParser(description='JSON操作工具')
+    # 添加参数
+    parser.add_argument('command', choices=['add', 'platform', 'xuantie', 'flash_tools'], help='执行的命令')
+    parser.add_argument('filename', help='JSON文件名')
 
-create_cores_zip(bouffalolab_paths, bouffalolab_path, cores_version)
-bouffalolab_outname = f"{bouffalolab_path}_{cores_version}.zip"
-bouffalolab_sha256 = calculate_sha256(bouffalolab_outname)
-bouffalolab_size = calculate_file_size(bouffalolab_outname)
-print(f"bouffalolab sha:{bouffalolab_sha256}, size:{bouffalolab_size}")
+    # 可选参数
+    parser.add_argument('--version', help='新节点的版本号')
+    parser.add_argument('--node_name', help='要删除的节点名称')
 
-# tools
-# xuantie
-xuantie_paths = ["./tools/Xuantie-900-gcc"]
-xuantie_path = "Xuantie-900-gcc"
-compiler_version = "2.6.1"
-create_zip(xuantie_paths, xuantie_path, compiler_version)
-xuantie_outname = f"{xuantie_path}_{compiler_version}.zip"
-xuantie_sha256 = calculate_sha256(xuantie_outname)
-xuantie_size = calculate_file_size(xuantie_outname)
-print(f"xuantie sha:{xuantie_sha256}, size:{xuantie_size}")
+    args = parser.parse_args()
 
-# flash tools
-flash_tools_paths = ["./tools/bflb_flash_tools"]
-flash_tools_path = "bflb_flash_tools"
-flash_tools_version = "1.0.7"
-create_zip(flash_tools_paths, flash_tools_path, flash_tools_version)
-flash_tools_outname = f"{flash_tools_path}_{flash_tools_version}.zip"
-flash_tools_sha256 = calculate_sha256(flash_tools_outname)
-flash_tools_size = calculate_file_size(flash_tools_outname)
-print(f"flash tools sha:{flash_tools_sha256}, size:{flash_tools_size}")
+    if args.command == 'add':
+        if args.version:
+            # add_node(args.filename, args.version)
+            print("add command test")
+        else:
+            print("请提供版本号")
 
-# fw post tools
-fw_post_paths = ["./tools/bflb_fw_post_proc"]
-fw_post_path = "bflb_fw_post_proc"
-fw_version = "1.0.0"
-create_zip(fw_post_paths, fw_post_path, fw_version)
-fw_post_outname = f"{fw_post_path}_{fw_version}.zip"
-fw_post_sha256 = calculate_sha256(fw_post_outname)
-fw_post_size = calculate_file_size(fw_post_outname)
-print(f"fw_post sha:{fw_post_sha256}, size:{fw_post_size}")
+    if args.command == 'platform':
+        # bouffalolab
+        bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./variants", "./libraries"]  # 源文件或文件夹的路径列表
+        bouffalolab_path = "bouffalolab"  # 输出文件的路径和名称前缀
+    if args.version:
+        cores_version = args.version #"1.0.2"  # 版本号
+        create_cores_zip(bouffalolab_paths, bouffalolab_path, cores_version)
+        bouffalolab_outname = f"{bouffalolab_path}_{cores_version}.zip"
+        bouffalolab_sha256 = calculate_sha256(bouffalolab_outname)
+        bouffalolab_size = calculate_file_size(bouffalolab_outname)
+        print(f"bouffalolab sha:{bouffalolab_sha256}, size:{bouffalolab_size}")
 
+    # tools
+    # xuantie
+    xuantie_paths = ["./tools/Xuantie-900-gcc"]
+    xuantie_path = "Xuantie-900-gcc"
+    compiler_version = "2.6.1"
+    if args.command == 'xuantie':
+        create_zip(xuantie_paths, xuantie_path, compiler_version)
+        xuantie_outname = f"{xuantie_path}_{compiler_version}.zip"
+        xuantie_sha256 = calculate_sha256(xuantie_outname)
+        xuantie_size = calculate_file_size(xuantie_outname)
+        print(f"xuantie sha:{xuantie_sha256}, size:{xuantie_size}")
 
-# 生成 JSON 数据
+    # flash tools
+    flash_tools_paths = ["./tools/bflb_flash_tools"]
+    flash_tools_path = "bflb_flash_tools"
+    flash_tools_version = "1.0.7"
+    # fw post tools
+    fw_post_paths = ["./tools/bflb_fw_post_proc"]
+    fw_post_path = "bflb_fw_post_proc"
+    fw_version = "1.0.0"
+    if args.command == 'flash_tools':
+        create_zip(flash_tools_paths, flash_tools_path, flash_tools_version)
+        flash_tools_outname = f"{flash_tools_path}_{flash_tools_version}.zip"
+        flash_tools_sha256 = calculate_sha256(flash_tools_outname)
+        flash_tools_size = calculate_file_size(flash_tools_outname)
+        print(f"flash tools sha:{flash_tools_sha256}, size:{flash_tools_size}")
 
-package_name = "bouffalolab"
-maintainer = "BH6BAO"
-website_url = "https://github.com/strongwong/arduino-bl618"
-email = "qqwang@bouffalolab.com"
-index_version = "1.0.2"
+        create_zip(fw_post_paths, fw_post_path, fw_version)
+        fw_post_outname = f"{fw_post_path}_{fw_version}.zip"
+        fw_post_sha256 = calculate_sha256(fw_post_outname)
+        fw_post_size = calculate_file_size(fw_post_outname)
+        print(f"fw_post sha:{fw_post_sha256}, size:{fw_post_size}")
 
-platforms = [
-    generate_platform(
-        name=package_name,
-        architecture="bouffalolab",
-        version=f"{cores_version}",
-        category="BouffaloLab",
-        url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{bouffalolab_outname}",
-        archive_filename=bouffalolab_outname,
-        checksum=f"SHA-256:{bouffalolab_sha256}",
-        size=f"{bouffalolab_size}",
-        website_url=website_url,
-        boards=[
-            generate_board(name="BL618G0")
-        ],
-        tools_dependencies=[
-            generate_tool_dependency(packager=package_name, version=f"{fw_version}", name=fw_post_path),
-            generate_tool_dependency(packager=package_name, version=f"{flash_tools_version}", name=flash_tools_path),
-            generate_tool_dependency(packager=package_name, version=f"{compiler_version}", name=xuantie_path)
-        ]
-    )
-]
-
-tools = [
-    generate_tool(
-        name=fw_post_path,
-        version=f"{fw_version}",
-        systems=[
-            generate_system(
-                host="i686-mingw32",
-                url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{fw_post_outname}",
-                archive_filename=fw_post_outname,
-                checksum=f"SHA-256:{fw_post_sha256}",
-                size=f"{fw_post_size}"
+    # default
+    tools = []
+    if (args.command == 'xuantie') or (args.command == "flash_tools"):
+        tools = [
+            generate_tool(
+                name=fw_post_path,
+                version=f"{fw_version}",
+                systems=[
+                    generate_system(
+                        host="i686-mingw32",
+                        url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{fw_post_outname}",
+                        archive_filename=fw_post_outname,
+                        checksum=f"SHA-256:{fw_post_sha256}",
+                        size=f"{fw_post_size}"
+                    )
+                ]
+            ),
+            generate_tool(
+                name=flash_tools_path,
+                version=f"{flash_tools_version}",
+                systems=[
+                    generate_system(
+                        host="i686-mingw32",
+                        url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{flash_tools_outname}",
+                        archive_filename=flash_tools_outname,
+                        checksum=f"SHA-256:{flash_tools_sha256}",
+                        size=f"{flash_tools_size}"
+                    )
+                ]
+            ),
+            generate_tool(
+                name=xuantie_path,
+                version=f"{compiler_version}",
+                systems=[
+                    generate_system(
+                        host="i686-mingw32",
+                        url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{xuantie_outname}",
+                        archive_filename=xuantie_outname,
+                        checksum=f"SHA-256:{xuantie_sha256}",
+                        size=f"{xuantie_size}"
+                    )
+                ]
             )
         ]
-    ),
-    generate_tool(
-        name=flash_tools_path,
-        version=f"{flash_tools_version}",
-        systems=[
-            generate_system(
-                host="i686-mingw32",
-                url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{flash_tools_outname}",
-                archive_filename=flash_tools_outname,
-                checksum=f"SHA-256:{flash_tools_sha256}",
-                size=f"{flash_tools_size}"
-            )
-        ]
-    ),
-    generate_tool(
-        name=xuantie_path,
-        version=f"{compiler_version}",
-        systems=[
-            generate_system(
-                host="i686-mingw32",
-                url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{xuantie_outname}",
-                archive_filename=xuantie_outname,
-                checksum=f"SHA-256:{xuantie_sha256}",
-                size=f"{xuantie_size}"
-            )
-        ]
-    )
-]
 
-data = generate_index_json(package_name, maintainer, website_url, email, platforms, tools)
-# 将数据写入文件
-filename = "package_bouffalolab_index.json"
-with open(filename, "w") as f:
-    json.dump(data, f, indent=4)
+    # 生成 JSON 数据
+
+    package_name = "bouffalolab"
+    maintainer = "BH6BAO"
+    website_url = "https://github.com/strongwong/arduino-bl618"
+    email = "qqwang@bouffalolab.com"
+    #index_version = "1.0.2"
+    index_version = f"{cores_version}"
+
+    platforms = [
+        generate_platform(
+            name=package_name,
+            architecture="bouffalolab",
+            version=f"{cores_version}",
+            category="BouffaloLab",
+            url=f"https://github.com/strongwong/arduino-bl618/releases/download/{index_version}/{bouffalolab_outname}",
+            archive_filename=bouffalolab_outname,
+            checksum=f"SHA-256:{bouffalolab_sha256}",
+            size=f"{bouffalolab_size}",
+            website_url=website_url,
+            boards=[
+                generate_board(name="BL618G0")
+            ],
+            tools_dependencies=[
+                generate_tool_dependency(packager=package_name, version=f"{fw_version}", name=fw_post_path),
+                generate_tool_dependency(packager=package_name, version=f"{flash_tools_version}", name=flash_tools_path),
+                generate_tool_dependency(packager=package_name, version=f"{compiler_version}", name=xuantie_path)
+            ]
+        )
+    ]
+
+    data = generate_index_json(package_name, maintainer, website_url, email, platforms, tools)
+    # 将数据写入文件
+    filename = "new_index.json"
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=4)
+
+if __name__ == '__main__':
+    main()
