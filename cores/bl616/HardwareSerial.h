@@ -80,7 +80,7 @@ class HardwareSerial : public Stream
     HardwareSerial(uint8_t index);
     void begin(unsigned long baud, uint8_t config);
     inline void begin(unsigned long baud) {
-        begin(2000000, SERIAL_8N1);
+        begin(baud, SERIAL_8N1);
     }
     inline void begin() {
         begin(2000000);

@@ -62,6 +62,33 @@ SECTIONS
         . = ORIGIN(xip_memory) + __RFTLV_SIZE_OFFSET + __RFTLV_SIZE_HOLE;
     } > xip_memory
 
+    .preinit_array :
+    {
+        . = ALIGN(4);
+        __preinit_array_start = .;
+        KEEP(*(SORT(.preinit_array.*)))
+        KEEP (*(.preinit_array))
+        __preinit_array_end = .;
+    } > xip_memory
+
+    .init_array :
+    {
+        . = ALIGN(4);
+        __init_array_start = .;
+        KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+        KEEP (*(.init_array))
+        __init_array_end = .;
+    } > xip_memory
+
+    .fini_array :
+    {
+        . = ALIGN(4);
+        __fini_array_start = .;
+        *(SORT(.fini_array.*))
+        *(.fini_array)
+        __fini_array_end = .;
+    } > xip_memory
+
     .text :
     {
         . = ALIGN(4);
