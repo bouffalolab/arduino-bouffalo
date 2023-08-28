@@ -1,7 +1,13 @@
 #ifndef __SPI_H_INC__
 #define __SPI_H_INC__
 
-#include "bouffalo_sdk.h"
+// #include "bouffalo_sdk.h"
+#include <stdlib.h>
+#include "bflb_gpio.h"
+#include "bl616_glb.h"
+#include "bl616_gpio.h"
+#include "bl616_glb_gpio.h"
+#include "bflb_spi.h"
 
 #define SPI_CLOCK_DIV2   2
 #define SPI_CLOCK_DIV4   4

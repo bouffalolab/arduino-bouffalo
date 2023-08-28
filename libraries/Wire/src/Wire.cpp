@@ -1,4 +1,5 @@
 #include "Wire.h"
+#include "Arduino.h"
 
 #define PUT_UINT32_LE(field, value)            \
     do {                                       \

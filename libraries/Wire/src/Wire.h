@@ -1,7 +1,12 @@
 #pragma once
 
-#include "bouffalo_sdk.h"
-
+// #include "bouffalo_sdk.h"
+#include "bflb_gpio.h"
+#include "bl616_gpio.h"
+#include "bl616_glb.h"
+#include "bl616_glb_gpio.h"
+#include "i2c_reg.h"
+#include "bflb_i2c.h"
 
 class TwoWire    {
 private:
