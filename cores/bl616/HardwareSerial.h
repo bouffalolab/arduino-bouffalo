@@ -27,7 +27,9 @@
 #include <inttypes.h>
 
 #include "Stream.h"
-#include "bouffalo_sdk.h"
+// #include "bouffalo_sdk.h"
+#include "bflb_uart.h"
+#include "bflb_timer.h"
 
 #define HAVE_HWSERIAL0
 #define UBRR0H

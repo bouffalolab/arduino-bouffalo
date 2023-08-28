@@ -1,5 +1,11 @@
 
-#include "bouffalo_sdk.h"
+// #include "bouffalo_sdk.h"
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+#include "board.h"
+#include "bflb_mtimer.h"
+#include "bouffalo_misc.h"
 
 extern void (*__preinit_array_start[])(void) __attribute__((weak));
 extern void (*__preinit_array_end[])(void) __attribute__((weak));

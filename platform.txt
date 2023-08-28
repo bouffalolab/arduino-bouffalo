@@ -20,7 +20,8 @@ compiler.path={build.compiler_path}
 compiler.define="-I{compiler.path}../riscv64-unknown-elf/include"
 
 compiler.c.cmd=riscv64-unknown-elf-gcc
-compiler.c.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 "@{compiler.sdk.defines}" "@{compiler.sdk.cflags}" -MMD
+# "@{compiler.sdk.defines}" "@{compiler.sdk.cflags}"
+compiler.c.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=gnu99
 compiler.c.elf.cmd=riscv64-unknown-elf-gcc
 compiler.c.elf.flags= {compiler.warning_flags}
 # -Wl,--gc-sections
@@ -30,7 +31,8 @@ compiler.S.cmd=riscv64-unknown-elf-gcc
 compiler.S.flags=-c -x assembler-with-cpp
 
 compiler.cpp.cmd=riscv64-unknown-elf-g++
-compiler.cpp.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 "@{compiler.sdk.defines}" "@{compiler.sdk.cxxflags}" -MMD -DCPU_M0
+# "@{compiler.sdk.defines}" "@{compiler.sdk.cxxflags}"
+compiler.cpp.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -Wno-format -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=c++11 -Wno-error=cpp -Wextra -nostdlib -fno-rtti -fno-exceptions
 # nostdlib
 compiler.ar.cmd=riscv64-unknown-elf-ar
 compiler.ar.flags=rcs
@@ -52,13 +54,12 @@ compiler.dump.cmd = riscv64-unknown-elf-objdump
 compiler.dump.flags= --disassemble-all
 
 compiler.size.cmd=riscv64-unknown-elf-size
-compiler.define=
 
 # this can be overriden in boards.txt
 build.flags=
 build.extra_flags=
 build.extra_ldflags=
-compiler.sdk=
+compiler.sdk.path={runtime.platform.path}/tools/bouffalo_sdk
 
 # These can be overridden in platform.local.txt
 compiler.c.extra_flags=
@@ -72,20 +73,24 @@ compiler.elf2hex.extra_flags=
 compiler.dump.extra_flags=
 compiler.ld.extra_flags=
 
+compiler.c.elf.libs=-lapp -llhal -llibc -lmm -lstd -lutils -lpka -lcsi_xt900p32f_dsp -lfreertos -lshell -lbl6_os_adapter -ldhcpd -llwip -lmbedtls -lrf -lrfparam -lwifi6
+
+compiler.cpreprocessor.flags=-DARCH_RISCV -DBFLB_TIMESTAMP_TIMEZONE=8 -DBFLB_USE_HAL_DRIVER -DBFLB_USE_ROM_DRIVER -DBL616 -DBOUFFALO_SDK -DBOUFFALO_SDK_VER=\"cf71fcf5-dirty\" -DCONFIG_CLI_CMD_ENABLE -DCONFIG_COREDUMP -DCONFIG_FREERTOS -DCONFIG_IRQ_NUM=80 -DCONFIG_LIBC_FLOAT=1 -DCONFIG_LIBC_FLOAT_EX=1 -DCONFIG_LIBC_LONG_LONG=1 -DCONFIG_LOG_LEVEL=3 -DCONFIG_LWIP -DCONFIG_MAC_RXQ_DEPTH=12 -DCONFIG_MAC_TXQ_DEPTH=32 -DCONFIG_MBEDTLS -DCONFIG_MBEDTLS_AES_USE_HW -DCONFIG_MBEDTLS_ECC_USE_HW -DCONFIG_MBEDTLS_SHA1_USE_HW -DCONFIG_MBEDTLS_SHA256_USE_HW -DCONFIG_MBEDTLS_SHA512_USE_HW -DCONFIG_POSIX -DCONFIG_PSRAM -DCONFIG_SHELL -DCONFIG_STA_MAX=4 -DCONFIG_TLSF -DCONFIG_VIF_MAX=2 -DMBEDTLS_CONFIG_FILE=\"mbedtls_sample_config.h\" -DMBEDTLS_NET_C -DRFPARAM_BL616 -DWL_BL616=1 -DWL_BL618M=0 -DWL_WB03=0 -DconfigSTACK_ALLOCATION_FROM_SEPARATE_HEAP=1 -Ddefault_interrupt_handler=freertos_risc_v_trap_handler -DportasmHANDLE_INTERRUPT=interrupt_entry  "-I{compiler.sdk.path}/bsp/board/bl616dk" "-I{compiler.sdk.path}/components/crypto/mbedtls/mbedtls/include" "-I{compiler.sdk.path}/components/crypto/mbedtls/port" "-I{compiler.sdk.path}/components/crypto/mbedtls/port/hw_acc" "-I{compiler.sdk.path}/components/libc/newlib" "-I{compiler.sdk.path}/components/libc" "-I{compiler.sdk.path}/components/mm" "-I{compiler.sdk.path}/components/mm/tlsf" "-I{compiler.sdk.path}/components/net/lwip/lwip/src/include/lwip" "-I{compiler.sdk.path}/components/net/lwip/lwip/lwip-port" "-I{compiler.sdk.path}/components/net/lwip/lwip/src/include" "-I{compiler.sdk.path}/components/net/lwip/lwip/src/include/compat/posix" "-I{compiler.sdk.path}/components/net/lwip/lwip_apps/dhcpd" "-I{compiler.sdk.path}/components/os/freertos/include" "-I{compiler.sdk.path}/components/os/freertos/portable/GCC/RISC-V/common" "-I{compiler.sdk.path}/components/os/freertos/portable/GCC/RISC-V/common/chip_specific_extensions/RV32I_CLINT_no_extensions" "-I{compiler.sdk.path}/components/os/freertos/posix/include" "-I{compiler.sdk.path}/components/os/freertos/posix/include/FreeRTOS_POSIX" "-I{compiler.sdk.path}/components/shell" "-I{compiler.sdk.path}/components/utils/log" "-I{compiler.sdk.path}/components/utils/ring_buffer" "-I{compiler.sdk.path}/components/utils/bflb_block_pool" "-I{compiler.sdk.path}/components/utils/bflb_timestamp" "-I{compiler.sdk.path}/components/utils/getopt" "-I{compiler.sdk.path}/components/utils/coredump" "-I{compiler.sdk.path}/components/utils/cjson" "-I{compiler.sdk.path}/components/utils/math/include" "-I{compiler.sdk.path}/components/wireless/wifi6/inc" "-I{compiler.sdk.path}/components/wireless/wifi6/bl6_os_adapter/include" "-I{compiler.sdk.path}/drivers/lhal/include" "-I{compiler.sdk.path}/drivers/lhal/include/hardware" "-I{compiler.sdk.path}/drivers/lhal/include/compiler" "-I{compiler.sdk.path}/drivers/lhal/include/arch" "-I{compiler.sdk.path}/drivers/lhal/include/arch/risc-v/t-head" "-I{compiler.sdk.path}/drivers/lhal/include/arch/risc-v/t-head/Core/Include" "-I{compiler.sdk.path}/drivers/lhal/include/arch/risc-v/t-head/csi_dsp/include" "-I{compiler.sdk.path}/drivers/lhal/config/bl616" "-I{compiler.sdk.path}/drivers/lhal/src/flash" "-I{compiler.sdk.path}/drivers/soc/bl616/std/include" "-I{compiler.sdk.path}/drivers/soc/bl616/std/include/hardware" "-I{compiler.sdk.path}/drivers/soc/bl616/rf/inc" "-I{compiler.sdk.path}/drivers/rfparam/Inc"
+
 ## Compile patterns
 #  --------------------------------------------------------
 
 ## Compiler c files
-## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}" 
+## "@{compiler.sdk.includes}"
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.cpreprocessor.flags} {compiler.c.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.c.extra_flags} {includes} "-iprefix{build.core.path}" "{source_file}" -o "{object_file}"
 
 ## Compiler cpp files
-## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
+## "@{compiler.sdk.includes}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-iprefix{build.core.path}" "{source_file}" -o "{object_file}"
 
 ## Compiler S files
-## "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp"
-recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.core.path}" "@{compiler.sdk.includes}" "{source_file}" -o "{object_file}"
+## "@{compiler.sdk.includes}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.cpreprocessor.flags} {compiler.S.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags} {build.extra_ldflags} {compiler.define} {compiler.cpp.extra_flags} {includes} "-iprefix{build.core.path}" "{source_file}" -o "{object_file}"
 
 ## Compiler archives
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
@@ -94,7 +99,7 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compil
 recipe.hooks.linking.prelink.1.pattern="{compiler.path}{compiler.c.elf.cmd}" -E -P -x c {build.extra_ldflags} "{build.variant.path}/{build.ldscript}" -o "{build.path}/{build.ldscript}"
 
 ## Combine gc-section, archives, and objects
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "@{compiler.sdk.ldflags}" "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" --specs=nosys.specs {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--whole-archive "{build.path}/{archive_file}" {compiler.sdk.libapp} {compiler.sdk.liblhal} {compiler.sdk.liblibc} {compiler.sdk.libmm} {compiler.sdk.libstd} {compiler.sdk.libutils} {compiler.sdk.libpka} {compiler.sdk.libdsp} {compiler.sdk.libfreertos} -Wl,--no-whole-archive -Wl,--start-group {compiler.sdk.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "@{compiler.sdk.ldflags}" "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{build.variant.path}/libs" --specs=nosys.specs {compiler.ldflags} -Wl,--whole-archive {object_files} "{archive_file_path}" {compiler.c.elf.libs} -Wl,--no-whole-archive -Wl,--start-group {compiler.sdk.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group -Wl,-EL -o "{build.path}/{build.project_name}.elf"
 
 ## Create eeprom
 recipe.objcopy.eep.pattern=

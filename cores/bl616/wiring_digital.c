@@ -1,5 +1,8 @@
 #include "Arduino.h"
-#include "bouffalo_sdk.h"
+// #include "bouffalo_sdk.h"
+#include "bflb_gpio.h"
+#include "bflb_adc.h"
+#include "bflb_dac.h"
 #include "pins_arduino.h"
 #include "wiring_private.h"
 

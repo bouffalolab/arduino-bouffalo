@@ -16,7 +16,7 @@ bf_timer_t * HardwareTimer::bfTimerBegin(uint8_t timerId, uint32_t compVal)
     if(timerId >= TIMER_COMP_NONE){
         printf("timer ID out of range\r\n");
     }
-    
+
     switch(timerId){
         case 0 :  bf_timer[timerId].pdev = bflb_device_get_by_name("timer0");
             break;
@@ -27,7 +27,7 @@ bf_timer_t * HardwareTimer::bfTimerBegin(uint8_t timerId, uint32_t compVal)
         default :
             break;
     }
-    
+
     bf_timer[timerId].pcfg.counter_mode = TIMER_COUNTER_MODE_PROLOAD;
     bf_timer[timerId].pcfg.clock_source = TIMER_CLKSRC_NO;
     bf_timer[timerId].pcfg.clock_div = 9;
@@ -36,11 +36,11 @@ bf_timer_t * HardwareTimer::bfTimerBegin(uint8_t timerId, uint32_t compVal)
     bf_timer[timerId].pcfg.comp1_val = 0x00FFFFFF;
     bf_timer[timerId].pcfg.comp2_val = 0xFFFFFFFF;
     bf_timer[timerId].pcfg.preload_val = 0;
-    
+
     bflb_timer_deinit(bf_timer[timerId].pdev);
     bflb_timer_init(bf_timer[timerId].pdev, (const struct bflb_timer_config_s *)&(bf_timer[timerId].pcfg));
     bflb_timer_start(bf_timer[timerId].pdev);
-    
+
     return &(bf_timer[timerId]);
 }
 

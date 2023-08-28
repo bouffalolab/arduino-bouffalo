@@ -24,11 +24,16 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <string.h>
 #include <math.h>
 #include <stdint.h>	//Added for uint_t
 #include <stdio.h>
 
+#include "bouffalo_misc.h"
+
+#include "stdlib_noniso.h"
 // #include "api/ArduinoAPI.h"
 // #include "api/Common.h"
 
@@ -104,19 +109,21 @@ int digitalRead(uint8_t);
 void analogWrite(uint8_t, int);
 int analogRead(uint8_t);
 
-void init(void);
-unsigned long millis(void);
-unsigned long micros(void);
-void delay(unsigned long);
-void delayMicroseconds(unsigned int us);
-
-
 
 void setup(void);
 void loop(void);
 
 #ifdef __cplusplus
 } // extern "C"
+
+#include "Stream.h"
+#include "Printable.h"
+#include "Print.h"
+#include "Server.h"
+#include "WString.h"
+#include "bouffalo_misc.h"
+#include "HardwareSerial.h"
+
 #endif
 
 #include "pins_arduino.h"

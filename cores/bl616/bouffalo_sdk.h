@@ -1,11 +1,11 @@
-#ifndef _BOUFFALO_SDK_WRAP_H_
-#define _BOUFFALO_SDK_WRAP_H_
+// #ifndef _BOUFFALO_SDK_WRAP_H_
+// #define _BOUFFALO_SDK_WRAP_H_
 
-#include "Arduino.h"
+// #include <Arduino.h>
 
-// #if defined(__cplusplus)
+// // #if defined(__cplusplus)
 
-#include "bouffalo_sdk/bouffalo_sdk.h"
-// #endif // _cpluscplus
+// // #include "bouffalo_sdk/bouffalo_sdk.h"
+// // #endif // _cpluscplus
 
-#endif // _BOUFFALO_SDK_WRAP_H_
+// #endif // _BOUFFALO_SDK_WRAP_H_

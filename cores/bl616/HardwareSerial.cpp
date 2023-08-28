@@ -15,7 +15,7 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-  
+
   Modified 23 November 2006 by David A. Mellis
   Modified 28 September 2010 by Mark Sproul
   Modified 14 August 2012 by Alarus
@@ -31,7 +31,9 @@
 #include "HardwareSerial.h"
 #include "pins_arduino.h"
 
-// this next line disables the entire HardwareSerial.cpp, 
+#include "bflb_gpio.h"
+
+// this next line disables the entire HardwareSerial.cpp,
 // this is so I can support Attiny series and any other chip without a uart
 #if defined(HAVE_HWSERIAL0) || defined(HAVE_HWSERIAL1) || defined(HAVE_HWSERIAL2) || defined(HAVE_HWSERIAL3)
 
@@ -186,7 +188,7 @@ void HardwareSerial::flush()
 size_t HardwareSerial::write(uint8_t c)
 {
   bflb_uart_putchar(uart, c);
-  
+
   return 1;
 }
 

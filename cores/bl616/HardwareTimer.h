@@ -1,10 +1,10 @@
-#ifndef HardwareSerial_h
-#define HardwareSerial_h
+#ifndef HardwareTimer_h
+#define HardwareTimer_h
 
 #include <inttypes.h>
 
-#include "bouffalo_sdk.h"
-#include "./bouffalo_sdk/drivers/lhal/include/bflb_timer.h"
+// #include "bouffalo_sdk.h"
+#include "bflb_timer.h"
 
 typedef struct bflb_device_s bf_timer_dev_t;
 typedef struct bflb_timer_config_s bf_timer_cfg_t;
@@ -19,7 +19,7 @@ class HardwareTimer
     private:
         bf_timer_t bf_timer[3];
     public:
-        
+
         bf_timer_t *bfTimerBegin(uint8_t timerId, uint32_t compVal);
         void bfTimerEnd(bf_timer_t *timer);
 
