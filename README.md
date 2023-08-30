@@ -19,49 +19,91 @@ Open Boards Manager from  "**Tools->Board->Boards Manager**" menu; Find the bouf
 After the installation is complete and the correct board is selected, you can write a simple code test in Arduino, such as the following code that outputs "*Hello World*".
 
 ```c
-#include "HardwareSerial.h"
 
-unsigned long time = 0;
+#include <WiFi.h>
+
+int button_gpio = 33;
+int button_state = false;
+
+// Change the WIFI ssid and WIFI password below to yours.
+char *ssid     = "your-ssid";
+char *password = "your-password";
 
 void setup() {
-  // put your setup code here, to run once:
-  // delayMicroseconds(1000);
-  // printf("12345\r\n");
+    Serial.begin(2000000);
+    delay(10);
 
-  delayMicroseconds(1000);
-  pinMode(LED_BUILTIN, OUTPUT);
+    // set LED output
+    pinMode(LED_BUILTIN, OUTPUT);
+    // set input key SW3
+    pinMode(button_gpio, INPUT_PULLUP);
 
-  Serial.begin(2000000);
-  // wait 1ms
-  delayMicroseconds(1000);
-  Serial.write('\n');
-  Serial.write('a');
-  Serial.write('b');
-  Serial.write('c');
-  Serial.write('d');
-  Serial.write('\n');
+    WiFi.begin(ssid, password);
+    // Will try for about 10 seconds (20x 500ms)
+    int tryDelay = 500;
+    int numberOfTries = 20;
 
-  Serial.println("Input something:");
-  // wait serial input something
-  while(Serial.available() == 0) {
-  }
-  Serial.write(Serial.read());
+    while (true) {
+        switch(WiFi.status()) {
+            case WL_NO_SSID_AVAIL:
+                Serial.println("[WiFi] SSID not found");
+                break;
+            case WL_CONNECT_FAILED:
+                Serial.print("[WiFi] Failed - WiFi not connected! Reason: ");
+                return;
+                break;
+            case WL_CONNECTION_LOST:
+                Serial.println("[WiFi] Connection was lost");
+                break;
+            case WL_SCAN_COMPLETED:
+                Serial.println("[WiFi] Scan is completed");
+                break;
+            case WL_DISCONNECTED:
+                Serial.println("[WiFi] WiFi is disconnected");
+                break;
+            case WL_CONNECTED:
+                Serial.println("[WiFi] WiFi is connected!");
+                Serial.print("[WiFi] IP address: ");
+                // Serial.println(WiFi.localIP());
+                return;
+                break;
+            default:
+                Serial.print("[WiFi] WiFi Status: ");
+                Serial.println(WiFi.status());
+                break;
+        }
+        delay(tryDelay);
 
-  Serial.write('\n');
-  Serial.println("hello world!");
+        if(numberOfTries <= 0){
+          Serial.print("[WiFi] Failed to connect to WiFi!");
+          // Use disconnect function to force stop trying to connect
+          WiFi.disconnect();
+          return;
+        } else {
+          numberOfTries--;
+        }
+    }
+
 }
 
 void loop() {
-  time = millis();
-  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-  delay(1000);
-  // printf("loop!\r\n");
-  Serial.print("Timer:");
-  Serial.print(time);
-  Serial.print(" us; ");
-  Serial.println("hello world!");
+
+    button_state = digitalRead(button_gpio);
+    if (button_state == LOW)
+    {
+        // Disconnect from WiFi
+        Serial.println("[WiFi] Disconnecting from WiFi!");
+        // This function will disconnect and turn off the WiFi (NVS WiFi data is kept)
+        WiFi.disconnect();
+        Serial.println("[WiFi] Disconnected from WiFi!");
+        delay(1000);
+    }
+
+    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+    delay(1000);
+
 }
 
 ```
