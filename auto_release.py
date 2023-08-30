@@ -84,7 +84,7 @@ def create_cores_zip(source_paths, output_path, version):
                     for file in files:
                         file_path = os.path.join(root, file)
                         relative_path = os.path.relpath(file_path, source_path)
-                        arcname = os.path.join(output_path, os.path.basename(source_path), relative_path)
+                        arcname = os.path.join(output_path, os.path.relpath(source_path), relative_path)
                         zipf.write(file_path, arcname=arcname)
 
     print(f"生成压缩文件 {zip_filename} 成功！")
@@ -186,7 +186,7 @@ def main():
 
     if args.command == 'platform':
         # bouffalolab
-        bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./variants", "./libraries"]  # 源文件或文件夹的路径列表
+        bouffalolab_paths = ["boards.txt","platform.txt","./cores", "./tools/bouffalo_sdk","./variants", "./libraries"]  # 源文件或文件夹的路径列表
         bouffalolab_path = "bouffalolab"  # 输出文件的路径和名称前缀
     if args.version:
         cores_version = args.version #"1.0.2"  # 版本号
