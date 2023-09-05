@@ -1,5 +1,5 @@
 /*
-WiFiGeneric.h - Bouffalolab Wifi support.
+WiFiGeneric.cpp - Bouffalolab Wifi support.
 
 Copyright (c) 2023 BH6BAO <qqwang@bouffalolab.com>
 Copyright (c) 2023 Bouffalo Lab Intelligent Technology (Nanjing) Co., Ltd. All rights reserved.
@@ -37,7 +37,7 @@ static wifi_conf_t conf = {
 
 static TaskHandle_t wifi_fw_task;
 
-arduino_event_id_t wifi_event_id = ARDUINO_EVENT_WIFI_READY;
+arduino_event_id_t wifi_event_id = ARDUINO_EVENT_MAX;
 
 void wifi_event_handler(uint32_t code)
 {
@@ -53,7 +53,7 @@ void wifi_event_handler(uint32_t code)
         } break;
         case CODE_WIFI_ON_SCAN_DONE: {
             LOG_I("[EVENT] %s, CODE_WIFI_ON_SCAN_DONE\r\n", __func__);
-            wifi_mgmr_sta_scanlist();
+            // wifi_mgmr_sta_scanlist();
             wifi_event_id = ARDUINO_EVENT_WIFI_SCAN_DONE;
         } break;
         case CODE_WIFI_ON_CONNECTED: {

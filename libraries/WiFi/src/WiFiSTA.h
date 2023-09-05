@@ -29,6 +29,9 @@ public:
     // STA network info
     IPAddress localIP();
 
+    uint8_t * macAddress(uint8_t *mac);
+    String macAddress();
+
     // STA WiFi info
     uint8_t status();
     String SSID() const;

@@ -18,12 +18,13 @@ Copyright (c) 2023 Bouffalo Lab Intelligent Technology (Nanjing) Co., Ltd. All r
 #include "WiFiType.h"
 #include "WiFiSTA.h"
 #include "WiFiGeneric.h"
+#include "WiFiScan.h"
 
 // 5 secs of delay to have the connection established
 #define WL_DELAY_START_CONNECTION 5000
 
 
-class WiFiClass : public WiFiGenericClass, public WiFiSTAClass
+class WiFiClass : public WiFiGenericClass, public WiFiSTAClass, public WiFiScanClass
 {
 private:
     // static void init(void);
@@ -36,6 +37,11 @@ public:
     }
 
     using WiFiSTAClass::SSID;
+    using WiFiSTAClass::RSSI;
+    using WiFiSTAClass::BSSID;
+    using WiFiSTAClass::BSSIDstr;
+
+    using WiFiScanClass::SSID;
 
 public:
     void enableProv(bool status);

@@ -1,3 +1,10 @@
+/*
+WiFiType.h - Bouffalolab Wifi support.
+
+Copyright (c) 2023 BH6BAO <qqwang@bouffalolab.com>
+Copyright (c) 2023 Bouffalo Lab Intelligent Technology (Nanjing) Co., Ltd. All rights reserved.
+
+*/
 
 #ifndef BOUFFALOLAB_WIFITYPE_H__
 #define BOUFFALOLAB_WIFITYPE_H__

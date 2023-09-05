@@ -1,3 +1,10 @@
+/*
+WiFiSTA.cpp - Bouffalolab Wifi support.
+
+Copyright (c) 2023 BH6BAO <qqwang@bouffalolab.com>
+Copyright (c) 2023 Bouffalo Lab Intelligent Technology (Nanjing) Co., Ltd. All rights reserved.
+
+*/
 
 #include "WiFi.h"
 #include "WiFiGeneric.h"
@@ -17,6 +24,7 @@ extern "C" {
 #include "wifi_mgmr_ext.h"
 #include "wifi_mgmr.h"
 #include "bl616_glb.h"
+#include "bl616_ef_ctrl.h"
 #include "rfparam_adapter.h"
 
 #include "tcpip.h"
@@ -163,7 +171,7 @@ uint8_t * WiFiSTAClass::BSSID(void)
     wifi_mgmr_connect_ind_stat_info_t wifi_stat;
 
     if (wifi_mgmr_sta_connect_ind_stat_get(&wifi_stat) != 0) {
-        LOG_E("Get PSK failed!");
+        LOG_E("Get BSSID failed!");
         return NULL;
     }
     memcpy(bssid, wifi_stat.bssid, 6);
@@ -207,5 +215,28 @@ IPAddress WiFiSTAClass::localIP()
         return IPAddress();
     }
     return IPAddress(ip_addr);
+}
+
+uint8_t * WiFiSTAClass::macAddress(uint8_t *mac)
+{
+    if (status() != WL_NO_SHIELD) {
+        wifi_mgmr_sta_mac_get(mac);
+    } else {
+        EF_Ctrl_Read_MAC_Address(mac);
+    }
+    return mac;
+}
+
+String WiFiSTAClass::macAddress(void)
+{
+    uint8_t mac[6];
+    char macStr[18] = {0};
+    if (status() != WL_NO_SHIELD) {
+        wifi_mgmr_sta_mac_get(mac);
+    } else {
+        EF_Ctrl_Read_MAC_Address(mac);
+    }
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(macStr);
 }
 
