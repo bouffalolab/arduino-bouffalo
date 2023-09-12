@@ -18,13 +18,8 @@
 ###############################################################################
 */
 
-#include "FreeRTOS.h"
-#include "FreeRTOSConfig.h"
-#include "task.h"
 #include "Arduino.h"
 
-// #include "bouffalo_sdk.h"
-// #include "pins_arduino.h"
 // #include "log.h"
 
 // // Declared weak in Arduino.h to allow user redefinitions.
@@ -52,13 +47,18 @@ void loopTask(void *pvParameters){
     }
 }
 
+// extern "C" {
+// // void __dso_handle(void) {
+// //     // while(1) {
+// //     //     printf("entry!\r\n");
+// //     // }
+// // }
+// void *__dso_handle = NULL;
+// }
+
 int main(void)
 {
     init();
-    // for (;;) {
-    //     loop();
-    //     bflb_mtimer_delay_ms(1000);
-    // } // End of while loop
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

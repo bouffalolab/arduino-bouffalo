@@ -38,16 +38,18 @@ int16_t WiFiScanClass::scanNetworks(bool async, bool show_hidden, bool passive, 
     int ret = 0;
     // WiFi.init_wifi();
 
-    // while(status() != WL_IDLE_STATUS) {
-    //     delay(WL_DELAY_START_CONNECTION);
-    //     // LOG_I("wait wifi init done! %d\r\n", _sta_status);
-    // }
+    if (WiFi.get_wifi_status() == ARDUINO_EVENT_MAX) {
+        return 0;
+    }
     // scanDelete();
 
     wifi_mgmr_scan_params_t config;
     memset(&config, 0 , sizeof(wifi_mgmr_scan_params_t));
 
     ret = wifi_mgmr_sta_scan(&config);
+
+
+
     if (ret < 0) {
         printf("scan failed !\r\n");
     } else {
@@ -64,3 +66,17 @@ String WiFiScanClass::SSID(uint8_t i)
 
 }
 
+void WiFiScanClass::_scanDone()
+{
+    (WiFiScanClass::_scanCount) = wifi_mgmr_sta_scanlist_nums_get();
+    if(WiFiScanClass::_scanCount) {
+        printf("scan done:%d\r\n", WiFiScanClass::_scanCount);
+        // WiFiScanClass::_scanResult = new wifi_ap_record_t[WiFiScanClass::_scanCount];
+        // if(!WiFiScanClass::_scanResult || esp_wifi_scan_get_ap_records(&(WiFiScanClass::_scanCount), (wifi_ap_record_t*)_scanResult) != ESP_OK) {
+        //     WiFiScanClass::_scanCount = 0;
+        // }
+    }
+    WiFiScanClass::_scanStarted=0; //Reset after a scan is completed for normal behavior
+    WiFiGenericClass::setStatusBits(WIFI_SCAN_DONE_BIT);
+    WiFiGenericClass::clearStatusBits(WIFI_SCANNING_BIT);
+}

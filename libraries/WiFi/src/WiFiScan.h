@@ -20,6 +20,8 @@ public:
 
     String SSID(uint8_t networkItem);
 
+    static void _scanDone();
+
 protected:
 
     static bool _scanAsync;

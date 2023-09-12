@@ -31,6 +31,13 @@
 #include <stdint.h>	//Added for uint_t
 #include <stdio.h>
 
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+#include "event_groups.h"
+
 #include "bouffalo_misc.h"
 
 #include "stdlib_noniso.h"

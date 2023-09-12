@@ -22,9 +22,14 @@ void call_constructors() {
     }
 }
 
+extern "C" {
+    extern void __libc_init_array();
+}
+
 void init(void)
 {
-    call_constructors();
+    // call_constructors();
+    __libc_init_array();
     board_init();
 }
 
