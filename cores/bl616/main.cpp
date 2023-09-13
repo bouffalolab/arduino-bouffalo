@@ -41,6 +41,7 @@ void loopTask(void *pvParameters){
     setup();
 
     for(;;){
+
         loop();
         // bflb_mtimer_delay_ms(1000);
         // delay(1000);
@@ -63,7 +64,7 @@ int main(void)
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     //freertos
-    xTaskCreate(loopTask, (char *)"loop_task", 512, NULL, configMAX_PRIORITIES - 1, &loop_task_handle);
+    xTaskCreate(loopTask, (char *)"loop_task", 512, NULL, 1, &loop_task_handle);
 
     vTaskStartScheduler();
 

@@ -70,7 +70,7 @@ void WiFiScanClass::_scanDone()
 {
     (WiFiScanClass::_scanCount) = wifi_mgmr_sta_scanlist_nums_get();
     if(WiFiScanClass::_scanCount) {
-        printf("scan done:%d\r\n", WiFiScanClass::_scanCount);
+        // printf("scan done:%d\r\n", WiFiScanClass::_scanCount);
         // WiFiScanClass::_scanResult = new wifi_ap_record_t[WiFiScanClass::_scanCount];
         // if(!WiFiScanClass::_scanResult || esp_wifi_scan_get_ap_records(&(WiFiScanClass::_scanCount), (wifi_ap_record_t*)_scanResult) != ESP_OK) {
         //     WiFiScanClass::_scanCount = 0;
