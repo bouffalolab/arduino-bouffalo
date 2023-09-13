@@ -42,6 +42,11 @@ public:
     using WiFiSTAClass::BSSIDstr;
 
     using WiFiScanClass::SSID;
+    // using WiFiScanClass::encryptionType;
+    using WiFiScanClass::RSSI;
+    // using WiFiScanClass::BSSID;
+    // using WiFiScanClass::BSSIDstr;
+    using WiFiScanClass::channel;
 
 public:
     void enableProv(bool status);

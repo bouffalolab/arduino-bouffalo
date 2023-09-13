@@ -199,8 +199,21 @@ int WiFiGenericClass::_eventCallback(arduino_event_t *event)
 
     LOG_D("Arduino Event: %d - %s", event->event_id, WiFi.eventName(event->event_id));
 
-    if(event->event_id == ARDUINO_EVENT_WIFI_SCAN_DONE) {
-        WiFiScanClass::_scanDone();
+    // if(event->event_id == ARDUINO_EVENT_WIFI_SCAN_DONE) {
+    //     WiFiScanClass::_scanDone();
+    // }
+    switch (event->event_id) {
+        case ARDUINO_EVENT_WIFI_SCAN_DONE : {
+            WiFiScanClass::_scanDone();
+        }
+        break;
+        // case ARDUINO_EVENT_WIFI_STA_GOT_IP : {
+        //     WiFiSTAClass::_setStatus();
+        // }
+        // break;
+
+        default:
+            break;
     }
 
     return 0;
@@ -348,4 +361,23 @@ int WiFiGenericClass::clearStatusBits(int bits){
         return 0;
     }
     return xEventGroupClearBits(_arduino_event_group, bits);
+}
+
+int WiFiGenericClass::getStatusBits(){
+    if(!_arduino_event_group){
+        return 0;
+    }
+    return xEventGroupGetBits(_arduino_event_group);
+}
+
+int WiFiGenericClass::waitStatusBits(int bits, uint32_t timeout_ms){
+    if(!_arduino_event_group){
+        return 0;
+    }
+    return xEventGroupWaitBits(
+        _arduino_event_group,    // The event group being tested.
+        bits,  // The bits within the event group to wait for.
+        pdFALSE,         // BIT_0 and BIT_4 should be cleared before returning.
+        pdTRUE,        // Don't wait for both bits, either bit will do.
+        timeout_ms / portTICK_PERIOD_MS ) & bits; // Wait a maximum of 100ms for either bit to be set.
 }
