@@ -1,5 +1,5 @@
 # Arduino core for the BouffaloLab chips
-[![Release](https://img.shields.io/github/v/release/strongwong/arduino-bl618?style=plastic)](https://github.com/strongwong/arduino-bl618/releases)
+[![Release](https://img.shields.io/github/v/release/bouffalolab/arduino-bouffalo?style=plastic)](https://github.com/bouffalolab/arduino-bouffalo/releases)
 
 Now start to support BL616/8 chips, other chips to be developed later.
 
