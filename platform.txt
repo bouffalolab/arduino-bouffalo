@@ -21,10 +21,10 @@ compiler.define="-I{compiler.path}../riscv64-unknown-elf/include"
 
 compiler.c.cmd=riscv64-unknown-elf-gcc
 # "@{compiler.sdk.defines}" "@{compiler.sdk.cflags}"
-compiler.c.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=gnu99
+compiler.c.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -nostdlib -fno-exceptions -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=gnu99
 compiler.c.elf.cmd=riscv64-unknown-elf-gcc
-compiler.c.elf.flags= {compiler.warning_flags}
-# -Wl,--gc-sections
+compiler.c.elf.flags= {compiler.warning_flags} -Wl,--cref -Wl,--gc-sections -nostartfiles -fno-use-cxa-atexit -nostdlib -fno-rtti -fno-exceptions -fms-extensions -ffunction-sections -fdata-sections -ufw_header -Wl,-wrap,snprintf -Wl,-wrap,sprintf -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907
+# -nostartfiles
 
 compiler.S.cmd=riscv64-unknown-elf-gcc
 # compiler.S.cmd=riscv64-unknown-elf-as
@@ -32,7 +32,7 @@ compiler.S.flags=-c -x assembler-with-cpp
 
 compiler.cpp.cmd=riscv64-unknown-elf-g++
 # "@{compiler.sdk.defines}" "@{compiler.sdk.cxxflags}"
-compiler.cpp.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -Wno-format -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=c++11 -Wno-error=cpp -Wextra -nostdlib -fno-rtti -fno-exceptions
+compiler.cpp.flags=-c {compiler.warning_flags} -D__riscv -D__riscv_xlen=32 -g3 -fno-jump-tables -fno-common -fno-use-cxa-atexit -fms-extensions -ffunction-sections -fdata-sections -fmessage-length=0 -Wall -Wchar-subscripts -Wformat -Wundef -Wuninitialized -Winit-self -Wignored-qualifiers -fstrict-volatile-bitfields -fshort-enums -MMD -Wno-error=unused-variable -Wno-error=format= -Wno-error=unused-function -Wno-error=implicit-function-declaration -Wno-error=deprecated-declarations -Wno-format -fstack-usage -save-temps=obj -O2 -fno-builtin -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907 -std=gnu++11 -Wno-error=cpp -Wextra -nostdlib -fno-rtti -fno-exceptions
 # nostdlib
 compiler.ar.cmd=riscv64-unknown-elf-ar
 compiler.ar.flags=rcs
@@ -49,6 +49,8 @@ compiler.elf2hex.hex.flags=-O ihex -R .eeprom
 compiler.ld.cmd = riscv64-unknown-elf-gcc
 compiler.ldflags=
 compiler.libraries.ldflags=
+compiler.ld.libs=-lm -lgcc -lc
+# -lstdc++
 
 compiler.dump.cmd = riscv64-unknown-elf-objdump
 compiler.dump.flags= --disassemble-all
@@ -98,8 +100,8 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compil
 ## Preprocess linker script
 recipe.hooks.linking.prelink.1.pattern="{compiler.path}{compiler.c.elf.cmd}" -E -P -x c {build.extra_ldflags} "{build.variant.path}/{build.ldscript}" -o "{build.path}/{build.ldscript}"
 
-## Combine gc-section, archives, and objects
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "@{compiler.sdk.ldflags}" "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{build.variant.path}/libs" --specs=nosys.specs {compiler.ldflags} -Wl,--whole-archive {object_files} "{archive_file_path}" {compiler.c.elf.libs} -Wl,--no-whole-archive -Wl,--start-group {compiler.sdk.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group -Wl,-EL -o "{build.path}/{build.project_name}.elf"
+## Combine gc-section, archives, and objects {compiler.sdk.extra_ldflags} "@{compiler.sdk.ldflags}"
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} "-T{build.path}/{build.ldscript}" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{build.variant.path}/libs" --specs=nosys.specs {compiler.ldflags} -Wl,--whole-archive {object_files} "{archive_file_path}" {compiler.c.elf.libs} -Wl,--no-whole-archive -Wl,--start-group {compiler.ld.libs} -Wl,--end-group -Wl,-EL -o "{build.path}/{build.project_name}.elf"
 
 ## Create eeprom
 recipe.objcopy.eep.pattern=
@@ -120,7 +122,7 @@ compiler.output.bflb_fw_post_proc.cmd.windows=bflb_fw_post_proc.exe
 compiler.output.bflb_fw_post_proc.cmd.linux=bflb_fw_post_proc-ubuntu
 compiler.output.bflb_fw_post_proc.cmd.macosx=bflb_fw_post_proc-macos
 # compiler.output.bflb_fw_post_proc.preupload.params=
-recipe.objcopy.wholebin.pattern="{compiler.output.bflb_fw_post_proc.path}/{compiler.output.bflb_fw_post_proc.cmd}" --chipname={build.core} --brdcfgdir={compiler.sdk.wholebin_conf_path} --imgfile={build.path}\{build.project_name}.bin
+recipe.objcopy.wholebin.pattern="{compiler.output.bflb_fw_post_proc.path}/{compiler.output.bflb_fw_post_proc.cmd}" --chipname={build.core} --brdcfgdir={compiler.sdk.wholebin_conf_path} --imgfile={build.path}/{build.project_name}.bin
 
 ## Compute size
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
@@ -141,5 +143,5 @@ tools.bflb_flash_tools.upload.params.verbose=
 tools.bflb_flash_tools.upload.params.quiet=
 tools.bflb_flash_tools.upload.protocol=uart
 
-tools.bflb_flash_tools.upload.pattern="{path}/{cmd}" --interface={upload.protocol} --chipname=bl616 --port={serial.port} --baudrate={upload.speed} --firmware={build.path}\{build.project_name}.bin
+tools.bflb_flash_tools.upload.pattern="{path}/{cmd}" --interface={upload.protocol} --chipname=bl616 --port={serial.port} --baudrate={upload.speed} --firmware={build.path}/{build.project_name}.bin
 

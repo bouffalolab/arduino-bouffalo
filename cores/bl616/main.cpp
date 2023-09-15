@@ -27,6 +27,10 @@
 
 // Weak empty variant initialization function.
 // May be redefined by variant files.
+
+extern  "C" {
+__attribute__((weak)) void wifi_event_handler() { }
+}
 void initVariant() __attribute__((weak));
 void initVariant() { }
 
