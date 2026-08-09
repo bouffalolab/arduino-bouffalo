@@ -1,0 +1,25 @@
+CONFIG_NEWLIB               =n
+CONFIG_NEWLIB_STANDARD      =n
+
+CONFIG_VSNPRINTF_NANO       =n
+CONFIG_VSNPRINTF_FLOAT      =n
+CONFIG_VSNPRINTF_FLOAT_EX   =n
+CONFIG_VSNPRINTF_LONG_LONG  =y
+CONFIG_SCANF_FLOAT          =n
+CONFIG_SCANF_FLOAT_EX       =n
+
+CONFIG_BFLB_LOG             =n
+CONFIG_FREERTOS             =y
+CONFIG_BACKTRACE            =n
+CONFIG_COREDUMP              =n
+CONFIG_PSRAM                =n
+CONFIG_RF                   =n
+CONFIG_CHERRYUSB            =n
+CONFIG_PEC_V2               =n
+CONFIG_MULTIMEDIA_VIDEO     =n
+CONFIG_GCC_COMPILE_LTO      =n
+CONFIG_TLSF                 =y
+CONFIG_DEBUG                =y
+CONFIG_ROMAPI               =y
+CONFIG_LOG_LEVEL            =3
+CONFIG_CONSOLE_UART_BAUDRATE=2000000

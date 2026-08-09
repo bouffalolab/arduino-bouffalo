@@ -1,0 +1,68 @@
+# Arduino BL616CL platform — stage 1
+
+This local Linux x86-64 development platform implements FQBN
+`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Windows and
+macOS host packages are not yet supplied.
+
+The platform is self-contained for normal Arduino compilation: it does not
+reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
+
+    hardware/bouffalo/bl616cl/
+    ├── cores/bl616cl/                  Arduino Core sources
+    ├── variants/unor4_bl616cl/         board pins/BSP archive/boot assets
+    ├── tools/sdk/bl616cl/{include,lib,ld}
+    ├── tools/runtime_bundle/           offline SDK bundle builder
+    └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
+
+The SDK checkout is needed only when deliberately regenerating the checked-in
+runtime bundle.
+
+Implemented:
+
+- standard Arduino `.ino` preprocessing and `setup()`/`loop()` runtime;
+- C/C++ global constructors;
+- BL616CL board startup and FreeRTOS scheduler;
+- GPIO and `LED_BUILTIN` stage-1 mapping;
+- `millis()`, `micros()`, `delay()`, and `delayMicroseconds()`;
+- console `Serial` on BL616CL DK UART0 (GPIO34 TX / GPIO35 RX, 2 Mbit/s);
+- `Serial1` polling UART on GPIO24 TX / GPIO25 RX;
+- C++17 with exceptions and RTTI disabled;
+- `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
+- modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
+
+The variant mapping is for compile/bring-up on `bl616cldk`, not the final UNO R4
+carrier. GPIO32/33 remain reserved for USB. Confirm the production schematic
+before connecting RA4M1 signals. The stage-1 4 MiB partition limits the primary
+firmware slot to 2 MiB; eFuse files are exported for traceability but are not
+burned by the normal Arduino upload action.
+
+## Runtime bundle maintenance
+
+The bundle is generated from the pinned Gerrit SDK rather than during each
+Arduino build:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /home/pfchen/workspace/bouffalo_sdk_gerrit/bouffalo_sdk \
+      --toolchain-bin /path/to/Xuantie-900-gcc/bin
+
+See `tools/runtime_bundle/README.md` for source commits, output ownership, and
+update rules.
+
+## Verify M0
+
+    arduino-cli board details \
+      --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl
+
+## Compile M1 smoke sketches
+
+    arduino-cli compile --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
+      hardware/bouffalo/bl616cl/examples/Blink
+
+    arduino-cli compile --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
+      hardware/bouffalo/bl616cl/examples/Serial
+
+The final bridge sketch remains a later milestone; stage 1 intentionally does
+not provide ESP32 USB/Wi-Fi compatibility APIs.

@@ -1,0 +1,21 @@
+unor4_bl616cl.name=UNO R4 WiFi BL616CL (Stage 1)
+unor4_bl616cl.vid.0=0x0000
+unor4_bl616cl.pid.0=0x0000
+
+unor4_bl616cl.build.mcu=bl616cl
+unor4_bl616cl.build.board=UNOR4_BL616CL
+unor4_bl616cl.build.core=bl616cl
+unor4_bl616cl.build.variant=bl616cldk
+unor4_bl616cl.build.extra_flags=-DBL616CL_STAGE1=1
+unor4_bl616cl.build.partition_config=partition_cfg_4M.toml
+unor4_bl616cl.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4_bl616cl.build.dts_config=bl_factory_params_IoTKitA_auto.dts
+
+unor4_bl616cl.upload.tool=blflash
+unor4_bl616cl.upload.tool.default=blflash
+unor4_bl616cl.upload.protocol=uart
+unor4_bl616cl.upload.speed=2000000
+# The stage-1 partition gives the primary FW slot 0x200000 bytes.
+unor4_bl616cl.upload.maximum_size=2097152
+# BL616CL SRAM is 384 KiB minus the 64 KiB Wi-Fi reservation in this profile.
+unor4_bl616cl.upload.maximum_data_size=327680

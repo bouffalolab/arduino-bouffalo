@@ -1,0 +1,1210 @@
+{
+  "abi": {
+    "cxx_standard": "gnu++17",
+    "exceptions": false,
+    "freertos": true,
+    "mabi": "ilp32f",
+    "march": "rv32imafc_xtheade",
+    "mtune": "e907",
+    "rtti": false,
+    "short_enums": true
+  },
+  "board": "bl616cldk",
+  "chip": "bl616cl",
+  "files": {
+    "defconfig": {
+      "sha256": "1d1af364dd599d5e0b8a7ba3b73f62e5499bcb57befa4b60a52942474f2b1fbe",
+      "size": 722
+    },
+    "include/autoconf.h": {
+      "sha256": "049b7c0ab9d0c3987bfff30c0dacb364f299287950e3e8ca0083cfce495c7f38",
+      "size": 1137
+    },
+    "include/freertos/FreeRTOS.h": {
+      "sha256": "96388ebce5d1408a4bda5e3abc49ab3c0190a9500fc53ebac1021720e06b437c",
+      "size": 51224
+    },
+    "include/freertos/FreeRTOSConfig.h": {
+      "sha256": "08e7630572443ab3b7667ae1a9678e921a9d3079752df9a76a9d9e6669a27723",
+      "size": 3181
+    },
+    "include/freertos/StackMacros.h": {
+      "sha256": "59ef7acd70f9c03d76f5760ea82083836530ad05a22aa71d0fa3d5c85b3823bf",
+      "size": 1574
+    },
+    "include/freertos/atomic_rtos.h": {
+      "sha256": "cafe39eff8bd9b939a8281f2f857b0ed9929ec88dd45ddaed94b704712b0ec59",
+      "size": 12842
+    },
+    "include/freertos/chip_specific/freertos_risc_v_chip_specific_extensions.h": {
+      "sha256": "21ea2f8105441889ff0512bf8c439e473af8fc64d2fb744f02ed3e71045ae53a",
+      "size": 3084
+    },
+    "include/freertos/croutine.h": {
+      "sha256": "8370d72396dc750756cdb7b4885067fbfce09a99c0bdd4c2bfa27e377b982ad3",
+      "size": 28324
+    },
+    "include/freertos/deprecated_definitions.h": {
+      "sha256": "f9b59a4e21ccfde9c368b401e0b1e871e37c209c87b6b711d3cf59e9c7410617",
+      "size": 7519
+    },
+    "include/freertos/event_groups.h": {
+      "sha256": "d500546032a8baa03213188773e0db6e5da83bdae75425c239243150551b054c",
+      "size": 34883
+    },
+    "include/freertos/list.h": {
+      "sha256": "9d2af9ab5f2965f2629d1767a95695065429b06807dd8755565dfc4a5a00ac6e",
+      "size": 23874
+    },
+    "include/freertos/message_buffer.h": {
+      "sha256": "857e89e8545526904c8f4be0da752a8736a00b03a401af77cd6727dd3f362bde",
+      "size": 41479
+    },
+    "include/freertos/mpu_prototypes.h": {
+      "sha256": "dca0190f8a0422bf5f2e5b534d510b2a1d086deb89a882ddc0ff7b08f5723dba",
+      "size": 25360
+    },
+    "include/freertos/mpu_syscall_numbers.h": {
+      "sha256": "ae20c5d9231d7efa4d8bed729227357dce71e70e4de0e4296889d4f287deb155",
+      "size": 5923
+    },
+    "include/freertos/mpu_wrappers.h": {
+      "sha256": "650decac08ce3bed20a8a260dfcdcd3d4d71e72ac5ce0f7a9a504f17d18b61c5",
+      "size": 18022
+    },
+    "include/freertos/newlib-freertos.h": {
+      "sha256": "4f37a715d2b1a9e44acb6816fd407a5a5356cf4307df2302c3b5d40fa46bc68d",
+      "size": 2467
+    },
+    "include/freertos/picolibc-freertos.h": {
+      "sha256": "63f9b72093f0cb947f28e5a27d7cc73ae34923271a40f2ad4c16704f0a402a57",
+      "size": 4359
+    },
+    "include/freertos/portable.h": {
+      "sha256": "37b05c5b3020193e8e53c164133f5eaf51e47849a02b6fcd1b8898929c002c04",
+      "size": 11858
+    },
+    "include/freertos/portable/chip_specific_extensions/Pulpino_Vega_RV32M1RM/freertos_risc_v_chip_specific_extensions.h": {
+      "sha256": "4c5cc493f234a9a8627a1576b6ec0f423b060d6a4dbf5605e444cb3a46f66350",
+      "size": 4568
+    },
+    "include/freertos/portable/chip_specific_extensions/RISCV_MTIME_CLINT_no_extensions/freertos_risc_v_chip_specific_extensions.h": {
+      "sha256": "f412d5637e6ff7e1fc2651760951678dbecd2131ac69222933196ffe56431251",
+      "size": 3061
+    },
+    "include/freertos/portable/chip_specific_extensions/RISCV_no_extensions/freertos_risc_v_chip_specific_extensions.h": {
+      "sha256": "1a47cf3188ddeb4b38094af39cd0005ad06e4a432c4ad0e9a77f6971c78cd654",
+      "size": 3061
+    },
+    "include/freertos/portable/chip_specific_extensions/RV32I_CLINT_no_extensions/freertos_risc_v_chip_specific_extensions.h": {
+      "sha256": "21ea2f8105441889ff0512bf8c439e473af8fc64d2fb744f02ed3e71045ae53a",
+      "size": 3084
+    },
+    "include/freertos/portable/portContext.h": {
+      "sha256": "d7a8e0bfb595bf37f25fa679ca868f608a2f052cb6a3c6e9684fedcdd10da084",
+      "size": 14709
+    },
+    "include/freertos/portable/portmacro.h": {
+      "sha256": "f90ac7fa1b6a9c3925d46f1b6dcf1e154e78a713db5fd40553d7573ace9761ad",
+      "size": 8422
+    },
+    "include/freertos/projdefs.h": {
+      "sha256": "ad7cbe1ab8f342f6176824e4224e3d820d25cbc37ee3bc19331d9e6e07b028e6",
+      "size": 6951
+    },
+    "include/freertos/queue.h": {
+      "sha256": "33950fea4caa4c7c68dc0f532c0d7e8ca2f32e1ebd9fb87bc9e6698a6d6b0fb9",
+      "size": 67574
+    },
+    "include/freertos/semphr.h": {
+      "sha256": "8cb37f2e662d365e6a21437e1fd2ab8166f3c1ed95c46bc8c5609586c9a3dc81",
+      "size": 50160
+    },
+    "include/freertos/stack_macros.h": {
+      "sha256": "743425393d3919156b515da5f71769eb2edfc0cdf215c2cbbcb61669289c582c",
+      "size": 8567
+    },
+    "include/freertos/stream_buffer.h": {
+      "sha256": "70d9fc6bb35520e897d9ccff0a2fb3271268fdf43a7a7f02c4f4fc6f9c22cdc0",
+      "size": 43199
+    },
+    "include/freertos/task.h": {
+      "sha256": "2c4455d212854b93e917ef2e035185363437ea59a29402808e0b49035e53f2fa",
+      "size": 143022
+    },
+    "include/freertos/timers.h": {
+      "sha256": "2bf6ece5c1b50889066190774f412751e31abc005ee9e153f0e05fac081dca99",
+      "size": 64378
+    },
+    "include/sdk/flash/bflb_flash_secreg.h": {
+      "sha256": "220c7a7a257958e1a698076938660477ec1750adb8969fa163a8d5941a70b55f",
+      "size": 6795
+    },
+    "include/sdk/flash/bflb_flash_secreg_port.h": {
+      "sha256": "b5daaffa789cf4274495bfea7232ca9c83c140b5551ef4fc11c5542b21fe6c35",
+      "size": 3334
+    },
+    "include/sdk/flash/bflb_sf_cfg.h": {
+      "sha256": "3985acdc12b203f45eef10a458c5959318dbcbe03991507c049bf14f7b7fd8ff",
+      "size": 10321
+    },
+    "include/sdk/flash/bflb_sf_ctrl.h": {
+      "sha256": "7e195e0aedf84c85575f8ef111cbe6d4a6ebb99f7c313234ef7a40438407aa62",
+      "size": 30672
+    },
+    "include/sdk/flash/bflb_sflash.h": {
+      "sha256": "675ee16cddfddb41bcd4d02787fedeee73f62413103667ed53fb4191886591d2",
+      "size": 12962
+    },
+    "include/sdk/flash/bflb_xip_sflash.h": {
+      "sha256": "76096e0a9bd985c6a377582c865c67f43edb5d10ca2e54d250ba36814bfa6fd8",
+      "size": 4433
+    },
+    "include/sdk/lhal-config/bflb_lhal_romapi_patch.h": {
+      "sha256": "f8af264b322e562255ae3dbf316606ae37a227e67d15763d1194e8f47c3494dc",
+      "size": 2252
+    },
+    "include/sdk/lhal-config/bflb_lhal_romdriver.h": {
+      "sha256": "b1bf22b4a3137a7cfccf4e3a585005090cb36ac529e2d2895a0bc0e208c2519c",
+      "size": 62698
+    },
+    "include/sdk/lhal-config/bl616cl_irq.h": {
+      "sha256": "66cd5f359bd566676487c44736d27e4de5319dfd6c296a88dc9785d174e41886",
+      "size": 6268
+    },
+    "include/sdk/lhal-config/bl616cl_memorymap.h": {
+      "sha256": "e407c5def53181dc868592d229cc7465f4a5ef30464f75e9784734ec069c63b2",
+      "size": 6786
+    },
+    "include/sdk/lhal/arch/risc-v/bflb_rv_privilege.h": {
+      "sha256": "8354e4ecff1692df96b623153e002afa10360cee35b910aad7d3885c970a879b",
+      "size": 1690
+    },
+    "include/sdk/lhal/arch/risc-v/csr.h": {
+      "sha256": "9109dd5dbd0904cb0193265ec10f9c8b3d55e2ec55716709084afe7519bf750d",
+      "size": 12182
+    },
+    "include/sdk/lhal/arch/risc-v/e24/clic.h": {
+      "sha256": "58f14a6e8ba717cf85cabbec9e0fd380057e60f81098c48120b3e618efc7832a",
+      "size": 436
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_compatiable.h": {
+      "sha256": "c884e47c34378226da53d3e85959143d20fafe47e661b31c7434723c30a74560",
+      "size": 9231
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_base.h": {
+      "sha256": "9e14821b87480bbf16b779a6397edd414b163dcca570bae406d1c6b3ef6bfcf8",
+      "size": 111049
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_bitmanip.h": {
+      "sha256": "5e340dac1231a8604f63052acc1c3cf39dfc8ce2ecbf3550ed6f3272792087c6",
+      "size": 2255
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_cache.h": {
+      "sha256": "46276b6864afd5e19d75b6d926bd4948107674115f38ef90a796c2ef77c518e1",
+      "size": 67007
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_cidu.h": {
+      "sha256": "7d4ea248ee711487048c62cfc1600eb9f64277fff9161f6f2e403c61cd31d446",
+      "size": 17679
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_dsp.h": {
+      "sha256": "1edf4a8158df47cfdf6db8c2b769f31a8ee49f1376a94f093fd05742c45ba2ae",
+      "size": 896877
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_eclic.h": {
+      "sha256": "d83e13d9584c82ffb8d35782a6ea215bc7e90bc08ee1b47a38cb105185306dd6",
+      "size": 49571
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_fpu.h": {
+      "sha256": "368c7e62e72f0c7556253030859293dcaef0ee79d12d1c9acd1f067a4a4c79fa",
+      "size": 14676
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_plic.h": {
+      "sha256": "00ee0a5eba5ca175170c432654ea9c43920564740b395784d736562a5d67c134",
+      "size": 15672
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_pma.h": {
+      "sha256": "9c5bb2ff95d6c7dcd5c84ea09158556f11ee36028682e9459fa3f643e3061d26",
+      "size": 18106
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_pmp.h": {
+      "sha256": "1eb950cfdae5e9eca4c8062429440ab9387d4d663eb7ef80f1412f9108846359",
+      "size": 17743
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_spmp.h": {
+      "sha256": "ce464dbbec3527876f306e2fc895aeca9092616a9092282716eadc65028b62c0",
+      "size": 17406
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_timer.h": {
+      "sha256": "94277d04ba9f12c02c0532a30b57cfe719dc28c7f040dd29f642132a31ad8306",
+      "size": 38666
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/core_feature_vector.h": {
+      "sha256": "b7d0a001e5a27533a6b5efd85cc97bbbcbbabd658dd1c1d333ab59811448e826",
+      "size": 2882
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_bench.h": {
+      "sha256": "f6436ce999b7ecf16421c55bf3b63e52d164075b01277b590fc7cccf29d92227",
+      "size": 20994
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_compiler.h": {
+      "sha256": "f4122d81ea7f0ff702f8f617a58f8f16a702f3635e601fb3792385b36dc1a5bb",
+      "size": 3525
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_core.h": {
+      "sha256": "5189c5b5bfbbd0e9c57e7a93a51d20566708b9a4014e80ec3e7cdd726a99d4bb",
+      "size": 3563
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_gcc.h": {
+      "sha256": "7114e54771bbc3845c693906b56343625d8b0e5285ca7916be38659abac53241",
+      "size": 6960
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_iar.h": {
+      "sha256": "d63925d4b02eb5c56cbee0ef0a0612451e3fe37f5897d4eaa1e52a2d9725e865",
+      "size": 6599
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/nmsis_version.h": {
+      "sha256": "de921632366fcf8b1e65257d89935af4a24a5f629737d7d353355beee2e708b5",
+      "size": 2860
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/riscv_bits.h": {
+      "sha256": "487b5ad8385715c61b7a629592212b86a24ef362d4cf4783c7746dc51bef2e9a",
+      "size": 2706
+    },
+    "include/sdk/lhal/arch/risc-v/n900/Core/Include/riscv_encoding.h": {
+      "sha256": "f063a6c2932f2e785871c04c65ca607724640d22b948691a2ba96ff1e41c2a25",
+      "size": 47055
+    },
+    "include/sdk/lhal/arch/risc-v/riscv_arch.h": {
+      "sha256": "f151b7c6d3a8d7caa0f401b5eb2b1229f007ba828ed450a33a04a7987f568fdb",
+      "size": 812
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/Core/Include/core_rv32.h": {
+      "sha256": "a253b4036fa6239fc0d4b150c3618dd4120dbe0264fd82c793f007c0e6ba0189",
+      "size": 43840
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/Core/Include/core_rv64.h": {
+      "sha256": "88e3142e964d3a476e7eecaf2d5de8c3ba5fc59c57bd684bd0b3001b0cc1d9fd",
+      "size": 35987
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/Core/Include/csi_core.h": {
+      "sha256": "304c4b533fc4744460a174657fb402c4078780d3cb3c8db12424e99345c66052",
+      "size": 1872
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/Core/Include/csi_rv32_gcc.h": {
+      "sha256": "a2b9f9d47c5b79330205f3b16e221d618d7ec169e86fbdc6e90835e899e5e294",
+      "size": 112910
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/Core/Include/csi_rv64_gcc.h": {
+      "sha256": "f877f840f92820c3a1ee78d7926c4dc50213166fd1a1b0fba335232238d7ef01",
+      "size": 110566
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/csi_dsp/include/csi_common_tables.h": {
+      "sha256": "828d7ade45fca76a28c90cd09290c6a84eb4865c6b1684eac1da005370e22027",
+      "size": 14956
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/csi_dsp/include/csi_const_structs.h": {
+      "sha256": "ed15bd063aa946258ead0bf11901eb63eae3f53dad440b0bf5928e71be85c248",
+      "size": 8634
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/csi_dsp/include/csi_instance.h": {
+      "sha256": "fa2275a148fcd1505f94d82b6a6f48e3d845dd90fce36db3ec2409f83a05e8f7",
+      "size": 68289
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/csi_dsp/include/csi_math.h": {
+      "sha256": "240521c15595afcc389f0358b4dbbc4af05f0381dcc6507a05b08e7f5adb3c9e",
+      "size": 195007
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/rv_Sv39.h": {
+      "sha256": "a6535b60174eab77acd64a1a24a790eca10c2d1a3ad9e6ae50680e9da5e512ad",
+      "size": 5435
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/rv_hart.h": {
+      "sha256": "4588e22e992717c81239ede9508c3a6bd797c6088d364494d873e88ff06d3601",
+      "size": 441
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/rv_hpm.h": {
+      "sha256": "c6ca8d6c620b3727a0ca61ae4c77d91f3587ea00865523b7e07ef14df90a2f11",
+      "size": 10816
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/rv_pmp.h": {
+      "sha256": "a86a23b0be5cf819c91199a63d53b0ca526c98edd15baa2156f6c2d8fc839928",
+      "size": 2374
+    },
+    "include/sdk/lhal/arch/risc-v/t-head/rv_syscall.h": {
+      "sha256": "0012494a998f91cdf8e511fafe8bae9b246a35524be8d3c32d45875fa4136b5f",
+      "size": 1692
+    },
+    "include/sdk/lhal/bflb_acomp.h": {
+      "sha256": "8974a9c84c66028cb84410cf8753bafcb3d17f53058c9555fd98d31c7037216b",
+      "size": 7235
+    },
+    "include/sdk/lhal/bflb_adc.h": {
+      "sha256": "9441184932001213aaf4eaaf741faac3c34a2eb141ac6ec41dd9d384d46191fd",
+      "size": 8548
+    },
+    "include/sdk/lhal/bflb_adc_v2.h": {
+      "sha256": "2bcee1ec53945e2c9b834a4b5d9e6decd1a58cd87551711f1211c6a3c460835e",
+      "size": 13506
+    },
+    "include/sdk/lhal/bflb_adc_v3.h": {
+      "sha256": "a9b197509c1e6e975c2b8c9c70411944652530ef3ea13ecae805cd32e378d683",
+      "size": 18430
+    },
+    "include/sdk/lhal/bflb_auadc.h": {
+      "sha256": "d383fd3c744bc62fe7b8ba1c6d3995d6618411852b5a15c1dde3dc6634dc66b7",
+      "size": 8441
+    },
+    "include/sdk/lhal/bflb_audac.h": {
+      "sha256": "0a0810af654cf7c0621170d5c0944f9f6ee6e6b012a39b81aa64a44c91ff0d9a",
+      "size": 8385
+    },
+    "include/sdk/lhal/bflb_cam.h": {
+      "sha256": "fb295e32f42dfe6f03ed32425b906addce98ee239d42e263204b48143e1f6729",
+      "size": 8392
+    },
+    "include/sdk/lhal/bflb_canfd.h": {
+      "sha256": "9af3dbdc0b56075c7041382c14c29dd7eb7ca643da58990d79f068f1dc0eb67f",
+      "size": 19799
+    },
+    "include/sdk/lhal/bflb_cks.h": {
+      "sha256": "7e3a20634f7b9f74c6cfe1b95aec99d34aed73775c1e729ce3e8c7288580bcc3",
+      "size": 1032
+    },
+    "include/sdk/lhal/bflb_clock.h": {
+      "sha256": "8ecda7a44caaddcd12b01c9987edd12e4dd19c60bcbe7af5a390a2a2ea965100",
+      "size": 14860
+    },
+    "include/sdk/lhal/bflb_common.h": {
+      "sha256": "ee76165749d3c985e9dfb94282adc917673ce6226c472c4697c13596929db3c9",
+      "size": 3953
+    },
+    "include/sdk/lhal/bflb_core.h": {
+      "sha256": "a5fc46be92368491d967eaefd1184f106edfb7097b27efe6548a5166f41f97e1",
+      "size": 4275
+    },
+    "include/sdk/lhal/bflb_dac.h": {
+      "sha256": "88a6ae4161963a2ead9ff8aa96cbb7fa9ad65619c36df1f302a8a62344b1c143",
+      "size": 2889
+    },
+    "include/sdk/lhal/bflb_dbi.h": {
+      "sha256": "b10de334a3bc00dee35709ced8949af9f2fbced59b9d317cc9135cbb9016e07c",
+      "size": 11633
+    },
+    "include/sdk/lhal/bflb_dma.h": {
+      "sha256": "187b0f72eedb0d2c2c10069cc77494006ea982d6583c0e5e55180c407ed951c2",
+      "size": 27186
+    },
+    "include/sdk/lhal/bflb_dma2d.h": {
+      "sha256": "78f7ad9f6c58742db4dc49df7ccca00bc0b9588495a9b114e9a089a3cf988640",
+      "size": 11677
+    },
+    "include/sdk/lhal/bflb_dpi.h": {
+      "sha256": "f27601f8f4b2e2a9799b2ff2c008073e6d3a368b8ca63701a394836dd4129961",
+      "size": 6674
+    },
+    "include/sdk/lhal/bflb_dsi.h": {
+      "sha256": "0ea47f3031438e44d19901fa2a37243a72bb89e6e152fd1a92473a151e74bbe1",
+      "size": 15922
+    },
+    "include/sdk/lhal/bflb_dvp_raster.h": {
+      "sha256": "5351c79c73fa7a26da8d8e423e752789b42e5a1dd78f6573594fb9ef4bf4c09a",
+      "size": 4292
+    },
+    "include/sdk/lhal/bflb_ef_ctrl.h": {
+      "sha256": "64589ccb672ee07cf7e586691d94761878d413b460f10a4a42f24649e0c389ec",
+      "size": 4204
+    },
+    "include/sdk/lhal/bflb_efuse.h": {
+      "sha256": "91e5d2de6685feca0b4811f882b6d7da2c5baff5e04a8655910c44f010add185",
+      "size": 4133
+    },
+    "include/sdk/lhal/bflb_emac.h": {
+      "sha256": "4868601f5d87acdad273d7ce7c75238a5fbb1370ce253ba63360e4ddcbb328e3",
+      "size": 941
+    },
+    "include/sdk/lhal/bflb_emac_common.h": {
+      "sha256": "c4380ada6f355bdf938e8349ec43cc226e0fded2f6f5ecb62847f004282a86b8",
+      "size": 5893
+    },
+    "include/sdk/lhal/bflb_emac_v2.h": {
+      "sha256": "8116e71740a6212183b64826bd556127e614535fc43736fe1754a65f03bbf565",
+      "size": 63823
+    },
+    "include/sdk/lhal/bflb_flash.h": {
+      "sha256": "264badb17d13a81de9d02c68ecace4926956adcb4804a5158ef00b1d332722d7",
+      "size": 5952
+    },
+    "include/sdk/lhal/bflb_gmac.h": {
+      "sha256": "cf32b42ba1093c88aadf9456a6b2eb54880992673c51ae6d0bfe7d2641047608",
+      "size": 67082
+    },
+    "include/sdk/lhal/bflb_gpio.h": {
+      "sha256": "380964242eb7a766084b0ebf820919a0141fca1edb0c946b391c5da16f86d1f9",
+      "size": 20043
+    },
+    "include/sdk/lhal/bflb_i2c.h": {
+      "sha256": "3d054e32e0ef1bae0af1b27103b04eb4cc6a3521101d33b3969ca486bedfdc5c",
+      "size": 8311
+    },
+    "include/sdk/lhal/bflb_i2s.h": {
+      "sha256": "49aa43aa7c221bbac846a5054d813848c7c2a23c929c886a8922d7bfeb0b58f0",
+      "size": 6350
+    },
+    "include/sdk/lhal/bflb_ipc.h": {
+      "sha256": "0c9b7b6e9c5f665ea9802b63a7f2fdaed4c2f6dc41cee8a22a794259de5b5709",
+      "size": 846
+    },
+    "include/sdk/lhal/bflb_ir.h": {
+      "sha256": "58bf0e97d43b4da966a7e91c2bddd1f4aff95216107044e207ddb06fe9ddeee7",
+      "size": 10789
+    },
+    "include/sdk/lhal/bflb_irq.h": {
+      "sha256": "7df92a6c2b758b12b724a0970aa0c586f886cf75059b965a74a686a8472bf75c",
+      "size": 2277
+    },
+    "include/sdk/lhal/bflb_kys.h": {
+      "sha256": "98fc974afbe38de230b78dba2f11da603f42914dcf9b3fef6f5a0ef4e1290246",
+      "size": 2007
+    },
+    "include/sdk/lhal/bflb_l1c.h": {
+      "sha256": "2aeb33b84324cea4dbfb7db68e885b9992d0dfb239c2928af9e01576176f22b0",
+      "size": 1896
+    },
+    "include/sdk/lhal/bflb_list.h": {
+      "sha256": "39668f01734fbf196f46380e8fa7f061c27e6ae10f2bd2cc2edf6cd828e7739d",
+      "size": 8066
+    },
+    "include/sdk/lhal/bflb_mjdec.h": {
+      "sha256": "afb407bdbc562f6cf577e9e7a24460752748b7ddc2940a7990ea53061f776d09",
+      "size": 7691
+    },
+    "include/sdk/lhal/bflb_mjdec_v2.h": {
+      "sha256": "4dafab739d94dd4d584d6e77f61443414c550fc32a2cedacfb7f1ae938fcbb9e",
+      "size": 6307
+    },
+    "include/sdk/lhal/bflb_mjpeg.h": {
+      "sha256": "16248783de44a6fc740b0815992f33a5f313f65564d06ded9636d07dcedd6093",
+      "size": 8983
+    },
+    "include/sdk/lhal/bflb_mtimer.h": {
+      "sha256": "7d091d58350f61e6fba032abb3ba99db0e92cb4ea2d868e97dfb9d1364b69f24",
+      "size": 1209
+    },
+    "include/sdk/lhal/bflb_multi_core_sync.h": {
+      "sha256": "c41b32f1edf92af62bf36f4d4b6c8cc6c047180401075c43c0d1612d566970fd",
+      "size": 1081
+    },
+    "include/sdk/lhal/bflb_name.h": {
+      "sha256": "0b0456bd3261b81828bb26dcb16e82d853719eb12e8e806eb640dff1e4b0e644",
+      "size": 5160
+    },
+    "include/sdk/lhal/bflb_osd.h": {
+      "sha256": "fba24994130475993e40d5a0538fed2c07fa228e074a1218a4293bf06ecbf709",
+      "size": 11696
+    },
+    "include/sdk/lhal/bflb_pec_v2_instance.h": {
+      "sha256": "0ea8160d35ad7cac640b92cd287c20ee588612373119f89f331af18ede274b37",
+      "size": 20803
+    },
+    "include/sdk/lhal/bflb_peri.h": {
+      "sha256": "506f253580b29701339de6fc137a76441ad81da023e5437bb494c133e86f717e",
+      "size": 16700
+    },
+    "include/sdk/lhal/bflb_pwm_v1.h": {
+      "sha256": "0f3d2d2c16b45cd495282996e050988f03577c62c09c7b15c159a195a85c5957",
+      "size": 5099
+    },
+    "include/sdk/lhal/bflb_pwm_v2.h": {
+      "sha256": "c4b100cc52af0b6d137a9befda883b0b2974e64ab5605e6a9b1527fc8facd944",
+      "size": 9417
+    },
+    "include/sdk/lhal/bflb_reset.h": {
+      "sha256": "f01c8ffa5068d55291d2f5a7f823b65a05d7ae8acd51ca8654ecd7c9ab494120",
+      "size": 374
+    },
+    "include/sdk/lhal/bflb_rtc.h": {
+      "sha256": "6f35ab7e9a9de5067833117fecb3bc92e0e2a0561e4a8f281240f0eccc307950",
+      "size": 1475
+    },
+    "include/sdk/lhal/bflb_sdh.h": {
+      "sha256": "6dcf0b0c1b3200216a1e1ba703f15a606124ec9e4b630792ac0d75e82bfb2516",
+      "size": 14593
+    },
+    "include/sdk/lhal/bflb_sdio2.h": {
+      "sha256": "27f677488faf146ccd14e151af60fd11c4607e8b0fcc98cca3c93289bb63813e",
+      "size": 6147
+    },
+    "include/sdk/lhal/bflb_sdio3.h": {
+      "sha256": "156da0271f35c3cbbd10c2140eb30812738b414d6a8b9788eaeff125b5195fc2",
+      "size": 10337
+    },
+    "include/sdk/lhal/bflb_sec_aes.h": {
+      "sha256": "f3158beac5aab4930211840ed067b1cdfcf67a8761a6ef668e85c52e224c3ac3",
+      "size": 9050
+    },
+    "include/sdk/lhal/bflb_sec_dsa.h": {
+      "sha256": "54c867e4114a76bb5f78e1ddd5ec6e36a584ef8ab30f3a8b6f05aa47efadbcb5",
+      "size": 1233
+    },
+    "include/sdk/lhal/bflb_sec_ecdsa.h": {
+      "sha256": "89d66b314bf6e5a0126fa327aa17e9572b6607d64ef4367a5195a7b7838232b6",
+      "size": 2888
+    },
+    "include/sdk/lhal/bflb_sec_gmac.h": {
+      "sha256": "cfab2f6e77246dbe383861dc2afe5eb9d27e09bb058b03b6814d026969ccb0fa",
+      "size": 1702
+    },
+    "include/sdk/lhal/bflb_sec_irq.h": {
+      "sha256": "cd5c8e88b0110a3aae68234f5aba215ea6328ad7cd1fd4ce6917b599eb354771",
+      "size": 739
+    },
+    "include/sdk/lhal/bflb_sec_mutex.h": {
+      "sha256": "a184c1b88d2ea917bc5fbdce80c2531aaf531bee0c94d00505db5aabb66b698c",
+      "size": 328
+    },
+    "include/sdk/lhal/bflb_sec_pka.h": {
+      "sha256": "da13a0dab2d2539df85bb8c9c750e4de0580a09a1bff1690de167b5495708323",
+      "size": 9469
+    },
+    "include/sdk/lhal/bflb_sec_sha.h": {
+      "sha256": "cf4aa05e8b2508d939e1f99fa9cdd15bb217ac659e199c2e3dd01898c138dba6",
+      "size": 10371
+    },
+    "include/sdk/lhal/bflb_sec_trng.h": {
+      "sha256": "3b4d8e24528a50c171f613d2c306350f97eb52e1f7a93f50c1640a512669aff0",
+      "size": 1438
+    },
+    "include/sdk/lhal/bflb_spi.h": {
+      "sha256": "9e12a4ae2ed5f03c539e66917acb59169e01d273822975054d319de73ad936f6",
+      "size": 9152
+    },
+    "include/sdk/lhal/bflb_spi_psram.h": {
+      "sha256": "14daf55a815b7d3e86d3ee711b788212c0a619c838052e0e66a17a9613bac510",
+      "size": 6397
+    },
+    "include/sdk/lhal/bflb_timer.h": {
+      "sha256": "fcd3ff8599db94804ef81f3175fd211d7a9b0334e67f6aa541f9d5f579449068",
+      "size": 9537
+    },
+    "include/sdk/lhal/bflb_touch.h": {
+      "sha256": "cad9dd1a7391dfb58b2daec8506955387fb57f41dc8d6f714095d58356340e9c",
+      "size": 21555
+    },
+    "include/sdk/lhal/bflb_touch_v2.h": {
+      "sha256": "47b7c6c6334af6ee3629c04ad73f8096f5c745754bad491bc8bfd738a1aee6b6",
+      "size": 17481
+    },
+    "include/sdk/lhal/bflb_uart.h": {
+      "sha256": "0e1a3d28b8005815ec16ecda3740552e5e16cbbb515e9a540712a32624baaff0",
+      "size": 11708
+    },
+    "include/sdk/lhal/bflb_wdg.h": {
+      "sha256": "555ca53380becc04a62fb29269ec01440712cefd616372a17e36926041460e48",
+      "size": 2398
+    },
+    "include/sdk/lhal/bflb_wo.h": {
+      "sha256": "3139d8943ab53d7851b784c9c347a2f7c16c0a02574542eed7ae453f77397727",
+      "size": 5763
+    },
+    "include/sdk/lhal/compiler/compiler_gcc.h": {
+      "sha256": "66e0b209f027aae7ddc67e522ff871b07be6995fe23cad4f08aaf21dbec3fb26",
+      "size": 1565
+    },
+    "include/sdk/lhal/compiler/compiler_ld.h": {
+      "sha256": "e72bc9eb272066e590b29666cca0e10c957ce228e67ad4d8a66e841ae2252243",
+      "size": 2317
+    },
+    "include/sdk/lhal/hardware/acomp_reg.h": {
+      "sha256": "655f9f2508eb789300c64d34f11c04ab0892b783a4d98a6dfeb8bc2bd792337b",
+      "size": 4387
+    },
+    "include/sdk/lhal/hardware/adc_reg.h": {
+      "sha256": "20a1f5df0b1962e044cdbf67ece2ad0b42ff97e599c2ccedfab7340aa39d5d12",
+      "size": 12674
+    },
+    "include/sdk/lhal/hardware/adc_v2_reg.h": {
+      "sha256": "876fc02874b3a6fc5b6d9e0d6602df46dff8e1f7f36a167bbdbc5978f64fde82",
+      "size": 22111
+    },
+    "include/sdk/lhal/hardware/adc_v3_reg.h": {
+      "sha256": "0933260514a11d7cc604655735eb13142ee0b6763d48e45ded8cba3481cab812",
+      "size": 49940
+    },
+    "include/sdk/lhal/hardware/auadc_reg.h": {
+      "sha256": "8c241886d889b27f40b34c09baf752a6231fbe0303bb2071d6c2917a38395bce",
+      "size": 10193
+    },
+    "include/sdk/lhal/hardware/audac_reg.h": {
+      "sha256": "1237ab4f8cfcdb04a662bc697e46e9ad2fc3cc78aed0270abfa5942cdbc01bc3",
+      "size": 7984
+    },
+    "include/sdk/lhal/hardware/cam_front_reg.h": {
+      "sha256": "1433a219664ec856e47cc41ef77f6a592d49bacb5f937e9da37ee8f4339105e6",
+      "size": 17686
+    },
+    "include/sdk/lhal/hardware/cam_reg.h": {
+      "sha256": "657c8097849ff1c26a4c23fe5d49e52a54527748a82cd211aeba03430824ea5c",
+      "size": 22233
+    },
+    "include/sdk/lhal/hardware/canfd_reg.h": {
+      "sha256": "21e5958041a8de35cc3d2ffea0c42923c284c1365b35cc57c18cb3c006426d43",
+      "size": 19160
+    },
+    "include/sdk/lhal/hardware/cks_reg.h": {
+      "sha256": "048630b944a0bcfce5d983acb91d96b3affe191eca47b23eff4835d7332f6b2e",
+      "size": 3274
+    },
+    "include/sdk/lhal/hardware/dac_reg.h": {
+      "sha256": "8bc85a921c5562eea7df5368b5917f8658eafb49269c4c8a2d2f546d03c29248",
+      "size": 6449
+    },
+    "include/sdk/lhal/hardware/dbi_reg.h": {
+      "sha256": "075a883a02a886676cc76a2422cec16b0e784503385019484ac197216d2dac6a",
+      "size": 9735
+    },
+    "include/sdk/lhal/hardware/dma_reg.h": {
+      "sha256": "3cc0c098e1118a4b78d31c49af7eb46b6295c40c4703a727c327fa6db3b718d1",
+      "size": 10951
+    },
+    "include/sdk/lhal/hardware/dvp_tsrc_reg.h": {
+      "sha256": "6cd44908ff6e70f1688b1e296829eab3ffc03753d55580957986cccca8f2a534",
+      "size": 10567
+    },
+    "include/sdk/lhal/hardware/ef_ctrl_reg.h": {
+      "sha256": "ed623ec054630a001cfdbdd099e8b824913230640be7bf579e3a372e6745c868",
+      "size": 25558
+    },
+    "include/sdk/lhal/hardware/emac_reg.h": {
+      "sha256": "d7a6ab3d572ceb19298ac9d0fbc6b88bf52b58fedb12c4ffd038704a78ac5f58",
+      "size": 10088
+    },
+    "include/sdk/lhal/hardware/emac_v2_reg.h": {
+      "sha256": "1ff4343ecc0398a534fc18cfcd1b29146fc063d02c3f7bf0de116165458abf1c",
+      "size": 41146
+    },
+    "include/sdk/lhal/hardware/gmac_reg.h": {
+      "sha256": "a5a4ee07f67e9950f3dad42cb08124f1e19edbf637cf1c9694a1b7f1881af45f",
+      "size": 40033
+    },
+    "include/sdk/lhal/hardware/gpio_reg.h": {
+      "sha256": "1be8b854dd0bc18b799083fb369e9716807c695bc8f781298f6902b5c02be6b7",
+      "size": 140181
+    },
+    "include/sdk/lhal/hardware/i2c_reg.h": {
+      "sha256": "22296d8de9755c31236374c92f6db9ed3f56eb491ddd23618f09fbb1ca91ac1f",
+      "size": 15385
+    },
+    "include/sdk/lhal/hardware/i2s_reg.h": {
+      "sha256": "dfa2858b8341424f7143f13ca18d2fe3a696c52e41fdbe3f2eecc18a27cc4d9b",
+      "size": 6080
+    },
+    "include/sdk/lhal/hardware/ipc_reg.h": {
+      "sha256": "e188dfd9134862cf7cc0d425d0bfa9d29b39e1347805cb0bbe5b2bd1f6cd9cf3",
+      "size": 7147
+    },
+    "include/sdk/lhal/hardware/ir_reg.h": {
+      "sha256": "1b6d834888071e7f6a78a95eced7e92faf8a23739948aeb5066996ae40493285",
+      "size": 14425
+    },
+    "include/sdk/lhal/hardware/kys_reg.h": {
+      "sha256": "3e4925fa132843cf4f20a7517456886d69717e9e1269e8c54a7cdef69d591949",
+      "size": 6576
+    },
+    "include/sdk/lhal/hardware/mjpeg_reg.h": {
+      "sha256": "01e77a40f513d4cb3b2e12562547e8f8975df430f5fc70b101c0952dbcf516f8",
+      "size": 22162
+    },
+    "include/sdk/lhal/hardware/mm_misc_reg.h": {
+      "sha256": "68a54c55d874959e1ce9fa4bab49a32a67171bdae911f8fb41913fa7bfce57c2",
+      "size": 22525
+    },
+    "include/sdk/lhal/hardware/pwm_v1_reg.h": {
+      "sha256": "f3e03aaf609c5c7d425f5eb758138de195fa9006a3d637132c6f18761069f3b9",
+      "size": 9351
+    },
+    "include/sdk/lhal/hardware/pwm_v2_reg.h": {
+      "sha256": "e51d6ff4c8d7be1c0dafcc4ceba316c648f01189bd9985f48f820b8c91576bcf",
+      "size": 8801
+    },
+    "include/sdk/lhal/hardware/rtc_reg.h": {
+      "sha256": "ed831fa026834d75874327fd5fcd3d4c1e8f6d18cf30d6acd9334b2059ff3484",
+      "size": 4641
+    },
+    "include/sdk/lhal/hardware/sdh_reg.h": {
+      "sha256": "ba6ddea795c553b7bc087a0279b98a7de1c34c0f03056a8641c3f9f928a243c4",
+      "size": 133761
+    },
+    "include/sdk/lhal/hardware/sdio2_reg.h": {
+      "sha256": "f26790c218d0814261cf01d6f15ff9772e911a747041183ba9b44434e263dca5",
+      "size": 6831
+    },
+    "include/sdk/lhal/hardware/sdio3_reg.h": {
+      "sha256": "608a9daf3190c63e40b7e1bca21e4677310bbe8d91d5cf6ffe3b1a0a8a814e8a",
+      "size": 23037
+    },
+    "include/sdk/lhal/hardware/sec_eng_reg.h": {
+      "sha256": "038753774a3d9d9de5ad234961adf72e7d1d3b6982bc9888d2cff9d2fb962777",
+      "size": 26675
+    },
+    "include/sdk/lhal/hardware/sf_ctrl_reg.h": {
+      "sha256": "88d6e136f6e44e3ef5dd2891393c906d67402f9c157330a13bd0f4c8b1535751",
+      "size": 65524
+    },
+    "include/sdk/lhal/hardware/spi_reg.h": {
+      "sha256": "d9232ac0999d8aa9e24f79e29b46eba004fb4515c1972724610af0795d630dee",
+      "size": 8695
+    },
+    "include/sdk/lhal/hardware/timer_reg.h": {
+      "sha256": "6919f3b7c08df0ca6031a28aff24c8ef700f8ed5d1989b2276a4c7ff429cc4d1",
+      "size": 12362
+    },
+    "include/sdk/lhal/hardware/touch_reg.h": {
+      "sha256": "896ceca54d7082d1fc37bd877d84fdd28b2fc680f970546c92a5ac918a79a4ac",
+      "size": 23994
+    },
+    "include/sdk/lhal/hardware/touch_v2_reg.h": {
+      "sha256": "41c4a8ec5528b9d09e2946ef95493fee5a458bfe81ee6542ada591c8731f3b40",
+      "size": 30259
+    },
+    "include/sdk/lhal/hardware/uart_reg.h": {
+      "sha256": "012779a9cd9e97f5b017a3e2f2c663fa3c84b77bc6244861befe70637049d5f7",
+      "size": 14908
+    },
+    "include/sdk/lhal/hardware/usb_v1_reg.h": {
+      "sha256": "1550a52f127a6aacd91144e4196d905c71754af17d0abef5f663abce8b628e4e",
+      "size": 26853
+    },
+    "include/sdk/lhal/hardware/usb_v2_reg.h": {
+      "sha256": "c4d728915065100337b107eea7386487dead2737d2f4a1936b4f0a1e0a237f53",
+      "size": 28646
+    },
+    "include/sdk/lhal/hardware/wo_reg.h": {
+      "sha256": "25ed56903d834c42a4843093a7e2978a1f03d6feb7050196d628753d8d06efd8",
+      "size": 7436
+    },
+    "include/sdk/lhal/incbin.h": {
+      "sha256": "e6ca400aa80b595d97e98eeceea3bf4176ee048a5acd054596a95b26ace45e1a",
+      "size": 16083
+    },
+    "include/sdk/libc/newlib/port_file_fd.h": {
+      "sha256": "940701f0c22985e78f0ae35481bc2ffdcc510003a32e6c221d22278cbc862bc7",
+      "size": 2528
+    },
+    "include/sdk/libc/newlib/port_file_littlefs.h": {
+      "sha256": "fa5230075376a08169042705b02b1a68adb40684febde6333f18dead24fb3f10",
+      "size": 7811
+    },
+    "include/sdk/libc/nuttx/compiler.h": {
+      "sha256": "fa3e99b979bf7c24ca9e9dfa16a757233298d071c750fafaba466628b963186d",
+      "size": 19236
+    },
+    "include/sdk/libc/nuttx/config.h": {
+      "sha256": "989f69e61b1601cc61880358c895fcbf4a44c0fbbaf958580d0ed315a9894a17",
+      "size": 941
+    },
+    "include/sdk/libc/nuttx/nuttx_limits.h": {
+      "sha256": "090d7f9bb50e5b0dfd3791bdba4977cc91a6b9b12bd29320c8865dd757769ec1",
+      "size": 2927
+    },
+    "include/sdk/libc/picolibc/_ansi.h": {
+      "sha256": "c2e285df58868b31a10c8eecf2ecd85936fd47e934e07ba60df89fbcda3bdf83",
+      "size": 1901
+    },
+    "include/sdk/libc/picolibc/reent_compat.h": {
+      "sha256": "4e06f08add7926274b24c45b20a6e284fed4bec37a07051a0904a1a3f679973a",
+      "size": 1734
+    },
+    "include/sdk/libc/posix/errno.h": {
+      "sha256": "c525e25bbd32719809b93c57ae52b0695eaab5be75ff6f8004da45ab945fd73e",
+      "size": 86
+    },
+    "include/sdk/libc/posix/fcntl.h": {
+      "sha256": "61282b2d987f08ea6ca7a07bae87defd6ea86f76802cc8754369c936e9da0f19",
+      "size": 62
+    },
+    "include/sdk/libc/posix/mqueue.h": {
+      "sha256": "7d756caa24f820027a7356ebb8f0c16dfd891f9bd9022c290a6ffb447e0563e9",
+      "size": 63
+    },
+    "include/sdk/libc/posix/pthread.h": {
+      "sha256": "7ca1506a8d918feabdcc72efebfd845d5314e9f39dca0a37b983099ca59bf6f9",
+      "size": 64
+    },
+    "include/sdk/libc/posix/sched.h": {
+      "sha256": "f13559526b85f84a1769a272c8993fd677f99bdae7eed07968594e5544ea702b",
+      "size": 62
+    },
+    "include/sdk/libc/posix/semaphore.h": {
+      "sha256": "e86108de422095730c684b33d0aacf75c5ceef8d4c27bad701d51aba24c49c7d",
+      "size": 66
+    },
+    "include/sdk/libc/posix/time.h": {
+      "sha256": "b4210fcdb4c148c68a79122c6484236e20c1549d498b31151f1e154762d27027",
+      "size": 61
+    },
+    "include/sdk/libc/posix/unistd.h": {
+      "sha256": "20679cf3070a41d957a873b75c0ae06bb3fafde18785341f2316639d6aaa335b",
+      "size": 88
+    },
+    "include/sdk/libc/reent.h": {
+      "sha256": "a833f2b7cd25ae1d062b789940cfbc79f01e5cb4706f9f2fcc9ca1c792ac5d38",
+      "size": 89
+    },
+    "include/sdk/libc/sys/types.h": {
+      "sha256": "c15177cd091f2dffd9d936ea08759f3185b4bb1fa839b14b709e6bc9c07ba12c",
+      "size": 5532
+    },
+    "include/sdk/mm/heap5/heap5.h": {
+      "sha256": "1d48dde38e24ba3392db3b1223994a6d426080240ae37e09af1bd84c2cf3548c",
+      "size": 1091
+    },
+    "include/sdk/mm/mm.h": {
+      "sha256": "ad4126a19d1927b05a9fa9734a8d1067690aa8387e9fe8367af2aa0a7068e4bf",
+      "size": 16417
+    },
+    "include/sdk/mm/mm_config.h": {
+      "sha256": "fc8dfca1fcd168695808d8bf49c7b5079c614389617d647d79c15a84860914ed",
+      "size": 3462
+    },
+    "include/sdk/mm/tlsf/tlsf.h": {
+      "sha256": "87e6212908ce22f63f7b21c0fc655bb9dec50fc814ef24ddfac482912100bb3d",
+      "size": 3613
+    },
+    "include/sdk/soc/bl616cl_aon.h": {
+      "sha256": "6a9a95d31e15b5ac2b120a390ef7ce8fe3df693852c3039ea1aceb33ea1a0fca",
+      "size": 8863
+    },
+    "include/sdk/soc/bl616cl_clock.h": {
+      "sha256": "b3968473ddf9a1184cd2f1396b5643cb4faaa85ec2b97494febb9723a2b36ef3",
+      "size": 6657
+    },
+    "include/sdk/soc/bl616cl_common.h": {
+      "sha256": "700e7736d7e03b85662a36a375f2125b4ad1670eb8b6ea2a3754e9975e3d0969",
+      "size": 5081
+    },
+    "include/sdk/soc/bl616cl_ef_cfg.h": {
+      "sha256": "ea76cde2a03b422be7228aa7f88cfc5683a851b473dbb9f67fd844c98acb123c",
+      "size": 11500
+    },
+    "include/sdk/soc/bl616cl_glb.h": {
+      "sha256": "355436982d095f3081bb6bfee9ebabbea7217daa178908a78bc7ef724049309f",
+      "size": 73551
+    },
+    "include/sdk/soc/bl616cl_hbn.h": {
+      "sha256": "8d1b99408b5d3d18cbbb8e3ee5a8d3a3eb39fdf19bc2ae75ef551e7cb03ac8e0",
+      "size": 46849
+    },
+    "include/sdk/soc/bl616cl_mfg_efuse.h": {
+      "sha256": "fd94d70cee7077a5dbacc61d6580c6c4404ba34090f3abc9ac4dae9ef0a63340",
+      "size": 1757
+    },
+    "include/sdk/soc/bl616cl_mfg_flash.h": {
+      "sha256": "01ccc7cf4ec9c2ca0d3517175b79939b636d5eda1e0488bb2eae0932c8ada72a",
+      "size": 1497
+    },
+    "include/sdk/soc/bl616cl_mfg_media.h": {
+      "sha256": "7e0cdc4791750236c109140b6322afdd08ab2a488d23b908cdefc53de9a763b6",
+      "size": 3179
+    },
+    "include/sdk/soc/bl616cl_pds.h": {
+      "sha256": "8b57658ef5e0f36dde94ff90a2e4741f3d90a2c345c05a6c67e737774e619a0c",
+      "size": 24413
+    },
+    "include/sdk/soc/bl616cl_pm.h": {
+      "sha256": "086e583008c57674bdda17d5da2c332ee5356ec3e6e7fc607d6314bd567db99d",
+      "size": 7954
+    },
+    "include/sdk/soc/bl616cl_psram.h": {
+      "sha256": "3c4aaef47a257f4c419a553f1c8a0e10a0bbfb1dd4d11ee9c17962270a10dd90",
+      "size": 25018
+    },
+    "include/sdk/soc/bl616cl_reset.h": {
+      "sha256": "b801ac2515296fda6a811320937fb288217f38e1caf7d857a7be53b0969a0f38",
+      "size": 871
+    },
+    "include/sdk/soc/bl616cl_romapi_patch.h": {
+      "sha256": "b7b91344c1367ceffc1573596b603ded5fbf21da8f94f6280b2fb9bb13304345",
+      "size": 2213
+    },
+    "include/sdk/soc/bl616cl_romdriver_e907.h": {
+      "sha256": "adf68fd8e0dfbdbadeb6f62fc0ab9b078a7636d5d5953ce2df8ec9797e9d3511",
+      "size": 67683
+    },
+    "include/sdk/soc/bl616cl_sec_dbg.h": {
+      "sha256": "3170dff840be6cf351fac5f566e611095957414d8de85f92ccca1ef827c86b84",
+      "size": 3412
+    },
+    "include/sdk/soc/bl616cl_tzc_sec.h": {
+      "sha256": "719e04c412b9f52da22c2b4430e6e4d40ff714b15db928adcc9af2993c98c03f",
+      "size": 10721
+    },
+    "include/sdk/soc/hardware/aon_reg.h": {
+      "sha256": "dc8115b8f4b60725c2b5b5c4dd39d6999ac7e6abbbdb95a837dc637097474af9",
+      "size": 65325
+    },
+    "include/sdk/soc/hardware/bl616cl.h": {
+      "sha256": "76dc15bdf6d2da24cd57e597f2ccff68255a91c98f00f776d9a461f2e375ef0a",
+      "size": 17409
+    },
+    "include/sdk/soc/hardware/glb_reg.h": {
+      "sha256": "0271f5f4302e1a754065405b62b2774c961fe2e3f73990456589fb856aad236c",
+      "size": 1007491
+    },
+    "include/sdk/soc/hardware/hbn_reg.h": {
+      "sha256": "aa981760e177782a3fc9dc7639a83187e15896c673f8039f2b7bb3a66e97b218",
+      "size": 105418
+    },
+    "include/sdk/soc/hardware/mcu_misc_reg.h": {
+      "sha256": "ad0bfe3738a7277f1903eba0aefdd707faa2b69cf228df7ddd21636b14c7a1b2",
+      "size": 32335
+    },
+    "include/sdk/soc/hardware/mm_misc_reg.h": {
+      "sha256": "245f67868fce439c3a0c68b79d3174f9738c35d01af9e1bb3666506c101a2ea1",
+      "size": 13436
+    },
+    "include/sdk/soc/hardware/pds_reg.h": {
+      "sha256": "702bc3b15eb1442dac6ac55e051009e43b10454b1288be9aa08f80c969e38097",
+      "size": 137154
+    },
+    "include/sdk/soc/hardware/psram_reg.h": {
+      "sha256": "a4795830bc113fbc40834db76912acdd67d6eaf628fdb38b4a2a7aaa11ddf5b4",
+      "size": 89149
+    },
+    "include/sdk/soc/hardware/sec_dbg_reg.h": {
+      "sha256": "8c05fae32bc8180b9f9d7a704a7429d8a747594e06e01ff85900e237d6ed9480",
+      "size": 10471
+    },
+    "include/sdk/soc/hardware/tzc_sec_reg.h": {
+      "sha256": "5a17d90a64006be8c22e2113dbb8c170c76db1804b306f8f030ebc091c709177",
+      "size": 219149
+    },
+    "include/sdk/sys/bl602/bl602_sys.h": {
+      "sha256": "062a313b2e9839f425c1c8ac3b94d6447d563442823556ea5d79a373a2ea1def",
+      "size": 127
+    },
+    "include/sdk/sys/bl616/bl616_lp.h": {
+      "sha256": "5d43f94853b2474fd5161d14d02a8b39847053d6e55cff57971617bebb93311a",
+      "size": 18042
+    },
+    "include/sdk/sys/bl616/bl616_lp_internal.h": {
+      "sha256": "936992b428e7b045f26ef26256922b7e5e71fa3b0effacab98fee2e520404db3",
+      "size": 2117
+    },
+    "include/sdk/sys/bl616/bl616_sys.h": {
+      "sha256": "fb282e962a93785b3cabc61bdef51c2ff7863f0f23d8fcc51e2ea13d14c234c8",
+      "size": 699
+    },
+    "include/sdk/sys/bl616/bl616_xip_recovery.h": {
+      "sha256": "0681549dc0c5e89e3e3f11d6f38f71cca4a93bfee58553616b5352e7a6e82c9a",
+      "size": 417
+    },
+    "include/sdk/sys/bl616cl/bl616cl_ext_dcdc.h": {
+      "sha256": "8288a70b64e044a9fb1e85764419db8379e1d82281bda54be3051dd34f380d06",
+      "size": 1623
+    },
+    "include/sdk/sys/bl616cl/bl616cl_lp.h": {
+      "sha256": "9e7b2c1bbbe4b2ee0cffc619ae536dbfb1aca4094ea50861f3ceaee9119f3de7",
+      "size": 12943
+    },
+    "include/sdk/sys/bl616cl/bl616cl_lp_internal.h": {
+      "sha256": "0ebd4ee0b263236007e8390e92414985e74e98ea779fc48699685383b46a434f",
+      "size": 1031
+    },
+    "include/sdk/sys/bl616cl/bl616cl_psram_recovery.h": {
+      "sha256": "f8026edd84217386a5e2ab49e5bd7c02c93a098c44b1e6a86e109aac57b205cb",
+      "size": 1084
+    },
+    "include/sdk/sys/bl616cl/bl616cl_sys.h": {
+      "sha256": "6b9bd917754eee316594cc7a193342215bab5a2446910cec4315952a28628168",
+      "size": 656
+    },
+    "include/sdk/sys/bl616cl/bl616cl_xip_recovery.h": {
+      "sha256": "a475799af75079fc1718a0c4bd92af45463ef7678d23f1d82c23075fe75fd83d",
+      "size": 421
+    },
+    "include/sdk/sys/bl618dg/bl618dg_lp.h": {
+      "sha256": "22ad771422d3a94a92d03ace718545ad62e7a39b5f159165ae9e75ede3a7d9b6",
+      "size": 13015
+    },
+    "include/sdk/sys/bl618dg/bl618dg_lp_internal.h": {
+      "sha256": "92102fec4dfaade9d162977feda4987850d2351589d300ec28ae2cea06516955",
+      "size": 735
+    },
+    "include/sdk/sys/bl618dg/bl618dg_psram_recovery.h": {
+      "sha256": "e360dcb18df8ac7dd5f981c0c959ebfb11b5ccd7098dba4ea5e71ab6a3f115e9",
+      "size": 1333
+    },
+    "include/sdk/sys/bl618dg/bl618dg_sys.h": {
+      "sha256": "0e640b38dd0d83c796b886ab904d00fd80d1e97653c793631de3572f7fa474f9",
+      "size": 532
+    },
+    "include/sdk/sys/bl618dg/bl618dg_xip_recovery.h": {
+      "sha256": "08a47ba57d173d0161e9fb38d96e70664fe1c3e406d057d9d4392f255077ffaa",
+      "size": 513
+    },
+    "include/sdk/sys/bl702/bl702_lp.h": {
+      "sha256": "dfa2002accc593ae1728032f30156af0d9cdece63862c11668fc62bc84c2b094",
+      "size": 10886
+    },
+    "include/sdk/sys/bl702/bl702_sys.h": {
+      "sha256": "2f2eeb83420c47811da2a3069a2752330624a01b4f28dc4119bb2d95bc4ed7ca",
+      "size": 453
+    },
+    "include/sdk/sys/bl702l/bl702l_sys.h": {
+      "sha256": "5a9087e3e7142fe243bf7eb17be79f6e21262cd30a77eebbc49dcc305ddcaae9",
+      "size": 455
+    },
+    "include/sdk/sys/bl_lp.h": {
+      "sha256": "66491e097acbc393a0e3019f1bbb852ad3ca96ee06780ffe40ffae737aaba719",
+      "size": 4721
+    },
+    "include/sdk/sys/bl_lp_internal.h": {
+      "sha256": "262382d77c5f3cdca023dd5e83a5e9d7495094789dd497dcf99204f548a9708c",
+      "size": 1584
+    },
+    "include/sdk/sys/bl_sys.h": {
+      "sha256": "083e68ee5830e676f605720f95f1e1e28140565bdff28fce4afd4e39094ff9b7",
+      "size": 330
+    },
+    "include/sdk/sys/lpfw_bcmc_mailbox.h": {
+      "sha256": "4715a3658a5603368bfd3e0082a04397d90c6e12e89f192552dcc88b7a6d3ae8",
+      "size": 2064
+    },
+    "include/sdk/sys/lpfw_custom_rx.h": {
+      "sha256": "737c5e0e802827ab478dea4867055ee3d898b9e0c24c3ff6f603b564a2836465",
+      "size": 3879
+    },
+    "include/sdk/sysinit/sysinit.h": {
+      "sha256": "45910fc877e2fa63d416f000e35fc6442fe9a7961db740fc2ada921375be0957",
+      "size": 1695
+    },
+    "include/sdk/utils/bflb_block_pool/bflb_block_pool.h": {
+      "sha256": "5fbb4ca505062976949e2ab479d2ea92a5049fc728a1d2c511897f998a704448",
+      "size": 2620
+    },
+    "include/sdk/utils/bflb_timestamp/bflb_timestamp.h": {
+      "sha256": "b51ed6ece2ba4a791a4b9d969a69f205382333b7c23c043ce5d7430cdee237ce",
+      "size": 1207
+    },
+    "include/sdk/utils/cjson/cJSON.h": {
+      "sha256": "1658f72fae1581bde9c3b122415f988684509499cdde3c5e2d0acac4cde8ba48",
+      "size": 16199
+    },
+    "include/sdk/utils/cjson/cJSON_Utils.h": {
+      "sha256": "1050a7cce8ffe352c509e0c1faad505b9b8a09cac3a1c45c544447868e05f3b5",
+      "size": 3938
+    },
+    "include/sdk/utils/coredump/coredump.h": {
+      "sha256": "88730505850e153fd611791791c02267889fe9425146d705a1e18caebebf702c",
+      "size": 652
+    },
+    "include/sdk/utils/getopt/utils_getopt.h": {
+      "sha256": "36cbb708ce049723772d418110f16681390121159922a407b6a68349b2859acc",
+      "size": 3784
+    },
+    "include/sdk/utils/list/utils_list.h": {
+      "sha256": "13d5a9df63a9c765368e9772aff3ed032d469995a7b3a3f7ebfac22dd446a045",
+      "size": 20102
+    },
+    "include/sdk/utils/log/bflb_dbg.h": {
+      "sha256": "491e8aa38bcf105111c1e0918fe8091faca5c34d4037650e605334eb8ae03a8e",
+      "size": 27981
+    },
+    "include/sdk/utils/log/bflb_log/bflb_log.h": {
+      "sha256": "c2db4d7038fe1c089585878ac37c5cf160482a6cf394ea9f5ac46db31da453e2",
+      "size": 22491
+    },
+    "include/sdk/utils/log/bflb_log/bflb_log_conf.h": {
+      "sha256": "5b0723533f787c5ea6263a196ea5f4aaa82662fbed82221030d4d722fa15384f",
+      "size": 6815
+    },
+    "include/sdk/utils/log/log.h": {
+      "sha256": "a8e5242585513dd4b80a2d5e32fcd1e55a8440eb93fe73d4d87e6a670b9b5280",
+      "size": 13374
+    },
+    "include/sdk/utils/math/include/utils_base64.h": {
+      "sha256": "5b73aaa9c722785a451e439fc1e6dd60cac7a1bb1e1969ab1a78d3ebd8eeda57",
+      "size": 790
+    },
+    "include/sdk/utils/math/include/utils_crc.h": {
+      "sha256": "5927feac8297d8acd219dcdd7d56e9992f2ce5d07d1fade902591d323e6947e8",
+      "size": 428
+    },
+    "include/sdk/utils/math/include/utils_hex.h": {
+      "sha256": "ee9e1f4e809f24925e1f698fb3be458364f4a776633f998ef8328f3b0ad6f5a5",
+      "size": 201
+    },
+    "include/sdk/utils/ring_buffer/ring_buffer.h": {
+      "sha256": "cb340c9bcb89e373a97e5c6c86d9a42c588e2ba819602f1ab6eea8b081796a5c",
+      "size": 5158
+    },
+    "ld": {
+      "sha256": "e3b3920d6f22121f1d81737a11009b80a6761a731a49576331a2eb5d8a1395bc",
+      "size": 13190
+    },
+    "lib/libfreertos.a": {
+      "sha256": "55e58e375e5ba91c1130f9a446f7b4167338147dba1409bf0d9be3481c91ff15",
+      "size": 952244
+    },
+    "lib/liblhal.a": {
+      "sha256": "4ddb1aac603e35adf748bde175dc70032821424c6aa43cc1d4576d5d9808573a",
+      "size": 2582658
+    },
+    "lib/liblibc.a": {
+      "sha256": "7b87f0436437132e4d15119977bd68bd4567d6a877515ee6861f8f45d78c82ac",
+      "size": 648956
+    },
+    "lib/libmm.a": {
+      "sha256": "d8b4b3240c81ab800d9b1af213450ceaef92e2da8f42dbf93648592bddbedc71",
+      "size": 340278
+    },
+    "lib/libstd.a": {
+      "sha256": "bcfbc16b2b67071d5dfbb26a4b80f84e354db359695857810da0ae2f6ee42f42",
+      "size": 840584
+    },
+    "lib/libsys.a": {
+      "sha256": "1424cab46e9a00d6a055d4697faeb5a127384abbdd95cf71373d3859bf20f86e",
+      "size": 652744
+    },
+    "lib/libsysinit.a": {
+      "sha256": "97675d73edb2fbb251dcdf48af62dba1180edc237b4a0a25e6fe8bc31e10b8d0",
+      "size": 5780
+    },
+    "lib/libutils.a": {
+      "sha256": "c5505cdeb041b76d2abde177efe293f75836b33a8ac8352453a532df8e3b7c9b",
+      "size": 881870
+    }
+  },
+  "host_tools": {
+    "bflb_fw_post_proc": {
+      "sha256": "8cfa7d949567f871e2ffc26ce674f774eb02eabbea873265c31e5fb228835b54",
+      "size": 13858784
+    },
+    "blflash": {
+      "sha256": "575a245511ffecbcfbcd60d367e1d93b0b20e5dd89daffc6c2a8dbf9792e6f5a",
+      "size": 16078064
+    },
+    "gcc": {
+      "sha256": "b42c96c3690b5c62a053dcd367ce9d2d796c055d3775febd8d8f823ca2ac0e94",
+      "size": 27500976
+    }
+  },
+  "schema": 2,
+  "scope": "chip-runtime",
+  "sdk_version": "2.3.30-8-g5cde0ad69",
+  "source_commits": {
+    "bouffalo_sdk": "5cde0ad691b71627739d1b86c7fc19eaffe2b91a",
+    "drivers/lhal": "d8e8ffe7c6db9ad2ca92beb94b5b70065c760b51",
+    "drivers/soc/bl602/std": "1d253d273aa044ec80c3b0a0f17a7a6f0a0531e1",
+    "drivers/soc/bl616/std": "790d43579ade7f78e481e830b2c6f08346f808cc",
+    "drivers/soc/bl616cl/std": "3bf3502ea77f48df11159cc114d7ecdfa9421151",
+    "drivers/soc/bl618dg/std": "75076697b0a9361401e176edaf33f03f79f88b77",
+    "drivers/soc/bl702/std": "63ff630710365510a76d5884f9263d95434b3263",
+    "drivers/soc/bl702l/std": "829debea7cc1af9cd07da9f1b3397d3c703533db",
+    "drivers/sys": "3397cb994ecbd051b19b6fa6ac57f59f207901db",
+    "tools/bflb_tools": "11d409a9ff451ba3d8658d4ed4e6f3b9da587193"
+  },
+  "toolchain": "riscv64-unknown-elf-gcc (Xuantie-900 elf newlib gcc Toolchain V2.6.1 B-20220906) 10.2.0"
+}

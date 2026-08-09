@@ -1,0 +1,315 @@
+__EM_SIZE = DEFINED(__LD_CONFIG_EM_SIZE) ? (__LD_CONFIG_EM_SIZE * 1024) : 0K;
+PROVIDE( __macsw_conf_bl_wifi_ps_enable = 0 );
+PROVIDE( __macsw_conf_plat_dma_enable = 0 );
+PROVIDE(__LD_CONFIG_EM_SEL = __EM_SIZE);
+OUTPUT_ARCH( "riscv" )
+ENTRY(__start)
+MEMORY
+{
+    fw_header (rx) : ORIGIN = 0x80000000 - 0x1000, LENGTH = 4K
+    rom_header (rx) : ORIGIN = 0x80000000, LENGTH = 6K
+    rom (rx) : ORIGIN = 0x80000000 + 0x1800, LENGTH = 4096 * 1024
+    ram_nocache (!rx) : ORIGIN = 0x20FC0400, LENGTH = (224K - 1K + 160K - 64 * 1024)
+    ram (!rx) : ORIGIN = 0x60FC0400, LENGTH = (224K - 1K + 160K - 64 * 1024)
+    ram_psram (wxa) : ORIGIN = 0x88000000, LENGTH = 4096 * 1024
+    ram_wifi (wxa) : ORIGIN = 0x21020000 - 64 * 1024, LENGTH = 64 * 1024 - __EM_SIZE
+    hbn_memory (rx) : ORIGIN = 0x20010000, LENGTH = 512
+}
+SECTIONS
+{
+    .fw_header :
+    {
+        KEEP(*(.fw_header))
+    } > fw_header
+    __rom_header_start__ = ABSOLUTE(ORIGIN(rom_header)); . = ABSOLUTE(ORIGIN(rom_header));
+    .init ORIGIN(rom_header):
+    {
+        KEEP (*(SORT_NONE(.init)))
+        KEEP (*(SORT_NONE(.vector)))
+        . = ORIGIN(rom_header) + 512;
+        __multi_bins__ = ABSOLUTE(.);
+        LONG(0x464C4553) LONG(0x00000000) LONG(LENGTH(fw_header)) LONG(__rom_end__ - __rom_header_start__ + LENGTH(fw_header))
+        LONG(0x0000504C) LONG(0x00000000) LONG(0x00000000) LONG(0x00000000)
+        LONG(0x52415744) LONG(0x49464346) LONG(0x00000000) LONG(0x00000000)
+        LONG(0x464D4F52) LONG(0x00000053) LONG(0x00000000) LONG(0x00000000)
+        LONG(0x54524543) LONG(0x00000053) LONG(0x00000000) LONG(0x00000000)
+        LONG(0x4F545541) LONG(0x5453494C) LONG(0x00000000) LONG(0x00000000)
+        LONG(0xFFFFFFFF) LONG(0xFFFFFFFF) LONG(0xFFFFFFFF) LONG(0xFFFFFFFF)
+    } > rom_header
+    .rftlv.tool ORIGIN(rom_header) + 1K:
+    {
+        PROVIDE( _ld_symbol_rftlv_address = . );
+        LONG(0x46524C42);
+        LONG(0x41524150);
+        . = ORIGIN(rom_header) + 1K + 2K;
+    } > rom_header
+    .ver ORIGIN(rom_header) + 3K:
+    {
+        LONG(0x42464c42);
+        LONG(0x46524556);
+        KEEP (*(.bflb_verinf))
+        LONG(0x42464c42);
+        LONG(0x46524556);
+        KEEP (*(.verinfo))
+        . = ALIGN(4);
+        _version_info_section_start = .;
+        KEEP(*(.version.*))
+        _version_info_section_end = .;
+    } > rom_header
+    .init_code :
+    {
+        *system_bl616cl*.o*(.rodata*)
+        *system_bl616cl*.o*(.srodata*)
+        *system_bl616cl*.o*(.text*)
+        *start_load*.o*(.rodata*)
+        *start_load*.o*(.srodata*)
+        *start_load*.o*(.text*)
+        *remain_wifi_ramrv_pmp*.o*(.rodata*)
+        *rv_pmp*.o*(.srodata*)
+        *rv_pmp*.o*(.text*)
+        *rv_Sv39*.o*(.rodata*)
+        *rv_Sv39*.o*(.srodata*)
+        *rv_Sv39*.o*(.text*)
+    } > rom_header
+    __rom_header_end__ = ABSOLUTE(.);
+    __ram_psram_start__ = ABSOLUTE(ORIGIN(ram_psram)); . = ABSOLUTE(ORIGIN(ram_psram));
+    __psram_data_start__ = ABSOLUTE(ADDR(psram_data)); __psram_data_end__ = ABSOLUTE(ADDR(psram_data) + SIZEOF(psram_data)); __psram_data_load__ = ABSOLUTE(LOADADDR(psram_data)); psram_data :
+    {
+        . = ALIGN(32);
+        KEEP(*(.psram_code*))
+        . = ALIGN(32);
+        KEEP(*(.psram_data*))
+        . = ALIGN(32);
+    } > ram_psram AT > rom
+    __psram_bss_start__ = ABSOLUTE(ADDR(psram_bss)); __psram_bss_end__ = ABSOLUTE(ADDR(psram_bss) + SIZEOF(psram_bss)); __psram_bss_load__ = ABSOLUTE(LOADADDR(psram_bss)); psram_bss :
+    {
+        . = ALIGN(32);
+        . = ALIGN(32);
+    } > ram_psram AT > rom
+    __psram_noinit_data_start__ = ABSOLUTE(ADDR(psram_noinit_data)); __psram_noinit_data_end__ = ABSOLUTE(ADDR(psram_noinit_data) + SIZEOF(psram_noinit_data)); psram_noinit_data (NOLOAD):
+    {
+        . = ALIGN(32);
+        KEEP(*(.psram_noinit*))
+        KEEP(*(.img_buf*))
+        . = ALIGN(32);
+        KEEP(*(.psram_heap*))
+        . = ALIGN(32);
+    } > ram_psram
+    __ram_psram_end__ = ABSOLUTE(.);
+    __ram_nocache_start__ = ABSOLUTE(ORIGIN(ram_nocache)); . = ABSOLUTE(ORIGIN(ram_nocache));
+    __ram_nocache_data_start__ = ABSOLUTE(ADDR(ram_nocache_data)); __ram_nocache_data_end__ = ABSOLUTE(ADDR(ram_nocache_data) + SIZEOF(ram_nocache_data)); __ram_nocache_data_load__ = ABSOLUTE(LOADADDR(ram_nocache_data)); ram_nocache_data :
+    {
+        . = ALIGN(4);
+        *(.nocache_ram)
+        . = ALIGN(4);
+    } > ram_nocache AT > rom
+    __ram_nocache_noinit_start__ = ABSOLUTE(ADDR(ram_nocache_noinit)); __ram_nocache_noinit_end__ = ABSOLUTE(ADDR(ram_nocache_noinit) + SIZEOF(ram_nocache_noinit)); ram_nocache_noinit (NOLOAD):
+    {
+        . = ALIGN(4);
+        *(.nocache_noinit_ram)
+        *(.noncacheable)
+        . = ALIGN(4);
+    } > ram_nocache
+    __ram_nocache_end__ = ABSOLUTE(.);
+    __ram_start__ = ABSOLUTE(ORIGIN(ram)); . = ABSOLUTE(ORIGIN(ram));
+    .ram_skip_nocache_region (NOLOAD) :
+    {
+        . += (ABSOLUTE(__ram_nocache_end__) - ABSOLUTE(ORIGIN(ram_nocache)));
+        . = ALIGN(32);
+    } > ram
+    . = ALIGN(4);
+    __tcm_text_start__ = ABSOLUTE(ADDR(tcm_text)); __tcm_text_end__ = ABSOLUTE(ADDR(tcm_text) + SIZEOF(tcm_text)); __tcm_text_load__ = ABSOLUTE(LOADADDR(tcm_text)); tcm_text :
+    {
+        . = ALIGN(4);
+        *(.tcm_code*)
+        *(.sclock_rlt_code*)
+        *_udivdi3*.o*(.text*)
+        . = ALIGN(4);
+    } > ram AT > rom
+    . = ALIGN(4);
+    __tcm_rodata_start__ = ABSOLUTE(ADDR(tcm_rodata)); __tcm_rodata_end__ = ABSOLUTE(ADDR(tcm_rodata) + SIZEOF(tcm_rodata)); __tcm_rodata_load__ = ABSOLUTE(LOADADDR(tcm_rodata)); tcm_rodata :
+    {
+        . = ALIGN(4);
+        *(.tcm_const*)
+        *(.sclock_rlt_const*)
+        *bl616cl_clock*.o*(.rodata*)
+        *bl616cl_common*.o*(.rodata*)
+        *bl616cl_ef_cfg*.o*(.rodata*)
+        *bl616cl_glb*.o*(.rodata*)
+        *bl616cl_pds*.o*(.rodata*)
+        *bl616cl_pm*.o*(.rodata*)
+        *bflb_sf_cfg*.o*(.rodata*)
+        *bflb_sf_ctrl*.o*(.rodata*)
+        *bflb_sflash*.o*(.rodata*)
+        *bflb_xip_sflash*.o*(.rodata*)
+        *bflb_ef_ctrl*.o*(.rodata*)
+        *bflb_flash*.o*(.rodata*)
+        *bl616cl_romapi_patch*.o*(.rodata*)
+        . = ALIGN(4);
+    } > ram AT > rom
+    PROVIDE( __global_pointer$ = . + 0x800 );
+    __tcm_data_start__ = ABSOLUTE(ADDR(tcm_data)); __tcm_data_end__ = ABSOLUTE(ADDR(tcm_data) + SIZEOF(tcm_data)); __tcm_data_load__ = ABSOLUTE(LOADADDR(tcm_data)); tcm_data :
+    {
+        . = ALIGN(4);
+        *(.tcm_data)
+        . = ALIGN(4);
+    } > ram AT > rom
+    __ram_data_start__ = ABSOLUTE(ADDR(ram_data)); __ram_data_end__ = ABSOLUTE(ADDR(ram_data) + SIZEOF(ram_data)); __ram_data_load__ = ABSOLUTE(LOADADDR(ram_data)); ram_data :
+    {
+        . = ALIGN(4);
+        *(.data)
+        *(.data.*)
+        *(.sdata)
+        *(.sdata.*)
+        *(.sdata2)
+        *(.sdata2.*)
+        . = ALIGN(8);
+        *(._k_queue.static.*)
+        *(._k_sem.static.*)
+        *(._k_mutex.static.*)
+        _bt_gatt_service_static_list_start = .;
+        KEEP(*(SORT_BY_NAME("._bt_gatt_service_static.static.*")))
+        _bt_gatt_service_static_list_end = .;
+        _bt_l2cap_fixed_chan_list_start = .;
+        KEEP(*(SORT_BY_NAME("._bt_l2cap_fixed_chan.static.*")))
+        _bt_l2cap_fixed_chan_list_end = .;
+        _bt_l2cap_br_fixed_chan_list_start = .;
+        KEEP(*(SORT_BY_NAME("._bt_l2cap_br_fixed_chan.static.*")))
+        _bt_l2cap_br_fixed_chan_list_end = .;
+        . = ALIGN(4);
+        __bflb_log_tags_start__ = .;
+        *(.bflb_log_tags_array)
+        . = ALIGN(4);
+        __bflb_log_tags_end__ = .;
+    } > ram AT > rom
+    __ram_bss_start__ = ABSOLUTE(ADDR(ram_bss)); __ram_bss_end__ = ABSOLUTE(ADDR(ram_bss) + SIZEOF(ram_bss)); ram_bss (NOLOAD):
+    {
+        . = ALIGN(4);
+        *(.bss*)
+        *(.sbss*)
+        *(COMMON)
+        . = ALIGN(4);
+    } > ram
+    __ram_noinit_start__ = ABSOLUTE(ADDR(ram_noinit)); __ram_noinit_end__ = ABSOLUTE(ADDR(ram_noinit) + SIZEOF(ram_noinit)); ram_noinit (NOLOAD):
+    {
+        . = ALIGN(16);
+        . = . + 0x1000;
+        __StackTop = .;
+        __freertos_irq_stack_top = .;
+        *(.noinit_data*)
+        KEEP(*(.heap*))
+        . = ALIGN(4);
+    } > ram
+    __ram_end__ = ABSOLUTE(.);
+    __ram_wifi_start__ = ABSOLUTE(ORIGIN(ram_wifi)); . = ABSOLUTE(ORIGIN(ram_wifi));
+    __wifi_bss_start__ = ABSOLUTE(ADDR(wifi_bss)); __wifi_bss_end__ = ABSOLUTE(ADDR(wifi_bss) + SIZEOF(wifi_bss)); wifi_bss (NOLOAD):
+    {
+        _sshram = . ;
+      *(SHAREDRAMIPC)
+      *(SHAREDRAM)
+      *ipc_shared.o(COMMON)
+      *sdu_shared.o(COMMON)
+      *hal_desc.o(COMMON)
+      *txl_buffer_shared.o(COMMON)
+      *txl_frame_shared.o(COMMON)
+      *scan_shared.o(COMMON)
+      *scanu_shared.o(COMMON)
+      *mfp_bip.o(COMMON)
+      *me_mic.o(COMMON)
+      *(.wifi_ram*)
+      _eshram = . ;
+      . = ALIGN(16);
+    } > ram_wifi
+    __ram_wifi_end__ = ABSOLUTE(.);
+    __hbn_memory_start__ = ABSOLUTE(ORIGIN(hbn_memory)); . = ABSOLUTE(ORIGIN(hbn_memory));
+    __hbn_ram_start__ = ABSOLUTE(ADDR(hbn_ram)); __hbn_ram_end__ = ABSOLUTE(ADDR(hbn_ram) + SIZEOF(hbn_ram)); __hbn_ram_load__ = ABSOLUTE(LOADADDR(hbn_ram)); hbn_ram :
+    {
+        . = ALIGN(32);
+        KEEP(*(.hbn_code.*))
+        KEEP(*(.hbn_data.*))
+        . = ALIGN(32);
+    } > hbn_memory AT > rom
+    __hbn_memory_end__ = ABSOLUTE(.);
+    .get_rom_lma 0x0:
+    {
+    } AT > rom
+    __rom_start__ = ORIGIN(rom);
+    . = LOADADDR(.get_rom_lma);
+    . = ALIGN(4);
+    __rom_text_start__ = ABSOLUTE(ADDR(rom_text)); __rom_text_end__ = ABSOLUTE(ADDR(rom_text) + SIZEOF(rom_text)); __rom_text_load__ = ABSOLUTE(LOADADDR(rom_text)); rom_text :
+    {
+        *(.text*)
+        . = ALIGN(4);
+    } > rom
+    . = ALIGN(4);
+    __rom_rodata_start__ = ABSOLUTE(ADDR(rom_rodata)); __rom_rodata_end__ = ABSOLUTE(ADDR(rom_rodata) + SIZEOF(rom_rodata)); rom_rodata :
+    {
+        . = ALIGN(4); __mem_sections = ABSOLUTE(.);
+        LONG(__ram_nocache_start__); LONG(__ram_nocache_end__); LONG(__ram_nocache_end__);
+        . = ALIGN(4); __ram_section = ABSOLUTE(.);
+        LONG(__ram_start__); LONG(__ram_end__); LONG(ORIGIN(ram)+LENGTH(ram));
+        . = ALIGN(4); __psram_section = ABSOLUTE(.);
+        LONG(__ram_psram_start__); LONG(__ram_psram_end__); LONG(ORIGIN(ram_psram)+LENGTH(ram_psram));
+        . = ALIGN(4); __ram_wifi_section = ABSOLUTE(.);
+        LONG(__ram_wifi_start__); LONG(__ram_wifi_end__); LONG(ORIGIN(ram_wifi)+LENGTH(ram_wifi));
+        LONG(0xffffffff); LONG(0xffffffff); LONG(0xffffffff);
+        . = ALIGN(4); __mem_copy_sections = ABSOLUTE(.);
+        LONG(__ram_nocache_data_start__); LONG(__ram_nocache_data_end__); LONG(__ram_nocache_data_load__);
+        LONG(__tcm_text_start__); LONG(__tcm_text_end__); LONG(__tcm_text_load__);
+        LONG(__tcm_rodata_start__); LONG(__tcm_rodata_end__); LONG(__tcm_rodata_load__);
+        LONG(__tcm_data_start__); LONG(__tcm_data_end__); LONG(__tcm_data_load__);
+        LONG(__ram_data_start__); LONG(__ram_data_end__); LONG(__ram_data_load__);
+        LONG(__psram_data_start__); LONG(__psram_data_end__); LONG(__psram_data_load__);
+        LONG(0xffffffff); LONG(0xffffffff); LONG(0xffffffff);
+        . = ALIGN(4); __mem_setz_sections = ABSOLUTE(.);
+        LONG(__ram_bss_start__); LONG(__ram_bss_end__);
+        LONG(__wifi_bss_start__); LONG(__wifi_bss_end__);
+        LONG(__psram_bss_start__); LONG(__psram_bss_end__);
+        LONG(0xffffffff); LONG(0xffffffff);
+        . = ALIGN(4); __mem_noinit_sections = ABSOLUTE(.);
+        LONG(__ram_nocache_noinit_start__); LONG(__ram_nocache_noinit_end__);
+        LONG(__ram_noinit_start__); LONG(__ram_noinit_end__);
+        LONG(__psram_noinit_data_start__); LONG(__psram_noinit_data_end__);
+        LONG(0xffffffff); LONG(0xffffffff);
+        . = ALIGN(4); _dump_sections = ABSOLUTE(.);
+        LONG(ORIGIN(ram_nocache)); LONG(__ram_nocache_end__ - ORIGIN(ram_nocache));
+        LONG(ORIGIN(ram) + (__ram_nocache_end__ - ORIGIN(ram_nocache)));
+        LONG(LENGTH(ram) - (__ram_nocache_end__ - ORIGIN(ram_nocache)));
+        LONG(ORIGIN(ram_wifi)); LONG(LENGTH(ram_wifi));
+        LONG(0xffffffff); LONG(0xffffffff);
+        *(.rodata*)
+        . = ALIGN(4);
+        __usbh_class_info_start__ = .;
+        KEEP(*(.usbh_class_info))
+        . = ALIGN(4);
+        __usbh_class_info_end__ = .;
+        . = ALIGN(4);
+        __sysinit_array_start = .;
+        KEEP(*(SORT_BY_NAME(.sysinit.*)))
+        __sysinit_array_stop = .;
+        *(.srodata*)
+        . = ALIGN(4);
+        __preinit_array_start = .;
+        KEEP (*(.preinit_array))
+        __preinit_array_end = .;
+        . = ALIGN(4);
+        __init_array_start = .;
+        KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+        KEEP (*(.init_array))
+        __init_array_end = .;
+        . = ALIGN(4);
+        *(.gcc_except_table.*)
+        . = ALIGN(4);
+    } > rom
+    .last_section :
+    {
+        . = ALIGN(1024);
+    } > rom
+    __rom_end__ = ABSOLUTE(.);
+    __HeapBase = ABSOLUTE((__ram_end__ + 3) & ~3);
+    __HeapLimit = ABSOLUTE(ORIGIN(ram) + LENGTH(ram));
+    __psram_heap_base = ABSOLUTE((__ram_psram_end__ + 31) & ~31);
+    __psram_limit = ABSOLUTE(ORIGIN(ram_psram) + LENGTH(ram_psram));
+    _heap_wifi_start = ABSOLUTE(__ram_wifi_end__);
+    _heap_wifi_size = ABSOLUTE(ORIGIN(ram_wifi) + LENGTH(ram_wifi) - _heap_wifi_start);
+}

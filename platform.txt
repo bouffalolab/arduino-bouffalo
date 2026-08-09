@@ -1,0 +1,66 @@
+name=Bouffalo BL616CL Arduino Platform
+version=0.1.0
+
+compiler.path={runtime.platform.path}/tools/Xuantie-900-gcc/bin/
+compiler.path.linux={runtime.platform.path}/tools/Xuantie-900-gcc/bin/
+
+compiler.c.cmd=riscv64-unknown-elf-gcc
+compiler.cpp.cmd=riscv64-unknown-elf-g++
+compiler.S.cmd=riscv64-unknown-elf-gcc
+compiler.ar.cmd=riscv64-unknown-elf-ar
+compiler.objcopy.cmd=riscv64-unknown-elf-objcopy
+compiler.size.cmd=riscv64-unknown-elf-size
+
+compiler.warning_flags.none=-w
+compiler.warning_flags.default=
+compiler.warning_flags.more=-Wall -Wextra
+compiler.warning_flags.all=-Wall -Wextra -Wpedantic
+
+compiler.common.flags=-march=rv32imafc_xtheade -mabi=ilp32f -mtune=e907 -Os -g -fno-jump-tables -fno-common -fms-extensions -ffunction-sections -fdata-sections -fstrict-volatile-bitfields -fshort-enums -fno-builtin
+compiler.c.flags={compiler.common.flags} -std=gnu99
+compiler.cpp.flags={compiler.common.flags} -std=gnu++17 -fno-exceptions -fno-rtti -fno-use-cxa-atexit
+compiler.S.flags={compiler.common.flags} -x assembler-with-cpp
+compiler.ar.flags=rcs
+compiler.c.elf.flags=-march=rv32imafc_xtheade -mabi=ilp32f -mtune=e907 -Wl,--cref -Wl,--gc-sections -nostartfiles -fms-extensions -ffunction-sections -fdata-sections --specs=nano.specs -ufw_header -Wl,-wrap,snprintf -Wl,-wrap,sprintf
+compiler.sdk.path={runtime.platform.path}/tools/sdk/{build.mcu}
+compiler.sdk.includes="-I{compiler.sdk.path}/include" "-I{compiler.sdk.path}/include/freertos" "-I{compiler.sdk.path}/include/freertos/portable" "-I{compiler.sdk.path}/include/freertos/chip_specific" "-I{compiler.sdk.path}/include/board" "-I{compiler.sdk.path}/include/sdk/mm" "-I{compiler.sdk.path}/include/sdk/mm/tlsf" "-I{compiler.sdk.path}/include/sdk/sysinit" "-I{compiler.sdk.path}/include/sdk/libc" "-I{compiler.sdk.path}/include/sdk/utils" "-I{compiler.sdk.path}/include/sdk/utils/log" "-I{compiler.sdk.path}/include/sdk/utils/ring_buffer" "-I{compiler.sdk.path}/include/sdk/utils/bflb_block_pool" "-I{compiler.sdk.path}/include/sdk/utils/bflb_timestamp" "-I{compiler.sdk.path}/include/sdk/utils/getopt" "-I{compiler.sdk.path}/include/sdk/utils/coredump" "-I{compiler.sdk.path}/include/sdk/utils/cjson" "-I{compiler.sdk.path}/include/sdk/utils/math/include" "-I{compiler.sdk.path}/include/sdk/utils/list" "-I{compiler.sdk.path}/include/sdk/lhal" "-I{compiler.sdk.path}/include/sdk/lhal/arch" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head/Core/Include" "-I{compiler.sdk.path}/include/sdk/lhal-config" "-I{compiler.sdk.path}/include/sdk/flash" "-I{compiler.sdk.path}/include/sdk/soc" "-I{compiler.sdk.path}/include/sdk/soc/hardware" "-I{compiler.sdk.path}/include/sdk/sys" "-I{compiler.sdk.path}/include/sdk/sys/bl616cl"
+compiler.cpreprocessor.flags=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_BL616CL -DBL616CL -DARCH_RISCV -DBFLB_USE_HAL_DRIVER -DBFLB_USE_ROM_DRIVER -DCONFIG_BOUFFALO_SDK -DCONFIG_LHAL_ROMAPI -DCONFIG_FREERTOS -DCONFIG_IRQ_NUM=83 -DCONFIG_LIBC_FLOAT=0 -DCONFIG_LIBC_LONG_LONG=1 -DCONFIG_LOG_LEVEL=3 -DconfigMTIME_BASE_ADDRESS=0xE000BFF8UL -DconfigMTIMECMP_BASE_ADDRESS=0xE0004000UL -DportasmHANDLE_INTERRUPT=interrupt_entry -Ddefault_interrupt_handler=freertos_risc_v_trap_handler -include "{compiler.sdk.path}/include/autoconf.h" {compiler.sdk.includes}
+compiler.sdk.libs=-lfreertos -llhal -llibc -lmm -lstd -lsys -lsysinit -lutils
+compiler.system.libs=-lstdc++ -lsupc++ -lc -lm -lgcc
+
+compiler.c.extra_flags=
+compiler.cpp.extra_flags=
+compiler.S.extra_flags=
+compiler.c.elf.extra_flags=
+compiler.ar.extra_flags=
+compiler.objcopy.extra_flags=
+
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.cpreprocessor.flags} {compiler.c.flags} {compiler.warning_flags} {build.extra_flags} {compiler.c.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} {compiler.warning_flags} {build.extra_flags} {compiler.cpp.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.cpreprocessor.flags} {compiler.S.flags} {compiler.warning_flags} {build.extra_flags} {compiler.S.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
+recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} "-T{compiler.sdk.path}/ld" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{compiler.sdk.path}/lib" "-L{compiler.sdk.path}/lib_board" -Wl,--whole-archive "{archive_file_path}" {object_files} -lapp {compiler.sdk.libs} -Wl,--no-whole-archive -Wl,--start-group {compiler.system.libs} -Wl,--end-group -Wl,-EL -o "{build.path}/{build.project_name}.elf"
+
+recipe.objcopy.eep.pattern=
+recipe.objcopy.hex.pattern=
+recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary {compiler.objcopy.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+
+recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.platform.path}/tools/bflb_fw_post_proc/bflb_fw_post_proc{tools.bflb_fw_post_proc.cmd_suffix}" --chipname=bl616cl --imgfile="{build.path}/{build.project_name}.bin" --appkeys=shared --ptfile {runtime.platform.path}/tools/partitions/{build.partition_config} --boot2file {compiler.sdk.path}/boot2/{build.boot2} --dtsfile {compiler.sdk.path}/dts/{build.dts_config}
+recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.platform.path}/tools/runtime_bundle/copy_image_artifacts.py" {compiler.sdk.path} "{build.path}" "{build.project_name}"
+
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+recipe.size.regex=^(?:\.fw_header|\.init|\.rftlv\.tool|\.ver|\.init_code|tcm_text|tcm_rodata|tcm_data|ram_data|rom_text|rom_rodata|\.last_section)\s+([0-9]+).*$
+recipe.size.regex.data=^(?:ram_data|ram_bss|ram_noinit)\s+([0-9]+).*$
+
+recipe.output.tmp_file={build.project_name}.bin
+recipe.output.save_file={build.project_name}.{build.variant}.bin
+
+# Stage 1 currently bundles and validates Linux x86-64 host tools only.
+tools.bflb_fw_post_proc.cmd_suffix=-ubuntu
+tools.bflb_fw_post_proc.cmd_suffix.linux=-ubuntu
+
+tools.blflash.cmd=BLFlashCommand-ubuntu
+tools.blflash.cmd.linux=BLFlashCommand-ubuntu
+tools.blflash.upload.params.verbose=
+tools.blflash.upload.params.quiet=
+tools.blflash.upload.pattern="{runtime.platform.path}/tools/bouffalo_flash_cube/{cmd}" --interface=uart --chipname=bl616cl --port="{serial.port}" --baudrate={upload.speed} --firmware="{build.path}/{build.project_name}.bin"
