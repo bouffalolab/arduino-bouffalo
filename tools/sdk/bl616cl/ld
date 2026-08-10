@@ -279,6 +279,14 @@ SECTIONS
         LONG(0xffffffff); LONG(0xffffffff);
         *(.rodata*)
         . = ALIGN(4);
+        __fsymtab_start = .;
+        KEEP(*(FSymTab))
+        __fsymtab_end = .;
+        . = ALIGN(4);
+        __vsymtab_start = .;
+        KEEP(*(VSymTab))
+        __vsymtab_end = .;
+        . = ALIGN(4);
         __usbh_class_info_start__ = .;
         KEEP(*(.usbh_class_info))
         . = ALIGN(4);

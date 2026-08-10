@@ -116,8 +116,8 @@ CHIP_CONFIG: dict[str, dict[str, object]] = {
     },
 }
 
-# Archives the SDK build is expected to produce for every chip.
-EXPECTED_SDK_ARCHIVES = {
+# Archives every chip build MUST produce (subset of actual output).
+CORE_SDK_ARCHIVES = {
     "libfreertos.a",
     "liblhal.a",
     "liblibc.a",
@@ -595,15 +595,15 @@ def main() -> int:
 
     # ——— validate archives —————————————————————————————————————
     archives = {p.name: p for p in (build_out / "lib").glob("*.a")}
-    expected = EXPECTED_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
-    missing = expected - archives.keys()
+    required = CORE_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
+    missing = required - archives.keys()
     if missing:
         raise RuntimeError(
-            f"build did not produce expected archives: {sorted(missing)}"
+            f"build did not produce required archives: {sorted(missing)}"
         )
-    unexpected = archives.keys() - expected
-    if unexpected:
-        print(f"Note: additional SDK archives (ok): {sorted(unexpected)}")
+    extras = archives.keys() - required
+    if extras:
+        print(f"Note: additional SDK archives (ok): {sorted(extras)}")
 
     # ——— ELF sanity check ——————————————————————————————————————
     probe_elf_name = f"arduino_bl616cl_runtime_{chip}.elf"
@@ -642,9 +642,26 @@ def main() -> int:
     (sdk_staging / "boot2").mkdir(parents=True)
     (sdk_staging / "dts").mkdir(parents=True)
 
-    # SDK archives
-    for name in sorted(EXPECTED_SDK_ARCHIVES):
+    # SDK archives — copy ALL .a files (core + optional like BLE/WiFi)
+    for name in sorted(archives):
+        if name == EXPECTED_BOARD_ARCHIVE:
+            continue
         copy_file(archives[name], sdk_staging / "lib" / name)
+
+    # btblecontroller — separately built precompiled lib (BLE controller)
+    btble_dir = build_dir / "build_btblecontroller"
+    if btble_dir.is_dir():
+        for btble_lib in sorted(btble_dir.glob("libbtblecontroller_*.a")):
+            copy_file(btble_lib, sdk_staging / "lib" / btble_lib.name)
+            print(f"Note: copied btblecontroller: {btble_lib.name}")
+
+    # phyrf — precompiled RF calibration library (required by BLE/WiFi)
+    phyrf_dir = sdk / "drivers" / "soc" / chip / "phyrf"
+    if phyrf_dir.is_dir():
+        for phyrf_candidate in sorted(phyrf_dir.glob("lib-*/lib*_phyrf.a")):
+            copy_file(phyrf_candidate, sdk_staging / "lib" / phyrf_candidate.name)
+            print(f"Note: copied phyrf: {phyrf_candidate.name}")
+
     # board BSP archive → chip-level SDK (not variant)
     copy_file(archives[EXPECTED_BOARD_ARCHIVE],
               sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
@@ -687,8 +704,8 @@ def main() -> int:
             )
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
-    # board headers
-    copy_headers([(board_dir, Path())], variant_staging / "include")
+    # board headers → sdk/include/board
+    copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
     # ring_buffer and other utils
     copy_headers(
         [(sdk / "components" / "utils" / "ring_buffer",

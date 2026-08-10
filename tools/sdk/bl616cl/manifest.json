@@ -12,13 +12,41 @@
   "board": "bl616cldk",
   "chip": "bl616cl",
   "files": {
+    "boot2/boot2_bl616cl_isp_release_v8.2.1.bin": {
+      "sha256": "5db40a7b3dde93058f596d003099032edc692e7b21e0aee4df664bc91481d0f8",
+      "size": 49696
+    },
     "defconfig": {
-      "sha256": "1d1af364dd599d5e0b8a7ba3b73f62e5499bcb57befa4b60a52942474f2b1fbe",
-      "size": 722
+      "sha256": "1da66de36b8186c1265e4527a047948b2aeef8b1c1641174b2f68011d2de8005",
+      "size": 880
+    },
+    "dts/bl_factory_params_IoTKitA_auto.dts": {
+      "sha256": "ae33ff0a22c8fe9ab3abaf9bf206a60c3a0b6184c0dd63697802774b7ae8b8ae",
+      "size": 10718
     },
     "include/autoconf.h": {
-      "sha256": "049b7c0ab9d0c3987bfff30c0dacb364f299287950e3e8ca0083cfce495c7f38",
-      "size": 1137
+      "sha256": "d15b4c64abffa4a0430483c076ac57acc3a07ba43c18961b95aac28d2618c88f",
+      "size": 1289
+    },
+    "include/board/board.h": {
+      "sha256": "dcb723efee63c67527e8f46ff2ca95bd9e87a9d50e6d4db46cacc81139a39188",
+      "size": 1613
+    },
+    "include/board/board_flash_psram.h": {
+      "sha256": "57cd67730171d86db760c6d5b8cf6236908a23ea9eb59b516feb59bbe7f40bd9",
+      "size": 369
+    },
+    "include/board/board_gpio.h": {
+      "sha256": "b9b232e584eb7d66eeb8a3298c7a68797b28e08494ba109fee01a00db29ed4af",
+      "size": 3349
+    },
+    "include/board/board_rf.h": {
+      "sha256": "d8dcadb50b53697b5d1af001e871bf49d801b3d50ca33b484ca4606e73d2caa4",
+      "size": 506
+    },
+    "include/board/fw_header.h": {
+      "sha256": "56ebb9b74d9b4e8cb4b1123ed8fec92e598682e59b1c18a75f2f0d2aee6ab699",
+      "size": 9553
     },
     "include/freertos/FreeRTOS.h": {
       "sha256": "96388ebce5d1408a4bda5e3abc49ab3c0190a9500fc53ebac1021720e06b437c",
@@ -1141,15 +1169,27 @@
       "size": 5158
     },
     "ld": {
-      "sha256": "e3b3920d6f22121f1d81737a11009b80a6761a731a49576331a2eb5d8a1395bc",
-      "size": 13190
+      "sha256": "56b8d819ef41a35113ff1f63c7880c7f9873d85fd18462356732c076d6c1edf8",
+      "size": 13396
+    },
+    "lib/libbl616cl_phyrf.a": {
+      "sha256": "47a64069fe980d098b980884e91f2a7abff90d911bc87819c3f6dffc74bb5725",
+      "size": 1781054
+    },
+    "lib/libblestack.a": {
+      "sha256": "2434d2613af658e7bccfb0367f89ce28512a52ee5d1a2b166fa19f661b0133b6",
+      "size": 4156482
+    },
+    "lib/libbtblecontroller_bl616cl_m2s1.a": {
+      "sha256": "01f6cbc4f1e43a577a7c2af7a4636a880fd6a264a552f4d2609abd44708f4fb0",
+      "size": 6636266
     },
     "lib/libfreertos.a": {
       "sha256": "55e58e375e5ba91c1130f9a446f7b4167338147dba1409bf0d9be3481c91ff15",
       "size": 952244
     },
     "lib/liblhal.a": {
-      "sha256": "4ddb1aac603e35adf748bde175dc70032821424c6aa43cc1d4576d5d9808573a",
+      "sha256": "92a5b955049e2761a62b918ba40d478c4feda8ef485bca49e15651c3e77db414",
       "size": 2582658
     },
     "lib/liblibc.a": {
@@ -1157,12 +1197,20 @@
       "size": 648956
     },
     "lib/libmm.a": {
-      "sha256": "d8b4b3240c81ab800d9b1af213450ceaef92e2da8f42dbf93648592bddbedc71",
-      "size": 340278
+      "sha256": "9b6e2f82ebacf8f11b30e086f2ddab6f86ef3fba3c21b68c8622ccc8a8cf02f9",
+      "size": 341586
+    },
+    "lib/librfparam.a": {
+      "sha256": "2930bda1ff2b792f0964ee8607a9d578213af71cc6af69481d54f2381ac1392c",
+      "size": 123122
+    },
+    "lib/libshell.a": {
+      "sha256": "322a04fa45cef730b63c312070f1fa9b905035157c7808fec2e1371a1d96de0c",
+      "size": 183158
     },
     "lib/libstd.a": {
-      "sha256": "bcfbc16b2b67071d5dfbb26a4b80f84e354db359695857810da0ae2f6ee42f42",
-      "size": 840584
+      "sha256": "185c9754b9a09ff0dd411a4e73e8b987c7ee12295d9412662e03a6341a89f990",
+      "size": 1024566
     },
     "lib/libsys.a": {
       "sha256": "1424cab46e9a00d6a055d4697faeb5a127384abbdd95cf71373d3859bf20f86e",
@@ -1175,6 +1223,10 @@
     "lib/libutils.a": {
       "sha256": "c5505cdeb041b76d2abde177efe293f75836b33a8ac8352453a532df8e3b7c9b",
       "size": 881870
+    },
+    "lib_board/libapp.a": {
+      "sha256": "f5b5db9e78ee43645497bc5b06013b49846c5f4eea5d97082ab79cb8aef516d9",
+      "size": 309440
     }
   },
   "host_tools": {
