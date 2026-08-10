@@ -9,10 +9,19 @@ reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
 
     hardware/bouffalo/bl616cl/
     ├── cores/bl616cl/                  Arduino Core sources
-    ├── variants/unor4_bl616cl/         board pins/BSP archive/boot assets
-    ├── tools/sdk/bl616cl/{include,lib,ld}
-    ├── tools/runtime_bundle/           offline SDK bundle builder
+    ├── variants/bl616cldk/             pin mapping (pins_arduino.h)
+    ├── tools/sdk/bl616cl/              chip-level runtime bundle
+    │   ├── lib/                         SDK archives
+    │   ├── lib_board/                   board BSP (libapp.a)
+    │   ├── include/                     SDK headers + autoconf.h
+    │   ├── include/board/               board headers
+    │   ├── boot2/                       boot2 binary
+    │   ├── dts/                         DTS config
+    │   └── ld                           linker script
+    ├── tools/partitions/               partition TOML (compile-time → bin)
+    ├── tools/runtime_bundle/           multi-chip bundle generator
     └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
+        (generated, in .gitignore)
 
 The SDK checkout is needed only when deliberately regenerating the checked-in
 runtime bundle.
@@ -36,17 +45,29 @@ before connecting RA4M1 signals. The stage-1 4 MiB partition limits the primary
 firmware slot to 2 MiB; eFuse files are exported for traceability but are not
 burned by the normal Arduino upload action.
 
+## First-time setup
+
+Clone this repo into `hardware/bouffalo/bl616cl/` inside an Arduino CLI
+workspace.  The repo excludes host tools (toolchain, `bflb_fw_post_proc`,
+`BLFlashCommand`) via `.gitignore`.  Generate them once:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /path/to/bouffalo_sdk \
+      --chip bl616cl \
+      --toolchain /path/to/Xuantie-900-gcc
+
+Make sure `arduino-cli` is in PATH or set `ARDUINO_CLI=/path/to/arduino-cli`.
+
 ## Runtime bundle maintenance
 
-The bundle is generated from the pinned Gerrit SDK rather than during each
-Arduino build:
+Regenerate when the SDK, `defconfig`, toolchain, or ABI flags change:
 
     python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
       --sdk /home/pfchen/workspace/bouffalo_sdk_gerrit/bouffalo_sdk \
-      --toolchain-bin /path/to/Xuantie-900-gcc/bin
+      --chip bl616cl \
+      --toolchain /path/to/Xuantie-900-gcc
 
-See `tools/runtime_bundle/README.md` for source commits, output ownership, and
-update rules.
+See `tools/runtime_bundle/README.md` for multi-chip support and details.
 
 ## Verify M0
 

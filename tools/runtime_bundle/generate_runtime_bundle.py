@@ -231,6 +231,64 @@ def resolve_toolchain(toolchain_arg: Path | None,
     return root
 
 
+def _find_best_multilib(base: Path, march: str, mabi: str) -> tuple[str, str]:
+    """Find the best multilib/ target-lib directory under *base*.
+
+    Returns (relative_path, mabi_subdir).  Prefers exact match, then
+    rv32 superset of the requested march, then any rv32 match.
+    """
+    exact = f"{march}/{mabi}"
+    if (base / exact).is_dir():
+        return exact, mabi
+
+    # Collect all rv32 arch directories (each may contain multiple mabi subdirs)
+    rv32_arches: dict[str, list[str]] = {}
+    for d in sorted(base.iterdir()):
+        if not d.is_dir() or d.name in ("include", "include-fixed", "."):
+            continue
+        if not d.name.startswith("rv32"):
+            continue
+        subdirs = sorted(
+            sd.name for sd in d.iterdir() if sd.is_dir()
+        )
+        if subdirs:
+            rv32_arches[d.name] = subdirs
+
+    if not rv32_arches:
+        # No rv32 at all — pick last available (may be rv64)
+        candidates = sorted(
+            p.name for p in base.iterdir()
+            if p.is_dir() and p.name not in ("include", "include-fixed")
+        )
+        if not candidates:
+            raise RuntimeError(f"no multilib directories found under {base}")
+        best_arch = candidates[-1]
+        subdirs = sorted(
+            sd.name for sd in (base / best_arch).iterdir() if sd.is_dir()
+        )
+        best_mabi = subdirs[-1] if subdirs else "."
+        result = f"{best_arch}/{best_mabi}"
+        print(f"Note: no rv32 multilib in {base}; "
+              f"using {result}", file=sys.stderr)
+        return result, best_mabi
+
+    # Prefer exact mabi match in any rv32 arch.
+    for arch in sorted(rv32_arches):
+        if mabi in rv32_arches[arch]:
+            result = f"{arch}/{mabi}"
+            print(f"Note: multilib {exact} not found; using {result}",
+                  file=sys.stderr)
+            return result, mabi
+
+    # No exact mabi — pick arch with most mabi options, its last mabi.
+    best_arch = max(rv32_arches, key=lambda a: len(rv32_arches[a]))
+    best_mabi = rv32_arches[best_arch][-1]
+    result = f"{best_arch}/{best_mabi}"
+    print(f"Note: multilib {exact} not found; using {result}",
+          file=sys.stderr)
+    return result, best_mabi
+
+
 def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
                            prefix: str, arch: dict[str, object]) -> str:
     """Copy only the files needed by Arduino compile/link recipes.
@@ -265,36 +323,15 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
         raise RuntimeError(f"no GCC libexec version found under {libexec_base}")
     gcc_ver = libexec_dirs[-1].name  # use highest version
 
-    # Select the multilib directory matching the chip's ABI.
-    multilib_base = root / "lib" / "gcc" / prefix / gcc_ver
-    multilib = f"{march}/{mabi}"
-    if not (multilib_base / multilib).is_dir():
-        # Fall back: try the alphabetically last directory
-        candidates = sorted(
-            p.name for p in multilib_base.iterdir()
-            if p.is_dir() and p.name not in ("include", "include-fixed")
-        )
-        if not candidates:
-            raise RuntimeError(
-                f"no multilib directory found under {multilib_base}"
-            )
-        multilib = candidates[-1]
-        print(f"Note: ABI-matched multilib {march}/{mabi} not found; "
-              f"using {multilib}", file=sys.stderr)
+    # Select the multilib directory.  Try exact match first; if the
+    # toolchain has e.g. rv32imafdc_xtheade when we asked for
+    # rv32imafc_xtheade, pick the closest rv32 superset.
+    multilib_base = (root / "lib" / "gcc" / prefix / gcc_ver)
+    multilib, _ = _find_best_multilib(multilib_base, march, mabi)
 
-    # Select the target lib directory matching the chip's ABI.
+    # Select the target lib directory (riscv64-unknown-elf/lib/).
     target_lib_base = root / prefix / "lib"
-    target_lib = f"{march}/{mabi}"
-    if not (target_lib_base / target_lib).is_dir():
-        # Fall back: try the alphabetically last directory, or "."
-        candidates = sorted(
-            p.name for p in target_lib_base.iterdir()
-            if p.is_dir()
-        ) if target_lib_base.is_dir() else []
-        target_lib = candidates[-1] if candidates else "."
-        if candidates:
-            print(f"Note: ABI-matched target lib {march}/{mabi} not found; "
-                  f"using {target_lib}", file=sys.stderr)
+    target_lib, _ = _find_best_multilib(target_lib_base, march, mabi)
 
     required_files = [
         f"bin/{prefix}-gcc",
@@ -395,6 +432,55 @@ def record_source_versions(sdk: Path) -> dict[str, str]:
     return source_commits
 
 
+def _install_host_tools(platform_root: Path, sdk: Path, chip: str) -> None:
+    """Copy bflb_fw_post_proc and BLFlashCommand (with chip config) into platform."""
+    tools_root = platform_root / "tools"
+
+    post_proc = sdk / "tools" / "bflb_tools" / "bflb_fw_post_proc"
+    pp_bin = require_file(post_proc / "bflb_fw_post_proc-ubuntu",
+                          "Linux post processor")
+    copy_file(pp_bin, tools_root / "bflb_fw_post_proc" / pp_bin.name,
+              executable=True)
+
+    flash_cube = sdk / "tools" / "bflb_tools" / "bouffalo_flash_cube"
+    fc_bin = require_file(flash_cube / "BLFlashCommand-ubuntu",
+                          "Linux FlashCube command")
+    copy_file(fc_bin, tools_root / "bouffalo_flash_cube" / fc_bin.name,
+              executable=True)
+    fc_chip_dst = tools_root / "bouffalo_flash_cube" / "chips" / chip
+    if fc_chip_dst.exists():
+        shutil.rmtree(fc_chip_dst)
+    fc_chip_src = flash_cube / "chips" / chip
+    for relative in (
+        Path("eflash_loader/eflash_loader_cfg.conf"),
+        Path("efuse_bootheader/efuse_bootheader_cfg.conf"),
+        Path("efuse_bootheader/flash_para.bin"),
+    ):
+        copy_file(require_file(fc_chip_src / relative,
+                               f"FlashCube {relative}"),
+                  fc_chip_dst / relative)
+
+
+def _update_manifest_toolchain(sdk_runtime: Path, toolchain_version: str,
+                               arch: dict[str, object], chip: str) -> None:
+    """Update the toolchain field in an existing manifest.json in-place."""
+    manifest_path = sdk_runtime / "manifest.json"
+    if not manifest_path.is_file():
+        return
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    data["toolchain"] = toolchain_version
+    if "abi" in data:
+        data["abi"].update({
+            "march": arch["march"],
+            "mabi": arch["mabi"],
+            "mtune": arch["mtune"],
+        })
+    manifest_path.write_text(
+        json.dumps(data, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -410,6 +496,9 @@ def main() -> int:
     parser.add_argument("--toolchain", type=Path, default=None,
                         help="toolchain root (parent of bin/); "
                              "auto-detected from PATH if omitted")
+    parser.add_argument("--tools-only", action="store_true",
+                        help="skip SDK build — only update host tools "
+                             "(bflb_fw_post_proc, BLFlashCommand) and toolchain")
     parser.add_argument("--keep-build", action="store_true",
                         help="retain the temporary CMake build directory")
     args = parser.parse_args()
@@ -454,7 +543,6 @@ def main() -> int:
 
     # ——— output paths ——————————————————————————————————————————
     sdk_runtime = platform_root / "tools" / "sdk" / chip
-    variant_root = platform_root / "variants" / board
     tools_root = platform_root / "tools"
 
     print(f"Chip:               {chip}")
@@ -464,7 +552,23 @@ def main() -> int:
     print(f"Toolchain:          {toolchain_root}")
     print(f"Toolchain prefix:   {prefix}")
     print(f"Output SDK:         {sdk_runtime}")
-    print(f"Output variant:     {variant_root}")
+
+    # ——— tools-only shortcut ——————————————————————————————————
+    if args.tools_only:
+        if not sdk_runtime.is_dir() or not (sdk_runtime / "manifest.json").is_file():
+            raise RuntimeError(
+                f"--tools-only requires an existing {sdk_runtime}. "
+                f"Run without --tools-only first."
+            )
+        _install_host_tools(platform_root, sdk, chip)
+        tc_dest = tools_root / toolchain_dirname
+        toolchain_version = copy_minimal_toolchain(
+            toolchain_root, tc_dest, prefix, arch
+        )
+        _update_manifest_toolchain(sdk_runtime, toolchain_version, arch, chip)
+        print(f"\nToolchain installed in     {tc_dest}")
+        print(f"Host tools updated from    {sdk}")
+        return 0
 
     # ——— build the probe ———————————————————————————————————————
     build_dir = script_dir / "build"
@@ -637,30 +741,7 @@ def main() -> int:
     # variant pins_arduino.h is hand-maintained and NOT overwritten here.
 
     # ——— host tools —————————————————————————————————————————————
-    post_proc = sdk / "tools" / "bflb_tools" / "bflb_fw_post_proc"
-    pp_bin = require_file(post_proc / "bflb_fw_post_proc-ubuntu",
-                          "Linux post processor")
-    copy_file(pp_bin, tools_root / "bflb_fw_post_proc" / pp_bin.name,
-              executable=True)
-
-    flash_cube = sdk / "tools" / "bflb_tools" / "bouffalo_flash_cube"
-    fc_bin = require_file(flash_cube / "BLFlashCommand-ubuntu",
-                          "Linux FlashCube command")
-    copy_file(fc_bin, tools_root / "bouffalo_flash_cube" / fc_bin.name,
-              executable=True)
-    # chip-specific flash resources
-    fc_chip_dst = tools_root / "bouffalo_flash_cube" / "chips" / chip
-    if fc_chip_dst.exists():
-        shutil.rmtree(fc_chip_dst)
-    fc_chip_src = flash_cube / "chips" / chip
-    for relative in (
-        Path("eflash_loader/eflash_loader_cfg.conf"),
-        Path("efuse_bootheader/efuse_bootheader_cfg.conf"),
-        Path("efuse_bootheader/flash_para.bin"),
-    ):
-        copy_file(require_file(fc_chip_src / relative,
-                               f"FlashCube {relative}"),
-                  fc_chip_dst / relative)
+    _install_host_tools(platform_root, sdk, chip)
 
     # ——— toolchain ——————————————————————————————————————————————
     tc_dest = tools_root / toolchain_dirname
