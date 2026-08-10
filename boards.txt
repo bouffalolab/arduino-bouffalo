@@ -1,50 +1,21 @@
-############################################################
-# BL616/8 RISC-V WiFi6 + BLE + ZigBee Chip
-############################################################
+unor4_bl616cl.name=UNO R4 WiFi BL616CL (Stage 1)
+unor4_bl616cl.vid.0=0x0000
+unor4_bl616cl.pid.0=0x0000
 
-BL618G0.name=BL618G0 Board
-BL618G0.platform=BouffaloLab
+unor4_bl616cl.build.mcu=bl616cl
+unor4_bl616cl.build.board=UNOR4_BL616CL
+unor4_bl616cl.build.core=bl616cl
+unor4_bl616cl.build.variant=bl616cldk
+unor4_bl616cl.build.extra_flags=-DBL616CL_STAGE1=1
+unor4_bl616cl.build.partition_config=partition_cfg_4M.toml
+unor4_bl616cl.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4_bl616cl.build.dts_config=bl_factory_params_IoTKitA_auto.dts
 
-BL618G0.build.compiler_path={runtime.tools.Xuantie-900-gcc-2.6.1.path}/bin/
-BL618G0.build.mcu=bouffalolab
-BL618G0.build.architecture=riscv
-BL618G0.build.core=bl616
-BL618G0.build.board=BL618G0
-BL618G0.build.variant=BL618G0
-BL618G0.build.ldscript=linker_script.ld
-# BL618G0.build.extra_flags = -march=rv32imafcpzpsfoperand_xtheade -mabi=ilp32f -mtune=e907
-
-# BL618G0.compiler.sdk.defines={build.variant.path}/defines.txt
-# BL618G0.compiler.sdk.ldflags={build.variant.path}/ldflags.txt
-# BL618G0.compiler.sdk.cflags={build.variant.path}/cflags.txt
-# BL618G0.compiler.sdk.cxxflags={build.variant.path}/cxxflags.txt
-# BL618G0.compiler.sdk.includes={build.variant.path}/includes.txt
-# BL618G0.compiler.sdk.extra_ldflags=-lm -lc -lgcc -lstdc++
-
-# BL618G0.compiler.sdk.libapp="{build.variant.path}/libs/libapp.a"
-# BL618G0.compiler.sdk.liblhal="{build.variant.path}/libs/liblhal.a"
-# BL618G0.compiler.sdk.liblibc="{build.variant.path}/libs/liblibc.a"
-# BL618G0.compiler.sdk.libmm="{build.variant.path}/libs/libmm.a"
-# BL618G0.compiler.sdk.libstd="{build.variant.path}/libs/libstd.a"
-# BL618G0.compiler.sdk.libutils="{build.variant.path}/libs/libutils.a"
-# BL618G0.compiler.sdk.libpka="{build.variant.path}/libs/libpka.a"
-# BL618G0.compiler.sdk.libdsp="{build.variant.path}/libs/libcsi_xt900p32f_dsp.a"
-# BL618G0.compiler.sdk.libfreertos="{build.variant.path}/libs/libfreertos.a"
-
-BL618G0.compiler.sdk.wholebin_conf_path={build.variant.path}/config
-
-BL618G0.compiler.c.extra_flags=
-BL618G0.compiler.cpp.extra_flags=
-
-# BL618G0.vid.0=0xFFFF
-# BL618G0.pid.0=0xFFFF
-
-BL618G0.upload.tool=bflb_flash_tools
-BL618G0.upload.tool.default=bflb_flash_tools
-BL618G0.upload.maximum_size=4190208
-BL618G0.upload.maximum_data_size=196608
-BL618G0.upload.speed=2000000
-
-#############################################################
-
-
+unor4_bl616cl.upload.tool=blflash
+unor4_bl616cl.upload.tool.default=blflash
+unor4_bl616cl.upload.protocol=uart
+unor4_bl616cl.upload.speed=2000000
+# The stage-1 partition gives the primary FW slot 0x200000 bytes.
+unor4_bl616cl.upload.maximum_size=2097152
+# BL616CL SRAM is 384 KiB minus the 64 KiB Wi-Fi reservation in this profile.
+unor4_bl616cl.upload.maximum_data_size=327680

@@ -1,5 +1,0 @@
-if(BOARD_DIR)
-add_subdirectory(${BOARD_DIR}/${BOARD} ${BOARD})
-else()
-add_subdirectory(${BOARD})
-endif()

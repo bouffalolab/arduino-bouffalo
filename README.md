@@ -1,115 +1,89 @@
-# Arduino core for the BouffaloLab chips
-[![Release](https://img.shields.io/github/v/release/bouffalolab/arduino-bouffalo?style=plastic)](https://github.com/bouffalolab/arduino-bouffalo/releases)
+# Arduino BL616CL platform — stage 1
 
-Now start to support BL616/8 chips, other chips to be developed later.
+This local Linux x86-64 development platform implements FQBN
+`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Windows and
+macOS host packages are not yet supplied.
 
-The first version can be compiled and run, but the repository is still in the process of development, most of the APIs are not yet adapted, welcome more people in the community to participate.
+The platform is self-contained for normal Arduino compilation: it does not
+reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
 
-## Installing with Boards Manager
+    hardware/bouffalo/bl616cl/
+    ├── cores/bl616cl/                  Arduino Core sources
+    ├── variants/bl616cldk/             pin mapping (pins_arduino.h)
+    ├── tools/sdk/bl616cl/              chip-level runtime bundle
+    │   ├── lib/                         SDK archives
+    │   ├── lib_board/                   board BSP (libapp.a)
+    │   ├── include/                     SDK headers + autoconf.h
+    │   ├── include/board/               board headers
+    │   ├── boot2/                       boot2 binary
+    │   ├── dts/                         DTS config
+    │   └── ld                           linker script
+    ├── tools/partitions/               partition TOML (compile-time → bin)
+    ├── tools/runtime_bundle/           multi-chip bundle generator
+    └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
+        (generated, in .gitignore)
 
-Currently it supports windows and is tested on windows. Other systems have not been tested yet.
-Install the latest [Arduino IDE](https://www.arduino.cc/en/software), 2.x or higher is recommended.
-Start Arduino and add the package URL address to the development board manager. into "**File->Preferences->Additional Boards Manager URLs**".
-Enter this URL：`https://github.com/bouffalolab/arduino-bouffalo/releases/latest/download/package_bouffalolab_index.json`.
+The SDK checkout is needed only when deliberately regenerating the checked-in
+runtime bundle.
 
-Open Boards Manager from  "**Tools->Board->Boards Manager**" menu; Find the bouffalolab boards and install bouffalolab platform (and don't forget to select your BL618G0 board from Tools->Board menu after installation).
+Implemented:
 
-## Build test
+- standard Arduino `.ino` preprocessing and `setup()`/`loop()` runtime;
+- C/C++ global constructors;
+- BL616CL board startup and FreeRTOS scheduler;
+- GPIO and `LED_BUILTIN` stage-1 mapping;
+- `millis()`, `micros()`, `delay()`, and `delayMicroseconds()`;
+- console `Serial` on BL616CL DK UART0 (GPIO34 TX / GPIO35 RX, 2 Mbit/s);
+- `Serial1` polling UART on GPIO24 TX / GPIO25 RX;
+- C++17 with exceptions and RTTI disabled;
+- `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
+- modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
 
-After the installation is complete and the correct board is selected, you can write a simple code test in Arduino, such as the following code that outputs "*Hello World*" or connect wifi use bl618.
+The variant mapping is for compile/bring-up on `bl616cldk`, not the final UNO R4
+carrier. GPIO32/33 remain reserved for USB. Confirm the production schematic
+before connecting RA4M1 signals. The stage-1 4 MiB partition limits the primary
+firmware slot to 2 MiB; eFuse files are exported for traceability but are not
+burned by the normal Arduino upload action.
 
-```c
+## First-time setup
 
-#include <WiFi.h>
+Clone this repo into `hardware/bouffalo/bl616cl/` inside an Arduino CLI
+workspace.  The repo excludes host tools (toolchain, `bflb_fw_post_proc`,
+`BLFlashCommand`) via `.gitignore`.  Generate them once:
 
-int button_gpio = 33;
-int button_state = false;
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /path/to/bouffalo_sdk \
+      --chip bl616cl \
+      --toolchain /path/to/Xuantie-900-gcc
 
-// Change the WIFI ssid and WIFI password below to yours.
-char *ssid     = "your-ssid";
-char *password = "your-password";
+Make sure `arduino-cli` is in PATH or set `ARDUINO_CLI=/path/to/arduino-cli`.
 
-void setup() {
-    Serial.begin(2000000);
-    delay(10);
+## Runtime bundle maintenance
 
-    // set LED output
-    pinMode(LED_BUILTIN, OUTPUT);
-    // set input key SW3
-    pinMode(button_gpio, INPUT_PULLUP);
+Regenerate when the SDK, `defconfig`, toolchain, or ABI flags change:
 
-    WiFi.begin(ssid, password);
-    // Will try for about 10 seconds (20x 500ms)
-    int tryDelay = 500;
-    int numberOfTries = 20;
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /home/pfchen/workspace/bouffalo_sdk_gerrit/bouffalo_sdk \
+      --chip bl616cl \
+      --toolchain /path/to/Xuantie-900-gcc
 
-    while (true) {
-        switch(WiFi.status()) {
-            case WL_NO_SSID_AVAIL:
-                Serial.println("[WiFi] SSID not found");
-                break;
-            case WL_CONNECT_FAILED:
-                Serial.print("[WiFi] Failed - WiFi not connected! Reason: ");
-                return;
-                break;
-            case WL_CONNECTION_LOST:
-                Serial.println("[WiFi] Connection was lost");
-                break;
-            case WL_SCAN_COMPLETED:
-                Serial.println("[WiFi] Scan is completed");
-                break;
-            case WL_DISCONNECTED:
-                Serial.println("[WiFi] WiFi is disconnected");
-                break;
-            case WL_CONNECTED:
-                Serial.println("[WiFi] WiFi is connected!");
-                Serial.print("[WiFi] IP address: ");
-                // Serial.println(WiFi.localIP());
-                return;
-                break;
-            default:
-                Serial.print("[WiFi] WiFi Status: ");
-                Serial.println(WiFi.status());
-                break;
-        }
-        delay(tryDelay);
+See `tools/runtime_bundle/README.md` for multi-chip support and details.
 
-        if(numberOfTries <= 0){
-          Serial.print("[WiFi] Failed to connect to WiFi!");
-          // Use disconnect function to force stop trying to connect
-          WiFi.disconnect();
-          return;
-        } else {
-          numberOfTries--;
-        }
-    }
+## Verify M0
 
-}
+    arduino-cli board details \
+      --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl
 
-void loop() {
+## Compile M1 smoke sketches
 
-    button_state = digitalRead(button_gpio);
-    if (button_state == LOW)
-    {
-        // Disconnect from WiFi
-        Serial.println("[WiFi] Disconnecting from WiFi!");
-        // This function will disconnect and turn off the WiFi (NVS WiFi data is kept)
-        WiFi.disconnect();
-        Serial.println("[WiFi] Disconnected from WiFi!");
-        delay(1000);
-    }
+    arduino-cli compile --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
+      hardware/bouffalo/bl616cl/examples/Blink
 
-    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-    delay(1000);
+    arduino-cli compile --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
+      hardware/bouffalo/bl616cl/examples/Serial
 
-}
-
-```
-
-After writing and clicking Verify, if it doesn't report an error it means the installation is working.
-
-# Other
-
-
+The final bridge sketch remains a later milestone; stage 1 intentionally does
+not provide ESP32 USB/Wi-Fi compatibility APIs.

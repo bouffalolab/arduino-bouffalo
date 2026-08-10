@@ -1,3 +1,0 @@
-sdk_add_subdirectory_ifdef(CONFIG_FATFS fatfs)
-sdk_add_subdirectory_ifdef(CONFIG_LITTLEFS littlefs)
-sdk_add_subdirectory_ifdef(CONFIG_ROMFS romfs)
