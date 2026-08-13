@@ -51,7 +51,12 @@
       `ip_got_cb` 在 tcpip 线程二次加 lwIP core 锁导致的死锁
       （`netifapi_netif_set_default` → `netif_set_default`）
 - [x] 实机验证数据通路：DNS 解析 example.com 成功，TCP connect 80 端口成功
-- [ ] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
+- [x] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
+      - 已实机验证：TCP connect（含 DNS/超时/网关与公网直连）、WiFiServer bind
+      - 修复 lwIP 与 newlib errno 值域不一致、INADDR_NONE 宏冲突、
+        非阻塞 connect 提前可写导致误判失败等兼容问题
+- [ ] 复测 TCP 收包与 UDP 收发（当前测试 AP 出现间歇性 deauth，待 AP 稳定后
+      用专门固件回归；HTTP GET 回读与 UDP/NTP 尚未闭环）
 - [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
@@ -82,4 +87,8 @@
 - [x] 记录固件尺寸和 RAM 预算（wl80211 版本：flash 545,854 B / 26%，
       globals 44,784 B / 13%；对比 fhost 版本 flash 902,366 B，
       globals 48,904 B）
+- [ ] 主要功能完成后，为 esp32-compat 适配层的主要 API（WiFi 扫描/连接/状态、
+      WiFiClient/WiFiUDP/WiFiServer、USB CDC/HID、CMSIS-DAP、IP/DNS 等）编写
+      单元测试，并编译一个专用固件集中运行全部 API 单元测试（正常路径、
+      边界与错误路径、资源回收）
 - [ ] 整理上板烧录与调试步骤
