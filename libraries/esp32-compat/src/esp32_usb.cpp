@@ -23,6 +23,12 @@ extern "C" {
 #define HID_OUT_EP 0x02
 #define HID_IN_EP 0x81
 
+/* Offset of the HID class descriptor's wDescriptorLength field inside the
+ * configuration descriptor: configuration header + CDC ACM block + HID
+ * interface descriptor + 7-byte HID descriptor prefix. */
+#define HID_REPORT_LENGTH_OFFSET \
+    (9 + CDC_ACM_DESCRIPTOR_LEN + 9 + 7)
+
 #ifdef CONFIG_USB_HS
 #define CDC_MAX_MPS 512
 #else
@@ -271,6 +277,22 @@ void USBClass::begin()
     uint16_t report_size = 0;
     const uint8_t *report = HID.reportDescriptor(report_size);
     if (report != nullptr && report_size != 0) {
+        /* The static descriptor template advertises a placeholder report
+         * length; fix it up to the actual length of the registered report so
+         * hosts request exactly the number of bytes we will return. */
+        config_descriptor[HID_REPORT_LENGTH_OFFSET] =
+            static_cast<uint8_t>(report_size & 0xFFU);
+        config_descriptor[HID_REPORT_LENGTH_OFFSET + 1] =
+            static_cast<uint8_t>((report_size >> 8) & 0xFFU);
+
+#ifdef BL616CL_USB_DEBUG_LOG
+        {
+            char buf[96];
+            snprintf(buf, sizeof(buf), "usb:hid_report_size=%u", report_size);
+            usb_log(buf);
+        }
+#endif
+
         usbd_add_interface(BL616CL_USB_BUS_ID,
                            usbd_hid_init_intf(BL616CL_USB_BUS_ID, &hid_interface,
                                              report, report_size));
@@ -399,9 +421,18 @@ void USBCDC::onTxComplete()
 }
 
 USBHID::USBHID()
-    : device_(nullptr), report_size_(0), report_descriptor_(nullptr),
-      tx_busy_(false)
+    : tx_busy_(false)
 {
+    /* Do NOT reset device_/report_size_/report_descriptor_ here.
+     *
+     * A sketch may register its HID device from a static initializer (the UNO
+     * R4 bridge does exactly this via DAPHIDDevice's constructor).  C++ does
+     * not guarantee construction order across translation units, and this
+     * object's constructor can run AFTER that registration.  Resetting the
+     * registration fields here would silently discard the sketch's device.
+     * Global objects are zero-initialized by the C runtime before any
+     * constructor runs, so leaving the fields untouched is safe in both
+     * construction orders. */
 }
 
 void USBHID::addDevice(USBHIDDevice *device, uint16_t report_size)
