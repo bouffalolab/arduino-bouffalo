@@ -1,0 +1,23 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b7f5b6c..3aaeab7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -82,5 +82,6 @@ sdk_library_add_sources(src/netif/bridgeif_fdb.c)
+ sdk_library_add_sources(lwip-port/FreeRTOS/sys_arch.c)
+ 
+ sdk_add_include_directories(lwip-port)
++sdk_add_include_directories(lwip-port/config)
+ sdk_add_include_directories(src/include)
+ sdk_add_include_directories(src/include/compat/posix)
+diff --git a/lwip-port/config/lwipopts.h b/lwip-port/config/lwipopts.h
+index 82620cc..3ba5d4b 100644
+--- a/lwip-port/config/lwipopts.h
++++ b/lwip-port/config/lwipopts.h
+@@ -352,7 +352,7 @@ a lot of data that needs to be copied, this should be set high. */
+ #define MEMP_MEM_MALLOC                 0
+ #define LWIP_SUPPORT_CUSTOM_PBUF        1
+ 
+-#define PBUF_LINK_ENCAPSULATION_HLEN    48u
++#define PBUF_LINK_ENCAPSULATION_HLEN    388u
+ 
+ #define LWIP_RAW                        1

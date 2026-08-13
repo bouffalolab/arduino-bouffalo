@@ -31,14 +31,28 @@
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
 - [x] 记录 SDK 本地补丁：`tools/runtime_bundle/patches/`（bflb_usb_v2 EP0 控制传输修复）
 - [x] 用修复后的 `liblhal.a` 重建并提交 BL616CL 运行时库
-- [ ] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（当前库为直接 CMake 重建，
-      manifest 尚未同步刷新）
+- [x] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（记录 wl80211/macsw/lwip
+      与各 submodule commit，含新增 wl80211/supplicant 库）
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
 
-- [ ] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重新生成 runtime bundle
-- [ ] 实现真实 `WiFi`、`WiFiClient`、`WiFiServer`、`WiFiUDP`、`WiFiClientSecure`
+- [x] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重建 runtime bundle
+      （macsw/fhost/wpa/lwip/mbedtls 库已入库，linker 脚本与头文件已同步）
+- [x] 实现 `WiFi` 类骨架：初始化、扫描、连接、状态、IP/MAC、事件回调
+      （基于 `wifi_mgmr` + lwIP）
+- [x] 迁移到 wl80211 方案（fhost 全栈 RAM 占用超预算，wl80211 仅省去
+      wpa_supplicant 的 Android 完整栈，保留 macsw 固件 RAM；wifi6 库与
+      `libapp.a` 需同步重建，否则 board_init 不挂 WIFI IRQ，STA VIF 卡死）
+- [x] 实机验证扫描：BL616CL DK 上 `WiFi.scanNetworks()` 返回 16 个 AP，
+      `CODE_WIFI_ON_SCAN_DONE` 正常触发，wpa_attach/连接路径解阻塞
+- [x] 实机验证 WPA2-PSK 连接与 DHCP：连接 zrrong AP 成功，DHCP 拿到
+      192.168.133.40/24，`CODE_WIFI_ON_GOT_IP` 正常；修复 wl80211
+      `ip_got_cb` 在 tcpip 线程二次加 lwIP core 锁导致的死锁
+      （`netifapi_netif_set_default` → `netif_set_default`）
+- [x] 实机验证数据通路：DNS 解析 example.com 成功，TCP connect 80 端口成功
+- [ ] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
+- [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
 - [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP
@@ -65,5 +79,7 @@
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令
 - [ ] 增加自动编译脚本或 CI 检查
-- [ ] 记录固件尺寸和 RAM 预算
+- [x] 记录固件尺寸和 RAM 预算（wl80211 版本：flash 545,854 B / 26%，
+      globals 44,784 B / 13%；对比 fhost 版本 flash 902,366 B，
+      globals 48,904 B）
 - [ ] 整理上板烧录与调试步骤

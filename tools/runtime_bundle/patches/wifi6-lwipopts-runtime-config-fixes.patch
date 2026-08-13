@@ -1,0 +1,76 @@
+diff --git a/wifi6_lwip_adapter/include/lwipopts.h b/wifi6_lwip_adapter/include/lwipopts.h
+index 661cb08b..b6ecc7e9 100644
+--- a/wifi6_lwip_adapter/include/lwipopts.h
++++ b/wifi6_lwip_adapter/include/lwipopts.h
+@@ -93,6 +93,12 @@ extern int sys_current_is_tcpip(void);
+ 
+ #define PBUF_LINK_ENCAPSULATION_HLEN  388
+ 
++/* The selected macsw configuration defines the RX buffer count at runtime;
++ * keep the lwIP reassembly sizing in sync with the default build-time value
++ * (CFG_BARX 2 * CFG_REORD_BUF 12 + 2). */
++#ifndef FHOST_RX_BUF_CNT
++#define FHOST_RX_BUF_CNT              26
++#endif
+ #define IP_REASS_MAX_PBUFS            (FHOST_RX_BUF_CNT - 2)
+ 
+ #define MEMP_NUM_NETBUF               32
+@@ -100,23 +106,18 @@ extern int sys_current_is_tcpip(void);
+ #define MEMP_NUM_UDP_PCB              16
+ #define MEMP_NUM_REASSDATA            LWIP_MIN((IP_REASS_MAX_PBUFS), 5)
+ 
+-#if MACSW_TXDESC_CNT0 > MACSW_TXDESC_CNT1
+-#define MAC_TXQ_DEPTH_0_1             MACSW_TXDESC_CNT0
+-#else
+-#define MAC_TXQ_DEPTH_0_1             MACSW_TXDESC_CNT1
+-#endif
+-#if MACSW_TXDESC_CNT2 > MACSW_TXDESC_CNT3
+-#define MAC_TXQ_DEPTH_2_3             MACSW_TXDESC_CNT2
+-#else
+-#define MAC_TXQ_DEPTH_2_3             MACSW_TXDESC_CNT3
+-#endif
++/* The selected macsw configuration (macsw_default_config.h) defines the TX
++ * descriptor counts at runtime; keep the lwIP queue sizing in sync with the
++ * default build-time values. */
++#define MAC_TXQ_DEPTH_0_1             32
++#define MAC_TXQ_DEPTH_2_3             1
+ #if MAC_TXQ_DEPTH_0_1 > MAC_TXQ_DEPTH_2_3
+ #define MAC_TXQ_DEPTH                 MAC_TXQ_DEPTH_0_1
+ #else
+ #define MAC_TXQ_DEPTH                 MAC_TXQ_DEPTH_2_3
+ #endif
+ #if MACSW_AMPDU_RX
+-#define MAC_RXQ_DEPTH                 MACSW_AMPDU_RX_BUF_SIZE
++#define MAC_RXQ_DEPTH                 12 /* default CFG_REORD_BUF */
+ #else
+ #define MAC_RXQ_DEPTH                 4
+ #endif
+@@ -151,7 +152,7 @@ extern int sys_current_is_tcpip(void);
+ #endif
+ 
+ #define PBUF_POOL_SIZE                0
+-#define LWIP_WND_SCALE                1
++#define LWIP_WND_SCALE                0
+ #define TCP_RCV_SCALE                 2
+ #define TCP_SNDLOWAT                  LWIP_MIN(LWIP_MAX(((TCP_SND_BUF)/4),               \
+                                                         (2 * TCP_MSS) + 1),              \
+diff --git a/wifi6_lwip_adapter/tx_buffer_copy.c b/wifi6_lwip_adapter/tx_buffer_copy.c
+index 32be6006..21c0f403 100644
+--- a/wifi6_lwip_adapter/tx_buffer_copy.c
++++ b/wifi6_lwip_adapter/tx_buffer_copy.c
+@@ -1,7 +1,6 @@
+ #include "stddef.h"
+ #include "assert.h"
+ #include <string.h>
+-#include "mac_frame.h"
+ 
+ #ifndef CO_ALIGN4_HI
+ #define CO_ALIGN4_HI(val) (((val)+3)&~3)
+@@ -10,6 +9,7 @@
+ #define ASSERT_ERR(cond) assert(cond)
+ #endif
+ #include "net_al.h"
++#include "mac_frame.h"
+ #include "lwip/tcpip.h"
+ #include "tx_buffer_copy.h"
+ 

@@ -1,0 +1,17 @@
+diff --git a/lwip.c b/lwip.c
+index 00ffe93..651d39e 100644
+--- a/lwip.c
++++ b/lwip.c
+@@ -306,7 +306,11 @@ int wl80211_lwip_init(void)
+ static void ip_got_cb(struct netif *netif)
+ {
+     if (!ip_addr_isany_val(netif->ip_addr)) {
+-        netifapi_netif_set_default(&vif2netif[WL80211_VIF_STA]);
++        /* This callback runs on the tcpip thread with the lwIP core already
++         * locked.  netifapi_netif_set_default() takes the core lock again and
++         * deadlocks under LWIP_TCPIP_CORE_LOCKING, so use the core-locked
++         * variant directly. */
++        netif_set_default(&vif2netif[WL80211_VIF_STA]);
+         async_post_event(EV_WIFI, CODE_WIFI_ON_GOT_IP, 1);
+     } else {
+         async_post_event(EV_WIFI, CODE_WIFI_ON_GOT_IP, 0);
