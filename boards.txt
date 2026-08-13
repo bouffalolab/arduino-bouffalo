@@ -7,6 +7,9 @@ unor4_bl616cl.build.board=UNOR4_BL616CL
 unor4_bl616cl.build.core=bl616cl
 unor4_bl616cl.build.variant=bl616cldk
 unor4_bl616cl.build.extra_flags=-DBL616CL_STAGE1=1 -DBL616CL_USB_DEBUG_LOG=1
+unor4_bl616cl.build.sdk_profile=.
+unor4_bl616cl.build.sdk_extra_includes=
+unor4_bl616cl.build.sdk_libraries={compiler.sdk.stage1.libs}
 unor4_bl616cl.build.partition_config=partition_cfg_4M.toml
 unor4_bl616cl.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
 unor4_bl616cl.build.dts_config=bl_factory_params_IoTKitA_auto.dts
@@ -19,3 +22,28 @@ unor4_bl616cl.upload.speed=2000000
 unor4_bl616cl.upload.maximum_size=2097152
 # BL616CL SRAM is 384 KiB minus the 64 KiB Wi-Fi reservation in this profile.
 unor4_bl616cl.upload.maximum_data_size=327680
+
+unor4_bl616cl_provisional.name=UNO R4 WiFi BL616CL (Provisional Bridge)
+unor4_bl616cl_provisional.vid.0=0x0000
+unor4_bl616cl_provisional.pid.0=0x0000
+
+unor4_bl616cl_provisional.build.mcu=bl616cl
+unor4_bl616cl_provisional.build.board=UNOR4_BL616CL_PROVISIONAL
+unor4_bl616cl_provisional.build.core=bl616cl
+unor4_bl616cl_provisional.build.variant=unor4_bl616cl_provisional
+unor4_bl616cl_provisional.build.extra_flags=-DBL616CL_BRIDGE_PROVISIONAL=1
+unor4_bl616cl_provisional.build.sdk_profile=bridge
+unor4_bl616cl_provisional.build.sdk_extra_includes={compiler.sdk.bridge.includes}
+unor4_bl616cl_provisional.build.sdk_libraries={compiler.sdk.bridge.libs}
+# The bridge bundle uses the SDK bl616cldk BSP until a UNO R4 carrier BSP is
+# available. Replace the DTS and partition settings when the schematic freezes.
+unor4_bl616cl_provisional.build.partition_config=partition_cfg_4M.toml
+unor4_bl616cl_provisional.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4_bl616cl_provisional.build.dts_config=bl_factory_params_IoTKitA_auto.dts
+
+unor4_bl616cl_provisional.upload.tool=blflash
+unor4_bl616cl_provisional.upload.tool.default=blflash
+unor4_bl616cl_provisional.upload.protocol=uart
+unor4_bl616cl_provisional.upload.speed=2000000
+unor4_bl616cl_provisional.upload.maximum_size=2097152
+unor4_bl616cl_provisional.upload.maximum_data_size=327680

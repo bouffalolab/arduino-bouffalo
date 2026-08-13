@@ -27,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -137,6 +138,20 @@ EXPECTED_SIDE_CARS = {
     "efusedata_raw.bin",
 }
 
+# A profile selects the SDK defconfig and bundle directory. Keep stage-1 at its
+# original path so its existing FQBN remains stable; bridge gets a sibling
+# runtime until a final UNO R4 carrier BSP is available.
+RUNTIME_PROFILES = {
+    "stage1": {
+        "source_directory": ".",
+        "output_directory": None,
+    },
+    "bridge": {
+        "source_directory": "profiles/bridge",
+        "output_directory": "bridge",
+    },
+}
+
 
 # ===================================================================
 # Utilities
@@ -216,6 +231,44 @@ def copy_cherryusb_headers(sdk: Path, include_root: Path,
         require_file(runtime_bundle / "usb_config.h", "CherryUSB config"),
         include_root / "usb_config.h",
     )
+
+
+def copy_linker_fragments(linker_script: Path, *, sdk: Path,
+                          board_dir: Path, generated: Path,
+                          destination: Path) -> None:
+    """Copy linker-script INCLUDE dependencies beside the generated script."""
+    include_pattern = re.compile(r"^\s*INCLUDE\s+(\S+)", re.MULTILINE)
+    search_roots = (
+        linker_script.parent,
+        generated,
+        board_dir,
+        sdk / "components" / "wireless" / "macsw",
+    )
+    pending = [linker_script]
+    copied: set[str] = set()
+
+    while pending:
+        source = pending.pop()
+        for match in include_pattern.finditer(source.read_text(encoding="utf-8")):
+            name = match.group(1)
+            if name in copied:
+                continue
+
+            candidates = [
+                root / name for root in search_roots if (root / name).is_file()
+            ]
+            if not candidates:
+                candidates = sorted(sdk.rglob(name))
+            if len(candidates) != 1:
+                raise RuntimeError(
+                    f"cannot resolve linker fragment {name} required by "
+                    f"{source}: {candidates}"
+                )
+
+            fragment = candidates[0]
+            copy_file(fragment, destination / name)
+            copied.add(name)
+            pending.append(fragment)
 
 
 def sdk_version(sdk: Path) -> str:
@@ -369,6 +422,8 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1",
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1plus",
         f"libexec/gcc/{prefix}/{gcc_ver}/collect2",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto-wrapper",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto1",
         f"libexec/gcc/{prefix}/{gcc_ver}/liblto_plugin.so.0.0.0",
         f"lib/gcc/{prefix}/{gcc_ver}/libgcc.a",
         f"lib/gcc/{prefix}/{gcc_ver}/crtbegin.o",
@@ -502,6 +557,31 @@ def _update_manifest_toolchain(sdk_runtime: Path, toolchain_version: str,
     )
 
 
+def create_profile_build_source(script_dir: Path, profile: str,
+                                profile_source: Path) -> Path:
+    """Create an SDK demo root for a non-default runtime profile.
+
+    BouffaloSDK builds Wi-Fi and BLE support archives beneath
+    SDK_DEMO_PATH/build. A profile cannot point SDK_DEMO_PATH directly at its
+    configuration subdirectory because that makes those archive paths diverge
+    from the CMake build directory. The temporary root keeps the profile's
+    inputs at its top level and symlinks the shared CMake/Make sources.
+    """
+    source_root = Path(tempfile.mkdtemp(prefix=f"bl616cl-{profile}-"))
+    for name in ("CMakeLists.txt", "Makefile", "main.c", "flash_prog_cfg.ini"):
+        (source_root / name).symlink_to(script_dir / name)
+    (source_root / "profiles").symlink_to(script_dir / "profiles",
+                                          target_is_directory=True)
+
+    for name in ("defconfig", "FreeRTOSConfig.h", "lwipopts_user.h",
+                 "usb_config.h"):
+        source = profile_source / name
+        if source.is_file():
+            copy_file(source, source_root / name)
+
+    return source_root
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -514,6 +594,9 @@ def main() -> int:
                         help="target chip (e.g. bl616cl)")
     parser.add_argument("--board", type=str, default=None,
                         help="board name (default: {chip}dk)")
+    parser.add_argument("--profile", choices=sorted(RUNTIME_PROFILES),
+                        default="stage1",
+                        help="runtime profile to build (default: stage1)")
     parser.add_argument("--toolchain", type=Path, default=None,
                         help="toolchain root (parent of bin/); "
                              "auto-detected from PATH if omitted")
@@ -527,6 +610,8 @@ def main() -> int:
     chip = args.chip
     chip_cfg = CHIP_CONFIG[chip]
     board = args.board or f"{chip}dk"
+    profile = args.profile
+    profile_cfg = RUNTIME_PROFILES[profile]
     toolchain_dirname = str(chip_cfg["toolchain_dirname"])
     prefix = str(chip_cfg["toolchain_prefix"])
     arch = chip_cfg["arch"]
@@ -535,6 +620,12 @@ def main() -> int:
     # platform root = hardware/bouffalo/bl616cl → tools/runtime_bundle is
     # two levels down
     platform_root = script_dir.parent.parent
+    profile_source = script_dir / str(profile_cfg["source_directory"])
+    require_file(profile_source / "defconfig",
+                 f"{profile} profile defconfig")
+    profile_freertos_config = profile_source / "FreeRTOSConfig.h"
+    if not profile_freertos_config.is_file():
+        profile_freertos_config = script_dir / "FreeRTOSConfig.h"
 
     sdk = args.sdk.expanduser().resolve()
     toolchain_root = resolve_toolchain(args.toolchain, chip_cfg)
@@ -563,11 +654,15 @@ def main() -> int:
     commit = source_commits["bouffalo_sdk"]
 
     # ——— output paths ——————————————————————————————————————————
-    sdk_runtime = platform_root / "tools" / "sdk" / chip
+    sdk_root = platform_root / "tools" / "sdk" / chip
+    profile_output = profile_cfg["output_directory"]
+    sdk_runtime = sdk_root if profile_output is None else \
+        sdk_root / str(profile_output)
     tools_root = platform_root / "tools"
 
     print(f"Chip:               {chip}")
     print(f"Board:              {board}")
+    print(f"Profile:            {profile}")
     print(f"SDK version:        {version}")
     print(f"SDK commit:         {commit}")
     print(f"Toolchain:          {toolchain_root}")
@@ -592,7 +687,15 @@ def main() -> int:
         return 0
 
     # ——— build the probe ———————————————————————————————————————
-    build_dir = script_dir / "build"
+    profile_build_source: Path | None = None
+    build_source = script_dir
+    if profile != "stage1":
+        profile_build_source = create_profile_build_source(
+            script_dir, profile, profile_source
+        )
+        build_source = profile_build_source
+
+    build_dir = build_source / "build"
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
@@ -607,15 +710,29 @@ def main() -> int:
         f"BOARD={board}",
         "CONFIG_PEC_V2=n",
         "CONFIG_MULTIMEDIA_VIDEO=n",
+        f"CONFIG_ARDUINO_RUNTIME_PROFILE={profile}",
+        f"SDK_DEMO_PATH={build_source}",
         f"BL_SDK_BASE={sdk}",
     ]
-    run(make_args, cwd=script_dir, env=env)
+    run(make_args, cwd=build_source, env=env)
 
     build_out = build_dir / "build_out"
     generated = build_dir / "generated"
 
     # ——— validate archives —————————————————————————————————————
     archives = {p.name: p for p in (build_out / "lib").glob("*.a")}
+    if profile == "bridge":
+        external_archives = (
+            build_dir / "build_macsw" / f"libmacsw_{chip}.a",
+            build_dir / "build_macsw" /
+            f"libmacsw_config_{chip}_default.a",
+            build_dir / "build_fhost" / f"libfhost_{chip}_default.a",
+        )
+        for archive in external_archives:
+            archives[archive.name] = require_file(
+                archive, f"bridge external archive {archive.name}"
+            )
+
     required = CORE_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
     missing = required - archives.keys()
     if missing:
@@ -627,8 +744,12 @@ def main() -> int:
         print(f"Note: additional SDK archives (ok): {sorted(extras)}")
 
     # ——— ELF sanity check ——————————————————————————————————————
-    probe_elf_name = f"arduino_bl616cl_runtime_{chip}.elf"
-    source_elf = require_file(build_out / probe_elf_name, "probe ELF")
+    probe_elfs = sorted(build_out.glob("*.elf"))
+    if len(probe_elfs) != 1:
+        raise RuntimeError(
+            f"expected one {profile} profile ELF, found: {probe_elfs}"
+        )
+    source_elf = probe_elfs[0]
     readelf = toolchain_root / "bin" / f"{prefix}-readelf"
     elf_header = run([str(readelf), "-h", str(source_elf)], capture=True)
     if "RISC-V" not in elf_header or \
@@ -689,12 +810,24 @@ def main() -> int:
     # autoconf.h and linker script
     copy_file(require_file(generated / "autoconf.h", "autoconf.h"),
               sdk_staging / "include" / "autoconf.h")
-    copy_file(require_file(generated / "linker.ld",
-                           f"{chip} linker script"), sdk_staging / "ld")
-    # defconfig and FreeRTOSConfig.h from this directory
-    copy_file(script_dir / "defconfig", sdk_staging / "defconfig")
-    copy_file(script_dir / "FreeRTOSConfig.h",
+    linker_script = require_file(generated / "linker.ld",
+                                 f"{chip} linker script")
+    copy_file(linker_script, sdk_staging / "ld")
+    copy_linker_fragments(
+        linker_script,
+        sdk=sdk,
+        board_dir=board_dir,
+        generated=generated,
+        destination=sdk_staging,
+    )
+    # Keep FreeRTOS ABI inputs from the same profile as the generated archives.
+    copy_file(profile_source / "defconfig", sdk_staging / "defconfig")
+    copy_file(profile_freertos_config,
               sdk_staging / "include" / "freertos" / "FreeRTOSConfig.h")
+    profile_lwipopts = profile_source / "lwipopts_user.h"
+    if profile_lwipopts.is_file():
+        copy_file(profile_lwipopts, sdk_staging / "include" /
+                  "lwipopts_user.h")
 
     # ——— SDK include roots ——————————————————————————————————————
     sdk_include_roots: list[tuple[Path, Path]] = [
@@ -723,6 +856,34 @@ def main() -> int:
             sdk_include_roots.append(
                 (ext_dir, Path("freertos/chip_specific"))
             )
+
+    if profile == "bridge":
+        sdk_include_roots.extend([
+            (sdk / "components" / "utils" / "bflb_mtd" / "include",
+             Path("sdk/bflb_mtd")),
+            (sdk / "components" / "fs" / "littlefs" / "littlefs",
+             Path("sdk/littlefs/littlefs")),
+            (sdk / "components" / "fs" / "littlefs" / "easyflash_port",
+             Path("sdk/littlefs/easyflash")),
+            (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+             "include", Path("mbedtls")),
+            (sdk / "components" / "net" / "lwip" / "lwip" / "src" /
+             "include", Path("lwip")),
+            (sdk / "components" / "wireless" / "wifi6" / "fhost" /
+             "include", Path("wifi/fhost")),
+            (sdk / "components" / "usb" / "cherryusb" / "common",
+             Path("cherryusb/common")),
+            (sdk / "components" / "usb" / "cherryusb" / "core",
+             Path("cherryusb/core")),
+            (sdk / "components" / "usb" / "cherryusb" / "class" / "cdc",
+             Path("cherryusb/class/cdc")),
+            (sdk / "components" / "usb" / "cherryusb" / "class" / "hid",
+             Path("cherryusb/class/hid")),
+            (sdk / "components" / "wireless" / "bluetooth" /
+             "btblecontroller" / "btble_inc", Path("bluetooth/controller")),
+            (sdk / "components" / "wireless" / "bluetooth" / "blestack" /
+             "src" / "include", Path("bluetooth/blestack")),
+        ])
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
     copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
@@ -814,6 +975,8 @@ def main() -> int:
             "scope": scope,
             "chip": chip,
             "board": board,
+            "profile": profile,
+            "defconfig_sha256": sha256(profile_source / "defconfig"),
             "sdk_version": version,
             "source_commits": source_commits,
             "toolchain": toolchain_version,
@@ -844,6 +1007,8 @@ def main() -> int:
 
     if not args.keep_build:
         shutil.rmtree(build_dir)
+        if profile_build_source is not None:
+            shutil.rmtree(profile_build_source)
 
     print(f"\nChip runtime installed in  {sdk_runtime}")
     print(f"Toolchain installed in     {tc_dest}")

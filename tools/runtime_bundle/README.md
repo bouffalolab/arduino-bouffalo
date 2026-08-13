@@ -12,6 +12,17 @@ and Core directly, then link the checked-in bundles:
 
 This follows the same high-level model as Arduino ESP32's `tools/sdk/<chip>`.
 
+## Runtime Profiles
+
+`--profile stage1` is the default lightweight Arduino runtime. `--profile
+bridge` emits a sibling `tools/sdk/bl616cl/bridge/` bundle for the provisional
+UNO R4 BL616CL bridge FQBN. The bridge profile includes Wi-Fi/MACSW/FHOST, BLE,
+CherryUSB, LittleFS/EasyFlash, lwIP and mbedTLS archives and headers.
+
+The generator also copies SDK linker-script `INCLUDE` fragments, bridge
+external archives built under `build_macsw/` and `build_fhost/`, and the GCC
+LTO executables required by MACSW's `-flto -ffat-lto-objects` archives.
+
 ## Supported chips
 
 | Chip | Toolchain prefix | Core |
@@ -56,6 +67,13 @@ From the repository root:
       --sdk /path/to/bouffalo_sdk \
       --chip bl616cl \
       --board my_custom_board
+
+    # BL616CL provisional bridge runtime
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /path/to/bouffalo_sdk \
+      --chip bl616cl \
+      --profile bridge \
+      --toolchain /path/to/Xuantie-900-gcc
 
 Do not pass a toolchain path that lies inside the platform `tools/` directory —
 the generator atomically replaces that target.
