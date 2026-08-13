@@ -43,3 +43,42 @@ while `lwipopts.h` still used the removed compile-time macros.  Patch the lwIP
 queue sizing to the default build-time values and fix the macsw header include
 order in `tx_buffer_copy.c`.  Required to build `liblwip.a` with
 `CONFIG_WIFI6`/`CONFIG_FHOST` on BL616CL.
+
+## lwip-wl80211-include-and-pbuf-fixes.patch
+
+Target project: `bouffalo/components/net/lwip/lwip`, files `CMakeLists.txt`
+and `lwip-port/config/lwipopts.h`.
+
+wl80211 pulls the generic `lwip-port/config/lwipopts.h` through its static
+asserts, but the lwIP library did not expose that directory as a public
+include path.  Also raise `PBUF_LINK_ENCAPSULATION_HLEN` from 48 to 388 bytes:
+wl80211's TX descriptor plus the macsw frame header exceeds the original
+reservation and fails a compile-time `CTASSERT` in `wl80211_lwip_tx()`.
+
+## wl80211 runtime bundle selection
+
+The BL616CL runtime bundle uses the wl80211 host stack instead of fhost
+(`CONFIG_WL80211=y`, `CONFIG_BL_WPA_SUPPLICANT=y`, no `CONFIG_FHOST`).
+wl80211 plus its macsw firmware and lwIP fits the board's RAM budget where the
+fhost fullmac host stack did not.
+
+Pinned component revisions used for the checked-in bundle:
+
+- `components/wireless/wl80211` host API/libs: `3c19c8d1`
+- `components/wireless/macsw` firmware: `78718af`
+
+The wl80211 component is split between the top-level host files
+(`wifi_mgmr.c`, `wl80211_platform.c`, ...) and the `src/` checkout.  The
+runtime bundle builds `src/` into `libwl80211_${CHIP}.a` and the top-level
+files into `libwl80211_plat.a`.  Keep `defconfig`, `autoconf.h` and both
+archives in sync when regenerating.
+
+## Regenerate libapp.a after changing CONFIG_WIFI6
+
+`bsp/board/{board}/board.c` attaches the WiFi MAC IRQ
+(`bflb_irq_attach(WIFI_IRQn, interrupt0_handler, NULL)`) only under
+`CONFIG_WIFI6`.  The checked-in `tools/sdk/{chip}/lib_board/libapp.a` must be
+copied from the same runtime-bundle build that generated `libmacsw_*.a` and
+the WiFi archives.  A stale `libapp.a` (built before `CONFIG_WIFI6`) omits the
+IRQ attach, the macsw task never receives the MAC idle interrupt, and the
+first STA VIF add blocks forever in `MM_GOING_TO_IDLE`.

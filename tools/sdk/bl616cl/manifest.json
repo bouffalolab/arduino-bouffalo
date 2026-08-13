@@ -17,16 +17,16 @@
       "size": 49696
     },
     "defconfig": {
-      "sha256": "1da66de36b8186c1265e4527a047948b2aeef8b1c1641174b2f68011d2de8005",
-      "size": 880
+      "sha256": "bd1594fdde44ffc486a4e53dab692d47c07fd4a21b063b8a7e1403f8cc598811",
+      "size": 1014
     },
     "dts/bl_factory_params_IoTKitA_auto.dts": {
       "sha256": "ae33ff0a22c8fe9ab3abaf9bf206a60c3a0b6184c0dd63697802774b7ae8b8ae",
       "size": 10718
     },
     "include/autoconf.h": {
-      "sha256": "d15b4c64abffa4a0430483c076ac57acc3a07ba43c18961b95aac28d2618c88f",
-      "size": 1289
+      "sha256": "24415355add4c980f2a3e030e4b1f5cdab15b5a599e22e847f821e092392c66a",
+      "size": 2384
     },
     "include/board/board.h": {
       "sha256": "dcb723efee63c67527e8f46ff2ca95bd9e87a9d50e6d4db46cacc81139a39188",
@@ -48,13 +48,17 @@
       "sha256": "56ebb9b74d9b4e8cb4b1123ed8fec92e598682e59b1c18a75f2f0d2aee6ab699",
       "size": 9553
     },
+    "include/cherryusb_config_template.h": {
+      "sha256": "57b070a0220c898bd0f955a3963d547116bb51cdbfa78dd68636235ea5b163b2",
+      "size": 10096
+    },
     "include/freertos/FreeRTOS.h": {
       "sha256": "96388ebce5d1408a4bda5e3abc49ab3c0190a9500fc53ebac1021720e06b437c",
       "size": 51224
     },
     "include/freertos/FreeRTOSConfig.h": {
-      "sha256": "08e7630572443ab3b7667ae1a9678e921a9d3079752df9a76a9d9e6669a27723",
-      "size": 3181
+      "sha256": "2c2c9780299cf7a50b711da8d4021e0140b0f9cabdeb3d0db0a39674dc724837",
+      "size": 3162
     },
     "include/freertos/StackMacros.h": {
       "sha256": "59ef7acd70f9c03d76f5760ea82083836530ad05a22aa71d0fa3d5c85b3823bf",
@@ -163,6 +167,14 @@
     "include/freertos/timers.h": {
       "sha256": "2bf6ece5c1b50889066190774f412751e31abc005ee9e153f0e05fac081dca99",
       "size": 64378
+    },
+    "include/ndis.h": {
+      "sha256": "a8a22ab34d8eb4432e2cf97cbd013d271d3bb9f689f7876f2f1b1c5afbf7cda6",
+      "size": 11205
+    },
+    "include/rndis_protocol.h": {
+      "sha256": "924020e02fcb3a7a792dc6956025c998f61cfa7e277651a92467e02fa2ab914e",
+      "size": 9554
     },
     "include/sdk/flash/bflb_flash_secreg.h": {
       "sha256": "220c7a7a257958e1a698076938660477ec1750adb8969fa163a8d5941a70b55f",
@@ -884,6 +896,1178 @@
       "sha256": "c15177cd091f2dffd9d936ea08759f3185b4bb1fa839b14b709e6bc9c07ba12c",
       "size": 5532
     },
+    "include/sdk/lwip-port/FreeRTOS/ethernetif.c": {
+      "sha256": "4a261e44cfc8e73c4414a6fb83c2f7967c350d6f398b41b9407f72b10546c480",
+      "size": 6264
+    },
+    "include/sdk/lwip-port/FreeRTOS/ethernetif.h": {
+      "sha256": "9598581f3ef1f7be5aa642853f9b16275d3c3f73486160b292a9c3c0a15c2ac9",
+      "size": 154
+    },
+    "include/sdk/lwip-port/FreeRTOS/sys_arch.c": {
+      "sha256": "24f888db4422ca97a212093edda23358d5f3627a40a20714daf6d9bea5590d16",
+      "size": 15330
+    },
+    "include/sdk/lwip-port/FreeRTOS/sys_arch.h": {
+      "sha256": "8d549ec87d2ef1860c38a7c6b4062c78f4fcdaa929be43e1a9fefb26d66c1620",
+      "size": 2398
+    },
+    "include/sdk/lwip-port/Standalone/ethernetif.c": {
+      "sha256": "3935b5fa5dcebf0d7fa3338e6244342bd0fdf2a759f5126280779a5037953aff",
+      "size": 11451
+    },
+    "include/sdk/lwip-port/Standalone/ethernetif.h": {
+      "sha256": "c1efda62b9c94a1e6d786c2ae6460781e068cefc825bfb65dff2aba78c2ac9af",
+      "size": 196
+    },
+    "include/sdk/lwip-port/arch/bpstruct.h": {
+      "sha256": "8f15823711e8b101d7b9da839a6127c5157d7fe656464bede0ecbf0a8a8e6f7f",
+      "size": 1666
+    },
+    "include/sdk/lwip-port/arch/cc.h": {
+      "sha256": "ea0fb7913fc99b0a0129a845e76e63ec71887feca05bc1309d204fd31a7cf888",
+      "size": 2855
+    },
+    "include/sdk/lwip-port/arch/cpu.h": {
+      "sha256": "ed264f775b746363cb8df9d9c05d35c5abeb4434fd7f0c1abbb9bf0b2b2b5177",
+      "size": 1728
+    },
+    "include/sdk/lwip-port/arch/epstruct.h": {
+      "sha256": "a7bef3afd12cd255b50d59f4cf5e75a60c706abe4436e01e9b560232461bc2bf",
+      "size": 1665
+    },
+    "include/sdk/lwip-port/arch/init.h": {
+      "sha256": "3d3098d624432843cfb1e645e8c90ed8cae544f6aaa64ba3d06122f577c4d438",
+      "size": 1804
+    },
+    "include/sdk/lwip-port/arch/lib.h": {
+      "sha256": "bfaa1bbbe0ee8dbdfc3c6bc99e8386c7d144837971823fbf227b0bf3140cc3f7",
+      "size": 1690
+    },
+    "include/sdk/lwip-port/arch/perf.h": {
+      "sha256": "07efe8c113ed179b9fb58e3a8d2afc7a82785f6c88c3f7ca3b7d9fb1e1dc2825",
+      "size": 1760
+    },
+    "include/sdk/lwip-port/arch/sys_arch.h": {
+      "sha256": "baf7621184f379806a7fa842aeedc18a1b113cf0f194bf13d504b12d0a2e99ef",
+      "size": 2436
+    },
+    "include/sdk/lwip-port/config/lwipopts.h": {
+      "sha256": "29afef97ad5eaa4914b285150c6fea2c0f5e2376d24dee86abf601862f336c24",
+      "size": 12343
+    },
+    "include/sdk/lwip-posix/arpa/inet.h": {
+      "sha256": "8b3edc25121de40cd1c3338d5d68be93091f0713ee8a23eba9789f14d41e0f6d",
+      "size": 1556
+    },
+    "include/sdk/lwip-posix/net/if.h": {
+      "sha256": "959824b6148b88cd19334b2e9a55b0ce3a5e27633e4ef23014d576ece1afbe82",
+      "size": 1687
+    },
+    "include/sdk/lwip-posix/netdb.h": {
+      "sha256": "ec3cb99596ef6bf11b39870541bf6607a7cff6011cfef99bf5d53f2abed05948",
+      "size": 1552
+    },
+    "include/sdk/lwip-posix/sys/socket.h": {
+      "sha256": "8b3edc25121de40cd1c3338d5d68be93091f0713ee8a23eba9789f14d41e0f6d",
+      "size": 1556
+    },
+    "include/sdk/lwip/compat/posix/arpa/inet.h": {
+      "sha256": "8b3edc25121de40cd1c3338d5d68be93091f0713ee8a23eba9789f14d41e0f6d",
+      "size": 1556
+    },
+    "include/sdk/lwip/compat/posix/net/if.h": {
+      "sha256": "959824b6148b88cd19334b2e9a55b0ce3a5e27633e4ef23014d576ece1afbe82",
+      "size": 1687
+    },
+    "include/sdk/lwip/compat/posix/netdb.h": {
+      "sha256": "ec3cb99596ef6bf11b39870541bf6607a7cff6011cfef99bf5d53f2abed05948",
+      "size": 1552
+    },
+    "include/sdk/lwip/compat/posix/sys/socket.h": {
+      "sha256": "8b3edc25121de40cd1c3338d5d68be93091f0713ee8a23eba9789f14d41e0f6d",
+      "size": 1556
+    },
+    "include/sdk/lwip/compat/stdc/errno.h": {
+      "sha256": "9fdac7c52c9fe0cfdf50f96eae29c5f341a9afde5a56166d21500c656a8a0728",
+      "size": 1557
+    },
+    "include/sdk/lwip/lwip/altcp.h": {
+      "sha256": "caaf01ac7b3b023d9a1f256cd61a5ac848154eb274e23266504964942d921ada",
+      "size": 7155
+    },
+    "include/sdk/lwip/lwip/altcp_tcp.h": {
+      "sha256": "6f9dc7980ddae21919af20ace2a55bb6031f8e50bd025c45abc14082c099aabd",
+      "size": 2649
+    },
+    "include/sdk/lwip/lwip/altcp_tls.h": {
+      "sha256": "344fb2d89c189f8db28f285970445a509a9689ab9cce6036373417836d25041a",
+      "size": 4267
+    },
+    "include/sdk/lwip/lwip/api.h": {
+      "sha256": "d99a79864aad8bb9315552a29afd2f4ca54fc9fc6806cedfa5e80ad0a5c223f6",
+      "size": 18077
+    },
+    "include/sdk/lwip/lwip/apps/FILES": {
+      "sha256": "1baacff539b72c79be4fb5491be4963f0103557286405b3b4b4dd3396bdb0196",
+      "size": 139
+    },
+    "include/sdk/lwip/lwip/apps/altcp_proxyconnect.h": {
+      "sha256": "c4b47d012ce46a6aa25d4038ecfe0844b0f3cdfe40e6234d622de298aa48ab13",
+      "size": 2764
+    },
+    "include/sdk/lwip/lwip/apps/altcp_tls_mbedtls_opts.h": {
+      "sha256": "8287fd0981f720e4ba2103f970a9ec3086dae428281330bdfd1acdc14173bccc",
+      "size": 2618
+    },
+    "include/sdk/lwip/lwip/apps/fs.h": {
+      "sha256": "78affa57845b484a28a6a42b1165e1ed2d6a0aac6a2ddfcc61aa8b3fdea2a9fd",
+      "size": 4327
+    },
+    "include/sdk/lwip/lwip/apps/http_client.h": {
+      "sha256": "5e8ed15fbb99f6924cffcc82784bcdeb15a7bea19cdd436f588f59be9ed57570",
+      "size": 5945
+    },
+    "include/sdk/lwip/lwip/apps/httpd.h": {
+      "sha256": "4a5c1213fe0fd2082a8aed3084f4d282b8c51c3c464d140306cdce0f21c30b9e",
+      "size": 10631
+    },
+    "include/sdk/lwip/lwip/apps/httpd_opts.h": {
+      "sha256": "8c23471903f53c31f58b9b2db3c45190cb23ebe17086fce55fdf97d4e88bcc41",
+      "size": 15659
+    },
+    "include/sdk/lwip/lwip/apps/lwiperf.h": {
+      "sha256": "ac35572131e102c96feffba4bf2788b841f0d162cde1af3d9b7914e11540b9b9",
+      "size": 3687
+    },
+    "include/sdk/lwip/lwip/apps/mdns.h": {
+      "sha256": "b6da4c7c19cb41c992cef008fcb18172013e3c48cc9626d1935f30ce4c3670e6",
+      "size": 3914
+    },
+    "include/sdk/lwip/lwip/apps/mdns_opts.h": {
+      "sha256": "fce75c794c78180f5569140a177c450b685662d8e9c8486e6f1cdda9faaeac20",
+      "size": 2607
+    },
+    "include/sdk/lwip/lwip/apps/mdns_priv.h": {
+      "sha256": "57f3e8cbca3d403e47121621d74f6933ad8e9778d9df7d0a9ea1ee95bddf67fb",
+      "size": 2589
+    },
+    "include/sdk/lwip/lwip/apps/mqtt.h": {
+      "sha256": "b8082ebcd0583c7744772f088a8c676d70802da603c436c6e77d032cf5cee9e5",
+      "size": 7317
+    },
+    "include/sdk/lwip/lwip/apps/mqtt_opts.h": {
+      "sha256": "b8bb920a04472488f3fa1371cbb9c934bfead7cc8ba7f06316da4bdb2e354feb",
+      "size": 2942
+    },
+    "include/sdk/lwip/lwip/apps/mqtt_priv.h": {
+      "sha256": "e4903b34c12c941650045977e2629d41b1ca8407e48dc28d9ba36382825bb2d9",
+      "size": 3233
+    },
+    "include/sdk/lwip/lwip/apps/netbiosns.h": {
+      "sha256": "438a8e5cb80794959e0ebb0989a8d0615dc8d2d737fa97c231b10d4040e8f715",
+      "size": 1856
+    },
+    "include/sdk/lwip/lwip/apps/netbiosns_opts.h": {
+      "sha256": "c4dcff3906dc65cbe88d4fd6488f24a4eb1659d11fc7ec8cf7eef7eb3599b82c",
+      "size": 2447
+    },
+    "include/sdk/lwip/lwip/apps/smtp.h": {
+      "sha256": "61d670c0c914cc4d39f6c9e4661a1ac5e2b3cdfc45bb972b35cbf7ad3ea3d569",
+      "size": 4537
+    },
+    "include/sdk/lwip/lwip/apps/smtp_opts.h": {
+      "sha256": "fea7b6a8acfbd22add46be89bbad1e42ea4c41b255b21c576c7e519642b02275",
+      "size": 1796
+    },
+    "include/sdk/lwip/lwip/apps/snmp.h": {
+      "sha256": "dfe74dba15aee1f70c9268e981b901ba9985b56104c4d4af778771d7bfaae8c5",
+      "size": 4693
+    },
+    "include/sdk/lwip/lwip/apps/snmp_core.h": {
+      "sha256": "5f2f6c31d324406c2e3cc69a5d8262cb578065e70320f6dbb4046a9c34dcd8e7",
+      "size": 14806
+    },
+    "include/sdk/lwip/lwip/apps/snmp_mib2.h": {
+      "sha256": "dbc21ede7c6c4ac282b845aaf40961993a94b3ddb80a85e8aea66c9f6c5cae03",
+      "size": 2930
+    },
+    "include/sdk/lwip/lwip/apps/snmp_opts.h": {
+      "sha256": "fcd7d37a9418f6b25fc367ad1252c193a62915099b5bbc9f6693f0526d915bd4",
+      "size": 9613
+    },
+    "include/sdk/lwip/lwip/apps/snmp_scalar.h": {
+      "sha256": "f88ed96f2010bb383af723c50f8e0b93a9a5d566599ef0f35c11102124805c09",
+      "size": 4516
+    },
+    "include/sdk/lwip/lwip/apps/snmp_snmpv2_framework.h": {
+      "sha256": "8397074e6d74aceb6430e077537eff4330f6c712d00647a13f2832093a7f9eeb",
+      "size": 749
+    },
+    "include/sdk/lwip/lwip/apps/snmp_snmpv2_usm.h": {
+      "sha256": "ddd777bac19a3f0c6823854f121e52e1c16a9f788540e1f172920b45a01713bc",
+      "size": 435
+    },
+    "include/sdk/lwip/lwip/apps/snmp_table.h": {
+      "sha256": "1d0ef0508b2a00f55e6a90c27d484e526a2db5cde41c13b2aafcc6f2c8d7e25b",
+      "size": 5510
+    },
+    "include/sdk/lwip/lwip/apps/snmp_threadsync.h": {
+      "sha256": "cca3712f8a796bc481ca8be54c61407f5be5661acc10c95234ba4c31ef6a4996",
+      "size": 3799
+    },
+    "include/sdk/lwip/lwip/apps/snmpv3.h": {
+      "sha256": "7d1be4c7469ae8108d3657433f965c8884e66475178fee2a474fbbf01aee3fe0",
+      "size": 3902
+    },
+    "include/sdk/lwip/lwip/apps/sntp.h": {
+      "sha256": "2c3d461a79a29db2697a2f0e2f034301af859b878019a317d25360cde378da68",
+      "size": 2769
+    },
+    "include/sdk/lwip/lwip/apps/sntp_opts.h": {
+      "sha256": "0ffabd300319637435c26a36ee525d4382a071d42e535cebc50d800467f3acdd",
+      "size": 8103
+    },
+    "include/sdk/lwip/lwip/apps/tftp_opts.h": {
+      "sha256": "bc24f308f5d9b28afdfdcf1bc0e5d3f35a43029adf10325e866f6465b3bcfd10",
+      "size": 2919
+    },
+    "include/sdk/lwip/lwip/apps/tftp_server.h": {
+      "sha256": "9c3a52627aa8ef6980d244017c41d3a2d81ffafbba3cd3c71dfe649ccd953d31",
+      "size": 3211
+    },
+    "include/sdk/lwip/lwip/arch.h": {
+      "sha256": "ee0c3912887ba6aa25615deb73e9b8bf1c0f0fcd4bad56dd7b0cf4506627d12f",
+      "size": 14378
+    },
+    "include/sdk/lwip/lwip/autoip.h": {
+      "sha256": "92960cb246d41791ac2e9fee69055b406b9dae0c011614ab001ddf49466190db",
+      "size": 3484
+    },
+    "include/sdk/lwip/lwip/debug.h": {
+      "sha256": "26e83dd085c4a82195810689f2065f9ea0912ca282d238d23c976221b1f01954",
+      "size": 5183
+    },
+    "include/sdk/lwip/lwip/def.h": {
+      "sha256": "45174abaf6f7af5417185dee90954f1954c80278c2bb240b513d25cebf064826",
+      "size": 5330
+    },
+    "include/sdk/lwip/lwip/dhcp.h": {
+      "sha256": "2b8c5f838360e3bf15f2a18fac6906979bfbe3b322b63aaa27f46032755076b5",
+      "size": 5458
+    },
+    "include/sdk/lwip/lwip/dhcp6.h": {
+      "sha256": "925fcd904898e27c562e32fce12fc8294de7cb9be6584619a07bdb90f49b5413",
+      "size": 3897
+    },
+    "include/sdk/lwip/lwip/dns.h": {
+      "sha256": "de936ac6d0fb9fae285508264cedc25f1b8e81c5c3848390b33b454195624c08",
+      "size": 5717
+    },
+    "include/sdk/lwip/lwip/err.h": {
+      "sha256": "af26b573fc5c6a31877fdcde35e15382ac0c8b01f35af3f5a4429f9cf5dd323d",
+      "size": 3337
+    },
+    "include/sdk/lwip/lwip/errno.h": {
+      "sha256": "e994ae3f4b9715b5fa3a52aa8c4e4d7df41115553b44f4ca7babc98d52456d15",
+      "size": 9570
+    },
+    "include/sdk/lwip/lwip/etharp.h": {
+      "sha256": "c51191f03bc0229e1450a2d8c5f4f5faca27e55b5b1bea5bfa844f0af7e729b7",
+      "size": 4034
+    },
+    "include/sdk/lwip/lwip/ethip6.h": {
+      "sha256": "7a7e744ae373a720261be3651adaa0f35ff00ebb1bcf38e5330e371ddfd162b7",
+      "size": 2258
+    },
+    "include/sdk/lwip/lwip/icmp.h": {
+      "sha256": "84f63c9fbc6f6d66ef437f834279c25c20bfa78834eb0ee347c70377f7f8d8c8",
+      "size": 3793
+    },
+    "include/sdk/lwip/lwip/icmp6.h": {
+      "sha256": "f790cd444ecbe2e605b2f1a1deab3e6e9662ba6e87fd47b401912c5a118ee836",
+      "size": 2596
+    },
+    "include/sdk/lwip/lwip/if_api.h": {
+      "sha256": "ce286c1bc917e2ec184d7d9bbe423a98d16377994fa01a585979a7f92f8de861",
+      "size": 2467
+    },
+    "include/sdk/lwip/lwip/igmp.h": {
+      "sha256": "de409719975a9e81349d90ed6e09a8d832f12c216d6b9e42de580be9ff546daa",
+      "size": 4355
+    },
+    "include/sdk/lwip/lwip/inet.h": {
+      "sha256": "8504b019db37c6767f443b3e13006792129b8ac6dcce93658d439c8155369a6c",
+      "size": 6650
+    },
+    "include/sdk/lwip/lwip/inet_chksum.h": {
+      "sha256": "4f99b8325be79c66937a496576ee3ede1f67a44132be35b33582bf15dbb91207",
+      "size": 3919
+    },
+    "include/sdk/lwip/lwip/init.h": {
+      "sha256": "5a27cd6b48bd361b9b9dc04a43f9f9ddf3fcab21be0e396f67fa0d3fca056579",
+      "size": 3642
+    },
+    "include/sdk/lwip/lwip/init.h.cmake.in": {
+      "sha256": "38df819f1ae753f240e9adb27398c14d6cf3e2e9065547a8ceb7694a9d132216",
+      "size": 3708
+    },
+    "include/sdk/lwip/lwip/ip.h": {
+      "sha256": "9589862a8cd3d22ad06ac291231d4b0335cb15e2d0e5bcbd1f870808d9f85828",
+      "size": 14109
+    },
+    "include/sdk/lwip/lwip/ip4.h": {
+      "sha256": "d15ed11a5551d6968d536f5bba63d53c95214668002b12342e6bcf3b840e612e",
+      "size": 4000
+    },
+    "include/sdk/lwip/lwip/ip4_addr.h": {
+      "sha256": "83ed644cd58c3f32ec6fd7b296217cd1602116a923baa51d01fe9d02121f0e7a",
+      "size": 9429
+    },
+    "include/sdk/lwip/lwip/ip4_frag.h": {
+      "sha256": "8b0bb67655cba6da8cddc360e655c711553ad35e6306dbae618637e80be9911c",
+      "size": 3090
+    },
+    "include/sdk/lwip/lwip/ip4_napt.h": {
+      "sha256": "ff85537e628a23230f9459884765fb98c783c84dd74ab808265581a940c69795",
+      "size": 3118
+    },
+    "include/sdk/lwip/lwip/ip6.h": {
+      "sha256": "7681c2948f700aa565c387ca20654f7322991ca15de7fd4e8f342a8ce44abe57",
+      "size": 3433
+    },
+    "include/sdk/lwip/lwip/ip6_addr.h": {
+      "sha256": "7eab91681cbc9d0b843390202921848e4bf01efe7118d60bd39dff24eb5e2b7b",
+      "size": 18600
+    },
+    "include/sdk/lwip/lwip/ip6_frag.h": {
+      "sha256": "8b460c2e2b5f0079e7ed85a13230e58b8dd3e89dd6b282f89f4d944423452c66",
+      "size": 5805
+    },
+    "include/sdk/lwip/lwip/ip6_zone.h": {
+      "sha256": "951a5aeae08562dfc4a3bcc72de9952ac0045126a1cef9eedf9c6881ecb91a03",
+      "size": 13802
+    },
+    "include/sdk/lwip/lwip/ip_addr.h": {
+      "sha256": "e8ec2444afca591c34046894810eaac535227dc6f7594ca1ad89056509fc5fcd",
+      "size": 20060
+    },
+    "include/sdk/lwip/lwip/lwip_napt.h": {
+      "sha256": "8230f256bcf07f2a077dd67abaf1c8738f30b1c2924706449e220a6448fdba32",
+      "size": 4152
+    },
+    "include/sdk/lwip/lwip/mem.h": {
+      "sha256": "416f961f338a0cba460494ebfe2527b7cc1fc5c18f489711e66af7dd76b7a223",
+      "size": 2436
+    },
+    "include/sdk/lwip/lwip/memp.h": {
+      "sha256": "957b75e314e6b68999d6bb9835fcdeb0a5394928b01480bf51bddf026832cbd8",
+      "size": 5952
+    },
+    "include/sdk/lwip/lwip/mld6.h": {
+      "sha256": "090a42a28a8514b511d0ee1bafed10f990c88c2f042d47bbc0db1b41305bbef5",
+      "size": 3792
+    },
+    "include/sdk/lwip/lwip/nd6.h": {
+      "sha256": "f70a80c66623ed7c487a3e63751aec4f25f70f3236f1d0d3f0a79677c7ef7422",
+      "size": 4135
+    },
+    "include/sdk/lwip/lwip/netbuf.h": {
+      "sha256": "1aa92014d8919c5073b5123c92881e00b0c507ca485667ccdebbf31afa214ff3",
+      "size": 4546
+    },
+    "include/sdk/lwip/lwip/netdb.h": {
+      "sha256": "582518497fefd57cd1d227947965c71b1dc16846add471af0fddfbb461c7aca0",
+      "size": 5314
+    },
+    "include/sdk/lwip/lwip/netif.h": {
+      "sha256": "dfd6b5c860746e78a487e6379948cef50fd472b3feec267cb35d3a6ae8c079cd",
+      "size": 28161
+    },
+    "include/sdk/lwip/lwip/netifapi.h": {
+      "sha256": "2c087eac81246ac74e3ba2c3922de0612890587f0cca7c1360f379a57ab45518",
+      "size": 5602
+    },
+    "include/sdk/lwip/lwip/opt.h": {
+      "sha256": "d7aa675dbcd1d1cc189ea5f3b35fd4858e6a70d4e57ebfc092eb69f5b4ec3357",
+      "size": 115281
+    },
+    "include/sdk/lwip/lwip/pbuf.h": {
+      "sha256": "6029018af109291dd53aa76b6745521cc3e55213dde578d5b2fdb5ae507ccacf",
+      "size": 14446
+    },
+    "include/sdk/lwip/lwip/priv/altcp_priv.h": {
+      "sha256": "154762f3b69ba1cd364e95e31e3a6b4c6d679ed02f894f6b538a2dd72f48f519",
+      "size": 6268
+    },
+    "include/sdk/lwip/lwip/priv/api_msg.h": {
+      "sha256": "54097545b39ea7e119d7ac373c5b1b6e418e1e488ddacc1c2e06f8dda906906c",
+      "size": 9005
+    },
+    "include/sdk/lwip/lwip/priv/ipv6_timer_priv.h": {
+      "sha256": "3667f360b7d234ae752ac3a08781fc21d33f890e0426bba6c0a09f2969ab6cce",
+      "size": 3158
+    },
+    "include/sdk/lwip/lwip/priv/mem_priv.h": {
+      "sha256": "c90c9b64c8ea95c05d5b8b10d706acb53b6cc124166e8dd85b397698679f7920",
+      "size": 3279
+    },
+    "include/sdk/lwip/lwip/priv/memp_priv.h": {
+      "sha256": "830ce7ec6bea5c2cc0ebfe7fc8ce3d9302603f85b2d392efecb51cfcada4b95b",
+      "size": 5337
+    },
+    "include/sdk/lwip/lwip/priv/memp_std.h": {
+      "sha256": "fff4139c5a273aac436f1bce5bd5f62f24db056b4094e9732e5817c2b7f7e68f",
+      "size": 6986
+    },
+    "include/sdk/lwip/lwip/priv/nd6_priv.h": {
+      "sha256": "3c85571358bca14b64e67a04ea2b2dabfff21169eda73a71f3255031459e44e3",
+      "size": 4430
+    },
+    "include/sdk/lwip/lwip/priv/raw_priv.h": {
+      "sha256": "0b2b019a55fab8eed89d668f13402778835117fe472464046472cd04b93c2bb2",
+      "size": 2495
+    },
+    "include/sdk/lwip/lwip/priv/sockets_priv.h": {
+      "sha256": "bd45590358b1a07481b7ddae7845e0d1c59bcf482ea48d9093638e0d11aafcc3",
+      "size": 5743
+    },
+    "include/sdk/lwip/lwip/priv/tcp_priv.h": {
+      "sha256": "99f23f7e0ef70978e99ac42a4dcf23107dcfcb69338aa64c73af686b8b8c5fb8",
+      "size": 22863
+    },
+    "include/sdk/lwip/lwip/priv/tcpip_priv.h": {
+      "sha256": "aeb6e4ed4cb0833ca8007ef35c2dbfa75969bfbb6042df50ad698a7a56b12a16",
+      "size": 5827
+    },
+    "include/sdk/lwip/lwip/prot/autoip.h": {
+      "sha256": "9b88bc52c97db0f6c57864b65f423010aaff8d433a4b5d4dc45fb1177a085d03",
+      "size": 3188
+    },
+    "include/sdk/lwip/lwip/prot/dhcp.h": {
+      "sha256": "bc74edb6abff7b5182e04e2e588292401ecba3875bb6673156b026a5c391dbc4",
+      "size": 6383
+    },
+    "include/sdk/lwip/lwip/prot/dhcp6.h": {
+      "sha256": "72c645a6153694229ca535f044af2d1520ebc7860baa98121747218a08c2b74b",
+      "size": 5361
+    },
+    "include/sdk/lwip/lwip/prot/dns.h": {
+      "sha256": "fe0b3e3908373c2f3beceb7b13307cc09b8fb310be3398bd939ba608abff7ed9",
+      "size": 5607
+    },
+    "include/sdk/lwip/lwip/prot/etharp.h": {
+      "sha256": "55164c0d047f1279982fef9681491c8811f8482976aff7fab9b63a9a589ded76",
+      "size": 3878
+    },
+    "include/sdk/lwip/lwip/prot/ethernet.h": {
+      "sha256": "42fbc05a563d3ad242663b7d82601bbae6c6d9c16a6da5b35b51a02799206303",
+      "size": 3836
+    },
+    "include/sdk/lwip/lwip/prot/iana.h": {
+      "sha256": "72869615d9f6a10d435d1e9bbbe7937ce8419e01ff56c9a1ceab7eed1cc5b7cd",
+      "size": 2950
+    },
+    "include/sdk/lwip/lwip/prot/icmp.h": {
+      "sha256": "931d46a3e775efcd6076263e23eb564b612913b7c11f7b5d009e94fefeb20f28",
+      "size": 3249
+    },
+    "include/sdk/lwip/lwip/prot/icmp6.h": {
+      "sha256": "6c0d8c72bf89e4ccc82ff4d1f289ec5d3fa8a280a21c60a562e52777374fdeb2",
+      "size": 5024
+    },
+    "include/sdk/lwip/lwip/prot/ieee.h": {
+      "sha256": "3cabc795b2c2e02b4ff44e130497f19b372348598f9ac6d5127ab1888370e187",
+      "size": 3007
+    },
+    "include/sdk/lwip/lwip/prot/igmp.h": {
+      "sha256": "9adb3a0b03feff302b057020aa860fd958f6ef4528225014c104bd4175ebdff7",
+      "size": 3003
+    },
+    "include/sdk/lwip/lwip/prot/ip.h": {
+      "sha256": "dd0fd75a2e24141b597fafb3b84fb9f75c4541ae21040f319e30230bca7ba2d6",
+      "size": 2104
+    },
+    "include/sdk/lwip/lwip/prot/ip4.h": {
+      "sha256": "033570c0b7657f5475959f7b74d9e23c6f8e81498495d5b23d8c2eeb0640d7a7",
+      "size": 4470
+    },
+    "include/sdk/lwip/lwip/prot/ip6.h": {
+      "sha256": "177e335168c4ffe180c52b33db37dd62e4426cf8e396293ea0a73103a2b044ae",
+      "size": 7127
+    },
+    "include/sdk/lwip/lwip/prot/mld6.h": {
+      "sha256": "9601cee67b48c4b7cadb75caf3d83c05f5409d367341af70af7e7e4f46f173f8",
+      "size": 2407
+    },
+    "include/sdk/lwip/lwip/prot/nd6.h": {
+      "sha256": "50cff239fdb433defe12f7e35c4f2964e42ad7bfeab15d3b274a59142c4d558e",
+      "size": 8034
+    },
+    "include/sdk/lwip/lwip/prot/tcp.h": {
+      "sha256": "db67bb5ea0517a8cd9e30ebf655743f69ce05e77ca6e4a113e8c60e69bd7c48a",
+      "size": 3639
+    },
+    "include/sdk/lwip/lwip/prot/udp.h": {
+      "sha256": "b56daa8ff1e8e52cdd4f720297f07af2a96feea254db86768e20e157d7ce2784",
+      "size": 2263
+    },
+    "include/sdk/lwip/lwip/raw.h": {
+      "sha256": "5c0a93c44d89880bb23b2e74c56c3cde54fcbf607e41e74dc21689ffd7e5f66a",
+      "size": 5441
+    },
+    "include/sdk/lwip/lwip/sio.h": {
+      "sha256": "b6555ae90164d0b66e2772ec3444ebba0133927e4f47b512b570819b66912ce3",
+      "size": 4218
+    },
+    "include/sdk/lwip/lwip/snmp.h": {
+      "sha256": "1f90da65829c29545e9562ce5355d1799ea36cd901ed8ea9faa8e1ef3d7c2ece",
+      "size": 7579
+    },
+    "include/sdk/lwip/lwip/sockets.h": {
+      "sha256": "eef2e960b8f8fe7705ae7a003c2a03af56b38dbafc1f6acb55f3ee0c14e10f72",
+      "size": 25664
+    },
+    "include/sdk/lwip/lwip/stats.h": {
+      "sha256": "cc0222e566510ad3b4be9afb4677708937d27d20ab11f2f95a0bfdca8299cc9f",
+      "size": 15651
+    },
+    "include/sdk/lwip/lwip/sys.h": {
+      "sha256": "f33b739604b5d9b5dfe33a1f6d2619d1735780ffffb3552101ec7204fbe4b521",
+      "size": 20825
+    },
+    "include/sdk/lwip/lwip/tcp.h": {
+      "sha256": "519f335a28dd652a5b554923829d85e2145f9332794d7967276d76957ccf69c6",
+      "size": 19597
+    },
+    "include/sdk/lwip/lwip/tcpbase.h": {
+      "sha256": "cc99fcf9a85b548157dc0631922edf5ebac82c431d463683d10bfc584971a42e",
+      "size": 2654
+    },
+    "include/sdk/lwip/lwip/tcpip.h": {
+      "sha256": "0106c89a8ba1f1cb56019e395d5681bf5a37121885a1b3218e3bf547a1266aa4",
+      "size": 4188
+    },
+    "include/sdk/lwip/lwip/timeouts.h": {
+      "sha256": "f108190099886ae8aa767cf16d9ad952cfee1d83bfd53f8c971c1ffdd2c07a85",
+      "size": 5645
+    },
+    "include/sdk/lwip/lwip/udp.h": {
+      "sha256": "5c7067c3805162cf3801e41307e09871e7a6a2362043b9fea2b94c3fd8762c57",
+      "size": 7966
+    },
+    "include/sdk/lwip/netif/bridgeif.h": {
+      "sha256": "9e2ec7595a463c53c792f79f8f22823f9e832940c517a3a79bde85f195dd26e4",
+      "size": 5271
+    },
+    "include/sdk/lwip/netif/bridgeif_opts.h": {
+      "sha256": "bc6e5f0677c621a5a8adb315e1cdb06210e1391efea6d308684103fd38edfe66",
+      "size": 3456
+    },
+    "include/sdk/lwip/netif/etharp.h": {
+      "sha256": "2e1ab81eced65420cdee5940d2e547cae7b0fa70088f452692363676ecfc66dc",
+      "size": 137
+    },
+    "include/sdk/lwip/netif/ethernet.h": {
+      "sha256": "1dd88263e583593e47f7c891680d67838287160551b8c06562c9feca1ddee443",
+      "size": 2889
+    },
+    "include/sdk/lwip/netif/ieee802154.h": {
+      "sha256": "02f21d8b3e143fa77d8fa3f0d3db9ac1683507436ab441a61d5012ddb6037699",
+      "size": 5338
+    },
+    "include/sdk/lwip/netif/lowpan6.h": {
+      "sha256": "538ac2429cedf9193b6538998f3ba5bdd003fbf0840fd03b46d4ad5bcfaa4c20",
+      "size": 2921
+    },
+    "include/sdk/lwip/netif/lowpan6_ble.h": {
+      "sha256": "fdc9f64632ec32ee2a577048d1ae5f64b1ffcb705e8ee505aefdb9232d8af4c9",
+      "size": 3114
+    },
+    "include/sdk/lwip/netif/lowpan6_common.h": {
+      "sha256": "eed0a8f45ea6e62ba4238d6bc139a1bef5fe625ec7527b52856fbf885c12f8ba",
+      "size": 3112
+    },
+    "include/sdk/lwip/netif/lowpan6_opts.h": {
+      "sha256": "8dc0426b3e382cc2d64cd7cb325c77180b9dd5c90508894674a4c6cb25614198",
+      "size": 4267
+    },
+    "include/sdk/lwip/netif/ppp/ccp.h": {
+      "sha256": "b6e681ffe6855a6772c6d0a9077f144676c30db0c9ec0ea461e816f7647d6d43",
+      "size": 4962
+    },
+    "include/sdk/lwip/netif/ppp/chap-md5.h": {
+      "sha256": "f67cd93664262575ded862c17bac7c1003e2eb690224b89ba2b0cdd221c2f725",
+      "size": 1472
+    },
+    "include/sdk/lwip/netif/ppp/chap-new.h": {
+      "sha256": "f7bfb4e194fedcd1e6d499320826ecca7f14add5170c8fb7d4832b8e831bc2ac",
+      "size": 6186
+    },
+    "include/sdk/lwip/netif/ppp/chap_ms.h": {
+      "sha256": "77316bd6366248a0d0715e19e231667c1564f3ef081dc3ba839cd673a5d4984e",
+      "size": 1738
+    },
+    "include/sdk/lwip/netif/ppp/eap.h": {
+      "sha256": "42589e98b4ff8470c0e9a1cecc45fa30e79e2c1c3452fc46e2a88b6ac617dfe8",
+      "size": 5572
+    },
+    "include/sdk/lwip/netif/ppp/ecp.h": {
+      "sha256": "4936fccc29a900ced5b67906f97f192ea634642b6a003605dc1cb40d65d011f6",
+      "size": 1998
+    },
+    "include/sdk/lwip/netif/ppp/eui64.h": {
+      "sha256": "fc79081c31fd7333b0e2b3cf61c870727a3b066d82482c894b02c81cdbf464c7",
+      "size": 3052
+    },
+    "include/sdk/lwip/netif/ppp/fsm.h": {
+      "sha256": "8751104f5cdeb3ace720744016431ee2d704983e8a94de7add0830e63dfdef0e",
+      "size": 6385
+    },
+    "include/sdk/lwip/netif/ppp/ipcp.h": {
+      "sha256": "60bb47d15951954c865393be49b64f6daecc966f7146aeee187530a111d9008a",
+      "size": 5082
+    },
+    "include/sdk/lwip/netif/ppp/ipv6cp.h": {
+      "sha256": "69de1cc233f9ec05312a6cd4d5b558d91d04e39626ad6f9e0fbc4ee61a5709d0",
+      "size": 7649
+    },
+    "include/sdk/lwip/netif/ppp/lcp.h": {
+      "sha256": "0278457347c50aeaa4636124d0265fb8064511f461de2b3ff7fa51e3dacb0345",
+      "size": 6810
+    },
+    "include/sdk/lwip/netif/ppp/magic.h": {
+      "sha256": "b19a254f135449982830685df31b948e0d5c7e44ac5875efc8d1a3ef20a3aff7",
+      "size": 4859
+    },
+    "include/sdk/lwip/netif/ppp/mppe.h": {
+      "sha256": "8dd28c994f67ca45b11586ecc195fabedd5d51efa0bd99872336d82886477c9f",
+      "size": 6258
+    },
+    "include/sdk/lwip/netif/ppp/polarssl/arc4.h": {
+      "sha256": "970bc9075bf7aef36f4a225ba8a3dcb89c16a1948016f3521ca4a7609b7ba284",
+      "size": 2776
+    },
+    "include/sdk/lwip/netif/ppp/polarssl/des.h": {
+      "sha256": "f0a3ea812ead16f7d8fba08115429b5bd7deed1d9ffc6dddf66ec44b1d95ef0a",
+      "size": 3034
+    },
+    "include/sdk/lwip/netif/ppp/polarssl/md4.h": {
+      "sha256": "d1982ff627c1176d03c60fa8ae307af09626a2655e08525a146019276edb9058",
+      "size": 3132
+    },
+    "include/sdk/lwip/netif/ppp/polarssl/md5.h": {
+      "sha256": "1962ff0d88f8a7efbb6c8592eb13154129cfc7012c8cc22be7981df35e3c8ba4",
+      "size": 3131
+    },
+    "include/sdk/lwip/netif/ppp/polarssl/sha1.h": {
+      "sha256": "2951ad6ae5b5797112ae1899cd814536c445334bf59cbd91bf5414db0613980d",
+      "size": 3163
+    },
+    "include/sdk/lwip/netif/ppp/ppp.h": {
+      "sha256": "58175d5f9fda4d88bdaab4f1da12da692dd9e732ee0c51d94319b3461edd01c2",
+      "size": 24950
+    },
+    "include/sdk/lwip/netif/ppp/ppp_impl.h": {
+      "sha256": "9a216f46049edfb333551cb4e7213ad537b0570c3211f0029b32bcd0c39cf62e",
+      "size": 24893
+    },
+    "include/sdk/lwip/netif/ppp/ppp_opts.h": {
+      "sha256": "fcedcc2e603d155bad124e837e119abf616f1acafbee5315dd2a55adcf13fe42",
+      "size": 15350
+    },
+    "include/sdk/lwip/netif/ppp/pppapi.h": {
+      "sha256": "f1520293792605ad0f0c78c93a5907d478affbebea8d6be1b0f8a8bdc9c4b427",
+      "size": 4447
+    },
+    "include/sdk/lwip/netif/ppp/pppcrypt.h": {
+      "sha256": "954943c6c1286c707c0f1182428eb514dc8cf87a704a4e8f26a926553f260d58",
+      "size": 4637
+    },
+    "include/sdk/lwip/netif/ppp/pppdebug.h": {
+      "sha256": "fab025981023c13721fac50978c5416ce2c9a0f40db200ef78ce4cd36d3b9b63",
+      "size": 3229
+    },
+    "include/sdk/lwip/netif/ppp/pppoe.h": {
+      "sha256": "7ef6c7103c95f71afecf4453db1153830220fceaf9614931034bff7bde6f72f9",
+      "size": 7398
+    },
+    "include/sdk/lwip/netif/ppp/pppol2tp.h": {
+      "sha256": "ae9a819aaf816ae4ff25c35bddaf7c10654a54b95451b247fd5d2824229d3cf7",
+      "size": 8864
+    },
+    "include/sdk/lwip/netif/ppp/pppos.h": {
+      "sha256": "c225fffa8f85bc170992cef05d8d7350c86d2b3ae3d55951d71e35c9fcc2390d",
+      "size": 4569
+    },
+    "include/sdk/lwip/netif/ppp/upap.h": {
+      "sha256": "7cf555545ed20e7d7897ed935c6333e77d629b1862e4e2136df87ebebfcb3907",
+      "size": 4139
+    },
+    "include/sdk/lwip/netif/ppp/vj.h": {
+      "sha256": "d6c9da89224974d8486dfa0082ecca0d487715df65a37088db55e7e51c745a14",
+      "size": 6358
+    },
+    "include/sdk/lwip/netif/slipif.h": {
+      "sha256": "abd68f98455683a96feeb1d7b2f83aa62acbba23b63d7974bef26382342909e3",
+      "size": 3093
+    },
+    "include/sdk/lwip/netif/zepif.h": {
+      "sha256": "7b3a4c9094483c14eb3c4da651874aca325e3927fde02eb28e226040deef4714",
+      "size": 2859
+    },
+    "include/sdk/macsw/bl_fw_api.h": {
+      "sha256": "8c9e7b20797d1bb1dfc0c629ebdc00ab23b43c6eaf4f7b90769dc7c290efddb3",
+      "size": 96
+    },
+    "include/sdk/macsw/coexm.h": {
+      "sha256": "efcde2a0fc35a093241ce5d7583811a7d45e4052309c44b85955b3200230e425",
+      "size": 11750
+    },
+    "include/sdk/macsw/ieee80211.h": {
+      "sha256": "bf6febb8a6cc262a398344aa95e183ffc972e3b0f3b002f6b3db5fa183a6e5a3",
+      "size": 5896
+    },
+    "include/sdk/macsw/mac_frame.h": {
+      "sha256": "0c02d78172170168ed09f6631edafc42d1e492234742e5cf56cbcfc9b5911f05",
+      "size": 137084
+    },
+    "include/sdk/macsw/mac_types.h": {
+      "sha256": "33be0e8407b5c8abb385cacd87a9dff893bb67475e55fea46e56fd18dcdeebbc",
+      "size": 16083
+    },
+    "include/sdk/macsw/macsw.h": {
+      "sha256": "58dddc61766a533a9c51ee9ef7a93ed7abd30741a812f1dbc62e8c4588c963d8",
+      "size": 131605
+    },
+    "include/sdk/macsw/macsw_adhoc_config.h": {
+      "sha256": "c42b6ed3c4309f50214c4f4ef3e343a94db8dc46c095b61661244b639b14bddf",
+      "size": 88
+    },
+    "include/sdk/macsw/macsw_bridge_config.h": {
+      "sha256": "8e35e032bd2b24e3bff63e636cbc08f0b49ae7f53b1b7801dabd7ae4c5340979",
+      "size": 422
+    },
+    "include/sdk/macsw/macsw_coex_config.h": {
+      "sha256": "47b231aa37fed8244acd943a1e29e564ee0e807e46810986b615ab191982efbc",
+      "size": 58
+    },
+    "include/sdk/macsw/macsw_config.h": {
+      "sha256": "4e124229f2c6ae6037dbf835d847693af433fb7982f4969a33477612dfbe3a70",
+      "size": 2664
+    },
+    "include/sdk/macsw/macsw_default_config.h": {
+      "sha256": "6c8449fe0d611f39d64db41f65efcf743ba67555ceaa3a122a3b3d38e83fd5ba",
+      "size": 8
+    },
+    "include/sdk/macsw/macsw_plat.h": {
+      "sha256": "20d3b99022dd1de64a2d38bec43cfeafad1af3e3f74adf6f996383825999cb93",
+      "size": 6371
+    },
+    "include/sdk/macsw/macsw_vela_616_config.h": {
+      "sha256": "b0f41e964f5df9e3090dc0eeccb04871b06a4a4a816200f63ae6ee3074b3da00",
+      "size": 825
+    },
+    "include/sdk/macsw/macsw_wfa_config.h": {
+      "sha256": "7fa3e703edfd20c5acc79aeb257f9465458bfce3baa74f793acb85078cc90524",
+      "size": 583
+    },
+    "include/sdk/mbedtls/.gitignore": {
+      "sha256": "82390596acbf44ec38d3991f99fd39de51a725f409b16cbc01512da2cb4003bf",
+      "size": 46
+    },
+    "include/sdk/mbedtls/CMakeLists.txt": {
+      "sha256": "b1f41dd0390a9f1c982cded6c8e020d7730050e5fafc1070fb5b5fd359a0b72a",
+      "size": 702
+    },
+    "include/sdk/mbedtls/mbedtls/aes.h": {
+      "sha256": "ce71f35d91cf1609bddff21d613863c1177bccc97327f7994c39965ebf044b56",
+      "size": 28025
+    },
+    "include/sdk/mbedtls/mbedtls/aria.h": {
+      "sha256": "71fadc4b862611c8a75de841ccf4a346f756cec7345d34d2ed58398ebf79c72a",
+      "size": 14996
+    },
+    "include/sdk/mbedtls/mbedtls/asn1.h": {
+      "sha256": "bff209b57c95feb92edf78194f77bcc139172ff2c78b5aa0ad25a9739ce570bc",
+      "size": 27308
+    },
+    "include/sdk/mbedtls/mbedtls/asn1write.h": {
+      "sha256": "c49010988fd01e3fa40d28c809546bd6a1d05729d68454eee301515a578055e5",
+      "size": 16556
+    },
+    "include/sdk/mbedtls/mbedtls/base64.h": {
+      "sha256": "30f5bfb1b8af6ecc035d005126f25395ecc5164b810b3d8c6ade74b1acf46848",
+      "size": 2613
+    },
+    "include/sdk/mbedtls/mbedtls/bignum.h": {
+      "sha256": "f4167d7a91c3431f37341d0d32c72280fd912dfaf360d6fccb1cd9c5fa9da92c",
+      "size": 45718
+    },
+    "include/sdk/mbedtls/mbedtls/block_cipher.h": {
+      "sha256": "edddbf6b03a54e04b2ae3ee3da00a7e243a7ef3f81db5747c69884b222980898",
+      "size": 1881
+    },
+    "include/sdk/mbedtls/mbedtls/build_info.h": {
+      "sha256": "a9ff45f478969aae4b4f610634a02ff02355189b15beb25777ec1cf2f87cd749",
+      "size": 6163
+    },
+    "include/sdk/mbedtls/mbedtls/camellia.h": {
+      "sha256": "32e959e91fd7cce4f9b6fa204afaf6a713e34c7940a35e716fa5e3681aadf6bd",
+      "size": 13376
+    },
+    "include/sdk/mbedtls/mbedtls/ccm.h": {
+      "sha256": "7a71ba5bba1af8cb6d79474ae9130d9a88319bb15034f331acaab755b1c6764c",
+      "size": 25572
+    },
+    "include/sdk/mbedtls/mbedtls/chacha20.h": {
+      "sha256": "519b2d029195ca218e435ffea9d36ca1f0e295312859561c8139459a44b11fab",
+      "size": 7749
+    },
+    "include/sdk/mbedtls/mbedtls/chachapoly.h": {
+      "sha256": "8a883b6963bc05815e1eff7f3a50ac41080f43420fb4000bc24187298a3d3628",
+      "size": 15597
+    },
+    "include/sdk/mbedtls/mbedtls/check_config.h": {
+      "sha256": "66696df9cc3f7cbbe84786046937242b18140963b94c34347404f7827c428efa",
+      "size": 48196
+    },
+    "include/sdk/mbedtls/mbedtls/cipher.h": {
+      "sha256": "9dc945cc9ad4a97e656d435ece879c207df249b037d8b7cd1a5d9efeceeeb577",
+      "size": 58077
+    },
+    "include/sdk/mbedtls/mbedtls/cmac.h": {
+      "sha256": "181015eae9af1a0e3ed94f54d42c806ee7897f623968eeece045d7c46cc347e9",
+      "size": 10223
+    },
+    "include/sdk/mbedtls/mbedtls/compat-2.x.h": {
+      "sha256": "9e10b95f0c0c920b1f41152e6d81d48b5df1ab166dbc27c2689546c9079774fa",
+      "size": 1735
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_legacy_crypto.h": {
+      "sha256": "01e7322cbfac74ac36abb30e4c904b63c8c9492d8675d324281fbc5c04dcbc90",
+      "size": 19761
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_legacy_from_psa.h": {
+      "sha256": "8e031e9153f87fd3456cf2b997b9f37de9b39af57e62665e1500e3cdc8d7daf4",
+      "size": 34452
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_psa_from_legacy.h": {
+      "sha256": "4311a3e3a393677fd329006d7c88941311e7bceb94e81763a300754f721db78d",
+      "size": 11564
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_psa_superset_legacy.h": {
+      "sha256": "347736d9df62e4b874d06ee5d76b3d135d693d498a9ebad30eed4f4cdb65825a",
+      "size": 4888
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_ssl.h": {
+      "sha256": "2d37a7552566e9fbd8a5a8b3e6cf6d4e21125a5e48a7e24ca30f3c683d141871",
+      "size": 3417
+    },
+    "include/sdk/mbedtls/mbedtls/config_adjust_x509.h": {
+      "sha256": "92909d91c59340f13eb2b447cf44e0075a0ee742a18f22fb7843f6a18c5af5dc",
+      "size": 1517
+    },
+    "include/sdk/mbedtls/mbedtls/config_psa.h": {
+      "sha256": "1c65cb4b836aeefa764bf7ddf69090347d4d4021379b0cef6201c6ed0f3dc7f8",
+      "size": 1916
+    },
+    "include/sdk/mbedtls/mbedtls/constant_time.h": {
+      "sha256": "1f4196abb876364c85bcc044990b01661114e32d5ddeade427259adb58bb0c79",
+      "size": 1225
+    },
+    "include/sdk/mbedtls/mbedtls/ctr_drbg.h": {
+      "sha256": "13ec5b11efb86bf284e9e5e1b5f92bf1ad28e137173fab0ff6e7e966b416f61d",
+      "size": 25449
+    },
+    "include/sdk/mbedtls/mbedtls/debug.h": {
+      "sha256": "43a6a61d720f585ec2b2020f9cf34851b5bf92fe9a799fc12d810f2227d46ba8",
+      "size": 5136
+    },
+    "include/sdk/mbedtls/mbedtls/des.h": {
+      "sha256": "05ddc8143ac3c6287946c73556c7a0ee50ecaa74132cf9d7895d9b894a115310",
+      "size": 12844
+    },
+    "include/sdk/mbedtls/mbedtls/dhm.h": {
+      "sha256": "92d8ced06e17876b72df79d08f931b1642c53618b4f63e2add804fb5cfb94977",
+      "size": 49374
+    },
+    "include/sdk/mbedtls/mbedtls/ecdh.h": {
+      "sha256": "37ca7c4ce9fb96920c0a4b8ec945775900340a334774b140a181f23c93b86d5b",
+      "size": 19513
+    },
+    "include/sdk/mbedtls/mbedtls/ecdsa.h": {
+      "sha256": "c4e419b690d0da2631d7c1f6893e392f7ad02a818b8cb24a323b66caea9eada0",
+      "size": 31774
+    },
+    "include/sdk/mbedtls/mbedtls/ecjpake.h": {
+      "sha256": "13a7908d6c9193ef176baf4250bd235ae6813b2a44d7c5dc2692294587df5d42",
+      "size": 12737
+    },
+    "include/sdk/mbedtls/mbedtls/ecp.h": {
+      "sha256": "c6a40b830c4d519643bcd4f160aaf8e176487d666611311879b2640de0fe386a",
+      "size": 70025
+    },
+    "include/sdk/mbedtls/mbedtls/entropy.h": {
+      "sha256": "9c3fc1d14497c0989c0f2ea590f708093f4dac39228353eeb1f5f83392df3dca",
+      "size": 9558
+    },
+    "include/sdk/mbedtls/mbedtls/error.h": {
+      "sha256": "ddcb14c1bf9d6fd2f2f1d2eb62117ce9bf05a0f9430c6931d7555b23f9ed3ddb",
+      "size": 6543
+    },
+    "include/sdk/mbedtls/mbedtls/gcm.h": {
+      "sha256": "e28c3e5923269dbc921bc57e83e0ab2a6488a16e1bcbae943e5ad36ccc57d1f4",
+      "size": 17601
+    },
+    "include/sdk/mbedtls/mbedtls/hkdf.h": {
+      "sha256": "58c991c0bc9e821ee8abcded770b83b40682ccc3c12b1bc58b35a853d104a12a",
+      "size": 5210
+    },
+    "include/sdk/mbedtls/mbedtls/hmac_drbg.h": {
+      "sha256": "08a52034212dcd99aefc603c9eb62cce1c3d33d41142efca626d7baa80b73630",
+      "size": 18525
+    },
+    "include/sdk/mbedtls/mbedtls/lms.h": {
+      "sha256": "00a6e65ca542180223b60180790a9fce8903ee85644eca914c9f7ae86f626350",
+      "size": 20679
+    },
+    "include/sdk/mbedtls/mbedtls/mbedtls_config.h": {
+      "sha256": "82a5ae69e1290f460bf6b6e7d7ac81005547f075156442e29f315d661cc3d685",
+      "size": 156797
+    },
+    "include/sdk/mbedtls/mbedtls/md.h": {
+      "sha256": "89c41b36251ab26facdedc7b379ad5236af8f941cae58941be7f6de690fecd4e",
+      "size": 20237
+    },
+    "include/sdk/mbedtls/mbedtls/md5.h": {
+      "sha256": "21893a1ffcb6d65057178a45977774ed249387ace6d733f32434d8546dd827f7",
+      "size": 5359
+    },
+    "include/sdk/mbedtls/mbedtls/memory_buffer_alloc.h": {
+      "sha256": "cf561b299149797735dd23e5cd898aa503a6e4e35fe196e3d8a3d74d2d16bb94",
+      "size": 4722
+    },
+    "include/sdk/mbedtls/mbedtls/net_sockets.h": {
+      "sha256": "61ba8b8ac6aafb07ac3e147645579f7dca872e3f95b309036804dda2d909ea6f",
+      "size": 11633
+    },
+    "include/sdk/mbedtls/mbedtls/nist_kw.h": {
+      "sha256": "a63a6452d9de9f8f84cbf05cc6f3a710c1ad7b4fc305c04924a12c7ee97ddc8d",
+      "size": 6977
+    },
+    "include/sdk/mbedtls/mbedtls/oid.h": {
+      "sha256": "43b033ffcf575a549267f5a561c40ebd33d6ff6dea12981dd186b9edc2ffe9de",
+      "size": 40204
+    },
+    "include/sdk/mbedtls/mbedtls/pem.h": {
+      "sha256": "df7044dbd27684d4305a93077a3bd5af661a21443897f81a8a0a82cec6a8fdbf",
+      "size": 5900
+    },
+    "include/sdk/mbedtls/mbedtls/pk.h": {
+      "sha256": "f503505cce5d4bf10bfd041e062d6b160700c8296ae3c2c63db620e452e8a070",
+      "size": 57456
+    },
+    "include/sdk/mbedtls/mbedtls/pkcs12.h": {
+      "sha256": "37ea587a2be9212b54dc65aaf3916165241b241c925b7368a22d22acb20b39e4",
+      "size": 8710
+    },
+    "include/sdk/mbedtls/mbedtls/pkcs5.h": {
+      "sha256": "d461711e57754093228a127268303bf03f33522d05aff3d1e0f3915bb5e4e370",
+      "size": 8307
+    },
+    "include/sdk/mbedtls/mbedtls/pkcs7.h": {
+      "sha256": "f28b28f2816ef421fc05abc003d9fd265f846820ba1a1743176b04e1efcf40f7",
+      "size": 9617
+    },
+    "include/sdk/mbedtls/mbedtls/platform.h": {
+      "sha256": "5f9e6ab749a7d9ddb24c10cfdec53fd1436ca36c7507fc2d543f43afedcc1bfb",
+      "size": 17388
+    },
+    "include/sdk/mbedtls/mbedtls/platform_time.h": {
+      "sha256": "5baf1588bccb5ef634e765012e4e1d680f1ded4d62e2a6573b5c238546f71327",
+      "size": 1938
+    },
+    "include/sdk/mbedtls/mbedtls/platform_util.h": {
+      "sha256": "1237d849e96bc15b479e8086160e4568c1de86563bb51c60eead45b99ad1b4ac",
+      "size": 10759
+    },
+    "include/sdk/mbedtls/mbedtls/poly1305.h": {
+      "sha256": "393389d0f437930fae11e0cc1f325bbd82282723dffd57f080a08f82453d1e6e",
+      "size": 6022
+    },
+    "include/sdk/mbedtls/mbedtls/private_access.h": {
+      "sha256": "c897213b3e534e8d5db83629177f9c01d90461ed6fea57906836262dba87056d",
+      "size": 435
+    },
+    "include/sdk/mbedtls/mbedtls/psa_util.h": {
+      "sha256": "382c0cc5184a102f7a6ee2ada6ebaf95c327bad7e08d9fa2ff2940e9585dde1b",
+      "size": 9180
+    },
+    "include/sdk/mbedtls/mbedtls/ripemd160.h": {
+      "sha256": "138b3cd792a3301fb869e5303fe0dd317743b2009b7a8f8423a51511444e23dc",
+      "size": 3441
+    },
+    "include/sdk/mbedtls/mbedtls/rsa.h": {
+      "sha256": "26383bb99ab35b8ee5303748a6ef34b5baaeb8548a93de57e0a77ed33f9d5aa4",
+      "size": 56617
+    },
+    "include/sdk/mbedtls/mbedtls/sha1.h": {
+      "sha256": "e644d96d46d44da66e160eb69ad637f13caef1d192e3361616833b342c6a859b",
+      "size": 7501
+    },
+    "include/sdk/mbedtls/mbedtls/sha256.h": {
+      "sha256": "a2ee050ca15b7598a8d227cac0e0ec9fd6c38615b817737a8007e90b3feab0d9",
+      "size": 6879
+    },
+    "include/sdk/mbedtls/mbedtls/sha3.h": {
+      "sha256": "8cc0b3928976871e2a4847d0f6bf02da4663a94cc0779afdec3438a0c76a5499",
+      "size": 5555
+    },
+    "include/sdk/mbedtls/mbedtls/sha512.h": {
+      "sha256": "0f77abf1b4dfc18b865725e8a221d5d9279899c274e993005359be182b7574a2",
+      "size": 7302
+    },
+    "include/sdk/mbedtls/mbedtls/ssl.h": {
+      "sha256": "9d18d3435e706ebaf5833dcd61a35316b9a7eaccc921bb771f01e5060295d969",
+      "size": 279845
+    },
+    "include/sdk/mbedtls/mbedtls/ssl_cache.h": {
+      "sha256": "30211032125e7ea766170195f86a69ce44846488d2828467c9a7e5b210bd491e",
+      "size": 6112
+    },
+    "include/sdk/mbedtls/mbedtls/ssl_ciphersuites.h": {
+      "sha256": "f7c3136ebd9ab933aa94544880a20c1fb97ff71d320dc47f97ae70023df8270c",
+      "size": 24398
+    },
+    "include/sdk/mbedtls/mbedtls/ssl_cookie.h": {
+      "sha256": "dd533ea587703b57769785747d3497cbc58e0e0582d1b9a6d9eeadfc7a32e59c",
+      "size": 3140
+    },
+    "include/sdk/mbedtls/mbedtls/ssl_ticket.h": {
+      "sha256": "1e6edbe8c647a6471472fc82ba262bd36159a6c6b0e0d340b741006560a39700",
+      "size": 7632
+    },
+    "include/sdk/mbedtls/mbedtls/threading.h": {
+      "sha256": "5688b2bef81fa61b9d29bca9383931db26b7dcb8a96785dbc957b95e01292b72",
+      "size": 7255
+    },
+    "include/sdk/mbedtls/mbedtls/timing.h": {
+      "sha256": "177074f8d1699bfd8940eef3749e018f10298ad39af1cbe3a48c04126408ce1c",
+      "size": 2695
+    },
+    "include/sdk/mbedtls/mbedtls/version.h": {
+      "sha256": "ed3e527b2f2ab3b9c9e2633a1a49a764fb3854fc44835afa07f325ce671334de",
+      "size": 2270
+    },
+    "include/sdk/mbedtls/mbedtls/x509.h": {
+      "sha256": "aa138f6080869285173296afd08727e0ab0313cca959b830250b72a3c37a3bc4",
+      "size": 21271
+    },
+    "include/sdk/mbedtls/mbedtls/x509_crl.h": {
+      "sha256": "f5fa1c1bfeac75548fd9b68903e05c5a4435634c1f1457d0ffdd2becd0cd72f1",
+      "size": 6376
+    },
+    "include/sdk/mbedtls/mbedtls/x509_crt.h": {
+      "sha256": "2bc2f06295bce2b267a4efb608b2e6f8f751f0c58acf35a63d47b946860afd80",
+      "size": 56555
+    },
+    "include/sdk/mbedtls/mbedtls/x509_csr.h": {
+      "sha256": "dd0bcea7e36ddb018affc8b7b52f1f7e9fb12b5f69c8c712f9c2b7fd2972ed07",
+      "size": 14529
+    },
+    "include/sdk/mbedtls/psa/build_info.h": {
+      "sha256": "9eb0dbed47ac851acee62bd0829ce177aac6fe8515a4ce7e904ecf71829cb3d0",
+      "size": 500
+    },
+    "include/sdk/mbedtls/psa/crypto.h": {
+      "sha256": "59dcde1dbe182c8d7e6dca0dd229b9e87810ac4fc6a117ebd4625003cbdcffb0",
+      "size": 245000
+    },
+    "include/sdk/mbedtls/psa/crypto_adjust_auto_enabled.h": {
+      "sha256": "34ea7513c9ed3467b5d185ec350f207caf31160ad1d24369b86593050449edae",
+      "size": 1125
+    },
+    "include/sdk/mbedtls/psa/crypto_adjust_config_dependencies.h": {
+      "sha256": "7dae42efb18e0f3d428fd0e4b4223534b66b650a56b7cf7302b4e179e81e2f56",
+      "size": 2016
+    },
+    "include/sdk/mbedtls/psa/crypto_adjust_config_key_pair_types.h": {
+      "sha256": "9cb1fba3c26ab4feada289813242545670f9703c5ebe9f5ab336f3dbdea4a1b5",
+      "size": 3869
+    },
+    "include/sdk/mbedtls/psa/crypto_adjust_config_synonyms.h": {
+      "sha256": "039eb983eb52a46bc273d513e0e17817bd77015004efdb3f9cd8b65eac02de77",
+      "size": 2028
+    },
+    "include/sdk/mbedtls/psa/crypto_builtin_composites.h": {
+      "sha256": "1e2eec329b2b4ec3b5da3f9d5761bc5645833445401a43cbff812fdb76b0ae9e",
+      "size": 7420
+    },
+    "include/sdk/mbedtls/psa/crypto_builtin_key_derivation.h": {
+      "sha256": "8b3d5d3174dbd33e5e332f51e5f00d2734716f3e744656631bccb4d355e92bdc",
+      "size": 4863
+    },
+    "include/sdk/mbedtls/psa/crypto_builtin_primitives.h": {
+      "sha256": "a3078c5637a4ef2a40ef022f89881b8ca5d3321bcab31f6f550c6154c58543c5",
+      "size": 3932
+    },
+    "include/sdk/mbedtls/psa/crypto_compat.h": {
+      "sha256": "0c0396d7f339f9207af3a003e98e9921516367c71d53724cb42e32f0f66142f7",
+      "size": 8750
+    },
+    "include/sdk/mbedtls/psa/crypto_config.h": {
+      "sha256": "dd8222851bf799827f45aab2b7783d5e65c8e54c24092ec0dbafa2b259612bef",
+      "size": 6400
+    },
+    "include/sdk/mbedtls/psa/crypto_driver_common.h": {
+      "sha256": "25207d12a91fc8c0670370596c3306c256ec054b4d6a6d1dd9b5bbb7d5bbe35b",
+      "size": 1559
+    },
+    "include/sdk/mbedtls/psa/crypto_driver_contexts_composites.h": {
+      "sha256": "9f6bc40047a2d0d48361d82e5a5b05c477d946518b0091a3d4cb8c2cd0c877fd",
+      "size": 5938
+    },
+    "include/sdk/mbedtls/psa/crypto_driver_contexts_key_derivation.h": {
+      "sha256": "77c8ef9b7a8fac177a53472c7a39a9835da61bf864df951979cd15f71143796f",
+      "size": 2061
+    },
+    "include/sdk/mbedtls/psa/crypto_driver_contexts_primitives.h": {
+      "sha256": "829aaa3fbf90beeb20bf989a9db20829469d4875d514d0cc18591f8748a0ba0c",
+      "size": 4079
+    },
+    "include/sdk/mbedtls/psa/crypto_extra.h": {
+      "sha256": "8b396d13cb6aaedbf08f0cb183122db1e257db6ed98b970a937b67c7da73feac",
+      "size": 85484
+    },
+    "include/sdk/mbedtls/psa/crypto_legacy.h": {
+      "sha256": "51c4415dcae97a01f1f0f3901e3e7d91b623cbc30d02e8d9496542545966aae4",
+      "size": 3119
+    },
+    "include/sdk/mbedtls/psa/crypto_platform.h": {
+      "sha256": "26db28657e60ff6c3198b83e10ba86b25ced721cdda1d67e1c0ec679f1f7d041",
+      "size": 3554
+    },
+    "include/sdk/mbedtls/psa/crypto_se_driver.h": {
+      "sha256": "cecf5150230f20d60ad8df60fa96982bb40ecbbb90ff54a14c98f180438b62e1",
+      "size": 67908
+    },
+    "include/sdk/mbedtls/psa/crypto_sizes.h": {
+      "sha256": "e4fc3ecd431e3c2c273c54fe2fe597af98cf3467444f74ad69bd40ae0629bce1",
+      "size": 57528
+    },
+    "include/sdk/mbedtls/psa/crypto_struct.h": {
+      "sha256": "0f5b72d1c0f7ff64a4823998d4641c80f29091a372bce8385261bf7419c81655",
+      "size": 18934
+    },
+    "include/sdk/mbedtls/psa/crypto_types.h": {
+      "sha256": "219ac995d8c48ee0a70a35f1bb70c92215151862c2a1c22385c7018c9ccb7aa6",
+      "size": 20297
+    },
+    "include/sdk/mbedtls/psa/crypto_values.h": {
+      "sha256": "e686e6ecc395c4ab06d4dbd9d9aff4b16d26611e41756e3daf046811f5a92355",
+      "size": 122592
+    },
     "include/sdk/mm/heap5/heap5.h": {
       "sha256": "1d48dde38e24ba3392db3b1223994a6d426080240ae37e09af1bd84c2cf3548c",
       "size": 1091
@@ -899,6 +2083,46 @@
     "include/sdk/mm/tlsf/tlsf.h": {
       "sha256": "87e6212908ce22f63f7b21c0fc655bb9dec50fc814ef24ddfac482912100bb3d",
       "size": 3613
+    },
+    "include/sdk/phyrf/crm.h": {
+      "sha256": "d4062c08635e2e78f79579069f056fa347bbde53977dca77d290f42ad1931ad5",
+      "size": 3254
+    },
+    "include/sdk/phyrf/phy.h": {
+      "sha256": "027ecb98077b3f2e93a30e5ba4a496190825e57e54dff1530b2f6e00fa87d713",
+      "size": 21439
+    },
+    "include/sdk/phyrf/phy_trpc.h": {
+      "sha256": "e96fa8541e9891cd7ba51f8341c5db23519bad8807a24bf488fddb1ed53edd02",
+      "size": 1697
+    },
+    "include/sdk/phyrf/rf.h": {
+      "sha256": "76441554846791c951f0a6752394713907c5aac28e816ef5d0b4086aece9cee2",
+      "size": 1717
+    },
+    "include/sdk/phyrf/wireless_config.h": {
+      "sha256": "7f25ad8af138d4d9d17cefb7b49444fd00194c1f729f9937e2d7fb0880c0d1b6",
+      "size": 5232
+    },
+    "include/sdk/phyrf/wl_api.h": {
+      "sha256": "3f58f44bee531b015644dfee4179703fe22524a817678f01a414836f78dd4bb0",
+      "size": 13673
+    },
+    "include/sdk/phyrf/wl_cli_api.h": {
+      "sha256": "13d77743e82d4d0d6f3bdeabc03fbb951669d0926c872603a34da4c949b4fbcc",
+      "size": 1282
+    },
+    "include/sdk/phyrf/wl_config.h": {
+      "sha256": "2c08b7d95928b070e7f6306e08247e2e5c104ea17dcb7d2f74e34a6d023e6b30",
+      "size": 1745
+    },
+    "include/sdk/rfparam/rfparam_adapter.h": {
+      "sha256": "c3c4bde575acd295631ecf9935c8d95084d9599796d74bb521be3d555c04b883",
+      "size": 3325
+    },
+    "include/sdk/rfparam/rfparam_rftlv.h": {
+      "sha256": "6a155ae85db5a313a5054a0075d3c1a0f3cf5fb20be0c66eae99ce70a865b9f5",
+      "size": 5023
     },
     "include/sdk/soc/bl616cl_aon.h": {
       "sha256": "6a9a95d31e15b5ac2b120a390ef7ce8fe3df693852c3039ea1aceb33ea1a0fca",
@@ -1008,6 +2232,46 @@
       "sha256": "5a17d90a64006be8c22e2113dbb8c170c76db1804b306f8f030ebc091c709177",
       "size": 219149
     },
+    "include/sdk/supplicant/bl_supplicant/bl_p2p.h": {
+      "sha256": "ec7f33d9cfb7225eada008dc9e65e66e01ae7ed055a2a18fc2d43d01ad9b5ad8",
+      "size": 4153
+    },
+    "include/sdk/supplicant/bl_supplicant/bl_wpa.h": {
+      "sha256": "f90df5da4f6eb01e27916cd6c449b38b7b923cfc13602f4b1e025fa451ddb88e",
+      "size": 1790
+    },
+    "include/sdk/supplicant/bl_supplicant/bl_wps.h": {
+      "sha256": "b3abc2da2b3db17fa7809081ae28134643a04b581ec19a149ecfe6993c3e5535",
+      "size": 2457
+    },
+    "include/sdk/supplicant/bl_supplicant/esp_dpp.h": {
+      "sha256": "4f16cf15f471b4a392957d0c7e9a3147556a6de0d57a686dd88f2dbe8fbe5482",
+      "size": 3870
+    },
+    "include/sdk/supplicant/bl_supplicant/esp_rrm.h": {
+      "sha256": "3c44d433abfaa484703007a3f9c39e6d1b3461eadcfd4202d75360131db74c8e",
+      "size": 1395
+    },
+    "include/sdk/supplicant/bl_supplicant/esp_wnm.h": {
+      "sha256": "8c35ab2cbdc6c3744a2a456527aab82e9991e7e00535c4bf7ee10deaf2712a09",
+      "size": 1530
+    },
+    "include/sdk/supplicant/bl_supplicant/esp_wpa2.h": {
+      "sha256": "8a774bb439f1f97348a05dca7f909e6db0ffdd5018c4ef825f34a1019203b323",
+      "size": 7062
+    },
+    "include/sdk/supplicant/bl_supplicant/esp_wps.h": {
+      "sha256": "eda2a809850fe67c79a87c14dc8f6acc8b81b46d68a8d93e88cd90c8a5b9366a",
+      "size": 1449
+    },
+    "include/sdk/supplicant/utils/wpa_debug.h": {
+      "sha256": "67dce6c251acb53eb1fb942d6cde883cbc9e46594c16af35a78bf3a0a0c72d94",
+      "size": 7252
+    },
+    "include/sdk/supplicant/utils/wpabuf.h": {
+      "sha256": "04fb131125a50c47895ede81f8dc806238cc5785bd010a58395ac0a84c5027df",
+      "size": 4301
+    },
     "include/sdk/sys/bl602/bl602_sys.h": {
       "sha256": "062a313b2e9839f425c1c8ac3b94d6447d563442823556ea5d79a373a2ea1def",
       "size": 127
@@ -1108,6 +2372,10 @@
       "sha256": "45910fc877e2fa63d416f000e35fc6442fe9a7961db740fc2ada921375be0957",
       "size": 1695
     },
+    "include/sdk/utils/async_event.h": {
+      "sha256": "f9d4f8e37aa746632e5b52a98ca1c000200d1f0c993b7d1804e258c36f1170e5",
+      "size": 1436
+    },
     "include/sdk/utils/bflb_block_pool/bflb_block_pool.h": {
       "sha256": "5fbb4ca505062976949e2ab479d2ea92a5049fc728a1d2c511897f998a704448",
       "size": 2620
@@ -1168,13 +2436,309 @@
       "sha256": "cb340c9bcb89e373a97e5c6c86d9a42c588e2ba819602f1ab6eea8b081796a5c",
       "size": 5158
     },
+    "include/sdk/wifi6/ieee802_11_defs.h": {
+      "sha256": "2b29b860ceedf23e1f73722e93767834dc063710d8b6ce10e279665e4bd079be",
+      "size": 136924
+    },
+    "include/sdk/wifi6/supplicant.h": {
+      "sha256": "4297b30ea30813042150e955bdd460bf5c026595905ae08541e10c0f2d808955",
+      "size": 14817
+    },
+    "include/sdk/wifi6/timeout.h": {
+      "sha256": "a9c441fafb160b15efe3f03e1b1576e7db3ef1853c7d7763b22eebe81fe9452a",
+      "size": 520
+    },
+    "include/sdk/wifi6/wifi_mgmr.h": {
+      "sha256": "1468477ec6ecc3b4a8ddba52567a76034ae2c5f82b37593a3d815df9485f45f4",
+      "size": 16792
+    },
+    "include/sdk/wifi6/wifi_mgmr_ext.h": {
+      "sha256": "3aaf270aea876b22d45b70f202c9de0c75aea16b1c42b9341c54a33bb7ef0b85",
+      "size": 223
+    },
+    "include/sdk/wifi6/wl80211.h": {
+      "sha256": "5d303e9c655aa3d77c5a78618194b9b6050a76dc2ba273de4714333576d8b035",
+      "size": 26109
+    },
+    "include/usb_aoa.h": {
+      "sha256": "993cce86c476884d9c642a246d79269c820d5e165d4637f5d278837e719bb09a",
+      "size": 1307
+    },
+    "include/usb_audio.h": {
+      "sha256": "e65b4de59a770fcf6f3fb8863ae6012a22f98b590fc66a8295f285cafaf3dc9c",
+      "size": 93472
+    },
+    "include/usb_cdc.h": {
+      "sha256": "a8d25b954d5dbfd0d03659651c79af342abe8e5b993fefa278cd8246fa64e476",
+      "size": 46886
+    },
+    "include/usb_config.h": {
+      "sha256": "9544c13bd4eda7a7aea00de383ea1c826c28673f1e78939ba853fed7b2a5aea5",
+      "size": 9899
+    },
+    "include/usb_dc.h": {
+      "sha256": "b086beabb5da7871e1311d2d48fc1eb910902352b6c647d98c87991dd8156932",
+      "size": 5571
+    },
+    "include/usb_dcache.h": {
+      "sha256": "69325427ad4c3a3a426793190be6b7da775fdfb044c73b409ef273d3746aaf70",
+      "size": 565
+    },
+    "include/usb_def.h": {
+      "sha256": "6a12cc98c511a998d4fb2946c259d648a5c9530add9759625ef35749f7b1bd20",
+      "size": 42304
+    },
+    "include/usb_dfu.h": {
+      "sha256": "ea5176c420b21141aeccfa3b366226712a2e93b5b2088a98930cc091d0e81ae2",
+      "size": 6081
+    },
+    "include/usb_ehci_reg.h": {
+      "sha256": "f20f043d98deb3a131325a1a32a0ca238482797bfde06f7ffb367388a57bfc4b",
+      "size": 21704
+    },
+    "include/usb_errno.h": {
+      "sha256": "58cfb7de877feaa747feceeddc26c11e4c93485c8e9456058fa4adb6cf7a9631",
+      "size": 567
+    },
+    "include/usb_gamepad.h": {
+      "sha256": "6929c939ab0ed30b602d287c93771030511a708bbaa0df35d65e882345009d14",
+      "size": 8779
+    },
+    "include/usb_hc.h": {
+      "sha256": "359b3ea61fabfe683cc10e284aa45ac95a8c61898d83846002c93c99a1e63cc5",
+      "size": 2729
+    },
+    "include/usb_hc_ehci.h": {
+      "sha256": "29db772ed2dca9b56a0020b49f1f07133c21b7862e5b900d3b8d538431fb2794",
+      "size": 3155
+    },
+    "include/usb_hid.h": {
+      "sha256": "3925b14520270d8b6913aa7fd015968fbf23493d7c28c9a7997e26fe0a1928fb",
+      "size": 40911
+    },
+    "include/usb_hub.h": {
+      "sha256": "12418c65582d35e68326c0387cf1a4c777a3b7f176b185e35149a1eb609931b8",
+      "size": 6396
+    },
+    "include/usb_list.h": {
+      "sha256": "2ba9f6b76d7785b8d700bc46fa57d63902664ccf0608a0ab3cab9a74e8a2c61d",
+      "size": 12521
+    },
+    "include/usb_log.h": {
+      "sha256": "f2ebbff64ee9346e8c3fedb01c75b826cab0b347f61979b4853aa53d24da236d",
+      "size": 4151
+    },
+    "include/usb_memcpy.h": {
+      "sha256": "660ca7ab49f88be0354113eb86b3df71617a797313e83497513252ecaf5901c5",
+      "size": 2091
+    },
+    "include/usb_mempool.h": {
+      "sha256": "4dc698c07e23fe2c42594ab03f1ab679d42bdedc6513f0480123b42efb394afb",
+      "size": 3648
+    },
+    "include/usb_midi.h": {
+      "sha256": "e39d7ae84ce785456e8ce17aeda3014219a7ac42f809bdb45a716af54a65f584",
+      "size": 10427
+    },
+    "include/usb_msc.h": {
+      "sha256": "c7156bf55615113cd79ec9a6b33d81eb3b3b29a0fc410bdd4f98500eef76476b",
+      "size": 3954
+    },
+    "include/usb_mtp.h": {
+      "sha256": "c0bcfec6945f89b2fd7dd80616642298307f4c849cf3cdc5ab14952eed898365",
+      "size": 37559
+    },
+    "include/usb_osal.h": {
+      "sha256": "fdc134bfb481de6706b2b99d65ebaccc98f580e7e3437a2e9af8910b0a776dbc",
+      "size": 2674
+    },
+    "include/usb_otg.h": {
+      "sha256": "ae2c0f768468d12ca125e8d4de305fd32f5dc2589fb700e82982e529e6c49b62",
+      "size": 728
+    },
+    "include/usb_ringbuffer.h": {
+      "sha256": "992e142365fc6c1662adce2bca1bd43049d30d36b34f50242d88cf88ab665798",
+      "size": 15076
+    },
+    "include/usb_scsi.h": {
+      "sha256": "66c45017bda142cbcafe403d027f00a87880ff48eaf519ca0f4c67dad4188bb8",
+      "size": 53693
+    },
+    "include/usb_util.h": {
+      "sha256": "c62fc34ce1abf2d81219dbf4bfc77eacdd837da60e737d6511a5261854cb0465",
+      "size": 6560
+    },
+    "include/usb_version.h": {
+      "sha256": "90aac36e7fed7687a25cbab32129c8df6c2b64591d7f1cb3fb6d2dbd1073d5f5",
+      "size": 470
+    },
+    "include/usb_video.h": {
+      "sha256": "97668b7c724c1fef69907937c1e3680aee17ebba11ab3125f6da4beb64c81836",
+      "size": 97379
+    },
+    "include/usb_xxx.h": {
+      "sha256": "5ccafa3173038b8486346c1b6865c750944817c9f40ee749c6640e1f2df7f09a",
+      "size": 45
+    },
+    "include/usbd_adb.h": {
+      "sha256": "0cea2d1e8ae1158c62abcb8a7d28c8ba15d78fb1c049b51ade898c31023383e9",
+      "size": 1098
+    },
+    "include/usbd_audio.h": {
+      "sha256": "bed68646f0faad944e6542c7c13ed83dd7daecb87a8d4001171b96231ebaf163",
+      "size": 1315
+    },
+    "include/usbd_cdc.h": {
+      "sha256": "556229fcbdc505d927d3d82f5423463b78a182b948b4c9e8a59b294eaebcb06b",
+      "size": 180
+    },
+    "include/usbd_cdc_acm.h": {
+      "sha256": "bfcc0101c13f537658ab09f480f22e65003385d25fad7fb4d57da33f7908e8da",
+      "size": 810
+    },
+    "include/usbd_cdc_ecm.h": {
+      "sha256": "43dc0880e4fa793036f8ca555d950cde73807a677b5e943b14f9dd84006baa37",
+      "size": 877
+    },
+    "include/usbd_core.h": {
+      "sha256": "7f2d455e2d32e9e0f66f8c88718c1e64afd0b2f5f58e97bc6b513d0afc5176e1",
+      "size": 3928
+    },
+    "include/usbd_dfu.h": {
+      "sha256": "7722dfcbbac58b5dae7668cd810b6dc8a60ef4d2d46a5ba9b53b9ed0e86d8542",
+      "size": 637
+    },
+    "include/usbd_display.h": {
+      "sha256": "6465e3c4992f77c2df9cc180c5d814f07b91511622719c70261bba3ed45a442b",
+      "size": 1347
+    },
+    "include/usbd_gamepad.h": {
+      "sha256": "2cc01f76f1c64607c308739dda96594534e3ab2f0d722685de1bb5aa6d8e4a2f",
+      "size": 662
+    },
+    "include/usbd_hid.h": {
+      "sha256": "c66eb3c05df008f0ab96df5c466a6648a4ace95153d543f63039135ef8b4a9f4",
+      "size": 996
+    },
+    "include/usbd_msc.h": {
+      "sha256": "02ba26c9907bd6d4fec6f52bb4d0897fea28f4964b60262a0c60d3159ec47f18",
+      "size": 962
+    },
+    "include/usbd_mtp.h": {
+      "sha256": "fd20a7f40d21b4a1d325886c6a8d3b07e4c24f8fa975e2e090934e1239648af8",
+      "size": 3523
+    },
+    "include/usbd_rndis.h": {
+      "sha256": "fea2aa31f24f82059f143818ebc4ae0efb36ecc0e512e864b51202958c0c547b",
+      "size": 936
+    },
+    "include/usbd_video.h": {
+      "sha256": "14ef5a3af50be9ac81ae55e096e469086d03519050d349638ad1b76713795e2a",
+      "size": 896
+    },
+    "include/usbd_xxx.h": {
+      "sha256": "89ef2ad5a155db0e2460101b239544811c0945c5826a55b015264a0df6e43a46",
+      "size": 248
+    },
+    "include/usbh_aoa.h": {
+      "sha256": "d4d4c0fd58419f3a70bab6716abe2b6d7c636e552e69d0ed0260725b731f9ca7",
+      "size": 939
+    },
+    "include/usbh_asix.h": {
+      "sha256": "14d706b3814b719e8f39008d53cf7b8be1fbceba92f6c31905cc4f80e6af8297",
+      "size": 5507
+    },
+    "include/usbh_audio.h": {
+      "sha256": "c20ae2712f19cab306e34f72cd71eca43582aee089ebd02b75af84e5a1fded18",
+      "size": 1717
+    },
+    "include/usbh_bluetooth.h": {
+      "sha256": "5c1c0ea3525ff1492cd7ae301592bbd034a809983507df2f5e92f18c99e0e320",
+      "size": 1829
+    },
+    "include/usbh_cdc_acm.h": {
+      "sha256": "02e2d150e4ddda5b3ff8bb2b43d21d928ab65bcc432508c1c5979e997bc5629c",
+      "size": 254
+    },
+    "include/usbh_cdc_ecm.h": {
+      "sha256": "078b33b1ceaeb3923dd9ce7516dac7ad92495777536efd822849011123ff08ca",
+      "size": 1339
+    },
+    "include/usbh_cdc_ncm.h": {
+      "sha256": "290d0e131a50da6c8af9f2390d167d86d94f2df33b953933f1f8aa6641dc3d46",
+      "size": 1485
+    },
+    "include/usbh_ch34x.h": {
+      "sha256": "2f8f7ed969bc6f51f3c5f3c5a3b0fae3b7eb006b9e1c0b3b8a4b9c3d4e4330d1",
+      "size": 1111
+    },
+    "include/usbh_core.h": {
+      "sha256": "a6353cc17a867211f12364952e55f300b11d7633b6072dc6f0f3786d30c13a8c",
+      "size": 11590
+    },
+    "include/usbh_cp210x.h": {
+      "sha256": "560f98eea82739d733cacb88bdbf6e97fbcefe5024c43fe597c7018fca5d89f7",
+      "size": 5653
+    },
+    "include/usbh_ftdi.h": {
+      "sha256": "3e03496f9da263bb7962c9c2033f3f7aacdc542718dcb69af5304b16780d7f59",
+      "size": 10794
+    },
+    "include/usbh_hid.h": {
+      "sha256": "3cbe2f45c6b6a2062c4b3229a6f80a1cdcd415e6ef552f701cc34908634935b9",
+      "size": 2562
+    },
+    "include/usbh_hub.h": {
+      "sha256": "3d5900e9dc6b86d384369182ee61c03b6c813e1943417a116b5ff148c4c4c938",
+      "size": 563
+    },
+    "include/usbh_msc.h": {
+      "sha256": "d83cbbdf207fc08240ad530dcc6181d313c84b49c1c8ddfc2dcc15cb7e7f4c77",
+      "size": 1517
+    },
+    "include/usbh_pl2303.h": {
+      "sha256": "c5be08c71617ae19fd019a14e16caff39546e8f63f8a00a4ac4aa402f6ecc15a",
+      "size": 1029
+    },
+    "include/usbh_rndis.h": {
+      "sha256": "ea21d9c6a84fee985a978839eb0f6ac44bf6a99b5844a300585d218537700bdb",
+      "size": 1524
+    },
+    "include/usbh_rtl8152.h": {
+      "sha256": "74fe65c37e9659fc64f89e3abd6e5bad86d45da7530dc0a7d38ffe05a959f5f4",
+      "size": 1858
+    },
+    "include/usbh_serial.h": {
+      "sha256": "926e48f423ce1518c50826b54a058ac8030b6454f700be0f98c5615f511b46ec",
+      "size": 6231
+    },
+    "include/usbh_video.h": {
+      "sha256": "df1b93ee1e37939bfc4d90dff57833eceae19467d6628ff4205c793f3fc7db9e",
+      "size": 2462
+    },
+    "include/usbh_xbox.h": {
+      "sha256": "c4baac36b87bcd0d7e4d2e1b7c8b05f04b70403297a365613c0083e7b222cde3",
+      "size": 698
+    },
+    "include/usbh_xxx.h": {
+      "sha256": "423f4cb683f8774adedf1bd6759eea906e82cf9c899b0fa55d17484d7476c3f2",
+      "size": 452
+    },
+    "include/usbotg_core.h": {
+      "sha256": "514b4445c7274854982ebe99ba11b431e58b58bb0568f1f12a2a1f5f4bf775f2",
+      "size": 579
+    },
     "ld": {
-      "sha256": "56b8d819ef41a35113ff1f63c7880c7f9873d85fd18462356732c076d6c1edf8",
-      "size": 13396
+      "sha256": "8e8dc7b831850b30c9fd5eb5d387249a4780887e29433ca97b97d8e2f663c683",
+      "size": 13443
     },
     "lib/libbl616cl_phyrf.a": {
       "sha256": "47a64069fe980d098b980884e91f2a7abff90d911bc87819c3f6dffc74bb5725",
       "size": 1781054
+    },
+    "lib/libbl_wpa_supplicant.a": {
+      "sha256": "30f86d446f0c3f08bd4e94ec6eb0b899cde1aa2399338dd66bafdd444cf6aede",
+      "size": 1640948
     },
     "lib/libblestack.a": {
       "sha256": "2434d2613af658e7bccfb0367f89ce28512a52ee5d1a2b166fa19f661b0133b6",
@@ -1184,21 +2748,65 @@
       "sha256": "01f6cbc4f1e43a577a7c2af7a4636a880fd6a264a552f4d2609abd44708f4fb0",
       "size": 6636266
     },
+    "lib/libcherryusb.a": {
+      "sha256": "10bebc34d8d421d01b32aa28c160f97c2fca0843db39fd15c1c62b1315de8624",
+      "size": 336674
+    },
+    "lib/libfhost_bl616cl_default.a": {
+      "sha256": "b88b7d3c2a4206dd7b5e7009582c0a7b2ec39606a41a9d42178959c5a459ca84",
+      "size": 2507498
+    },
+    "lib/libfhost_config.a": {
+      "sha256": "79587e4e6c977e9e90a53f2ada76a4c93d93ffe5eeab819c837fdae5d0bff4b4",
+      "size": 51650
+    },
     "lib/libfreertos.a": {
-      "sha256": "55e58e375e5ba91c1130f9a446f7b4167338147dba1409bf0d9be3481c91ff15",
-      "size": 952244
+      "sha256": "3935238f0e237d19fb394555a3579f461d398b0f9bd82cde681672761abf46a9",
+      "size": 1314678
     },
     "lib/liblhal.a": {
-      "sha256": "92a5b955049e2761a62b918ba40d478c4feda8ef485bca49e15651c3e77db414",
-      "size": 2582658
+      "sha256": "1988c54cb9bb682a33393c7769464363d23670af1987f397e266da2d04e68d1e",
+      "size": 3109354
     },
     "lib/liblibc.a": {
       "sha256": "7b87f0436437132e4d15119977bd68bd4567d6a877515ee6861f8f45d78c82ac",
       "size": 648956
     },
+    "lib/liblwip.a": {
+      "sha256": "06186c7b957287380e88898ec3efd866c93ec69051c1b1c27dee40c084e988e6",
+      "size": 3493872
+    },
+    "lib/libmacsw_bl616cl.a": {
+      "sha256": "c0c7515afcb729e7436f72c398e9c4b435f295a00014665c2e0fdc1fa1c295ff",
+      "size": 15935820
+    },
+    "lib/libmacsw_config_bl616cl_default.a": {
+      "sha256": "433a3072f3012e1b9c62fd213ed8046a1fe40c61bf2f96e1cb9f5c0d67030701",
+      "size": 64682
+    },
+    "lib/libmacsw_os_adapter.a": {
+      "sha256": "31322bd83e794492f964024286dbd070b824810d5e4950fe2ccaf6f20c0f6273",
+      "size": 91730
+    },
+    "lib/libmacsw_plat.a": {
+      "sha256": "53b677a2cabbd0bcb54e64004de507375e0951f1c6f944067b6224ae23d1346e",
+      "size": 38568
+    },
+    "lib/libmbedtls.a": {
+      "sha256": "7165f46139b9a9ad2eae105c1a8b845b8f4b37784449f031f430c99ec23fd255",
+      "size": 5385974
+    },
     "lib/libmm.a": {
       "sha256": "9b6e2f82ebacf8f11b30e086f2ddab6f86ef3fba3c21b68c8622ccc8a8cf02f9",
       "size": 341586
+    },
+    "lib/libping.a": {
+      "sha256": "12aca65a571453b57cdcc8a14388aaa11933bdddc4bb873bab7bdfc7e87a29c1",
+      "size": 47346
+    },
+    "lib/libpka_bl616cl.a": {
+      "sha256": "da06e6bf980e14bae0d2898f1c2b9e41c21dead4702d1cd3e0e9f43ec8f69269",
+      "size": 87832
     },
     "lib/librfparam.a": {
       "sha256": "2930bda1ff2b792f0964ee8607a9d578213af71cc6af69481d54f2381ac1392c",
@@ -1224,39 +2832,71 @@
       "sha256": "c5505cdeb041b76d2abde177efe293f75836b33a8ac8352453a532df8e3b7c9b",
       "size": 881870
     },
+    "lib/libwifi6_lwip_adapter.a": {
+      "sha256": "73f348d948a103063fabbbe790dd95ef2c74636aa2012bd74ebb45a241f004f2",
+      "size": 469134
+    },
+    "lib/libwl80211_bl616cl.a": {
+      "sha256": "3165a48bbf41ec708956646f70638f24e542549452475f262fd67c46a2bd0002",
+      "size": 14444674
+    },
+    "lib/libwl80211_plat.a": {
+      "sha256": "96bc2d6e8839271bf85cc051a6d93a9315fc3d7b363c15a1e7e83531a6591a09",
+      "size": 680434
+    },
+    "lib/libwpa_supplicant.a": {
+      "sha256": "8efa98853ab9020318fae5f83eed95a5ead536d1c89b09d9205c80db0d257bb1",
+      "size": 18795556
+    },
     "lib_board/libapp.a": {
-      "sha256": "f5b5db9e78ee43645497bc5b06013b49846c5f4eea5d97082ab79cb8aef516d9",
-      "size": 309440
+      "sha256": "12e3a887fc82a3304ac8a4120f160a22df62ee939d1f9bb3f962d32889a7906e",
+      "size": 312070
+    },
+    "macsw_cache_affinity.ld.in": {
+      "sha256": "c6e39c5d3565cfc1d7d99eaac5da190a85415dfd8dc130766946be0e2d85ce76",
+      "size": 3397
     }
   },
   "host_tools": {
     "bflb_fw_post_proc": {
-      "sha256": "8cfa7d949567f871e2ffc26ce674f774eb02eabbea873265c31e5fb228835b54",
-      "size": 13858784
+      "sha256": "d4c623362823bd04ad106a3ceab4690b038c48ba9d14895ec2614019f1b5ef1b",
+      "size": 7967486
     },
     "blflash": {
-      "sha256": "575a245511ffecbcfbcd60d367e1d93b0b20e5dd89daffc6c2a8dbf9792e6f5a",
-      "size": 16078064
+      "sha256": "906ca0ef39c58b0a8a1cafc38129634269ccc87b7dbe2df9167a573ec14a0a56",
+      "size": 15713976
     },
     "gcc": {
-      "sha256": "b42c96c3690b5c62a053dcd367ce9d2d796c055d3775febd8d8f823ca2ac0e94",
-      "size": 27500976
+      "sha256": "ee501b49f2e8b348dea0d0798d39b45cfcf3dc935cecb6b286b50b018f81a296",
+      "size": 26664976
     }
   },
   "schema": 2,
   "scope": "chip-runtime",
-  "sdk_version": "2.3.30-8-g5cde0ad69",
+  "sdk_version": "2.3.30-local-wl80211",
   "source_commits": {
-    "bouffalo_sdk": "5cde0ad691b71627739d1b86c7fc19eaffe2b91a",
-    "drivers/lhal": "d8e8ffe7c6db9ad2ca92beb94b5b70065c760b51",
+    "bouffalo_sdk": "674ea3f0f928966b5e182b2f5b57ac773b9dd6a6",
+    "components/crypto/mbedtls/mbedtls": "3bc6321603b0ab07c39ebdbe6ad1c65e0f4beb45",
+    "components/fs": "c706ac537407d94bc0e762e0d348f079225c108d",
+    "components/graphics": "34a853821e47bdae5f74aa1069c7367cf642372b",
+    "components/multimedia": "f2d2f7abff80b362141dd6291c9d95c1abb67144",
+    "components/net/lwip/lwip": "ceade879a51cde1b85513c3baa588345b1106a00",
+    "components/usb/cherryusb": "2652a5b5be08feb8c007f1cceb3faf8a3a9ee6d6",
+    "components/wireless/bluetooth": "c02b93c6710b0538f36cf22a01e92b4e06a3c40a",
+    "components/wireless/lmac154": "5837d7cec52d889256335309458294ba34efb119",
+    "components/wireless/macsw": "78718af29111083c1de86f76cdd468f5f1d3263b",
+    "components/wireless/thread": "a31c373320deb859543f5e3883437a7e72b91054",
+    "components/wireless/wifi6": "910812dbe4f690f3f22f32a9433efce6d16c1356",
+    "components/wireless/wl80211": "70f2c250e0adde086e849c624b10017cee5acebc",
+    "drivers/lhal": "b39aa29f0110b9f34a8763e104f5f01672ae67a1",
     "drivers/soc/bl602/std": "1d253d273aa044ec80c3b0a0f17a7a6f0a0531e1",
-    "drivers/soc/bl616/std": "790d43579ade7f78e481e830b2c6f08346f808cc",
-    "drivers/soc/bl616cl/std": "3bf3502ea77f48df11159cc114d7ecdfa9421151",
-    "drivers/soc/bl618dg/std": "75076697b0a9361401e176edaf33f03f79f88b77",
+    "drivers/soc/bl616/phyrf": "450aef3d18fe1eb9333f833f9e3cde8ba056e3a3",
+    "drivers/soc/bl616/std": "73d98a0bd2c7f183f09afa40d230e4a960d32a2e",
+    "drivers/soc/bl616cl/std": "32387c81a9b8c5e4bceeee91fa8c08fd0a48ecce",
     "drivers/soc/bl702/std": "63ff630710365510a76d5884f9263d95434b3263",
     "drivers/soc/bl702l/std": "829debea7cc1af9cd07da9f1b3397d3c703533db",
-    "drivers/sys": "3397cb994ecbd051b19b6fa6ac57f59f207901db",
-    "tools/bflb_tools": "11d409a9ff451ba3d8658d4ed4e6f3b9da587193"
+    "tools/autotest": "060fc2d67573a2acdedeb7fcc41cac38d6557b4c",
+    "tools/bflb_tools": "2f8fd6735eee122af9851fb7a1edae21c745ff2a"
   },
   "toolchain": "riscv64-unknown-elf-gcc (Xuantie-900 elf newlib gcc Toolchain V2.6.1 B-20220906) 10.2.0"
 }

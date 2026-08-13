@@ -9,7 +9,6 @@
 extern "C" {
 #include "wifi_mgmr_ext.h"
 #include "wifi_mgmr.h"
-#include "fhost.h"
 #include "rfparam_adapter.h"
 #include "async_event.h"
 #include "lwip/tcpip.h"
@@ -17,9 +16,20 @@ extern "C" {
 #include "lwip/sockets.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
 }
 
+extern "C" void wl80211_init(void);
+extern "C" void wifi_task_create(void);
+
 #define SCAN_LIST_CAPACITY 16
+
+/* wl80211 exposes these WIFI_STATE_* values only under CONFIG_WL80211_P2P. */
+enum {
+    BL_WIFI_STATE_CONNECTING = 0x02,
+    BL_WIFI_STATE_CONNECTED_IP_GETTING = 0x03,
+    BL_WIFI_STATE_CONNECTED_IP_GOT = 0x04
+};
 
 WiFiClass WiFi;
 
@@ -42,6 +52,33 @@ static bool g_static_ip = false;
 static String g_hostname;
 static WiFiEventCb g_event_cb = nullptr;
 
+static void wifi_async_event_handler(void *arg1, uint32_t arg2)
+{
+    (void)arg1;
+    (void)arg2;
+    async_event_loop();
+}
+
+static void wifi_async_event_loop_wake(void)
+{
+    BaseType_t ret;
+    TickType_t wait = portMAX_DELAY;
+
+    if (xTimerGetTimerDaemonTaskHandle() == xTaskGetCurrentTaskHandle()) {
+        wait = 0;
+    }
+    ret = xTimerPendFunctionCall(wifi_async_event_handler, NULL, NULL, wait);
+    configASSERT(ret == pdPASS);
+}
+
+/* The generic lwIP port config maps LWIP_RAND() to bl_rand(). */
+extern "C" int bl_rand(void)
+{
+    static uint32_t seed = 0x12345678;
+    seed = seed * 1103515245U + 12345U;
+    return static_cast<int>(seed >> 16);
+}
+
 static void emit_wifi_event(int event)
 {
     if (g_event_cb != nullptr) {
@@ -55,13 +92,14 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
 
     switch (ev->code) {
         case CODE_WIFI_ON_INIT_DONE:
-            wifi_mgmr_task_start();
+            /* wl80211 posts INIT_DONE/MGMR_DONE after wl80211_init() returns. */
+            break;
+        case CODE_WIFI_ON_MGMR_DONE:
             g_mgmr_started = true;
             emit_wifi_event(ARDUINO_EVENT_WIFI_READY);
             break;
         case CODE_WIFI_ON_SCAN_DONE:
         case CODE_WIFI_ON_SCAN_DONE_ONJOIN:
-        case CODE_WIFI_ON_SCAN_DONE_CONNECTING:
             g_scan_count = wifi_mgmr_sta_scanlist_dump(g_scan_items,
                                                        SCAN_LIST_CAPACITY);
             if (g_scan_count > SCAN_LIST_CAPACITY) {
@@ -77,7 +115,7 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_GOT_IP:
             g_sta_got_ip = 1;
-            wifi_sta_ip4_addr_get(&g_ip, &g_mask, &g_gw, &g_dns);
+            wifi_mgmr_sta_ip_get(&g_ip, &g_mask, &g_gw, &g_dns);
             emit_wifi_event(ARDUINO_EVENT_WIFI_STA_GOT_IP);
             break;
         case CODE_WIFI_ON_DISCONNECT:
@@ -99,11 +137,14 @@ static void ensure_wifi_started(void)
 
     rfparam_init(0, NULL, 0);
     tcpip_init(NULL, NULL);
+    async_event_init(wifi_async_event_loop_wake);
     async_register_event_filter(EV_WIFI, wifi_event_handler, NULL);
     wifi_task_create();
-    fhost_init();
+    vTaskDelay(pdMS_TO_TICKS(500));
+    wl80211_init();
+    wifi_mgmr_init();
 
-    /* fhost_init() raises CODE_WIFI_ON_INIT_DONE asynchronously. */
+    /* wifi_mgmr_init() posts INIT_DONE/MGMR_DONE asynchronously. */
     for (int i = 0; i < 500 && !g_mgmr_started; i++) {
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -199,7 +240,7 @@ bool WiFiClass::mode(wifi_mode_t mode)
     g_mode = mode;
 
     if (mode == WIFI_MODE_NULL) {
-        wifi_sta_disconnect();
+        wifi_mgmr_sta_disconnect();
         return true;
     }
     if ((mode == WIFI_MODE_STA) || (mode == WIFI_MODE_APSTA)) {
@@ -273,11 +314,11 @@ int WiFiClass::begin(const char *ssid, const char *password)
 
     wifi_mgmr_sta_connect_params_t params;
     memset(&params, 0, sizeof(params));
-    strncpy(params.ssid, ssid, MGMR_SSID_LEN - 1);
-    params.ssid_len = static_cast<uint8_t>(strlen(params.ssid));
+    strncpy(params.ssid, ssid, MGMR_SSID_LEN);
+    params.ssid[MGMR_SSID_LEN] = '\0';
     if (password != nullptr) {
-        strncpy(params.key, password, MGMR_KEY_LEN - 1);
-        params.key_len = static_cast<uint8_t>(strlen(params.key));
+        strncpy(params.key, password, MGMR_KEY_LEN);
+        params.key[MGMR_KEY_LEN] = '\0';
     }
     params.use_dhcp = g_static_ip ? 0 : 1;
     params.pmf_cfg = 1;
@@ -298,7 +339,7 @@ bool WiFiClass::disconnect(bool wifiOff)
     }
     g_sta_connected = 0;
     g_sta_got_ip = 0;
-    return wifi_sta_disconnect() == 0;
+    return wifi_mgmr_sta_disconnect() == 0;
 }
 
 wl_status_t WiFiClass::status()
@@ -306,8 +347,13 @@ wl_status_t WiFiClass::status()
     if (!g_mgmr_started) {
         return WL_NO_SHIELD;
     }
-    if (g_sta_got_ip || wifi_mgmr_sta_state_get()) {
+    int state = wifi_mgmr_sta_state_get();
+    if (g_sta_got_ip || state == BL_WIFI_STATE_CONNECTED_IP_GOT ||
+        state == BL_WIFI_STATE_CONNECTED_IP_GETTING) {
         return WL_CONNECTED;
+    }
+    if (state == BL_WIFI_STATE_CONNECTING) {
+        return WL_IDLE_STATUS;
     }
     return WL_DISCONNECTED;
 }
@@ -329,7 +375,7 @@ IPAddress WiFiClass::localIP()
         return IPAddress(g_ip);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(ip);
     }
     return IPAddress((uint32_t)0);
@@ -341,7 +387,7 @@ IPAddress WiFiClass::gatewayIP()
         return IPAddress(g_gw);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(gw);
     }
     return IPAddress((uint32_t)0);
@@ -353,7 +399,7 @@ IPAddress WiFiClass::subnetMask()
         return IPAddress(g_mask);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(mask);
     }
     return IPAddress((uint32_t)0);
@@ -366,7 +412,7 @@ IPAddress WiFiClass::dnsIP(uint8_t dnsNo)
         return IPAddress(g_dns);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(dns);
     }
     return IPAddress((uint32_t)0);
