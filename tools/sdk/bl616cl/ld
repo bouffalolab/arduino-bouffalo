@@ -9,10 +9,10 @@ MEMORY
     fw_header (rx) : ORIGIN = 0x80000000 - 0x1000, LENGTH = 4K
     rom_header (rx) : ORIGIN = 0x80000000, LENGTH = 6K
     rom (rx) : ORIGIN = 0x80000000 + 0x1800, LENGTH = 4096 * 1024
-    ram_nocache (!rx) : ORIGIN = 0x20FC0400, LENGTH = (224K - 1K + 160K - 64 * 1024)
-    ram (!rx) : ORIGIN = 0x60FC0400, LENGTH = (224K - 1K + 160K - 64 * 1024)
+    ram_nocache (!rx) : ORIGIN = 0x20FC0400, LENGTH = (224K - 1K + 160K - 160 * 1024)
+    ram (!rx) : ORIGIN = 0x60FC0400, LENGTH = (224K - 1K + 160K - 160 * 1024)
     ram_psram (wxa) : ORIGIN = 0x88000000, LENGTH = 4096 * 1024
-    ram_wifi (wxa) : ORIGIN = 0x21020000 - 64 * 1024, LENGTH = 64 * 1024 - __EM_SIZE
+    ram_wifi (wxa) : ORIGIN = 0x21020000 - 160 * 1024, LENGTH = 160 * 1024 - __EM_SIZE
     hbn_memory (rx) : ORIGIN = 0x20010000, LENGTH = 512
 }
 SECTIONS
@@ -239,6 +239,7 @@ SECTIONS
     __rom_text_start__ = ABSOLUTE(ADDR(rom_text)); __rom_text_end__ = ABSOLUTE(ADDR(rom_text) + SIZEOF(rom_text)); __rom_text_load__ = ABSOLUTE(LOADADDR(rom_text)); rom_text :
     {
         *(.text*)
+        INCLUDE macsw_cache_affinity.ld.in
         . = ALIGN(4);
     } > rom
     . = ALIGN(4);

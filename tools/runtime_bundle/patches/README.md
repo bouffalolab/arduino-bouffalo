@@ -31,3 +31,15 @@ Fixes observed on BL616CL while bringing up the UNO R4 USB bridge:
 3. The VDMA completion handler writes `USB_CX_DONE` when an EP0 IN transfer
    ends with a short packet, so the controller ACKs the following OUT status
    stage at the right time (macOS enumeration depends on this).
+
+## wifi6-lwipopts-runtime-config-fixes.patch
+
+Target project: `bouffalo/components/wifi6`, files
+`wifi6_lwip_adapter/include/lwipopts.h` and
+`wifi6_lwip_adapter/tx_buffer_copy.c` (recorded upstream commit `910812db`).
+
+The macsw TX/RX buffer counts moved to runtime configuration in macsw master,
+while `lwipopts.h` still used the removed compile-time macros.  Patch the lwIP
+queue sizing to the default build-time values and fix the macsw header include
+order in `tx_buffer_copy.c`.  Required to build `liblwip.a` with
+`CONFIG_WIFI6`/`CONFIG_FHOST` on BL616CL.

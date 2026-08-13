@@ -31,7 +31,7 @@ static const uint8_t RX2 = PIN_SERIAL2_RX;
 static const uint8_t SDA = 11;
 static const uint8_t SCL = 14;
 
-#define ARDUINO_LOOP_STACK_SIZE 1024U
+#define ARDUINO_LOOP_STACK_SIZE 4096U
 #define ARDUINO_LOOP_PRIORITY   1U
 
 #endif

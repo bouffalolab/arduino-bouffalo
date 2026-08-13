@@ -15,7 +15,7 @@
 #define configUSE_TICK_HOOK                     0
 #define configCPU_CLOCK_HZ                      ((uint32_t)(1U * 1000U * 1000U))
 #define configTICK_RATE_HZ                      ((TickType_t)1000U)
-#define configMAX_PRIORITIES                    7
+#define configMAX_PRIORITIES                    32
 #define configMINIMAL_STACK_SIZE                ((unsigned short)128U)
 #define configTOTAL_HEAP_SIZE                   ((size_t)24U * 1024U)
 #define configMAX_TASK_NAME_LEN                 16

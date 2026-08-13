@@ -37,8 +37,16 @@
 
 ## 第三阶段：WiFi6 / TCP / TLS
 
-- [ ] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重新生成 runtime bundle
-- [ ] 实现真实 `WiFi`、`WiFiClient`、`WiFiServer`、`WiFiUDP`、`WiFiClientSecure`
+- [x] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重建 runtime bundle
+      （macsw/fhost/wpa/lwip/mbedtls 库已入库，linker 脚本与头文件已同步）
+- [x] 实现 `WiFi` 类骨架：初始化、扫描、连接、状态、IP/MAC、事件回调
+      （基于 `wifi_mgmr` + lwIP）
+- [ ] 修复 WiFi 启动死锁：`fhost_init()` 的 `MM_RESET` 同步调用会让
+      loopTask/macsw fw/fhost 三任务互相阻塞，`INIT_DONE` 事件无法到达
+      （已排除 macsw/wifi6 版本配对与栈尺寸问题，需继续追查握手链路）
+- [ ] 实机验证扫描与 WPA2-PSK 连接（待死锁修复后）
+- [ ] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
+- [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
 - [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP

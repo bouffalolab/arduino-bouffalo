@@ -19,7 +19,12 @@
 
 #include <string.h>
 
-WiFiClass WiFi;
+extern "C" {
+#include "lwip/netdb.h"
+#include "lwip/ip_addr.h"
+#include "lwip/err.h"
+}
+
 SPIFFSClass SPIFFS;
 Arduino_DebugUtils Debug;
 UpdateClass Update;
@@ -27,21 +32,22 @@ HCIVirtualTransportClass HCIVirtualTransport;
 
 int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
 {
-    (void)hostname;
-    address = IPAddress((uint32_t)0);
-    return 0;
+    if (hostname == nullptr) {
+        return 0;
+    }
+    struct hostent *entry = lwip_gethostbyname(hostname);
+    if (entry == nullptr || entry->h_addr_list == nullptr ||
+        entry->h_addr_list[0] == nullptr) {
+        return 0;
+    }
+    const ip_addr_t *addr = reinterpret_cast<const ip_addr_t *>(entry->h_addr_list[0]);
+    address = IPAddress(ip4_addr_get_u32(ip_2_ip4(addr)));
+    return 1;
 }
 
 extern "C" void usb_persist_restart(int mode)
 {
     (void)mode;
-}
-
-extern "C" int getaddrinfo(const char *hostname, const char *servname,
-                           const struct addrinfo *hints, struct addrinfo **res)
-{
-    (void)hostname; (void)servname; (void)hints; (void)res;
-    return -1;
 }
 
 extern "C" void freeaddrinfo(struct addrinfo *res)

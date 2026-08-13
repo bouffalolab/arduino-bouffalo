@@ -2,7 +2,7 @@
 #define BL616CL_ESP32_COMPAT_PING_SOCK_H_
 
 #include <stdint.h>
-#include "../lwip/ip_addr.h"
+#include <lwip/ip_addr.h>
 
 #define ESP_OK 0
 #define ESP_FAIL -1
