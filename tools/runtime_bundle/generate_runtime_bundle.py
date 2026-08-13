@@ -149,6 +149,7 @@ RUNTIME_PROFILES = {
     "bridge": {
         "source_directory": "profiles/bridge",
         "output_directory": "bridge",
+        "board_overlay_directory": "board_overlay",
     },
 }
 
@@ -623,6 +624,13 @@ def main() -> int:
     profile_source = script_dir / str(profile_cfg["source_directory"])
     require_file(profile_source / "defconfig",
                  f"{profile} profile defconfig")
+    overlay_name = profile_cfg.get("board_overlay_directory")
+    board_overlay_dir = None if overlay_name is None else \
+        profile_source / str(overlay_name)
+    if board_overlay_dir is not None and not board_overlay_dir.is_dir():
+        raise RuntimeError(
+            f"missing {profile} board overlay directory: {board_overlay_dir}"
+        )
     profile_freertos_config = profile_source / "FreeRTOSConfig.h"
     if not profile_freertos_config.is_file():
         profile_freertos_config = script_dir / "FreeRTOSConfig.h"
@@ -887,8 +895,13 @@ def main() -> int:
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
     copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
-    # board headers → sdk/include/board
+    # Board headers → sdk/include/board. Project-local overlay headers are
+    # shipped too so Arduino sources observe the exact board API used to build
+    # libapp.a, without requiring the external SDK checkout at compile time.
     copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
+    if board_overlay_dir is not None:
+        copy_headers([(board_overlay_dir, Path("board"))],
+                     sdk_staging / "include")
     # ring_buffer and other utils
     copy_headers(
         [(sdk / "components" / "utils" / "ring_buffer",
@@ -910,9 +923,6 @@ def main() -> int:
          ],
         sdk_staging / "include",
     )
-
-    # ——— board headers → sdk ——————————————————————————————————
-    copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
 
     # ——— board config → sdk (DTS only) —————————————————————————
     board_cfg_dir = board_dir / "config"
@@ -970,8 +980,8 @@ def main() -> int:
                     "sha256": sha256(path),
                     "size": path.stat().st_size,
                 }
-        return {
-            "schema": 2,
+        manifest = {
+            "schema": 3,
             "scope": scope,
             "chip": chip,
             "board": board,
@@ -993,6 +1003,20 @@ def main() -> int:
             },
             "files": files,
         }
+        if board_overlay_dir is not None:
+            overlay_files = {
+                str(path.relative_to(board_overlay_dir)): {
+                    "sha256": sha256(path),
+                    "size": path.stat().st_size,
+                }
+                for path in sorted(board_overlay_dir.rglob("*"))
+                if path.is_file()
+            }
+            manifest["board_overlay"] = {
+                "directory": str(board_overlay_dir.relative_to(platform_root)),
+                "files": overlay_files,
+            }
+        return manifest
 
     (sdk_staging / "manifest.json").write_text(
         json.dumps(manifest_for(sdk_staging, "chip-runtime"),

@@ -10,6 +10,27 @@
     "short_enums": true
   },
   "board": "bl616cldk",
+  "board_overlay": {
+    "directory": "tools/runtime_bundle/profiles/bridge/board_overlay",
+    "files": {
+      "board_gpio_overlay.c": {
+        "sha256": "841303e81d628f4fe28e4308a3dbf8fd836d0a28b0d87ff4201338fd5ef72e78",
+        "size": 952
+      },
+      "board_gpio_overlay.h": {
+        "sha256": "d9fe9d230a98f10fe147221a66b28a87baa41607e1d95f0e0d494ba677d50619",
+        "size": 3275
+      },
+      "board_overlay.c": {
+        "sha256": "6871a5fbe0cf1362d19c09d9d51df46a9bf192f36bd255d3f4077ad3a1aedc5e",
+        "size": 6357
+      },
+      "board_overlay.h": {
+        "sha256": "0a63bdb7fab5c37efdbaf704943eb0a379afe70905820bb92d1028a32beeab31",
+        "size": 1636
+      }
+    }
+  },
   "chip": "bl616cl",
   "defconfig_sha256": "5507dfb506680c7362f1df5fe2f748d12f95f2d905c495c4edbc7a6645246f7e",
   "files": {
@@ -120,6 +141,14 @@
     "include/board/board_gpio.h": {
       "sha256": "b9b232e584eb7d66eeb8a3298c7a68797b28e08494ba109fee01a00db29ed4af",
       "size": 3349
+    },
+    "include/board/board_gpio_overlay.h": {
+      "sha256": "d9fe9d230a98f10fe147221a66b28a87baa41607e1d95f0e0d494ba677d50619",
+      "size": 3275
+    },
+    "include/board/board_overlay.h": {
+      "sha256": "0a63bdb7fab5c37efdbaf704943eb0a379afe70905820bb92d1028a32beeab31",
+      "size": 1636
     },
     "include/board/board_rf.h": {
       "sha256": "d8dcadb50b53697b5d1af001e871bf49d801b3d50ca33b484ca4606e73d2caa4",
@@ -986,8 +1015,8 @@
       "size": 2859
     },
     "include/lwipopts_user.h": {
-      "sha256": "f884271ee631d3bc6e63ecba3959ccdc42bd8fe58d1d0c43a47f933dc3681a93",
-      "size": 5520
+      "sha256": "49aa27a655ad0f132505a7c7ad28599b3a6a7eeceddfe983303b2340736443e6",
+      "size": 5517
     },
     "include/mbedtls/mbedtls/aes.h": {
       "sha256": "ce71f35d91cf1609bddff21d613863c1177bccc97327f7994c39965ebf044b56",
@@ -2506,108 +2535,108 @@
       "size": 1781054
     },
     "lib/libblestack.a": {
-      "sha256": "751f0ca16fd35f2e1ca20facf1f90b61472cccc6b3d9f15fd51c81a61df0f6bc",
+      "sha256": "df11d38598ef0a98dcb200f239d6bf55020fc7bce3dd722df9b193102ca6bcbe",
       "size": 3811750
     },
     "lib/libbtblecontroller_bl616cl_m2s1.a": {
-      "sha256": "37d8e1805a0303b765cb50b0c1edca1dd2740e58f56f403d55d1426e89736661",
+      "sha256": "291b6a14176537206a899af3c22aba9e92b6324449e1818a0fd427816a1c3574",
       "size": 6631058
     },
     "lib/libcherryusb.a": {
-      "sha256": "3e04d10319c6fb6116280b918adf2c48187f7b9a03fecb1ccc2c052ea79534e8",
+      "sha256": "f92aa4a5540c184f41f44323eb824519d07c0c889bcd4eac57cb14438d49bb11",
       "size": 282262
     },
     "lib/libdebug.a": {
-      "sha256": "5f6fc769a15b7afecf7cb0b1f830626f0bd1e4bd9b01341b35750bda4105cf7e",
+      "sha256": "2a8eb89c5322cbb47d909a55c38d002780fd66f013f594cd2fabc2d2045bfd9e",
       "size": 118794
     },
     "lib/libfhost_bl616cl_default.a": {
-      "sha256": "47114787badfbca8fbb70395265aa291ae5ea5906b2e15b769aa4eb709a3e191",
+      "sha256": "1f1dd131ee089b6a2d9cc988f92d30eff305731c565df5b0ad7b417e27f845cb",
       "size": 2507326
     },
     "lib/libfhost_config.a": {
-      "sha256": "8ef56dbc1976039e087e307d6c426f7a8701c43467b8648797b2d412b0b93deb",
+      "sha256": "04a70389178ba5c36aae94a626be507d446667c95c04cc7c57f262929856ea90",
       "size": 51626
     },
     "lib/libfreertos.a": {
-      "sha256": "d451badc87b279707f4a231d5ea990787bfb946c617ba7fe6bcc7d8e0853487c",
+      "sha256": "abe4024f378d86fb952438db2ae038b632b0913052293a7de64061b26e25c40c",
       "size": 1476730
     },
     "lib/liblhal.a": {
-      "sha256": "5ec299fd1b0ae96c2436a8168fa9c239c22d0f6dd28433c65d0cba3505aecf66",
-      "size": 2759458
+      "sha256": "126dc14e0e9e209405f73906b598b016d697c1932f2cc96fd29cad9e7cbb6ddc",
+      "size": 2759830
     },
     "lib/liblibc.a": {
-      "sha256": "c5befe2632cf2385dfbd924fab5f2fe3d66c42cd9d981497a490fced5d19cc9c",
+      "sha256": "dbb6dc4f7d3aa83e8a3b9cbcc58046bcae0e984725be8b455cbaae11a7318a6f",
       "size": 652628
     },
     "lib/liblittlefs.a": {
-      "sha256": "1c8cb1c783247a364ee0532130a1000378fcc9480c82a38ae39f588d997b5f4f",
+      "sha256": "c16342bde064b2659c3b0fc1418c16346ec68c842181edd1e8d6110b1cb73881",
       "size": 922760
     },
     "lib/liblwip.a": {
-      "sha256": "094caeac792b6b426a6aac7857b5e0a0e6ace7360d55810e62d60384ce9e6527",
+      "sha256": "876a37aab7d326ed7c4772160c05f8648ad5481cbd1424dd758b2df49ac35b64",
       "size": 3516066
     },
     "lib/libmacsw_bl616cl.a": {
-      "sha256": "7c6efb0315e05f54b7705dcbfb7822a4598618ccfb9a561c692b5557dceee9cc",
-      "size": 16554072
+      "sha256": "02f4a3253b8ac2ff0dbdf71fe443d73678f41dbf2a14b702aed033145d6de40e",
+      "size": 16553684
     },
     "lib/libmacsw_config_bl616cl_default.a": {
-      "sha256": "7c331f09175b73e98127b05b474aae0f153ed637d79f348dd8dac387aff35f4a",
+      "sha256": "f8f6d65ee3a5bd335557db650d420a89c87b1daa8d7183fee9708502d117bbc2",
       "size": 65598
     },
     "lib/libmacsw_os_adapter.a": {
-      "sha256": "9a696e94ffd0296ddc8309b0b08be70021788c42aaa4edc282144b39b7157a4f",
+      "sha256": "4e1767324b1765bd05a4d332cb24e2614ae4f5174b322bb9b8e9dd13a34f4417",
       "size": 92642
     },
     "lib/libmacsw_plat.a": {
-      "sha256": "917a74100bd33c09713440ac3dd8c5e31d53c67112da740b5051aa16aab8ecf8",
+      "sha256": "f61dad7bc273876e23e1da56a33c2df5e7dc40d0ea4f02f423a07b670d9dc570",
       "size": 39488
     },
     "lib/libmbedtls.a": {
-      "sha256": "c5b6aa950b513724e2a7e85189bf57fbf9100ce33df8283ad4b4115da51fcb08",
+      "sha256": "d253d2653ea39ce552deabb40bf6ee0f78faf34a8bcd45dc02c631ac08834fae",
       "size": 5378726
     },
     "lib/libmm.a": {
-      "sha256": "a95f96f769413281f2634c1466171413bfa8c1e9790796d96d8d196fe09858aa",
+      "sha256": "910be433150c1fe9a40c7c557a96441b8f38625791653c7f2e569086264772bf",
       "size": 340162
     },
     "lib/libping.a": {
-      "sha256": "4965891f14e877a118076b4693e223bcbf39d0a08b3dd1203ee2760db1908194",
+      "sha256": "f212693825e1d5f2b9b59a54cad53574826847c880e0f4f64f6cd93d608eb704",
       "size": 35756
     },
     "lib/librfparam.a": {
-      "sha256": "25edc204b12195ca2b75e3be2ba48605fa53ced40c864aded8f043ba665804b7",
+      "sha256": "c042f5869c5c7a028ae0c3aa704c17f49ebb65c742732177e5815ba5a98dd03c",
       "size": 123050
     },
     "lib/libstd.a": {
-      "sha256": "31d562137bcc2c61e23b4626c6bb6749b98064478500153ddca6bfe33be9c884",
+      "sha256": "22722f9d3e8046162697d8143f814cf887761c6ff822f26af0d3e1fd238b458a",
       "size": 1037028
     },
     "lib/libsys.a": {
-      "sha256": "a423a84b0134960331b171d7435c39ada1852e9742a8eeb3c15e1ab5ed99af89",
+      "sha256": "7ae2083eb4e5ec3f4fe657a358c6c9e6eb8c43ba75c8523da840e0b7f4a4c132",
       "size": 658660
     },
     "lib/libsysinit.a": {
-      "sha256": "b54cef076f9d1ef73cb9eb826d2ad40a0672341be0e7683228a3413dd8c8d870",
+      "sha256": "c6a08396ce95592f86ae8017afb3d30e487a42e83b6ea779cd8efee8c5b4a5ac",
       "size": 5716
     },
     "lib/libutils.a": {
-      "sha256": "9c17b23083b90c3bbc0575b32d4f60c4bf2275eb631438c6019ae29f7898a8ba",
+      "sha256": "ab9e6b701607fd7b2ff0c26dc225e1a765b977d42b2e4ae7fa3070673c8ebe28",
       "size": 1105104
     },
     "lib/libwifi6_lwip_adapter.a": {
-      "sha256": "55e6153df1279830a5b9f0f96b21b711827a4c088d3d24674f4cc5afbee1d0e7",
+      "sha256": "777dae6cf0d6c1eb073a9a09a55fe40462973614ac94b431c45593ab8ff01ba8",
       "size": 296082
     },
     "lib/libwpa_supplicant.a": {
-      "sha256": "f6fa9279bc39c2b5b0a43d30d3245e1552963d44cf35a42f3da1a377cdba5ba3",
+      "sha256": "483c84113a80d8fa07cf27269090bcee6cdc1b949dd9e77eabcc915566ad7a23",
       "size": 18791772
     },
     "lib_board/libapp.a": {
-      "sha256": "b81690d0d5f279a51515a3f1bb924764f76098630e84cdc5391b93e84afa90d4",
-      "size": 302268
+      "sha256": "ca823a63adbb820ec668f19bdff2f2266e9065a00dec6a78ccefb4be3127886d",
+      "size": 212974
     },
     "macsw_cache_affinity.ld.in": {
       "sha256": "c6e39c5d3565cfc1d7d99eaac5da190a85415dfd8dc130766946be0e2d85ce76",
@@ -2629,7 +2658,7 @@
     }
   },
   "profile": "bridge",
-  "schema": 2,
+  "schema": 3,
   "scope": "chip-runtime",
   "sdk_version": "2.3.30-22-gf9626e52",
   "source_commits": {
