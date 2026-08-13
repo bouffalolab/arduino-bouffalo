@@ -26,6 +26,12 @@ This follows the same high-level model as Arduino ESP32's `tools/sdk/<chip>`.
 See `CHIP_CONFIG` in `generate_runtime_bundle.py` for the full per-chip
 settings (ABI flags, MTIME addresses, FreeRTOS extension directory).
 
+## SDK patches
+
+Some checked-in archives are built from patched SDK sources.  Local SDK fixes
+are tracked as unified diffs under `patches/`; see `patches/README.md` for the
+list and apply them to a fresh SDK checkout before regenerating a bundle.
+
 ## Regenerate
 
 No SDK commit is hardcoded — the generator records whatever commit is currently
