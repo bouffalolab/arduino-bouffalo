@@ -56,9 +56,10 @@ recipe.size.regex.data=^(?:ram_data|ram_bss|ram_noinit)\s+([0-9]+).*$
 recipe.output.tmp_file={build.project_name}.bin
 recipe.output.save_file={build.project_name}.{build.variant}.bin
 
-# Stage 1 currently bundles and validates Linux x86-64 host tools only.
+# Stage 1 host tools include both Linux and macOS post processors.
 tools.bflb_fw_post_proc.cmd_suffix=-ubuntu
 tools.bflb_fw_post_proc.cmd_suffix.linux=-ubuntu
+tools.bflb_fw_post_proc.cmd_suffix.macosx=-macos
 
 tools.blflash.cmd=BLFlashCommand-ubuntu
 tools.blflash.cmd.linux=BLFlashCommand-ubuntu

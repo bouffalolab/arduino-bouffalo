@@ -1,14 +1,16 @@
 # Arduino BL616CL platform — stage 1
 
-This local Linux x86-64 development platform implements FQBN
-`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Windows and
-macOS host packages are not yet supplied.
+This local development platform implements FQBN
+`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Linux
+post-processing tools are supplied by the generator and the checked-in macOS
+post-processor is used automatically on Apple Silicon hosts.
 
 The platform is self-contained for normal Arduino compilation: it does not
 reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
 
     hardware/bouffalo/bl616cl/
     ├── cores/bl616cl/                  Arduino Core sources
+    ├── libraries/esp32-compat/         ESP32 Arduino API compatibility stubs
     ├── variants/bl616cldk/             pin mapping (pins_arduino.h)
     ├── tools/sdk/bl616cl/              chip-level runtime bundle
     │   ├── lib/                         SDK archives
@@ -85,5 +87,16 @@ See `tools/runtime_bundle/README.md` for multi-chip support and details.
       --fqbn=bouffalo:bl616cl:unor4_bl616cl \
       hardware/bouffalo/bl616cl/examples/Serial
 
-The final bridge sketch remains a later milestone; stage 1 intentionally does
-not provide ESP32 USB/Wi-Fi compatibility APIs.
+## Compile the UNO R4 bridge skeleton
+
+`libraries/esp32-compat` provides safe-failing ESP32-style headers and symbols
+so the upstream `uno-r4-wifi-usb-bridge` sketch can be built against this
+platform without modifying the sketch:
+
+    arduino-cli compile --config-file arduino-cli.yaml \
+      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
+      /path/to/uno-r4-wifi-usb-bridge/UNOR4USBBridge
+
+This milestone proves compile/link compatibility only. WiFi, TCP/TLS, USB
+CDC/HID, storage, BLE, and OTA operations are stubs and are not functional on
+hardware yet.
