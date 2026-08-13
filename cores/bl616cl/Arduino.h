@@ -17,6 +17,24 @@
 
 #include "stdlib_noniso.h"
 
+#ifndef DEBUG_ERROR
+#define DEBUG_ERROR(...) ((void)0)
+#define DEBUG_WARNING(...) ((void)0)
+#define DEBUG_INFO(...) ((void)0)
+#define DEBUG_DEBUG(...) ((void)0)
+#define DEBUG_VERBOSE(...) ((void)0)
+#endif
+
+#ifndef log_e
+#define log_e(...) ((void)0)
+#define log_w(...) ((void)0)
+#define log_i(...) ((void)0)
+#define log_d(...) ((void)0)
+#define log_v(...) ((void)0)
+#define log_buf_v(...) ((void)0)
+#define log_buf_e(...) ((void)0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -79,8 +97,30 @@ void pinMode(uint8_t pin, uint8_t mode);
 void digitalWrite(uint8_t pin, uint8_t value);
 int digitalRead(uint8_t pin);
 
+typedef void (*ets_putc_fn)(char c);
+
+BaseType_t xTaskCreatePinnedToCore(TaskFunction_t function,
+                                   const char *name,
+                                   uint32_t stackDepth,
+                                   void *parameter,
+                                   UBaseType_t priority,
+                                   TaskHandle_t *taskHandle,
+                                   BaseType_t coreID);
+
+void ets_install_putc1(ets_putc_fn callback);
+void configTime(long timezone, long daylightOffset, const char *server);
+void esp_efuse_mac_get_default(uint8_t *mac);
+void esp_fill_random(void *buffer, size_t size);
+
 #ifdef __cplusplus
 } // extern "C"
+
+class EspClass {
+public:
+    void restart();
+};
+
+extern EspClass ESP;
 
 template <typename Left, typename Right>
 constexpr auto min(const Left &left, const Right &right) -> decltype(left < right ? left : right)

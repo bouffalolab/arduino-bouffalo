@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #include "pgmspace.h"
 
@@ -22,6 +23,8 @@ public:
     String(unsigned int value, unsigned char base = 10);
     String(long value, unsigned char base = 10);
     String(unsigned long value, unsigned char base = 10);
+    String(long long value, unsigned char base = 10);
+    String(unsigned long long value, unsigned char base = 10);
     String(float value, unsigned char decimal_places = 2);
     String(double value, unsigned char decimal_places = 2);
     ~String();
@@ -61,6 +64,7 @@ public:
     bool operator==(const char *value) const { return strcmp(c_str(), value == nullptr ? "" : value) == 0; }
     bool operator!=(const char *value) const { return !(*this == value); }
     explicit operator bool() const { return buffer_ != nullptr; }
+    operator std::string() const { return std::string(c_str()); }
 
     char operator[](unsigned int index) const;
     char &operator[](unsigned int index);

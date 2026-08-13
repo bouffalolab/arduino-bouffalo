@@ -26,7 +26,8 @@ static uint8_t parity(uint8_t config)
 }
 
 HardwareSerial::HardwareSerial(uint8_t index, int8_t rx_pin, int8_t tx_pin)
-    : index_(index), rx_pin_(rx_pin), tx_pin_(tx_pin), peeked_(-1), device_(nullptr)
+    : index_(index), rx_pin_(rx_pin), tx_pin_(tx_pin), peeked_(-1),
+      baud_rate_(0), device_(nullptr)
 {
 }
 
@@ -47,6 +48,7 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     }
 
     struct bflb_uart_config_s uart_config = {};
+    baud_rate_ = baud;
     uart_config.baudrate = baud;
     uart_config.direction = UART_DIRECTION_TXRX;
     uart_config.data_bits = data_bits(config);
@@ -58,6 +60,32 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     uart_config.rx_fifo_threshold = 7;
     bflb_uart_init(device_, &uart_config);
     peeked_ = -1;
+}
+
+void HardwareSerial::begin(unsigned long baud, uint8_t config,
+                           int8_t rxPin, int8_t txPin)
+{
+    (void)rxPin;
+    (void)txPin;
+    begin(baud, config);
+}
+
+void HardwareSerial::updateBaudRate(uint32_t baud)
+{
+    baud_rate_ = baud;
+    if (device_ != nullptr) {
+        struct bflb_uart_config_s uart_config = {};
+        uart_config.baudrate = baud;
+        uart_config.direction = UART_DIRECTION_TXRX;
+        uart_config.data_bits = 3;
+        uart_config.stop_bits = 0;
+        uart_config.parity = 0;
+        uart_config.bit_order = UART_LSB_FIRST;
+        uart_config.flow_ctrl = UART_FLOWCTRL_NONE;
+        uart_config.tx_fifo_threshold = 7;
+        uart_config.rx_fifo_threshold = 7;
+        bflb_uart_init(device_, &uart_config);
+    }
 }
 
 void HardwareSerial::end()
@@ -95,6 +123,23 @@ int HardwareSerial::read()
         return value;
     }
     return device_ == nullptr ? -1 : bflb_uart_getchar(device_);
+}
+
+size_t HardwareSerial::read(uint8_t *buffer, size_t size)
+{
+    if (device_ == nullptr || buffer == nullptr || size == 0) {
+        return 0;
+    }
+
+    size_t count = 0;
+    while (count < size) {
+        int value = read();
+        if (value < 0) {
+            break;
+        }
+        buffer[count++] = static_cast<uint8_t>(value);
+    }
+    return count;
 }
 
 int HardwareSerial::availableForWrite()

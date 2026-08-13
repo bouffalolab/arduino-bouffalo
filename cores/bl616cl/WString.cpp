@@ -76,6 +76,22 @@ String::String(unsigned long value, unsigned char base)
     assign(text, strlen(text));
 }
 
+String::String(long long value, unsigned char base)
+{
+    init();
+    char text[2 + 8 * sizeof(value)];
+    snprintf(text, sizeof(text), "%lld", static_cast<long long>(value));
+    assign(text, strlen(text));
+}
+
+String::String(unsigned long long value, unsigned char base)
+{
+    init();
+    char text[1 + 8 * sizeof(value)];
+    snprintf(text, sizeof(text), "%llu", static_cast<unsigned long long>(value));
+    assign(text, strlen(text));
+}
+
 String::String(float value, unsigned char decimal_places)
 {
     init();

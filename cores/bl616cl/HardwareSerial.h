@@ -38,11 +38,17 @@ public:
     explicit HardwareSerial(uint8_t index, int8_t rx_pin, int8_t tx_pin);
 
     void begin(unsigned long baud, uint8_t config = SERIAL_8N1);
+    void begin(unsigned long baud, uint8_t config, int8_t rxPin, int8_t txPin);
     void end();
+    uint32_t baudRate() const { return baud_rate_; }
+    void updateBaudRate(uint32_t baud);
+    void setRxBufferSize(size_t size) { (void)size; }
+    void setTxBufferSize(size_t size) { (void)size; }
 
     int available() override;
     int peek() override;
     int read() override;
+    size_t read(uint8_t *buffer, size_t size);
     int availableForWrite() override;
     void flush() override;
     size_t write(uint8_t value) override;
@@ -56,6 +62,7 @@ private:
     int8_t rx_pin_;
     int8_t tx_pin_;
     int peeked_;
+    uint32_t baud_rate_;
     struct bflb_device_s *device_;
 };
 
