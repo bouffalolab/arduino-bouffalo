@@ -16,9 +16,10 @@
 - [x] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
       （Linux 与 macOS 均枚举成功：VID 0x2341 / PID 0x1002，
       CDC ACM + CMSIS-DAP HID 复合设备，HS 480 Mbit/s）
-- [ ] 验证 CDC 回环和主机侧串口收发（CDC 端口已出现
-      `/dev/cu.usbmodem01`，数据通路待 UART1 对端配合验证）
-- [ ] 验证 CMSIS-DAP HID 命令（HID 枚举已验证，DAP 命令未测）
+- [x] 验证 CDC 收发：主机写入 17 字节经 CDC OUT→固件→CDC IN 原样回读
+      （临时回显代码已还原）；与 UART1 的对端透传待板级连接验证
+- [x] 验证 CMSIS-DAP HID 命令：DAP_Info（capabilities/字符串）、
+      DAP_HostStatus、DAP_SWJ_CLOCK 均经 HID 往返返回正确内容
 - [ ] 用逻辑分析仪校准 DAP SWDIO/SWCLK 时序和延时常数
 - [ ] 完善 CDC DTR/RTS 状态机与串口流控
 - [ ] 为 HID `SendReport()` 增加待发送队列，避免 IN 端点繁忙时丢包
