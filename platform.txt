@@ -63,6 +63,7 @@ tools.bflb_fw_post_proc.cmd_suffix.macosx=-macos
 
 tools.blflash.cmd=BLFlashCommand-ubuntu
 tools.blflash.cmd.linux=BLFlashCommand-ubuntu
+tools.blflash.cmd.macosx=BLFlashCommand-macos
 tools.blflash.upload.params.verbose=
 tools.blflash.upload.params.quiet=
-tools.blflash.upload.pattern="{runtime.platform.path}/tools/bouffalo_flash_cube/{cmd}" --interface=uart --chipname=bl616cl --port="{serial.port}" --baudrate={upload.speed} --firmware="{build.path}/{build.project_name}.bin"
+tools.blflash.upload.pattern="{runtime.platform.path}/tools/bouffalo_flash_cube/{cmd}" --interface=uart --chipname=bl616cl --port={serial.port} --baudrate={upload.speed} --firmware={build.path}/{build.project_name}.bin
