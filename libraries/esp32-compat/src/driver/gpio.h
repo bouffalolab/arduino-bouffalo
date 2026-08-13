@@ -24,10 +24,10 @@ typedef struct {
 extern "C" {
 #endif
 
-static inline void gpio_config(gpio_config_t *cfg) { (void)cfg; }
-static inline void gpio_set_level(int gpio, int level) { (void)gpio; (void)level; }
-static inline int gpio_get_level(int gpio) { (void)gpio; return 0; }
-static inline void gpio_set_direction(int gpio, gpio_mode_t mode) { (void)gpio; (void)mode; }
+void gpio_config(gpio_config_t *cfg);
+void gpio_set_level(int gpio, int level);
+int gpio_get_level(int gpio);
+void gpio_set_direction(int gpio, gpio_mode_t mode);
 
 #ifdef __cplusplus
 }

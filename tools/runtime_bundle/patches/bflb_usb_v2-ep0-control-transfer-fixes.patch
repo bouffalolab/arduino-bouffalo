@@ -1,0 +1,40 @@
+diff --git a/src/bflb_usb_v2.c b/src/bflb_usb_v2.c
+--- a/src/bflb_usb_v2.c
++++ b/src/bflb_usb_v2.c
+@@ -1197,6 +1197,12 @@ int usbd_ep_set_stall(uint8_t busid, const uint8_t ep)
+     if (ep_idx == 0) {
+         regval = getreg32(BFLB_USB_BASE + USB_DEV_CXCFE_OFFSET);
+         regval |= USB_CX_STL;
++        putreg32(regval, BFLB_USB_BASE + USB_DEV_CXCFE_OFFSET);
++
++        /* Close the control transaction from the hardware's point of view so
++         * the next SETUP starts with a clean control FIFO state. */
++        regval = getreg32(BFLB_USB_BASE + USB_DEV_CXCFE_OFFSET);
++        regval |= USB_CX_DONE;
+         putreg32(regval, BFLB_USB_BASE + USB_DEV_CXCFE_OFFSET);
+     } else {
+         if (USB_EP_DIR_IS_OUT(ep)) {
+@@ -1318,8 +1324,9 @@ int usbd_ep_start_read(uint8_t busid, const uint8_t ep, uint8_t *data, uint32_t data_len)
+     }
+ 
+     if (data_len == 0) {
+-        bflb_usb_control_transfer_done();
+-        usbd_event_ep_out_complete_handler(busid, 0x00, 0);
++        /* The status stage is completed by the controller when the previous
++         * data packet finishes on the wire (see the VDMA completion handler),
++         * so there is nothing to arm for a zero-length read. */
+         return 0;
+     }
+ 
+@@ -1443,6 +1450,11 @@ void USBD_IRQHandler(uint8_t busid)
+                 if (g_bl_udc.in_ep[0].ep_active) {
+                     g_bl_udc.in_ep[0].ep_active = false;
+                     g_bl_udc.in_ep[0].actual_xfer_len = g_bl_udc.in_ep[0].xfer_len - bflb_usb_vdma_get_remain_size(USB_FIFO_CXF);
++                    if (g_bl_udc.in_ep[0].actual_xfer_len < g_bl_udc.in_ep[0].ep_mps) {
++                        /* Short packet ends the data stage: complete the control
++                         * transfer so the controller can ACK the status stage. */
++                        bflb_usb_control_transfer_done();
++                    }
+                     usbd_event_ep_in_complete_handler(busid, 0x80, g_bl_udc.in_ep[0].actual_xfer_len);
+                 } else {
+                     g_bl_udc.out_ep[0].ep_active = false;

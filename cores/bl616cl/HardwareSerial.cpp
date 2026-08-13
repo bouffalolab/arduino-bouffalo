@@ -34,17 +34,26 @@ HardwareSerial::HardwareSerial(uint8_t index, int8_t rx_pin, int8_t tx_pin)
 void HardwareSerial::begin(unsigned long baud, uint8_t config)
 {
     struct bflb_device_s *gpio = bflb_device_get_by_name("gpio");
-    device_ = bflb_device_get_by_name(index_ == 0 ? "uart0" : "uart1");
+    device_ = bflb_device_get_by_name(
+        index_ == 0 ? "uart0" : (index_ == 1 ? "uart1" : "uart2"));
     if ((gpio == nullptr) || (device_ == nullptr)) {
         return;
     }
 
-    if (index_ == 0) {
-        bflb_gpio_uart_init(gpio, tx_pin_, GPIO_UART_FUNC_UART0_TX);
-        bflb_gpio_uart_init(gpio, rx_pin_, GPIO_UART_FUNC_UART0_RX);
-    } else {
-        bflb_gpio_uart_init(gpio, tx_pin_, GPIO_UART_FUNC_UART1_TX);
-        bflb_gpio_uart_init(gpio, rx_pin_, GPIO_UART_FUNC_UART1_RX);
+    switch (index_) {
+        case 0:
+            bflb_gpio_uart_init(gpio, tx_pin_, GPIO_UART_FUNC_UART0_TX);
+            bflb_gpio_uart_init(gpio, rx_pin_, GPIO_UART_FUNC_UART0_RX);
+            break;
+        case 1:
+            bflb_gpio_uart_init(gpio, tx_pin_, GPIO_UART_FUNC_UART1_TX);
+            bflb_gpio_uart_init(gpio, rx_pin_, GPIO_UART_FUNC_UART1_RX);
+            break;
+        case 2:
+        default:
+            bflb_gpio_uart_init(gpio, tx_pin_, GPIO_UART_FUNC_UART2_TX);
+            bflb_gpio_uart_init(gpio, rx_pin_, GPIO_UART_FUNC_UART2_RX);
+            break;
     }
 
     struct bflb_uart_config_s uart_config = {};
@@ -65,8 +74,24 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
 void HardwareSerial::begin(unsigned long baud, uint8_t config,
                            int8_t rxPin, int8_t txPin)
 {
+#ifdef BL616CL_STAGE1
+    // UNO R4 bridge uses pin-coded ESP32 calls for its two hardware UARTs:
+    //   Serial.begin(..., 44, 43) -> RA4M1 bridge UART1 (GPIO24/25)
+    //   Serial1.begin(..., 6, 5)  -> AT command UART2 (GPIO10/11)
+    // This keeps SDK UART0 (GPIO34/35) untouched for the debug console.
+    if (rxPin == 44 && txPin == 43) {
+        index_ = 1;
+        rx_pin_ = PIN_SERIAL1_RX;
+        tx_pin_ = PIN_SERIAL1_TX;
+    } else if (rxPin == 6 && txPin == 5) {
+        // TODO(bl616cl): route AT to UART2 after enabling its peripheral
+        // clock. Until then keep Serial1 on UART1 so the debug console on
+        // UART0 remains untouched.
+    }
+#else
     (void)rxPin;
     (void)txPin;
+#endif
     begin(baud, config);
 }
 

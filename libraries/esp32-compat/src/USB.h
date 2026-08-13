@@ -5,13 +5,25 @@
 
 class USBClass {
 public:
-    void VID(uint16_t vid) { (void)vid; }
-    void PID(uint16_t pid) { (void)pid; }
-    void manufacturerName(const char *name) { (void)name; }
-    void productName(const char *name) { (void)name; }
-    void firmwareVersion(uint16_t version) { (void)version; }
-    void begin() {}
+    USBClass();
+
+    void VID(uint16_t vid) { vid_ = vid; }
+    void PID(uint16_t pid) { pid_ = pid; }
+    void manufacturerName(const char *name);
+    void productName(const char *name);
+    void firmwareVersion(uint16_t version) { firmware_version_ = version; }
+    void begin();
     void enableDFU() {}
+
+    bool initialized() const { return initialized_; }
+    uint16_t VID() const { return vid_; }
+    uint16_t PID() const { return pid_; }
+
+private:
+    uint16_t vid_;
+    uint16_t pid_;
+    uint16_t firmware_version_;
+    bool initialized_;
 };
 
 extern USBClass USB;

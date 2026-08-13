@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+class USBClass;
+
 #define CFG_TUD_HID_EP_BUFSIZE 64
 
 #define HID_USAGE_PAGE_VENDOR 0x06
@@ -34,12 +36,29 @@ public:
 
 class USBHID {
 public:
-    void addDevice(USBHIDDevice *device, uint16_t report_size) { (void)device; (void)report_size; }
-    void begin() {}
-    void SendReport(uint8_t report_id, const uint8_t *buffer, uint16_t len, uint32_t timeout_ms = 100)
-    {
-        (void)report_id; (void)buffer; (void)len; (void)timeout_ms;
-    }
+    USBHID();
+
+    void addDevice(USBHIDDevice *device, uint16_t report_size);
+    void begin();
+    void SendReport(uint8_t report_id, const uint8_t *buffer, uint16_t len,
+                    uint32_t timeout_ms = 100);
+
+    USBHIDDevice *device() const { return device_; }
+    const uint8_t *reportDescriptor(uint16_t &size) const { size = report_size_; return report_descriptor_; }
+    void onOutData(const uint8_t *buffer, uint16_t len);
+    uint16_t onGetFeature(uint8_t *buffer, uint16_t len);
+    void onTxComplete();
+
+private:
+    USBHIDDevice *device_;
+    uint16_t report_size_;
+    const uint8_t *report_descriptor_;
+    /* Staged USB IN data.  Allocated in non-cacheable RAM so the controller
+     * DMA engine can read it directly (see esp32_usb.cpp). */
+    static uint8_t tx_buffer_[CFG_TUD_HID_EP_BUFSIZE];
+    bool tx_busy_;
+
+    friend class USBClass;
 };
 
 extern USBHID HID;

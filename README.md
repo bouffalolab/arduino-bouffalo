@@ -37,6 +37,8 @@ Implemented:
 - `millis()`, `micros()`, `delay()`, and `delayMicroseconds()`;
 - console `Serial` on BL616CL DK UART0 (GPIO34 TX / GPIO35 RX, 2 Mbit/s);
 - `Serial1` polling UART on GPIO24 TX / GPIO25 RX;
+- CherryUSB device support for a CDC ACM + HID composite endpoint, backed by
+  the Arduino-style `USBCDC`/`USBHID` compatibility classes;
 - C++17 with exceptions and RTTI disabled;
 - `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
 - modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
@@ -97,6 +99,7 @@ platform without modifying the sketch:
       --fqbn=bouffalo:bl616cl:unor4_bl616cl \
       /path/to/uno-r4-wifi-usb-bridge/UNOR4USBBridge
 
-This milestone proves compile/link compatibility only. WiFi, TCP/TLS, USB
-CDC/HID, storage, BLE, and OTA operations are stubs and are not functional on
-hardware yet.
+This milestone proves compile/link compatibility and initializes the BL616CL
+USB device controller from the compatibility classes. WiFi, TCP/TLS, storage,
+BLE, and OTA operations remain stubs and are not functional on hardware yet;
+the USB data path still needs on-board validation.

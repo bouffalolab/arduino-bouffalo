@@ -18,11 +18,15 @@ static const uint8_t PIN_SERIAL_TX = 34;
 static const uint8_t PIN_SERIAL_RX = 35;
 static const uint8_t PIN_SERIAL1_TX = 24;
 static const uint8_t PIN_SERIAL1_RX = 25;
+static const uint8_t PIN_SERIAL2_TX = 10;
+static const uint8_t PIN_SERIAL2_RX = 11;
 
 static const uint8_t TX = PIN_SERIAL_TX;
 static const uint8_t RX = PIN_SERIAL_RX;
 static const uint8_t TX1 = PIN_SERIAL1_TX;
 static const uint8_t RX1 = PIN_SERIAL1_RX;
+static const uint8_t TX2 = PIN_SERIAL2_TX;
+static const uint8_t RX2 = PIN_SERIAL2_RX;
 
 static const uint8_t SDA = 11;
 static const uint8_t SCL = 14;
