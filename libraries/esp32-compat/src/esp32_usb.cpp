@@ -39,6 +39,13 @@ USBClass USB;
 USBCDC *USBCDC::instance_ = nullptr;
 __attribute__((weak)) USBHID HID;
 
+/* USB IN staging buffers: the controller DMA engine reads these directly, so
+ * they must live in non-cacheable RAM with DMA-safe alignment. */
+uint8_t USBCDC::tx_buffer_[4096]
+    __attribute__((section(".noncacheable"), aligned(32)));
+uint8_t USBHID::tx_buffer_[CFG_TUD_HID_EP_BUFSIZE]
+    __attribute__((section(".noncacheable"), aligned(32)));
+
 static uint8_t device_descriptor[] = {
     USB_DEVICE_DESCRIPTOR_INIT(USB_2_0, 0xEF, 0x02, 0x01,
                                0x2341, 0x1002, 0x0100, 0x01)

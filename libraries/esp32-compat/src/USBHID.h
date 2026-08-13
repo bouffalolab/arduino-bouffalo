@@ -53,7 +53,9 @@ private:
     USBHIDDevice *device_;
     uint16_t report_size_;
     const uint8_t *report_descriptor_;
-    uint8_t tx_buffer_[CFG_TUD_HID_EP_BUFSIZE];
+    /* Staged USB IN data.  Allocated in non-cacheable RAM so the controller
+     * DMA engine can read it directly (see esp32_usb.cpp). */
+    static uint8_t tx_buffer_[CFG_TUD_HID_EP_BUFSIZE];
     bool tx_busy_;
 
     friend class USBClass;

@@ -50,7 +50,9 @@ private:
     uint32_t rx_head_;
     uint32_t rx_tail_;
     uint32_t rx_count_;
-    uint8_t tx_buffer_[4096];
+    /* Staged USB IN data.  Allocated in non-cacheable RAM so the controller
+     * DMA engine can read it directly (see esp32_usb.cpp). */
+    static uint8_t tx_buffer_[4096];
 
     friend class USBClass;
 };
