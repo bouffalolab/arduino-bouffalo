@@ -197,6 +197,27 @@ def copy_headers(source_roots: list[tuple[Path, Path]],
             copy_file(source, destination)
 
 
+def copy_cherryusb_headers(sdk: Path, include_root: Path,
+                           runtime_bundle: Path) -> None:
+    """Copy CherryUSB's flat include surface into the SDK runtime include dir.
+
+    CherryUSB headers deliberately use short, unqualified include names such as
+    ``usbd_core.h`` and ``usbd_hid.h``.  Flattening them into ``include/`` keeps
+    the Arduino platform recipes small and matches the upstream SDK examples.
+    """
+    cherryusb_root = sdk / "components" / "usb" / "cherryusb"
+    if not cherryusb_root.is_dir():
+        raise RuntimeError(f"missing CherryUSB source tree: {cherryusb_root}")
+
+    for source in sorted(cherryusb_root.rglob("*.h")):
+        copy_file(source, include_root / source.name)
+
+    copy_file(
+        require_file(runtime_bundle / "usb_config.h", "CherryUSB config"),
+        include_root / "usb_config.h",
+    )
+
+
 def sdk_version(sdk: Path) -> str:
     version_file = sdk / "VERSION"
     if version_file.is_file():
@@ -704,6 +725,7 @@ def main() -> int:
             )
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
+    copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
     # board headers → sdk/include/board
     copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
     # ring_buffer and other utils

@@ -21,7 +21,6 @@
 
 WiFiClass WiFi;
 SPIFFSClass SPIFFS;
-USBClass USB;
 Arduino_DebugUtils Debug;
 UpdateClass Update;
 HCIVirtualTransportClass HCIVirtualTransport;
