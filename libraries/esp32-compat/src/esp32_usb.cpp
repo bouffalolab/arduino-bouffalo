@@ -6,6 +6,9 @@
 
 extern "C" {
 #include "board_gpio.h"
+#ifdef BL616CL_USB_DEBUG_LOG
+#include "bflb_uart.h"
+#endif
 }
 #include "usbd_core.h"
 #include "usbd_cdc_acm.h"
@@ -109,6 +112,23 @@ static struct usbd_interface hid_interface;
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t cdc_rx_buffer[4096];
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t hid_rx_buffer[CFG_TUD_HID_EP_BUFSIZE];
 
+#ifdef BL616CL_USB_DEBUG_LOG
+static void usb_log(const char *message)
+{
+    struct bflb_device_s *uart = bflb_device_get_by_name("uart0");
+    if (uart == NULL) {
+        return;
+    }
+    for (const char *p = message; *p != '\0'; ++p) {
+        bflb_uart_putchar(uart, *p);
+    }
+    bflb_uart_putchar(uart, '\r');
+    bflb_uart_putchar(uart, '\n');
+}
+#else
+#define usb_log(...) ((void)0)
+#endif
+
 static void cdc_out_callback(uint8_t busid, uint8_t ep, uint32_t nbytes);
 static void cdc_in_callback(uint8_t busid, uint8_t ep, uint32_t nbytes);
 static void hid_out_callback(uint8_t busid, uint8_t ep, uint32_t nbytes);
@@ -162,13 +182,25 @@ static void usb_event_handler(uint8_t busid, uint8_t event)
     (void)busid;
     switch (event) {
         case USBD_EVENT_RESET:
+            usb_log("usb:event_reset");
+            if (USBCDC::instance() != nullptr) {
+                USBCDC::instance()->end();
+            }
+            break;
         case USBD_EVENT_SUSPEND:
+            usb_log("usb:event_suspend");
+            if (USBCDC::instance() != nullptr) {
+                USBCDC::instance()->end();
+            }
+            break;
         case USBD_EVENT_DISCONNECTED:
+            usb_log("usb:event_disconnected");
             if (USBCDC::instance() != nullptr) {
                 USBCDC::instance()->end();
             }
             break;
         case USBD_EVENT_CONFIGURED:
+            usb_log("usb:event_configured");
             if (USBCDC::instance() != nullptr) {
                 USBCDC::instance()->begin(USBCDC::instance()->baudRate());
             }
@@ -178,6 +210,12 @@ static void usb_event_handler(uint8_t busid, uint8_t event)
                 usbd_ep_start_read(BL616CL_USB_BUS_ID, HID_OUT_EP, hid_rx_buffer,
                                    sizeof(hid_rx_buffer));
             }
+            break;
+        case USBD_EVENT_CONNECTED:
+            usb_log("usb:event_connected");
+            break;
+        case USBD_EVENT_RESUME:
+            usb_log("usb:event_resume");
             break;
         default:
             break;
@@ -211,6 +249,7 @@ void USBClass::begin()
         return;
     }
 
+    usb_log("usb:begin");
     device_descriptor[8] = static_cast<uint8_t>(vid_ & 0xFFU);
     device_descriptor[9] = static_cast<uint8_t>((vid_ >> 8) & 0xFFU);
     device_descriptor[10] = static_cast<uint8_t>(pid_ & 0xFFU);
@@ -219,12 +258,15 @@ void USBClass::begin()
     device_descriptor[13] = static_cast<uint8_t>((firmware_version_ >> 8) & 0xFFU);
 
     board_usb_gpio_init();
+    usb_log("usb:gpio_init_done");
 
     usbd_desc_register(BL616CL_USB_BUS_ID, &usb_descriptors);
+    usb_log("usb:desc_registered");
     usbd_add_interface(BL616CL_USB_BUS_ID,
                        usbd_cdc_acm_init_intf(BL616CL_USB_BUS_ID, &cdc_interface0));
     usbd_add_interface(BL616CL_USB_BUS_ID,
                        usbd_cdc_acm_init_intf(BL616CL_USB_BUS_ID, &cdc_interface1));
+    usb_log("usb:cdc_interfaces");
 
     uint16_t report_size = 0;
     const uint8_t *report = HID.reportDescriptor(report_size);
@@ -238,7 +280,9 @@ void USBClass::begin()
 
     usbd_add_endpoint(BL616CL_USB_BUS_ID, &cdc_out_endpoint);
     usbd_add_endpoint(BL616CL_USB_BUS_ID, &cdc_in_endpoint);
+    usb_log("usb:endpoints_registered");
     usbd_initialize(BL616CL_USB_BUS_ID, 0, usb_event_handler);
+    usb_log("usb:initialized");
     initialized_ = true;
 }
 
