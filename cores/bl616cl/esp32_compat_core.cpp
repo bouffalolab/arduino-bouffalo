@@ -48,17 +48,3 @@ extern "C" void esp_fill_random(void *buffer, size_t size)
     (void)buffer;
     (void)size;
 }
-
-extern "C" FILE *funopen(const void *cookie,
-                         int (*readfn)(void *, char *, int),
-                         int (*writefn)(void *, const char *, int),
-                         fpos_t (*seekfn)(void *, fpos_t, int),
-                         int (*closefn)(void *))
-{
-    (void)cookie;
-    (void)readfn;
-    (void)writefn;
-    (void)seekfn;
-    (void)closefn;
-    return nullptr;
-}
