@@ -4,7 +4,7 @@
 
 - [x] 第一阶段：ESP32 Arduino API 兼容骨架
 - [x] 第二阶段：BL616CL CherryUSB CDC ACM + HID 后端
-- [ ] 第二阶段硬件验证
+- [x] 第二阶段硬件验证（USB 部分）
 - [ ] 第三阶段：WiFi6 / TCP / TLS
 - [ ] 第四阶段：存储与 OTA
 - [ ] 第五阶段：完整 UNO R4 板级适配
@@ -13,9 +13,12 @@
 
 - [x] 确认调试日志串口与 Bouffalo SDK 默认板级配置一致：
       UART0 = GPIO34 TX / GPIO35 RX @ 2 Mbit/s，UART1 = GPIO24 TX / GPIO25 RX
-- [ ] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
-- [ ] 验证 CDC 回环和主机侧串口收发
-- [ ] 验证 CMSIS-DAP HID 枚举与 DAP 命令
+- [x] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
+      （Linux 与 macOS 均枚举成功：VID 0x2341 / PID 0x1002，
+      CDC ACM + CMSIS-DAP HID 复合设备，HS 480 Mbit/s）
+- [ ] 验证 CDC 回环和主机侧串口收发（CDC 端口已出现
+      `/dev/cu.usbmodem01`，数据通路待 UART1 对端配合验证）
+- [ ] 验证 CMSIS-DAP HID 命令（HID 枚举已验证，DAP 命令未测）
 - [ ] 用逻辑分析仪校准 DAP SWDIO/SWCLK 时序和延时常数
 - [ ] 完善 CDC DTR/RTS 状态机与串口流控
 - [ ] 为 HID `SendReport()` 增加待发送队列，避免 IN 端点繁忙时丢包
@@ -25,7 +28,10 @@
 
 - [ ] 在 GNU Make 4+ 环境重新运行 `generate_runtime_bundle.py`，验证 CherryUSB 配置可复现
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
-- [ ] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`
+- [x] 记录 SDK 本地补丁：`tools/runtime_bundle/patches/`（bflb_usb_v2 EP0 控制传输修复）
+- [x] 用修复后的 `liblhal.a` 重建并提交 BL616CL 运行时库
+- [ ] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（当前库为直接 CMake 重建，
+      manifest 尚未同步刷新）
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
