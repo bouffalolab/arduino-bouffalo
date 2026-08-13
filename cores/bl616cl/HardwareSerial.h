@@ -56,6 +56,7 @@ public:
     using Print::write;
 
     operator bool() const { return device_ != nullptr; }
+    struct bflb_device_s *nativeHandle() const { return device_; }
 
 private:
     uint8_t index_;

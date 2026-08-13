@@ -44,6 +44,9 @@ Implemented:
 - `Serial1` polling UART on GPIO24 TX / GPIO25 RX;
 - CherryUSB device support for a CDC ACM + HID composite endpoint, backed by
   the Arduino-style `USBCDC`/`USBHID` compatibility classes;
+- `HardwareSerial::nativeHandle()` for applications that need the underlying
+  Bouffalo UART handle after `begin()`; normal Arduino sketches should keep
+  using the portable `Stream` API.
 - C++17 with exceptions and RTTI disabled;
 - `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
 - modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
