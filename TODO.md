@@ -46,7 +46,11 @@
       `libapp.a` 需同步重建，否则 board_init 不挂 WIFI IRQ，STA VIF 卡死）
 - [x] 实机验证扫描：BL616CL DK 上 `WiFi.scanNetworks()` 返回 16 个 AP，
       `CODE_WIFI_ON_SCAN_DONE` 正常触发，wpa_attach/连接路径解阻塞
-- [ ] 实机验证 WPA2-PSK 连接与 DHCP（通过 bridge AT 命令）
+- [x] 实机验证 WPA2-PSK 连接与 DHCP：连接 zrrong AP 成功，DHCP 拿到
+      192.168.133.40/24，`CODE_WIFI_ON_GOT_IP` 正常；修复 wl80211
+      `ip_got_cb` 在 tcpip 线程二次加 lwIP core 锁导致的死锁
+      （`netifapi_netif_set_default` → `netif_set_default`）
+- [x] 实机验证数据通路：DNS 解析 example.com 成功，TCP connect 80 端口成功
 - [ ] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
 - [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`

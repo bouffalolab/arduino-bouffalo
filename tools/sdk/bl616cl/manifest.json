@@ -2841,8 +2841,8 @@
       "size": 14444674
     },
     "lib/libwl80211_plat.a": {
-      "sha256": "96bc2d6e8839271bf85cc051a6d93a9315fc3d7b363c15a1e7e83531a6591a09",
-      "size": 680434
+      "sha256": "da307a69bbd368d09e06835994b0cee7c9de334e7cec7ae2b28461f229a0be13",
+      "size": 680458
     },
     "lib/libwpa_supplicant.a": {
       "sha256": "8efa98853ab9020318fae5f83eed95a5ead536d1c89b09d9205c80db0d257bb1",

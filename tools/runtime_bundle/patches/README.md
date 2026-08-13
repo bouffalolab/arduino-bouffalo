@@ -55,6 +55,19 @@ include path.  Also raise `PBUF_LINK_ENCAPSULATION_HLEN` from 48 to 388 bytes:
 wl80211's TX descriptor plus the macsw frame header exceeds the original
 reservation and fails a compile-time `CTASSERT` in `wl80211_lwip_tx()`.
 
+## wl80211-ip-got-cb-core-lock-deadlock-fix.patch
+
+Target project: `bouffalo/components/wireless/wl80211`, file `lwip.c`
+(recorded upstream commit `3c19c8d1`).
+
+`ip_got_cb` is the STA netif status callback, invoked on the tcpip thread
+while the lwIP core mutex is held.  It called
+`netifapi_netif_set_default()`, which under `LWIP_TCPIP_CORE_LOCKING=1`
+locks the non-recursive core mutex again and deadlocks.  The DHCP ACK was
+processed and the IP assigned, but `CODE_WIFI_ON_GOT_IP` was never posted,
+the 15 s mgmr DHCP watchdog then disconnected WiFi, and `netifapi_dhcp_stop`
+could not complete.  Use the core-locked `netif_set_default()` instead.
+
 ## wl80211 runtime bundle selection
 
 The BL616CL runtime bundle uses the wl80211 host stack instead of fhost
