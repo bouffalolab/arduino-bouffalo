@@ -111,7 +111,9 @@ int WiFiClient::connect(IPAddress ip, uint16_t port, int32_t timeout)
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = lwip_htons(port);
-    addr.sin_addr.s_addr = lwip_htonl(static_cast<uint32_t>(ip));
+    /* IPAddress stores the octets such that its uint32_t representation is
+     * already in network byte order (matching sin_addr.s_addr). */
+    addr.sin_addr.s_addr = static_cast<uint32_t>(ip);
 
     if (connect_to_addr(sockfd_, reinterpret_cast<struct sockaddr *>(&addr),
                         sizeof(addr), timeout) != 0) {
@@ -281,7 +283,7 @@ IPAddress WiFiClient::remoteIP()
                                        &addr_len) != 0) {
         return IPAddress((uint32_t)0);
     }
-    return IPAddress(static_cast<uint32_t>(lwip_ntohl(addr.sin_addr.s_addr)));
+    return IPAddress(addr.sin_addr.s_addr);
 }
 
 uint16_t WiFiClient::remotePort()
@@ -303,7 +305,7 @@ IPAddress WiFiClient::localIP()
                                        &addr_len) != 0) {
         return IPAddress((uint32_t)0);
     }
-    return IPAddress(static_cast<uint32_t>(lwip_ntohl(addr.sin_addr.s_addr)));
+    return IPAddress(addr.sin_addr.s_addr);
 }
 
 uint16_t WiFiClient::localPort()

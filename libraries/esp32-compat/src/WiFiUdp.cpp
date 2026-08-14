@@ -48,7 +48,7 @@ uint8_t WiFiUDP::begin(IPAddress ip, uint16_t port)
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = lwip_htons(port);
-    addr.sin_addr.s_addr = lwip_htonl(static_cast<uint32_t>(ip));
+    addr.sin_addr.s_addr = static_cast<uint32_t>(ip);
     if (lwip_bind(sockfd_, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) != 0) {
         stop();
         return 0;
@@ -79,7 +79,7 @@ uint8_t WiFiUDP::beginMulticast(IPAddress ip, uint16_t port)
     }
 
     struct ip_mreq mreq = {};
-    mreq.imr_multiaddr.s_addr = lwip_htonl(static_cast<uint32_t>(ip));
+    mreq.imr_multiaddr.s_addr = static_cast<uint32_t>(ip);
     mreq.imr_interface.s_addr = lwip_htonl(INADDR_ANY);
     if (lwip_setsockopt(sockfd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) != 0) {
         stop();
@@ -143,7 +143,7 @@ uint8_t WiFiUDP::beginPacket(const char *host, uint16_t port)
 
     const struct sockaddr_in *addr = reinterpret_cast<const struct sockaddr_in *>(results->ai_addr);
     tx_len_ = 0;
-    tx_ip_ = IPAddress(static_cast<uint32_t>(lwip_ntohl(addr->sin_addr.s_addr)));
+    tx_ip_ = IPAddress(addr->sin_addr.s_addr);
     tx_port_ = port;
     tx_multicast_ = false;
     lwip_freeaddrinfo(results);
@@ -162,7 +162,7 @@ uint8_t WiFiUDP::endPacket()
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = lwip_htons(tx_port_);
-    addr.sin_addr.s_addr = lwip_htonl(static_cast<uint32_t>(tx_ip_));
+    addr.sin_addr.s_addr = static_cast<uint32_t>(tx_ip_);
 
     int ret = static_cast<int>(lwip_sendto(sockfd_, tx_buffer_, tx_len_, 0,
                                            reinterpret_cast<struct sockaddr *>(&addr),
@@ -189,7 +189,7 @@ int WiFiUDP::parsePacket()
 
     rx_len_ = static_cast<size_t>(ret);
     rx_index_ = 0;
-    remote_ip_ = IPAddress(static_cast<uint32_t>(lwip_ntohl(addr.sin_addr.s_addr)));
+    remote_ip_ = IPAddress(addr.sin_addr.s_addr);
     remote_port_ = lwip_ntohs(addr.sin_port);
     return static_cast<int>(rx_len_);
 }
@@ -289,7 +289,7 @@ IPAddress WiFiUDP::localIP()
                                        &addr_len) != 0) {
         return IPAddress((uint32_t)0);
     }
-    return IPAddress(static_cast<uint32_t>(lwip_ntohl(addr.sin_addr.s_addr)));
+    return IPAddress(addr.sin_addr.s_addr);
 }
 
 uint16_t WiFiUDP::localPort()

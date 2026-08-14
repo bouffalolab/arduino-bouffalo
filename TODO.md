@@ -52,18 +52,18 @@
       （`netifapi_netif_set_default` → `netif_set_default`）
 - [x] 实机验证数据通路：DNS 解析 example.com 成功，TCP connect 80 端口成功
 - [x] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
-      - 已实机验证：TCP connect（含 DNS/超时/网关与公网直连）、WiFiServer bind
-      - 修复 lwIP 与 newlib errno 值域不一致、INADDR_NONE 宏冲突、
-        非阻塞 connect 提前可写导致误判失败等兼容问题
-- [ ] 复测 TCP 收包与 UDP 收发（当前测试 AP 出现间歇性 deauth，待 AP 稳定后
-      用专门固件回归；HTTP GET 回读与 UDP/NTP 尚未闭环）
-- [ ] CI_throughput 网络结论：连接+DHCP 正常（192.168.28.226），ARP/单播 RX
-      实测可达（etharp recv=3、ip rx 递增），但网关 192.168.28.1 不响应
-      TCP 53/DNS 且无外网路由，疑似隔离的吞吐测试网；需要一台同网段的
-      对端设备（提供 IP）才能做 TCP/UDP 端到端回归
-- [ ] lwIP 127.0.0.1 loopback 在本 port 下不完全可用：路由正确、包能
-      loop 回 ip_input，但 socket 层收不到（select 不唤醒）；属于
-      lwIP/FreeRTOS port 问题，不影响 WiFi 链路，暂不阻塞网络类实现
+- [x] 实机端到端验证（zrrong，PC 192.168.133.49 作为对端）：
+      WiFiClient 连 PC TCP echo 成功收发、WiFiUDP 往返 echo 成功、
+      WiFiServer 接受 PC 连接并回读数据成功；remoteIP/localIP 字节序正确
+- [x] 修复 IP 字节序 bug：IPAddress 的 uint32_t 与 sin_addr.s_addr 同为
+      网络字节序，connect/beginPacket 不应 lwip_htonl、remoteIP/localIP
+      不应 lwip_ntohl；这是此前所有 TCP/UDP“连不上/回环失败”的根因
+      （此前误判为 lwIP loopback port 问题，实际 raw 正确字节序回环是通的）
+- [x] 兼容性修复：lwIP 与 newlib errno 值域不一致、INADDR_NONE 宏冲突、
+      非阻塞 connect 提前可写导致误判失败、SO_RCVTIMEO 需传 struct timeval
+- [ ] CI_throughput 待复测：连接+DHCP 正常（192.168.28.226），但此前网关
+      TCP 53/DNS 探针同样受到 IP 字节序 bug 影响，结论需修正后重跑；
+      若仍不通则说明该网隔离、需同网段对端
 - [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
