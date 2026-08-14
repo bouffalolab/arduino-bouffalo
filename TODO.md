@@ -57,6 +57,13 @@
         非阻塞 connect 提前可写导致误判失败等兼容问题
 - [ ] 复测 TCP 收包与 UDP 收发（当前测试 AP 出现间歇性 deauth，待 AP 稳定后
       用专门固件回归；HTTP GET 回读与 UDP/NTP 尚未闭环）
+- [ ] CI_throughput 网络结论：连接+DHCP 正常（192.168.28.226），ARP/单播 RX
+      实测可达（etharp recv=3、ip rx 递增），但网关 192.168.28.1 不响应
+      TCP 53/DNS 且无外网路由，疑似隔离的吞吐测试网；需要一台同网段的
+      对端设备（提供 IP）才能做 TCP/UDP 端到端回归
+- [ ] lwIP 127.0.0.1 loopback 在本 port 下不完全可用：路由正确、包能
+      loop 回 ip_input，但 socket 层收不到（select 不唤醒）；属于
+      lwIP/FreeRTOS port 问题，不影响 WiFi 链路，暂不阻塞网络类实现
 - [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
