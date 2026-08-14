@@ -2773,8 +2773,8 @@
       "size": 648956
     },
     "lib/liblwip.a": {
-      "sha256": "3c3fa29956d02fc7c47a3802c70734520413553fd81154f1ca024296e13ba120",
-      "size": 3547120
+      "sha256": "c02615af16369e1b8648cba354c3a5f7c542832728accd5734b39cb77da94ce2",
+      "size": 3493872
     },
     "lib/libmacsw_bl616cl.a": {
       "sha256": "c0c7515afcb729e7436f72c398e9c4b435f295a00014665c2e0fdc1fa1c295ff",
