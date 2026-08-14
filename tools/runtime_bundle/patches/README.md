@@ -104,6 +104,11 @@ The sketch side uses the same `config-tls-generic.h` plus the same
 (mbedTLS v3 headers are staged under `tools/sdk/bl616cl/include/sdk/mbedtls`,
 with the SDK's `port/hw_acc` alt headers and `mbedtls_port_bouffalo_sdk.h`).
 
+`components/crypto/mbedtls/CMakeLists.txt` also needs
+`CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED` in addition to SECP256R1: public
+websites commonly serve chains mixing P-256 and P-384 certificates, and the
+X.509 OID table / ECP group loader must know both.
+
 ## Regenerate libapp.a after changing CONFIG_WIFI6
 
 `bsp/board/{board}/board.c` attaches the WiFi MAC IRQ

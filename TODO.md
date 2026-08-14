@@ -70,8 +70,9 @@
         SSE.cpp 移植到 v3（pk_sign 新签名、mbedtls_sha256、pk_parse_key）
       - 修复 config-tls-generic.h 缺 MBEDTLS_ECP_HAVE_* 映射导致 X.509 OID
         表不含命名曲线的问题（重建 libmbedtls.a）
-- [ ] ECDSA 证书服务器（example.com）仍报 MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE，
-      P-256 OID 查询已验证可用，疑似 SubjectPublicKeyInfo 解析细节，待查
+- [x] 修复 ECDSA 证书链解析：证书链混用 P-256/P-384，补齐
+      CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED；实机验证 example.com:443
+      TLS 握手 + HTTPS GET 收发（869 字节响应）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
 - [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP
