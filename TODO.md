@@ -38,8 +38,10 @@
 - [x] 修复 wl80211 连接不按 SSID 选择 AP 的问题
       （`wl80211-connect-ssid-filter.patch`：join 扫描按请求 SSID 过滤候选、
       接受隐藏 SSID AP 的定向探测响应；重建并提交 `libwl80211_bl616cl.a`）
-- [x] 修复 lwIP 堆过小导致的 `EAI_MEMORY`（`lwip-mem-size-60k.patch`：
-      MEM_SIZE 8KB→60KB，重建 `liblwip.a`；probe `main.c` 补 `bl_rand`）
+- [x] 修复 compat 层 `freeaddrinfo` 空桩导致的 `EAI_MEMORY`：lwip/netdb.h 把
+      POSIX 名宏映射为 `lwip_freeaddrinfo`，空桩实际顶替了真实实现，
+      `lwip_getaddrinfo()` 从唯一的 MEMP_NETDB 池取元素后永不归还，
+      第二次解析起全部失败（表象为 EAI_MEMORY）；已删除桩函数
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
@@ -93,20 +95,30 @@
 - [x] 修复数字 IP 字符串解析：lwIP 的 `lwip_getaddrinfo()` 只有带
       `AI_NUMERICHOST` 才解析点分 IP，否则一律走 DNS；新增
       `lwip_resolve_host()`（先数字、后 DNS）并用于 WiFiClient/WiFiUDP/ping
+- [x] 修复 `WiFiClient::available()`：该 lwIP 配置（LWIP_SO_RCVBUF=0、
+      LWIP_FIONREAD_LINUXMODE=0）下 FIONREAD 被编译掉，ioctl 恒返回 0，
+      TCP 回读拿不到数据；改用 `recv(MSG_PEEK|MSG_DONTWAIT)` 探测
+- [x] 修复 `WiFiUDP::parsePacket()` 阻塞：无数据报时改为 `MSG_DONTWAIT`，
+      按 ESP32 语义返回 0，避免 bridge AT 任务永久卡死
 - [x] bridge AT 命令经 USB CDC 冒烟：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/
       IPSTA/GETSSID/GETBSSID/GETRSSI/MACSTA 全通，连接 zrrong 并 DHCP 成功
       （AT 与 USB CDC 共用 USBSerial 时由 `AT_ON_USBCDC` 关闭 loop() 透传抢流）
 - [x] `AT+PING` 实机验证：到 PC（192.168.133.49）往返成功并返回整数 RTT
       （此前 `%f` 在 CONFIG_LIBC_FLOAT=0 下打印异常）；无 IP 时已加保护
-- [ ] 定位 lwIP 堆在忙信道下持续耗尽的问题：多次网络操作后
-      `lwip_getaddrinfo()` 稳定返回 EAI_MEMORY（60KB 堆仍复现），怀疑
-      wl80211 RX 路径 pbuf 未及时归还（环境有 45+ AP 的大量广播流量）
-- [ ] 定位设备→网关/DNS 不通：设备 ping PC 通、ping 网关 192.168.133.2 与
-      DNS 查询失败（DHCP 能拿到地址），需确认 AP 客户端隔离还是 ARP 出站问题
+- [x] 澄清此前“lwIP 堆耗尽/网关不通/DNS 失败”的误判：三者同根——
+      `freeaddrinfo` 桩泄漏唯一的 MEMP_NETDB 池元素，后续所有 getaddrinfo
+      返回 EAI_MEMORY（解析层即失败，根本未发出数据包）；AP 无隔离、PC 在
+      5GHz/设备在 2.4GHz 桥接互通。修复后连续 ping PC/网关、DNS 全部正常
+- [x] 回退 MEM_SIZE 8KB→60KB 改动（根因不在堆大小）；8KB 堆下完整
+      AT 冒烟（ping×3/DNS/TCP echo/UDP echo）通过，并发负载下的堆余量
+      留待多连接压力测试再确认
 - [ ] 定位无 IP 时 raw socket ping 破坏 wl80211 TX/lwIP 堆的根因（当前在
       AT 层加了 localIP 保护，底层根因未修）
-- [ ] 用 bridge AT 命令补 TCP/UDP/TLS 冒烟：AT 侧 BEGINCLIENT/CLIENTCONNECT
-      路径已修，数据通路待 lwIP 堆/网关问题解决后复测
+- [x] bridge AT TCP/UDP 数据通路实机验证：CLIENTCONNECT→CLIENTSEND→
+      CLIENTRECEIVE 回读 PC TCP echo；UDPBEGIN→BEGINPACKETIP→WRITE→
+      ENDPACKET→PARSE→READ 回读 PC UDP echo；CLIENTCLOSE/UDPSTOP 正常
+- [ ] bridge AT TLS 命令冒烟（WiFiClientSecure 底层握手/HTTPS 已实机验证，
+      待经 AT 的证书装载与连接命令路径复测）
 
 ## 第四阶段：存储与 OTA
 
