@@ -66,6 +66,17 @@ The port defines UDP/TCP/accept receive mailbox sizes but leaves
 fails the FreeRTOS assertion in `pxNewQueue`.  Set it to 8 so the raw ICMP
 socket used by the bridge ping command can be created.
 
+## lwip-mem-size-60k.patch
+
+Target project: `bouffalo/components/net/lwip/lwip`, file
+`lwip-port/config/lwipopts.h`.
+
+The wl80211 build resolves `MEM_SIZE` to 8 KiB.  Under the UNO R4 bridge's
+real workload `mem_malloc()` inside `lwip_getaddrinfo()` returns
+`EAI_MEMORY` even right after boot, so numeric-IP connect/ping and DNS all
+fail.  Enable the upstream 60 KiB branch so the lwIP heap can hold the
+sockets, DNS queries, ARP entries and packet copies the bridge needs.
+
 ## wl80211-ip-got-cb-core-lock-deadlock-fix.patch
 
 Target project: `bouffalo/components/wireless/wl80211`, file `lwip.c`

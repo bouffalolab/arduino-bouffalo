@@ -1,0 +1,8 @@
+--- a/lwip-port/config/lwipopts.h
++++ b/lwip-port/config/lwipopts.h
+@@ -57,7 +57,7 @@
+-#if 0
++#if 1
+ #define MEM_SIZE                (60*1024)
+ #elif defined(CFG_SDIOWIFI)
+ #define MEM_SIZE                (8*1024)
