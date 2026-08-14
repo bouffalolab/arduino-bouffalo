@@ -178,12 +178,29 @@ int WiFiClass::scanNetworks()
     return static_cast<int>(g_scan_count);
 }
 
+String WiFiClass::SSID()
+{
+    if (!g_sta_connected) {
+        return String("");
+    }
+    return String(g_ssid);
+}
+
 String WiFiClass::SSID(uint8_t networkItem)
 {
     if (!scan_item_valid(networkItem)) {
         return String("");
     }
     return String(g_scan_items[networkItem].ssid);
+}
+
+int32_t WiFiClass::RSSI()
+{
+    int rssi = 0;
+    if (wifi_mgmr_sta_rssi_get(&rssi) < 0) {
+        return 0;
+    }
+    return rssi;
 }
 
 int32_t WiFiClass::RSSI(uint8_t networkItem)
@@ -194,12 +211,33 @@ int32_t WiFiClass::RSSI(uint8_t networkItem)
     return g_scan_items[networkItem].rssi;
 }
 
+uint8_t *WiFiClass::BSSID()
+{
+    static uint8_t current_bssid[6];
+    if (wifi_mgmr_sta_get_bssid(current_bssid) < 0) {
+        return nullptr;
+    }
+    return current_bssid;
+}
+
 uint8_t *WiFiClass::BSSID(uint8_t networkItem)
 {
     if (!scan_item_valid(networkItem)) {
         return nullptr;
     }
     return g_scan_items[networkItem].bssid;
+}
+
+String WiFiClass::BSSIDstr()
+{
+    uint8_t *bssid = BSSID();
+    if (bssid == nullptr) {
+        return String("");
+    }
+    char buf[18];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
+    return String(buf);
 }
 
 String WiFiClass::BSSIDstr(uint8_t networkItem)
