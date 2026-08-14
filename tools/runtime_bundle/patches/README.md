@@ -79,6 +79,22 @@ processed and the IP assigned, but `CODE_WIFI_ON_GOT_IP` was never posted,
 the 15 s mgmr DHCP watchdog then disconnected WiFi, and `netifapi_dhcp_stop`
 could not complete.  Use the core-locked `netif_set_default()` instead.
 
+## wl80211-connect-ssid-filter.patch
+
+Target project: `bouffalo/components/wireless/wl80211`, file
+`src/macsw/connect.c`.
+
+`scan_done_cb()` collected every AP reported by the join scan and picked the
+one with the strongest RSSI without ever comparing its SSID against the
+requested SSID.  `WiFi.begin("zrrong", ...)` therefore associated with an
+unrelated AP (`bl_test_816`) whenever that AP had a better RSSI.  Filter the
+candidates by the requested SSID before choosing the best RSSI, and log the
+selected SSID.  `scan_ind_cb()` is also changed to accept fresh probe
+responses in addition to cached records so an AP with a hidden SSID (which
+only answers directed probes) can be found.  An AP that does not broadcast
+the requested SSID now results in a `WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL`
+failure instead of a silent wrong association.
+
 ## wl80211 runtime bundle selection
 
 The BL616CL runtime bundle uses the wl80211 host stack instead of fhost
