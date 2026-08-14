@@ -33,6 +33,9 @@
 - [x] 用修复后的 `liblhal.a` 重建并提交 BL616CL 运行时库
 - [x] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（记录 wl80211/macsw/lwip
       与各 submodule commit，含新增 wl80211/supplicant 库）
+- [x] 修复 wl80211 连接不按 SSID 选择 AP 的问题
+      （`wl80211-connect-ssid-filter.patch`：join 扫描按请求 SSID 过滤候选、
+      接受隐藏 SSID AP 的定向探测响应；重建并提交 `libwl80211_bl616cl.a`）
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
@@ -73,11 +76,21 @@
 - [x] 修复 ECDSA 证书链解析：证书链混用 P-256/P-384，补齐
       CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED；实机验证 example.com:443
       TLS 握手 + HTTPS GET 收发（869 字节响应）
-- [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
+- [x] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`：
+      STA ready/scan/connected/disconnected/got-ip 经 compat 层转成
+      ARDUINO_EVENT_*，实机验证 `AT+GETSTATUS?` 在连接后返回 3
+      （WIFI_ST_CONNECTED）；AP 相关事件待 softAP 落地后补齐
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
 - [x] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP（raw socket 自实现，
       实机 ping 192.168.133.49 4/4 成功；补 DEFAULT_RAW_RECVMBOX_SIZE=8）
-- [ ] 用 bridge AT 命令做连接/扫描/TCP/UDP/TLS 冒烟测试
+- [x] 修复 `WiFi.SSID()/BSSID()/RSSI()` 无参重载：此前默认参数解析成扫描列表
+      第 0 项，`AT+GETSSID?` 误报 TP-LINK_3D67；现在返回当前 STA 连接信息，
+      实机验证返回 zrrong / 64:64:4A:82:73:74 / 实时 RSSI
+- [x] bridge AT 命令经 USB CDC 冒烟：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/
+      IPSTA/GETSSID/GETBSSID/GETRSSI/MACSTA 全通，连接 zrrong 并 DHCP 成功
+      （AT 与 USB CDC 共用 USBSerial 时由 `AT_ON_USBCDC` 关闭 loop() 透传抢流）
+- [ ] 用 bridge AT 命令补 TCP/UDP/TLS 冒烟（WiFiClient/WiFiUDP/TLS 底层已实机
+      验证，待经 AT 命令路径复测）
 
 ## 第四阶段：存储与 OTA
 
