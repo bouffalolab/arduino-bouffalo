@@ -55,6 +55,17 @@ include path.  Also raise `PBUF_LINK_ENCAPSULATION_HLEN` from 48 to 388 bytes:
 wl80211's TX descriptor plus the macsw frame header exceeds the original
 reservation and fails a compile-time `CTASSERT` in `wl80211_lwip_tx()`.
 
+## lwip-default-raw-recvmbox-size.patch
+
+Target project: `bouffalo/components/net/lwip/lwip`, file
+`lwip-port/config/lwipopts.h`.
+
+The port defines UDP/TCP/accept receive mailbox sizes but leaves
+`DEFAULT_RAW_RECVMBOX_SIZE` at the lwIP default of 0.  Creating a
+`SOCK_RAW`/`IP_PROTO_ICMP` socket then calls `xQueueCreate(0, ...)` which
+fails the FreeRTOS assertion in `pxNewQueue`.  Set it to 8 so the raw ICMP
+socket used by the bridge ping command can be created.
+
 ## wl80211-ip-got-cb-core-lock-deadlock-fix.patch
 
 Target project: `bouffalo/components/wireless/wl80211`, file `lwip.c`

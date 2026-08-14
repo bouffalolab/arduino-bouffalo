@@ -75,7 +75,8 @@
       TLS 握手 + HTTPS GET 收发（869 字节响应）
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
-- [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP
+- [x] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP（raw socket 自实现，
+      实机 ping 192.168.133.49 4/4 成功；补 DEFAULT_RAW_RECVMBOX_SIZE=8）
 - [ ] 用 bridge AT 命令做连接/扫描/TCP/UDP/TLS 冒烟测试
 
 ## 第四阶段：存储与 OTA
