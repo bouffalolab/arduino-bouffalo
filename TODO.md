@@ -24,6 +24,8 @@
 - [ ] 完善 CDC DTR/RTS 状态机与串口流控
 - [ ] 为 HID `SendReport()` 增加待发送队列，避免 IN 端点繁忙时丢包
 - [ ] 确认 USB 复位/挂起/重连后的重初始化行为
+      （实测：macOS 下烧录/复位后 `/dev/cu.usbmodem01` 常不重新枚举，
+      需再按一次 RTS 复位才恢复；`usb:event_configured` 已打印但系统无节点）
 
 ## Runtime Bundle 维护
 
@@ -36,6 +38,8 @@
 - [x] 修复 wl80211 连接不按 SSID 选择 AP 的问题
       （`wl80211-connect-ssid-filter.patch`：join 扫描按请求 SSID 过滤候选、
       接受隐藏 SSID AP 的定向探测响应；重建并提交 `libwl80211_bl616cl.a`）
+- [x] 修复 lwIP 堆过小导致的 `EAI_MEMORY`（`lwip-mem-size-60k.patch`：
+      MEM_SIZE 8KB→60KB，重建 `liblwip.a`；probe `main.c` 补 `bl_rand`）
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
@@ -86,11 +90,23 @@
 - [x] 修复 `WiFi.SSID()/BSSID()/RSSI()` 无参重载：此前默认参数解析成扫描列表
       第 0 项，`AT+GETSSID?` 误报 TP-LINK_3D67；现在返回当前 STA 连接信息，
       实机验证返回 zrrong / 64:64:4A:82:73:74 / 实时 RSSI
+- [x] 修复数字 IP 字符串解析：lwIP 的 `lwip_getaddrinfo()` 只有带
+      `AI_NUMERICHOST` 才解析点分 IP，否则一律走 DNS；新增
+      `lwip_resolve_host()`（先数字、后 DNS）并用于 WiFiClient/WiFiUDP/ping
 - [x] bridge AT 命令经 USB CDC 冒烟：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/
       IPSTA/GETSSID/GETBSSID/GETRSSI/MACSTA 全通，连接 zrrong 并 DHCP 成功
       （AT 与 USB CDC 共用 USBSerial 时由 `AT_ON_USBCDC` 关闭 loop() 透传抢流）
-- [ ] 用 bridge AT 命令补 TCP/UDP/TLS 冒烟（WiFiClient/WiFiUDP/TLS 底层已实机
-      验证，待经 AT 命令路径复测）
+- [x] `AT+PING` 实机验证：到 PC（192.168.133.49）往返成功并返回整数 RTT
+      （此前 `%f` 在 CONFIG_LIBC_FLOAT=0 下打印异常）；无 IP 时已加保护
+- [ ] 定位 lwIP 堆在忙信道下持续耗尽的问题：多次网络操作后
+      `lwip_getaddrinfo()` 稳定返回 EAI_MEMORY（60KB 堆仍复现），怀疑
+      wl80211 RX 路径 pbuf 未及时归还（环境有 45+ AP 的大量广播流量）
+- [ ] 定位设备→网关/DNS 不通：设备 ping PC 通、ping 网关 192.168.133.2 与
+      DNS 查询失败（DHCP 能拿到地址），需确认 AP 客户端隔离还是 ARP 出站问题
+- [ ] 定位无 IP 时 raw socket ping 破坏 wl80211 TX/lwIP 堆的根因（当前在
+      AT 层加了 localIP 保护，底层根因未修）
+- [ ] 用 bridge AT 命令补 TCP/UDP/TLS 冒烟：AT 侧 BEGINCLIENT/CLIENTCONNECT
+      路径已修，数据通路待 lwIP 堆/网关问题解决后复测
 
 ## 第四阶段：存储与 OTA
 
