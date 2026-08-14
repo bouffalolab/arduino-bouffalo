@@ -131,22 +131,15 @@ uint8_t WiFiUDP::beginPacket(const char *host, uint16_t port)
         return 0;
     }
 
-    struct addrinfo hints = {};
-    struct addrinfo *results = nullptr;
-    char port_str[8];
-    snprintf(port_str, sizeof(port_str), "%u", port);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    if (lwip_getaddrinfo(host, port_str, &hints, &results) != 0 || results == nullptr) {
+    struct sockaddr_in addr = {};
+    if (!lwip_resolve_host(host, port, SOCK_DGRAM, &addr)) {
         return 0;
     }
 
-    const struct sockaddr_in *addr = reinterpret_cast<const struct sockaddr_in *>(results->ai_addr);
     tx_len_ = 0;
-    tx_ip_ = IPAddress(addr->sin_addr.s_addr);
+    tx_ip_ = IPAddress(addr.sin_addr.s_addr);
     tx_port_ = port;
     tx_multicast_ = false;
-    lwip_freeaddrinfo(results);
     return 1;
 }
 

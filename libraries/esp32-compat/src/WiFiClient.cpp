@@ -132,34 +132,20 @@ int WiFiClient::connect(const char *host, uint16_t port, int32_t timeout)
         return 0;
     }
 
-    struct addrinfo hints = {};
-    struct addrinfo *results = nullptr;
-    char port_str[8];
-    snprintf(port_str, sizeof(port_str), "%u", port);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if (lwip_getaddrinfo(host, port_str, &hints, &results) != 0 || results == nullptr) {
+    struct sockaddr_in addr = {};
+    if (!lwip_resolve_host(host, port, SOCK_STREAM, &addr)) {
         return 0;
     }
 
-    int connected = 0;
-    for (struct addrinfo *cur = results; cur != nullptr && !connected; cur = cur->ai_next) {
-        if (sockfd_ >= 0) {
-            stop();
-        }
-        sockfd_ = lwip_socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
-        if (sockfd_ < 0) {
-            continue;
-        }
-        if (connect_to_addr(sockfd_, cur->ai_addr, cur->ai_addrlen, timeout) == 0) {
-            connected = 1;
-        } else {
-            stop();
-        }
+    if (sockfd_ >= 0) {
+        stop();
     }
-    lwip_freeaddrinfo(results);
-
-    if (!connected) {
+    sockfd_ = lwip_socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd_ < 0) {
+        return 0;
+    }
+    if (connect_to_addr(sockfd_, reinterpret_cast<struct sockaddr *>(&addr),
+                        sizeof(addr), timeout) != 0) {
         stop();
         return 0;
     }
