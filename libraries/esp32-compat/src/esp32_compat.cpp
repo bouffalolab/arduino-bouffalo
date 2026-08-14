@@ -50,10 +50,11 @@ extern "C" void usb_persist_restart(int mode)
     (void)mode;
 }
 
-extern "C" void freeaddrinfo(struct addrinfo *res)
-{
-    (void)res;
-}
+/* Do NOT define a freeaddrinfo() stub here.  lwip/netdb.h maps the POSIX
+ * name to lwip_freeaddrinfo, so any such definition would interpose (and
+ * silently replace) lwIP's real freeaddrinfo.  lwip_getaddrinfo() allocates
+ * its result from the single-element MEMP_NETDB pool; a no-op stub leaks
+ * that element and every later getaddrinfo() fails with EAI_MEMORY. */
 
 extern "C" const esp_partition_t *esp_partition_find_first(uint32_t type,
                                                            uint32_t subtype,

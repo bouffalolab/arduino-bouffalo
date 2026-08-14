@@ -159,11 +159,14 @@ int WiFiClient::available()
     if (sockfd_ < 0) {
         return 0;
     }
-    unsigned long pending = 0;
-    if (lwip_ioctl(sockfd_, FIONREAD, &pending) != 0) {
-        return 0;
-    }
-    return static_cast<int>(pending);
+    /* FIONREAD is compiled out of lwip_ioctl() when both LWIP_SO_RCVBUF and
+     * LWIP_FIONREAD_LINUXMODE are 0, so ioctl() would always report 0 here.
+     * Peek instead: MSG_PEEK|MSG_DONTWAIT returns the bytes currently
+     * buffered without consuming them. */
+    uint8_t probe[256];
+    int ret = static_cast<int>(lwip_recv(sockfd_, probe, sizeof(probe),
+                                         MSG_PEEK | MSG_DONTWAIT));
+    return ret > 0 ? ret : 0;
 }
 
 int WiFiClient::read()

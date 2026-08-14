@@ -171,7 +171,10 @@ int WiFiUDP::parsePacket()
 
     struct sockaddr_in addr = {};
     socklen_t addr_len = sizeof(addr);
-    int ret = static_cast<int>(lwip_recvfrom(sockfd_, rx_buffer_, sizeof(rx_buffer_), 0,
+    /* MSG_DONTWAIT: ESP32's parsePacket() returns 0 when no datagram is
+     * pending instead of blocking the caller (the bridge AT task would
+     * otherwise stall forever). */
+    int ret = static_cast<int>(lwip_recvfrom(sockfd_, rx_buffer_, sizeof(rx_buffer_), MSG_DONTWAIT,
                                              reinterpret_cast<struct sockaddr *>(&addr),
                                              &addr_len));
     if (ret <= 0) {
