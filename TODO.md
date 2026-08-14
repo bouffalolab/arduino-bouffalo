@@ -64,7 +64,14 @@
 - [ ] CI_throughput 待复测：连接+DHCP 正常（192.168.28.226），但此前网关
       TCP 53/DNS 探针同样受到 IP 字节序 bug 影响，结论需修正后重跑；
       若仍不通则说明该网隔离、需同网段对端
-- [ ] 实现 `WiFiClientSecure`（mbedTLS v3 后端，并解决 compat 层 v2 桩冲突）
+- [x] 实现 `WiFiClientSecure`（mbedTLS v3 后端）：
+      实机验证 www.bing.com:443 的 TLS 1.2 握手与 HTTPS GET 收发（390 字节响应）
+      - 解决 compat 层 v2 桩冲突：v2 桩改 weak + libmbedtls whole-archive，
+        SSE.cpp 移植到 v3（pk_sign 新签名、mbedtls_sha256、pk_parse_key）
+      - 修复 config-tls-generic.h 缺 MBEDTLS_ECP_HAVE_* 映射导致 X.509 OID
+        表不含命名曲线的问题（重建 libmbedtls.a）
+- [ ] ECDSA 证书服务器（example.com）仍报 MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE，
+      P-256 OID 查询已验证可用，疑似 SubjectPublicKeyInfo 解析细节，待查
 - [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
 - [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
 - [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP

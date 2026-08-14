@@ -86,6 +86,24 @@ runtime bundle builds `src/` into `libwl80211_${CHIP}.a` and the top-level
 files into `libwl80211_plat.a`.  Keep `defconfig`, `autoconf.h` and both
 archives in sync when regenerating.
 
+## mbedtls-config-tls-ecp-have-curves.patch
+
+Target project: `bouffalo/components/crypto/mbedtls`, file
+`config-tls-generic.h`.
+
+`config-tls-generic.h` enables `MBEDTLS_ECP_DP_*_ENABLED` but never derives
+the `MBEDTLS_ECP_HAVE_*` names that the X.509 OID tables in `oid.c` gate on
+(the default `mbedtls_config.h` does this via
+`config_adjust_legacy_crypto.h`).  Without the mapping the compiled OID table
+contains no named curves and parsing an ECDSA certificate public key fails
+with `MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE`.  Rebuild `libmbedtls.a` after
+applying.
+
+The sketch side uses the same `config-tls-generic.h` plus the same
+`CONFIG_MBEDTLS_*` defines as the library build, wired through `platform.txt`
+(mbedTLS v3 headers are staged under `tools/sdk/bl616cl/include/sdk/mbedtls`,
+with the SDK's `port/hw_acc` alt headers and `mbedtls_port_bouffalo_sdk.h`).
+
 ## Regenerate libapp.a after changing CONFIG_WIFI6
 
 `bsp/board/{board}/board.c` attaches the WiFi MAC IRQ
