@@ -4,6 +4,8 @@
 #include "bflb_uart.h"
 #include "pins_arduino.h"
 
+extern "C" int pm_disable_gpio_keep(uint32_t pin);
+
 HardwareSerial Serial(0, PIN_SERIAL_RX, PIN_SERIAL_TX);
 HardwareSerial Serial1(1, PIN_SERIAL1_RX, PIN_SERIAL1_TX);
 
@@ -39,6 +41,13 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     if ((gpio == nullptr) || (device_ == nullptr)) {
         return;
     }
+
+    /*
+     * UART pins must leave the BL616CL low-power retention domain before
+     * their mux is assigned. The SDK console follows the same sequence.
+     */
+    pm_disable_gpio_keep(tx_pin_);
+    pm_disable_gpio_keep(rx_pin_);
 
     switch (index_) {
         case 0:

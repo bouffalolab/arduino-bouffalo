@@ -812,6 +812,13 @@ def main() -> int:
             copy_file(phyrf_candidate, sdk_staging / "lib" / phyrf_candidate.name)
             print(f"Note: copied phyrf: {phyrf_candidate.name}")
 
+    # PKA is a precompiled LHAL dependency of the SDK's hardware-accelerated
+    # mbedTLS implementation.
+    pka_library = sdk / "drivers" / "lhal" / "src" / "pka" / f"libpka_{chip}.a"
+    if pka_library.is_file():
+        copy_file(pka_library, sdk_staging / "lib" / pka_library.name)
+        print(f"Note: copied PKA: {pka_library.name}")
+
     # board BSP archive → chip-level SDK (not variant)
     copy_file(archives[EXPECTED_BOARD_ARCHIVE],
               sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
@@ -869,6 +876,11 @@ def main() -> int:
         sdk_include_roots.extend([
             (sdk / "components" / "utils" / "bflb_mtd" / "include",
              Path("sdk/bflb_mtd")),
+            (sdk / "components" / "utils" / "async_event",
+             Path("sdk/utils/async_event")),
+            (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+            (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+             Path("sdk/rfparam")),
             (sdk / "components" / "fs" / "littlefs" / "littlefs",
              Path("sdk/littlefs/littlefs")),
             (sdk / "components" / "fs" / "littlefs" / "easyflash_port",
@@ -877,6 +889,10 @@ def main() -> int:
              "include", Path("mbedtls")),
             (sdk / "components" / "net" / "lwip" / "lwip" / "src" /
              "include", Path("lwip")),
+            (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+             Path("lwip")),
+            (sdk / "components" / "wireless" / "macsw" / "inc",
+             Path("wifi/macsw")),
             (sdk / "components" / "wireless" / "wifi6" / "fhost" /
              "include", Path("wifi/fhost")),
             (sdk / "components" / "usb" / "cherryusb" / "common",
