@@ -8,6 +8,15 @@
 #ifndef LFS_H
 #define LFS_H
 
+/* Build adaptation: force thread-safe config structs in every translation
+ * unit regardless of include order. lfs_easyflash.c includes lfs.h before
+ * lfs_port.h; without this, its struct lfs_config lacks the lock/unlock
+ * fields while lfs_xip_flash.c (which defines LFS_THREADSAFE first) writes
+ * them, corrupting read_size/prog_size. */
+#ifndef LFS_THREADSAFE
+#define LFS_THREADSAFE 1
+#endif
+
 #include "lfs_util.h"
 
 #ifdef __cplusplus

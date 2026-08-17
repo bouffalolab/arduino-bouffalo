@@ -26,4 +26,9 @@
   2. 必要的构建适配（如 `#ifndef` 保护、避免与现有符号冲突），且不改变 SDK 逻辑。
      - `lfs_xip_flash.c`：在 `#include "lfs.h"` 前同样设置 `LFS_THREADSAFE`（该文件
        先包含 `lfs.h` 再包含 `lfs_port.h`，否则 `struct lfs_config` 缺少 lock/unlock 字段）。
+     - `lfs.h`：在头文件顶部统一强制 `LFS_THREADSAFE=1`。实机发现
+       `lfs_easyflash.c` 先 include `lfs.h` 后 include `lfs_port.h`，导致不同
+       翻译单元对 `struct lfs_config` 的布局（是否含 lock/unlock）不一致，
+       `lfs_xip_init` 写 `cfg->lock/unlock` 时覆写 `read_size/prog_size`，
+       LittleFS 初始化断言崩溃。统一在 `lfs.h` 定义后所有单元布局一致。
 - 任何额外改动需在提交说明中注明原因。
