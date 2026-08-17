@@ -20,36 +20,48 @@ enum PreferenceType {
 
 class Preferences {
 public:
-    bool begin(const char *name, bool readOnly = false) { (void)name; (void)readOnly; return false; }
-    bool begin(const char *name, bool readOnly, const char *partition) { (void)name; (void)readOnly; (void)partition; return false; }
-    void end() {}
-    bool clear() { return false; }
-    bool remove(const char *key) { (void)key; return false; }
+    Preferences() : _read_only(false) {}
 
-    size_t putChar(const char *key, int8_t value) { (void)key; (void)value; return 0; }
-    size_t putUChar(const char *key, uint8_t value) { (void)key; (void)value; return 0; }
-    size_t putShort(const char *key, int16_t value) { (void)key; (void)value; return 0; }
-    size_t putUShort(const char *key, uint16_t value) { (void)key; (void)value; return 0; }
-    size_t putInt(const char *key, int32_t value) { (void)key; (void)value; return 0; }
-    size_t putUInt(const char *key, uint32_t value) { (void)key; (void)value; return 0; }
-    size_t putLong64(const char *key, int64_t value) { (void)key; (void)value; return 0; }
-    size_t putULong64(const char *key, uint64_t value) { (void)key; (void)value; return 0; }
-    size_t putString(const char *key, const char *value) { (void)key; (void)value; return 0; }
-    size_t putBytes(const char *key, const void *value, size_t len) { (void)key; (void)value; (void)len; return 0; }
+    bool begin(const char *name, bool readOnly = false);
+    bool begin(const char *name, bool readOnly, const char *partition);
+    void end();
+    bool clear();
+    bool remove(const char *key);
 
-    PreferenceType getType(const char *key) { (void)key; return PreferenceType::PT_INVALID; }
-    int8_t getChar(const char *key, int8_t defaultValue = 0) { (void)key; return defaultValue; }
-    uint8_t getUChar(const char *key, uint8_t defaultValue = 0) { (void)key; return defaultValue; }
-    int16_t getShort(const char *key, int16_t defaultValue = 0) { (void)key; return defaultValue; }
-    uint16_t getUShort(const char *key, uint16_t defaultValue = 0) { (void)key; return defaultValue; }
-    int32_t getInt(const char *key, int32_t defaultValue = 0) { (void)key; return defaultValue; }
-    uint32_t getUInt(const char *key, uint32_t defaultValue = 0) { (void)key; return defaultValue; }
-    int64_t getLong64(const char *key, int64_t defaultValue = 0) { (void)key; return defaultValue; }
-    uint64_t getULong64(const char *key, uint64_t defaultValue = 0) { (void)key; return defaultValue; }
-    String getString(const char *key, const char *defaultValue = "") { (void)key; return String(defaultValue); }
-    size_t getBytesLength(const char *key) { (void)key; return 0; }
-    size_t getBytes(const char *key, void *buffer, size_t maxLen) { (void)key; (void)buffer; (void)maxLen; return 0; }
-    size_t freeEntries() { return 0; }
+    size_t putChar(const char *key, int8_t value);
+    size_t putUChar(const char *key, uint8_t value);
+    size_t putShort(const char *key, int16_t value);
+    size_t putUShort(const char *key, uint16_t value);
+    size_t putInt(const char *key, int32_t value);
+    size_t putUInt(const char *key, uint32_t value);
+    size_t putLong64(const char *key, int64_t value);
+    size_t putULong64(const char *key, uint64_t value);
+    size_t putString(const char *key, const char *value);
+    size_t putBytes(const char *key, const void *value, size_t len);
+
+    PreferenceType getType(const char *key);
+    int8_t getChar(const char *key, int8_t defaultValue = 0);
+    uint8_t getUChar(const char *key, uint8_t defaultValue = 0);
+    int16_t getShort(const char *key, int16_t defaultValue = 0);
+    uint16_t getUShort(const char *key, uint16_t defaultValue = 0);
+    int32_t getInt(const char *key, int32_t defaultValue = 0);
+    uint32_t getUInt(const char *key, uint32_t defaultValue = 0);
+    int64_t getLong64(const char *key, int64_t defaultValue = 0);
+    uint64_t getULong64(const char *key, uint64_t defaultValue = 0);
+    String getString(const char *key, const char *defaultValue = "");
+    size_t getBytesLength(const char *key);
+    size_t getBytes(const char *key, void *buffer, size_t maxLen);
+    size_t freeEntries();
+
+private:
+    String makeKey(const char *key) const;
+    size_t putValue(const char *key, PreferenceType type,
+                    const void *value, size_t len);
+    bool getValue(const char *key, PreferenceType type,
+                  void *value, size_t *len);
+
+    String _ns;
+    bool _read_only;
 };
 
 #endif

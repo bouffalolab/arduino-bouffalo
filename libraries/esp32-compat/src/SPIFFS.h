@@ -3,14 +3,17 @@
 
 #include "FS.h"
 
-class SPIFFSClass {
+class SPIFFSClass : public FS {
 public:
-    bool begin(bool formatOnFail = false) { (void)formatOnFail; return false; }
-    void end() {}
-    bool format() { return false; }
-    bool exists(const char *path) { (void)path; return false; }
-    bool remove(const char *path) { (void)path; return false; }
-    File open(const char *path, const char *mode = FILE_READ) { (void)path; (void)mode; return File(); }
+    bool begin(bool formatOnFail = false);
+    void end();
+    bool format();
+    bool exists(const char *path) override;
+    bool remove(const char *path) override;
+    bool rename(const char *from, const char *to) override;
+    File open(const char *path, const char *mode = FILE_READ) override;
+    bool mkdir(const char *path) override;
+    bool rmdir(const char *path) override;
 };
 
 extern SPIFFSClass SPIFFS;

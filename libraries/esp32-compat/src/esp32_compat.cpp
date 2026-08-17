@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
 #include "WiFi.h"
-#include "SPIFFS.h"
 #include "USB.h"
 #include "USBHID.h"
 #include "Arduino_DebugUtils.h"
@@ -25,7 +24,6 @@ extern "C" {
 #include "lwip/err.h"
 }
 
-SPIFFSClass SPIFFS;
 Arduino_DebugUtils Debug;
 UpdateClass Update;
 HCIVirtualTransportClass HCIVirtualTransport;
