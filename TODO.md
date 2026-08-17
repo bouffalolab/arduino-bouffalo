@@ -23,6 +23,12 @@
 - [ ] 用逻辑分析仪校准 DAP SWDIO/SWCLK 时序和延时常数
 - [ ] 完善 CDC DTR/RTS 状态机与串口流控
 - [ ] 为 HID `SendReport()` 增加待发送队列，避免 IN 端点繁忙时丢包
+- [x] 修复 CDC OUT 背靠背传输丢字节：OUT 端点在传输回调里无条件重新武装，
+      环形缓冲（4096 B）未及时排空时 `onOutData()` 静默丢弃后续传输
+      （`AT+SETCAROOT` 装载 5178 B 证书时 `readBytes` 永远等不到缺失字节、
+      AT 任务卡死）。现改为环形缓冲能容纳整段 staging 传输时才重新武装，
+      否则保持端点 NAK（USB 背压），消费者从 `read()` 排空后再武装；
+      已实机验证 5178 B CA 证书装载 + TLS 握手 + HTTPS GET
 - [ ] 确认 USB 复位/挂起/重连后的重初始化行为
       （实测：macOS 下烧录/复位后 `/dev/cu.usbmodem01` 常不重新枚举，
       需再按一次 RTS 复位才恢复；`usb:event_configured` 已打印但系统无节点）
@@ -70,9 +76,10 @@
       （此前误判为 lwIP loopback port 问题，实际 raw 正确字节序回环是通的）
 - [x] 兼容性修复：lwIP 与 newlib errno 值域不一致、INADDR_NONE 宏冲突、
       非阻塞 connect 提前可写导致误判失败、SO_RCVTIMEO 需传 struct timeval
-- [ ] CI_throughput 待复测：连接+DHCP 正常（192.168.28.226），但此前网关
-      TCP 53/DNS 探针同样受到 IP 字节序 bug 影响，结论需修正后重跑；
-      若仍不通则说明该网隔离、需同网段对端
+- [x] CI_throughput 复测完成（IP 字节序修复后）：连接 zrrong + DHCP
+      （192.168.133.40/24）、DNS 解析 example.com、ping 网关
+      （192.168.133.2，4 ms）、ping 对端 Mac（.49）、AT TCP/UDP echo
+      全部通过；此前 gateway/DNS 探针不通确为 IP 字节序 bug 所致
 - [x] 实现 `WiFiClientSecure`（mbedTLS v3 后端）：
       实机验证 www.bing.com:443 的 TLS 1.2 握手与 HTTPS GET 收发（390 字节响应）
       - 解决 compat 层 v2 桩冲突：v2 桩改 weak + libmbedtls whole-archive，
@@ -86,7 +93,10 @@
       STA ready/scan/connected/disconnected/got-ip 经 compat 层转成
       ARDUINO_EVENT_*，实机验证 `AT+GETSTATUS?` 在连接后返回 3
       （WIFI_ST_CONNECTED）；AP 相关事件待 softAP 落地后补齐
-- [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
+- [x] 用 Bouffalo `wifi_mgmr` API 实现 STA：扫描/连接/断开/状态、
+      IP/网关/掩码/DNS/MAC 查询（WiFi 类均已实机验证）
+- [ ] softAP：`WiFi.softAP()` 仍为桩，AP 事件（LISTENING/STACONNECTED 等）
+      待 softAP 落地后补齐
 - [x] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP（raw socket 自实现，
       实机 ping 192.168.133.49 4/4 成功；补 DEFAULT_RAW_RECVMBOX_SIZE=8）
 - [x] 修复 `WiFi.SSID()/BSSID()/RSSI()` 无参重载：此前默认参数解析成扫描列表
@@ -112,13 +122,23 @@
 - [x] 回退 MEM_SIZE 8KB→60KB 改动（根因不在堆大小）；8KB 堆下完整
       AT 冒烟（ping×3/DNS/TCP echo/UDP echo）通过，并发负载下的堆余量
       留待多连接压力测试再确认
-- [ ] 定位无 IP 时 raw socket ping 破坏 wl80211 TX/lwIP 堆的根因（当前在
-      AT 层加了 localIP 保护，底层根因未修）
+- [x] 定位"无 IP 时 raw socket ping 破坏 wl80211 TX/lwIP 堆"的根因：
+      不是驱动/堆破坏，而是 `tcpip_init()` 只在 `ensure_wifi_started()`
+      （WiFi 首次操作）里惰性调用；WiFi 未启动时 `tcpip_mbox` 从未创建，
+      无 IP ping 的 `lwip_socket()` 首次触碰 tcpip 消息路径，
+      `tcpip_send_msg_wait_sem` 命中 `LWIP_ASSERT("Invalid mbox")` → ebreak
+      崩溃（实机复现 mcause=3、mepc 落在 tcpip.c 该断言）。
+      修复：esp32_wifi.cpp 静态构造器提前 `tcpip_init`（调度器启动前），
+      `ensure_wifi_started()` 不再重复初始化；实机验证无 IP ping 优雅返回
+      -2、不崩溃，随后连接+ping 网关/DNS/TCP/UDP 全通（12/12）
 - [x] bridge AT TCP/UDP 数据通路实机验证：CLIENTCONNECT→CLIENTSEND→
       CLIENTRECEIVE 回读 PC TCP echo；UDPBEGIN→BEGINPACKETIP→WRITE→
       ENDPACKET→PARSE→READ 回读 PC UDP echo；CLIENTCLOSE/UDPSTOP 正常
-- [ ] bridge AT TLS 命令冒烟（WiFiClientSecure 底层握手/HTTPS 已实机验证，
-      待经 AT 的证书装载与连接命令路径复测）
+- [x] bridge AT TLS 命令冒烟：`AT+SSLBEGINCLIENT`→`AT+SETCAROOT`（装载
+      example.com 证书链 5178 B，顺带暴露并修复 CDC OUT 丢字节）→
+      `AT+SSLCLIENTCONNECTNAME=2000,example.com,443` 握手成功→
+      `AT+SSLCLIENTSEND`+`AT+SSLCLIENTRECEIVE` 回读 HTTPS 200；
+      `+SSLERR=<sock>` 保留为 TLS 错误诊断命令
 
 ## 第四阶段：存储与 OTA
 
