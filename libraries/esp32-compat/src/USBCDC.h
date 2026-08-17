@@ -27,6 +27,10 @@ public:
     virtual int available() override;
     virtual int read() override;
     virtual int peek() override;
+    /* Free space in the CDC OUT ring.  The USB endpoint re-arms only when
+     * this is large enough for a full staging transfer, otherwise incoming
+     * data is silently truncated by onOutData(). */
+    uint32_t rxRoom() const { return sizeof(rx_buffer_) - rx_count_; }
     virtual size_t write(uint8_t value) override;
     virtual size_t write(const uint8_t *buffer, size_t size) override;
     virtual int availableForWrite() override;
@@ -50,7 +54,9 @@ private:
     uint32_t rx_head_;
     uint32_t rx_tail_;
     uint32_t rx_count_;
-    uint8_t tx_buffer_[4096];
+    /* Staged USB IN data.  Allocated in non-cacheable RAM so the controller
+     * DMA engine can read it directly (see esp32_usb.cpp). */
+    static uint8_t tx_buffer_[4096];
 
     friend class USBClass;
 };

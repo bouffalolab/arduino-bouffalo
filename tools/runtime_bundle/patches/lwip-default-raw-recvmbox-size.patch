@@ -1,0 +1,12 @@
+diff --git a/lwip-port/config/lwipopts.h b/lwip-port/config/lwipopts.h
+index 82620cc..7f3a9ad 100644
+--- a/lwip-port/config/lwipopts.h
++++ b/lwip-port/config/lwipopts.h
+@@ -326,6 +326,7 @@
+ #define DEFAULT_UDP_RECVMBOX_SIZE       50
+ #define DEFAULT_TCP_RECVMBOX_SIZE       50
+ #define DEFAULT_ACCEPTMBOX_SIZE         50
++#define DEFAULT_RAW_RECVMBOX_SIZE       8
+ 
+ /* Enable Status callback and link callback*/
+ #define LWIP_NETIF_STATUS_CALLBACK      1

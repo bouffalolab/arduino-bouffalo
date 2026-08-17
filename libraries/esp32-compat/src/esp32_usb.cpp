@@ -39,6 +39,13 @@ USBClass USB;
 USBCDC *USBCDC::instance_ = nullptr;
 __attribute__((weak)) USBHID HID;
 
+/* USB IN staging buffers: the controller DMA engine reads these directly, so
+ * they must live in non-cacheable RAM with DMA-safe alignment. */
+uint8_t USBCDC::tx_buffer_[4096]
+    __attribute__((section(".noncacheable"), aligned(32)));
+uint8_t USBHID::tx_buffer_[CFG_TUD_HID_EP_BUFSIZE]
+    __attribute__((section(".noncacheable"), aligned(32)));
+
 static uint8_t device_descriptor[] = {
     USB_DEVICE_DESCRIPTOR_INIT(USB_2_0, 0xEF, 0x02, 0x01,
                                0x2341, 0x1002, 0x0100, 0x01)
@@ -118,6 +125,11 @@ static struct usbd_interface hid_interface;
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t cdc_rx_buffer[4096];
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t hid_rx_buffer[CFG_TUD_HID_EP_BUFSIZE];
 
+/* Set when the CDC OUT endpoint is deliberately left disarmed because the
+ * RX ring was full; the consumer re-arms it from USBCDC::read() after the
+ * ring drains.  See cdc_out_callback(). */
+static volatile bool cdc_out_rearm_pending = false;
+
 #ifdef BL616CL_USB_DEBUG_LOG
 static void usb_log(const char *message)
 {
@@ -149,11 +161,24 @@ static void cdc_out_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
     (void)ep;
+    /* Clear the re-arm flag BEFORE onOutData() so the consumer cannot
+     * re-arm while this callback is still running. */
+    cdc_out_rearm_pending = false;
     if (USBCDC::instance() != nullptr) {
         USBCDC::instance()->onOutData(cdc_rx_buffer, nbytes);
     }
-    usbd_ep_start_read(BL616CL_USB_BUS_ID, CDC_OUT_EP, cdc_rx_buffer,
-                       sizeof(cdc_rx_buffer));
+    /* Re-arm only when the ring can absorb a full staging transfer.  If the
+     * consumer (AT task) has not drained the previous transfer yet, leave
+     * the endpoint disarmed: the host's next OUT packets are NAKed (USB
+     * backpressure) instead of being silently dropped by onOutData().  The
+     * consumer re-arms from USBCDC::read() once the ring has drained. */
+    if (USBCDC::instance() != nullptr &&
+        USBCDC::instance()->rxRoom() >= sizeof(cdc_rx_buffer)) {
+        usbd_ep_start_read(BL616CL_USB_BUS_ID, CDC_OUT_EP, cdc_rx_buffer,
+                           sizeof(cdc_rx_buffer));
+    } else {
+        cdc_out_rearm_pending = true;
+    }
 }
 
 static void cdc_in_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
@@ -210,6 +235,7 @@ static void usb_event_handler(uint8_t busid, uint8_t event)
             if (USBCDC::instance() != nullptr) {
                 USBCDC::instance()->begin(USBCDC::instance()->baudRate());
             }
+            cdc_out_rearm_pending = false;
             usbd_ep_start_read(BL616CL_USB_BUS_ID, CDC_OUT_EP, cdc_rx_buffer,
                                sizeof(cdc_rx_buffer));
             if (HID.device() != nullptr) {
@@ -350,6 +376,14 @@ int USBCDC::read()
     uint8_t value = rx_buffer_[rx_tail_];
     rx_tail_ = (rx_tail_ + 1U) % sizeof(rx_buffer_);
     --rx_count_;
+    /* Re-arm the OUT endpoint once the ring has drained enough for another
+     * full staging transfer.  See cdc_out_callback(). */
+    if (cdc_out_rearm_pending &&
+        rxRoom() >= sizeof(cdc_rx_buffer)) {
+        cdc_out_rearm_pending = false;
+        usbd_ep_start_read(BL616CL_USB_BUS_ID, CDC_OUT_EP, cdc_rx_buffer,
+                           sizeof(cdc_rx_buffer));
+    }
     return value;
 }
 

@@ -1,0 +1,92 @@
+--- a/src/macsw/connect.c
++++ b/src/macsw/connect.c
+@@ -246,39 +246,32 @@
+                         uint16_t raw_frame_len)
+ {
+     struct macsw_connect_ctx *ops = (void *)o;
+-#if defined(CONFIG_WL80211_P2P)
++
++    /* A JOIN scan mixes cached AP records with fresh probe responses.
++     * Accept every indication that carries a parseable frame: cached
++     * records cover APs whose SSID is already in the scan cache, while
++     * fresh probe responses are the only way to reach an AP with a hidden
++     * SSID (it answers the directed probe but does not advertise its SSID
++     * in beacons).  Limiting this to cached records makes WiFi.begin()
++     * associate with whichever cached AP has the best RSSI instead of the
++     * requested SSID. */
+     if (raw_frame == NULL || raw_frame_len < MAC_BEACON_VARIABLE_PART_OFT) {
+         return;
+     }
+-#else
+-    if (i->flags & WL80211_SCAN_AP_FLAGS_CACHED)
+-#endif
+-    {
+-#if 0
+-    struct mac_hdr *machdr = (void *)i->raw_frame;
+-    uint16_t frame_control = machdr->fctl;
++
++    struct macsw_connect_bss_candidate *bss_info =
++        malloc(sizeof(struct macsw_connect_bss_candidate) + raw_frame_len);
++    assert(bss_info != NULL);
+ 
+-    /* filter only probe resp */
+-    if ((frame_control & MAC_FCTRL_TYPE_MASK) != MAC_FCTRL_MGT_T ||
+-        (frame_control & MAC_FCTRL_SUBT_MASK) != MAC_FCTRL_PROBERSP_ST) {
+-      return;
+-    }
+-#endif
+-
+-        struct macsw_connect_bss_candidate *bss_info =
+-            malloc(sizeof(struct macsw_connect_bss_candidate) + raw_frame_len);
+-        assert(bss_info != NULL);
++    uint8_t *raw_frame_ptr = (uint8_t *)(bss_info + 1);
++    memcpy(raw_frame_ptr, raw_frame, raw_frame_len);
++    memcpy(&bss_info->ind, i, sizeof(struct wl80211_scan_ap_ind));
+ 
+-        uint8_t *raw_frame_ptr = (uint8_t *)(bss_info + 1);
+-        memcpy(raw_frame_ptr, raw_frame, raw_frame_len);
+-        memcpy(&bss_info->ind, i, sizeof(struct wl80211_scan_ap_ind));
++    /* update raw_frame pointer */
++    bss_info->raw_frame = raw_frame_ptr;
++    bss_info->raw_frame_len = raw_frame_len;
+ 
+-        /* update raw_frame pointer */
+-        bss_info->raw_frame = raw_frame_ptr;
+-        bss_info->raw_frame_len = raw_frame_len;
+-
+-        STAILQ_INSERT_TAIL(&ops->bss_list, bss_info, entry);
+-    }
++    STAILQ_INSERT_TAIL(&ops->bss_list, bss_info, entry);
+ }
+ 
+ /* select best one bss and do connect */
+@@ -308,6 +301,19 @@
+ 
+     STAILQ_FOREACH_SAFE(c, &ctx->bss_list, entry, tc)
+     {
++        const char *wanted = (const char *)WG.connect_params->ssid;
++        size_t wanted_len = strlen(wanted);
++
++        /* The join scan must only consider APs that broadcast the requested
++         * SSID.  Without this check the stack silently joins whichever cached
++         * AP has the strongest RSSI, ignoring the SSID passed to
++         * wifi_mgmr_sta_connect()/WiFi.begin(). */
++        if (wanted_len > 0 &&
++            (strnlen(c->ind.ssid, sizeof(c->ind.ssid)) != wanted_len ||
++             memcmp(c->ind.ssid, wanted, wanted_len) != 0)) {
++            continue;
++        }
++
+         if (best == NULL) {
+             best = c;
+         } else {
+@@ -329,7 +335,8 @@
+     }
+ 
+     if (best) {
+-        wl80211_printf("select best rssi %d to connect\n", best->ind.rssi);
++        wl80211_printf("select best rssi %d ssid %.*s to connect\n", best->ind.rssi,
++                       (int)strnlen(best->ind.ssid, sizeof(best->ind.ssid)), best->ind.ssid);
+     } else {
+         wl80211_printf("network not found\n");
+         WG.status_code = WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL;

@@ -7,18 +7,22 @@
 
 class WiFiServer : public Server {
 public:
-    WiFiServer() : port_(0) {}
-    explicit WiFiServer(uint16_t port) : port_(port) {}
-    virtual ~WiFiServer() {}
+    WiFiServer();
+    explicit WiFiServer(uint16_t port);
+    virtual ~WiFiServer();
 
-    void begin() override {}
-    void begin(uint16_t port) { (void)port; }
-    void end() {}
-    WiFiClient available() { return WiFiClient(); }
-    operator bool() { return false; }
+    void begin() override;
+    void begin(uint16_t port);
+    void end();
+    WiFiClient available();
+    WiFiClient accept();
+    operator bool();
+
+    int fd() const { return sockfd_; }
 
 private:
     uint16_t port_;
+    int sockfd_;
 };
 
 #endif

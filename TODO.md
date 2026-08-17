@@ -16,13 +16,22 @@
 - [x] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
       （Linux 与 macOS 均枚举成功：VID 0x2341 / PID 0x1002，
       CDC ACM + CMSIS-DAP HID 复合设备，HS 480 Mbit/s）
-- [ ] 验证 CDC 回环和主机侧串口收发（CDC 端口已出现
-      `/dev/cu.usbmodem01`，数据通路待 UART1 对端配合验证）
-- [ ] 验证 CMSIS-DAP HID 命令（HID 枚举已验证，DAP 命令未测）
+- [x] 验证 CDC 收发：主机写入 17 字节经 CDC OUT→固件→CDC IN 原样回读
+      （临时回显代码已还原）；与 UART1 的对端透传待板级连接验证
+- [x] 验证 CMSIS-DAP HID 命令：DAP_Info（capabilities/字符串）、
+      DAP_HostStatus、DAP_SWJ_CLOCK 均经 HID 往返返回正确内容
 - [ ] 用逻辑分析仪校准 DAP SWDIO/SWCLK 时序和延时常数
 - [ ] 完善 CDC DTR/RTS 状态机与串口流控
 - [ ] 为 HID `SendReport()` 增加待发送队列，避免 IN 端点繁忙时丢包
+- [x] 修复 CDC OUT 背靠背传输丢字节：OUT 端点在传输回调里无条件重新武装，
+      环形缓冲（4096 B）未及时排空时 `onOutData()` 静默丢弃后续传输
+      （`AT+SETCAROOT` 装载 5178 B 证书时 `readBytes` 永远等不到缺失字节、
+      AT 任务卡死）。现改为环形缓冲能容纳整段 staging 传输时才重新武装，
+      否则保持端点 NAK（USB 背压），消费者从 `read()` 排空后再武装；
+      已实机验证 5178 B CA 证书装载 + TLS 握手 + HTTPS GET
 - [ ] 确认 USB 复位/挂起/重连后的重初始化行为
+      （实测：macOS 下烧录/复位后 `/dev/cu.usbmodem01` 常不重新枚举，
+      需再按一次 RTS 复位才恢复；`usb:event_configured` 已打印但系统无节点）
 
 ## Runtime Bundle 维护
 
@@ -30,18 +39,106 @@
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
 - [x] 记录 SDK 本地补丁：`tools/runtime_bundle/patches/`（bflb_usb_v2 EP0 控制传输修复）
 - [x] 用修复后的 `liblhal.a` 重建并提交 BL616CL 运行时库
-- [ ] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（当前库为直接 CMake 重建，
-      manifest 尚未同步刷新）
+- [x] 重新生成并提交 `tools/sdk/bl616cl/manifest.json`（记录 wl80211/macsw/lwip
+      与各 submodule commit，含新增 wl80211/supplicant 库）
+- [x] 修复 wl80211 连接不按 SSID 选择 AP 的问题
+      （`wl80211-connect-ssid-filter.patch`：join 扫描按请求 SSID 过滤候选、
+      接受隐藏 SSID AP 的定向探测响应；重建并提交 `libwl80211_bl616cl.a`）
+- [x] 修复 compat 层 `freeaddrinfo` 空桩导致的 `EAI_MEMORY`：lwip/netdb.h 把
+      POSIX 名宏映射为 `lwip_freeaddrinfo`，空桩实际顶替了真实实现，
+      `lwip_getaddrinfo()` 从唯一的 MEMP_NETDB 池取元素后永不归还，
+      第二次解析起全部失败（表象为 EAI_MEMORY）；已删除桩函数
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
 
 ## 第三阶段：WiFi6 / TCP / TLS
 
-- [ ] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重新生成 runtime bundle
-- [ ] 实现真实 `WiFi`、`WiFiClient`、`WiFiServer`、`WiFiUDP`、`WiFiClientSecure`
-- [ ] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`
-- [ ] 用 Bouffalo `wifi_mgmr` API 实现 STA、AP、扫描、IP/DNS/MAC 查询
-- [ ] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP
-- [ ] 用 bridge AT 命令做连接/扫描/TCP/UDP/TLS 冒烟测试
+- [x] 启用 `CONFIG_WIFI6`、lwIP、mbedTLS 并重建 runtime bundle
+      （macsw/fhost/wpa/lwip/mbedtls 库已入库，linker 脚本与头文件已同步）
+- [x] 实现 `WiFi` 类骨架：初始化、扫描、连接、状态、IP/MAC、事件回调
+      （基于 `wifi_mgmr` + lwIP）
+- [x] 迁移到 wl80211 方案（fhost 全栈 RAM 占用超预算，wl80211 仅省去
+      wpa_supplicant 的 Android 完整栈，保留 macsw 固件 RAM；wifi6 库与
+      `libapp.a` 需同步重建，否则 board_init 不挂 WIFI IRQ，STA VIF 卡死）
+- [x] 实机验证扫描：BL616CL DK 上 `WiFi.scanNetworks()` 返回 16 个 AP，
+      `CODE_WIFI_ON_SCAN_DONE` 正常触发，wpa_attach/连接路径解阻塞
+- [x] 实机验证 WPA2-PSK 连接与 DHCP：连接 zrrong AP 成功，DHCP 拿到
+      192.168.133.40/24，`CODE_WIFI_ON_GOT_IP` 正常；修复 wl80211
+      `ip_got_cb` 在 tcpip 线程二次加 lwIP core 锁导致的死锁
+      （`netifapi_netif_set_default` → `netif_set_default`）
+- [x] 实机验证数据通路：DNS 解析 example.com 成功，TCP connect 80 端口成功
+- [x] 实现 `WiFiClient`、`WiFiServer`、`WiFiUDP`（lwIP socket 后端）
+- [x] 实机端到端验证（zrrong，PC 192.168.133.49 作为对端）：
+      WiFiClient 连 PC TCP echo 成功收发、WiFiUDP 往返 echo 成功、
+      WiFiServer 接受 PC 连接并回读数据成功；remoteIP/localIP 字节序正确
+- [x] 修复 IP 字节序 bug：IPAddress 的 uint32_t 与 sin_addr.s_addr 同为
+      网络字节序，connect/beginPacket 不应 lwip_htonl、remoteIP/localIP
+      不应 lwip_ntohl；这是此前所有 TCP/UDP“连不上/回环失败”的根因
+      （此前误判为 lwIP loopback port 问题，实际 raw 正确字节序回环是通的）
+- [x] 兼容性修复：lwIP 与 newlib errno 值域不一致、INADDR_NONE 宏冲突、
+      非阻塞 connect 提前可写导致误判失败、SO_RCVTIMEO 需传 struct timeval
+- [x] CI_throughput 复测完成（IP 字节序修复后）：连接 zrrong + DHCP
+      （192.168.133.40/24）、DNS 解析 example.com、ping 网关
+      （192.168.133.2，4 ms）、ping 对端 Mac（.49）、AT TCP/UDP echo
+      全部通过；此前 gateway/DNS 探针不通确为 IP 字节序 bug 所致
+- [x] 实现 `WiFiClientSecure`（mbedTLS v3 后端）：
+      实机验证 www.bing.com:443 的 TLS 1.2 握手与 HTTPS GET 收发（390 字节响应）
+      - 解决 compat 层 v2 桩冲突：v2 桩改 weak + libmbedtls whole-archive，
+        SSE.cpp 移植到 v3（pk_sign 新签名、mbedtls_sha256、pk_parse_key）
+      - 修复 config-tls-generic.h 缺 MBEDTLS_ECP_HAVE_* 映射导致 X.509 OID
+        表不含命名曲线的问题（重建 libmbedtls.a）
+- [x] 修复 ECDSA 证书链解析：证书链混用 P-256/P-384，补齐
+      CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED；实机验证 example.com:443
+      TLS 握手 + HTTPS GET 收发（869 字节响应）
+- [x] 映射 WiFi 事件到 bridge 的 `CAtHandler::onWiFiEvent`：
+      STA ready/scan/connected/disconnected/got-ip 经 compat 层转成
+      ARDUINO_EVENT_*，实机验证 `AT+GETSTATUS?` 在连接后返回 3
+      （WIFI_ST_CONNECTED）；AP 相关事件待 softAP 落地后补齐
+- [x] 用 Bouffalo `wifi_mgmr` API 实现 STA：扫描/连接/断开/状态、
+      IP/网关/掩码/DNS/MAC 查询（WiFi 类均已实机验证）
+- [ ] softAP：`WiFi.softAP()` 仍为桩，AP 事件（LISTENING/STACONNECTED 等）
+      待 softAP 落地后补齐
+- [x] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP（raw socket 自实现，
+      实机 ping 192.168.133.49 4/4 成功；补 DEFAULT_RAW_RECVMBOX_SIZE=8）
+- [x] 修复 `WiFi.SSID()/BSSID()/RSSI()` 无参重载：此前默认参数解析成扫描列表
+      第 0 项，`AT+GETSSID?` 误报 TP-LINK_3D67；现在返回当前 STA 连接信息，
+      实机验证返回 zrrong / 64:64:4A:82:73:74 / 实时 RSSI
+- [x] 修复数字 IP 字符串解析：lwIP 的 `lwip_getaddrinfo()` 只有带
+      `AI_NUMERICHOST` 才解析点分 IP，否则一律走 DNS；新增
+      `lwip_resolve_host()`（先数字、后 DNS）并用于 WiFiClient/WiFiUDP/ping
+- [x] 修复 `WiFiClient::available()`：该 lwIP 配置（LWIP_SO_RCVBUF=0、
+      LWIP_FIONREAD_LINUXMODE=0）下 FIONREAD 被编译掉，ioctl 恒返回 0，
+      TCP 回读拿不到数据；改用 `recv(MSG_PEEK|MSG_DONTWAIT)` 探测
+- [x] 修复 `WiFiUDP::parsePacket()` 阻塞：无数据报时改为 `MSG_DONTWAIT`，
+      按 ESP32 语义返回 0，避免 bridge AT 任务永久卡死
+- [x] bridge AT 命令经 USB CDC 冒烟：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/
+      IPSTA/GETSSID/GETBSSID/GETRSSI/MACSTA 全通，连接 zrrong 并 DHCP 成功
+      （AT 与 USB CDC 共用 USBSerial 时由 `AT_ON_USBCDC` 关闭 loop() 透传抢流）
+- [x] `AT+PING` 实机验证：到 PC（192.168.133.49）往返成功并返回整数 RTT
+      （此前 `%f` 在 CONFIG_LIBC_FLOAT=0 下打印异常）；无 IP 时已加保护
+- [x] 澄清此前“lwIP 堆耗尽/网关不通/DNS 失败”的误判：三者同根——
+      `freeaddrinfo` 桩泄漏唯一的 MEMP_NETDB 池元素，后续所有 getaddrinfo
+      返回 EAI_MEMORY（解析层即失败，根本未发出数据包）；AP 无隔离、PC 在
+      5GHz/设备在 2.4GHz 桥接互通。修复后连续 ping PC/网关、DNS 全部正常
+- [x] 回退 MEM_SIZE 8KB→60KB 改动（根因不在堆大小）；8KB 堆下完整
+      AT 冒烟（ping×3/DNS/TCP echo/UDP echo）通过，并发负载下的堆余量
+      留待多连接压力测试再确认
+- [x] 定位"无 IP 时 raw socket ping 破坏 wl80211 TX/lwIP 堆"的根因：
+      不是驱动/堆破坏，而是 `tcpip_init()` 只在 `ensure_wifi_started()`
+      （WiFi 首次操作）里惰性调用；WiFi 未启动时 `tcpip_mbox` 从未创建，
+      无 IP ping 的 `lwip_socket()` 首次触碰 tcpip 消息路径，
+      `tcpip_send_msg_wait_sem` 命中 `LWIP_ASSERT("Invalid mbox")` → ebreak
+      崩溃（实机复现 mcause=3、mepc 落在 tcpip.c 该断言）。
+      修复：esp32_wifi.cpp 静态构造器提前 `tcpip_init`（调度器启动前），
+      `ensure_wifi_started()` 不再重复初始化；实机验证无 IP ping 优雅返回
+      -2、不崩溃，随后连接+ping 网关/DNS/TCP/UDP 全通（12/12）
+- [x] bridge AT TCP/UDP 数据通路实机验证：CLIENTCONNECT→CLIENTSEND→
+      CLIENTRECEIVE 回读 PC TCP echo；UDPBEGIN→BEGINPACKETIP→WRITE→
+      ENDPACKET→PARSE→READ 回读 PC UDP echo；CLIENTCLOSE/UDPSTOP 正常
+- [x] bridge AT TLS 命令冒烟：`AT+SSLBEGINCLIENT`→`AT+SETCAROOT`（装载
+      example.com 证书链 5178 B，顺带暴露并修复 CDC OUT 丢字节）→
+      `AT+SSLCLIENTCONNECTNAME=2000,example.com,443` 握手成功→
+      `AT+SSLCLIENTSEND`+`AT+SSLCLIENTRECEIVE` 回读 HTTPS 200；
+      `+SSLERR=<sock>` 保留为 TLS 错误诊断命令
 
 ## 第四阶段：存储与 OTA
 
@@ -64,5 +161,11 @@
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令
 - [ ] 增加自动编译脚本或 CI 检查
-- [ ] 记录固件尺寸和 RAM 预算
+- [x] 记录固件尺寸和 RAM 预算（wl80211 版本：flash 545,854 B / 26%，
+      globals 44,784 B / 13%；对比 fhost 版本 flash 902,366 B，
+      globals 48,904 B）
+- [ ] 主要功能完成后，为 esp32-compat 适配层的主要 API（WiFi 扫描/连接/状态、
+      WiFiClient/WiFiUDP/WiFiServer、USB CDC/HID、CMSIS-DAP、IP/DNS 等）编写
+      单元测试，并编译一个专用固件集中运行全部 API 单元测试（正常路径、
+      边界与错误路径、资源回收）
 - [ ] 整理上板烧录与调试步骤
