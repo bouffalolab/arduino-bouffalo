@@ -55,6 +55,17 @@ include path.  Also raise `PBUF_LINK_ENCAPSULATION_HLEN` from 48 to 388 bytes:
 wl80211's TX descriptor plus the macsw frame header exceeds the original
 reservation and fails a compile-time `CTASSERT` in `wl80211_lwip_tx()`.
 
+## lwip-default-raw-recvmbox-size.patch
+
+Target project: `bouffalo/components/net/lwip/lwip`, file
+`lwip-port/config/lwipopts.h`.
+
+The port defines UDP/TCP/accept receive mailbox sizes but leaves
+`DEFAULT_RAW_RECVMBOX_SIZE` at the lwIP default of 0.  Creating a
+`SOCK_RAW`/`IP_PROTO_ICMP` socket then calls `xQueueCreate(0, ...)` which
+fails the FreeRTOS assertion in `pxNewQueue`.  Set it to 8 so the raw ICMP
+socket used by the bridge ping command can be created.
+
 ## wl80211-ip-got-cb-core-lock-deadlock-fix.patch
 
 Target project: `bouffalo/components/wireless/wl80211`, file `lwip.c`
@@ -67,6 +78,22 @@ locks the non-recursive core mutex again and deadlocks.  The DHCP ACK was
 processed and the IP assigned, but `CODE_WIFI_ON_GOT_IP` was never posted,
 the 15 s mgmr DHCP watchdog then disconnected WiFi, and `netifapi_dhcp_stop`
 could not complete.  Use the core-locked `netif_set_default()` instead.
+
+## wl80211-connect-ssid-filter.patch
+
+Target project: `bouffalo/components/wireless/wl80211`, file
+`src/macsw/connect.c`.
+
+`scan_done_cb()` collected every AP reported by the join scan and picked the
+one with the strongest RSSI without ever comparing its SSID against the
+requested SSID.  `WiFi.begin("zrrong", ...)` therefore associated with an
+unrelated AP (`bl_test_816`) whenever that AP had a better RSSI.  Filter the
+candidates by the requested SSID before choosing the best RSSI, and log the
+selected SSID.  `scan_ind_cb()` is also changed to accept fresh probe
+responses in addition to cached records so an AP with a hidden SSID (which
+only answers directed probes) can be found.  An AP that does not broadcast
+the requested SSID now results in a `WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL`
+failure instead of a silent wrong association.
 
 ## wl80211 runtime bundle selection
 
@@ -85,6 +112,29 @@ The wl80211 component is split between the top-level host files
 runtime bundle builds `src/` into `libwl80211_${CHIP}.a` and the top-level
 files into `libwl80211_plat.a`.  Keep `defconfig`, `autoconf.h` and both
 archives in sync when regenerating.
+
+## mbedtls-config-tls-ecp-have-curves.patch
+
+Target project: `bouffalo/components/crypto/mbedtls`, file
+`config-tls-generic.h`.
+
+`config-tls-generic.h` enables `MBEDTLS_ECP_DP_*_ENABLED` but never derives
+the `MBEDTLS_ECP_HAVE_*` names that the X.509 OID tables in `oid.c` gate on
+(the default `mbedtls_config.h` does this via
+`config_adjust_legacy_crypto.h`).  Without the mapping the compiled OID table
+contains no named curves and parsing an ECDSA certificate public key fails
+with `MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE`.  Rebuild `libmbedtls.a` after
+applying.
+
+The sketch side uses the same `config-tls-generic.h` plus the same
+`CONFIG_MBEDTLS_*` defines as the library build, wired through `platform.txt`
+(mbedTLS v3 headers are staged under `tools/sdk/bl616cl/include/sdk/mbedtls`,
+with the SDK's `port/hw_acc` alt headers and `mbedtls_port_bouffalo_sdk.h`).
+
+`components/crypto/mbedtls/CMakeLists.txt` also needs
+`CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED` in addition to SECP256R1: public
+websites commonly serve chains mixing P-256 and P-384 certificates, and the
+X.509 OID table / ECP group loader must know both.
 
 ## Regenerate libapp.a after changing CONFIG_WIFI6
 

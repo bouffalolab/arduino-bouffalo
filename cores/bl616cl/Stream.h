@@ -20,6 +20,11 @@ public:
     virtual int read() = 0;
     virtual int peek() = 0;
 
+    int read(uint8_t *buffer, size_t length)
+    {
+        return static_cast<int>(readBytes(buffer, length));
+    }
+
     void setTimeout(unsigned long timeout) { timeout_ = timeout; }
     unsigned long getTimeout() const { return timeout_; }
 

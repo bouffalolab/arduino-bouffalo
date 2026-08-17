@@ -329,6 +329,7 @@ a lot of data that needs to be copied, this should be set high. */
 #define DEFAULT_UDP_RECVMBOX_SIZE       50
 #define DEFAULT_TCP_RECVMBOX_SIZE       50
 #define DEFAULT_ACCEPTMBOX_SIZE         50
+#define DEFAULT_RAW_RECVMBOX_SIZE       8
 #define DEFAULT_THREAD_STACKSIZE        500
 #define TCPIP_THREAD_PRIO               (configMAX_PRIORITIES - 2)
 

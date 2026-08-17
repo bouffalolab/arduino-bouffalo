@@ -5,33 +5,47 @@
 #include <IPAddress.h>
 #include <Stream.h>
 
+#define WIFI_CLIENT_DEF_CONN_TIMEOUT_MS 3000
+
 class WiFiClient : public Stream {
 public:
-    WiFiClient() {}
-    virtual ~WiFiClient() {}
+    WiFiClient();
+    explicit WiFiClient(int fd);
+    virtual ~WiFiClient();
 
-    virtual int connect(IPAddress ip, uint16_t port) { (void)ip; (void)port; return 0; }
-    virtual int connect(const char *host, uint16_t port) { (void)host; (void)port; return 0; }
-    virtual int connect(IPAddress ip, uint16_t port, int32_t timeout) { (void)ip; (void)port; (void)timeout; return 0; }
-    virtual int connect(const char *host, uint16_t port, int32_t timeout) { (void)host; (void)port; (void)timeout; return 0; }
+    /* The socket owns its descriptor; move-only keeps ownership unambiguous. */
+    WiFiClient(const WiFiClient &other) = delete;
+    WiFiClient &operator=(const WiFiClient &other) = delete;
+    WiFiClient(WiFiClient &&other) noexcept;
+    WiFiClient &operator=(WiFiClient &&other) noexcept;
 
-    virtual int available() override { return 0; }
-    virtual int read() override { return -1; }
-    virtual int read(uint8_t *buffer, size_t size) { (void)buffer; (void)size; return 0; }
-    virtual int peek() override { return -1; }
-    virtual size_t write(uint8_t value) override { (void)value; return 0; }
-    virtual size_t write(const uint8_t *buffer, size_t size) override { (void)buffer; (void)size; return 0; }
-    virtual int availableForWrite() override { return 0; }
-    virtual void flush() override {}
-    virtual void stop() {}
-    virtual uint8_t connected() { return 0; }
-    virtual operator bool() { return false; }
+    virtual int connect(IPAddress ip, uint16_t port);
+    virtual int connect(const char *host, uint16_t port);
+    virtual int connect(IPAddress ip, uint16_t port, int32_t timeout);
+    virtual int connect(const char *host, uint16_t port, int32_t timeout);
 
-    IPAddress remoteIP() { return IPAddress((uint32_t)0); }
-    uint16_t remotePort() { return 0; }
-    IPAddress localIP() { return IPAddress((uint32_t)0); }
-    uint16_t localPort() { return 0; }
-    uint8_t status() { return 0; }
+    virtual int available() override;
+    virtual int read() override;
+    virtual int read(uint8_t *buffer, size_t size);
+    virtual int peek() override;
+    virtual size_t write(uint8_t value) override;
+    virtual size_t write(const uint8_t *buffer, size_t size) override;
+    virtual int availableForWrite() override;
+    virtual void flush() override;
+    virtual void stop();
+    virtual uint8_t connected();
+    virtual operator bool();
+
+    IPAddress remoteIP();
+    uint16_t remotePort();
+    IPAddress localIP();
+    uint16_t localPort();
+    uint8_t status();
+
+    int fd() const { return sockfd_; }
+
+protected:
+    int sockfd_;
 };
 
 #endif

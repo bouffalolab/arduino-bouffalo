@@ -15,10 +15,17 @@ public:
     WiFiClass() {}
 
     int scanNetworks();
-    String SSID(uint8_t networkItem = 0);
-    int32_t RSSI(uint8_t networkItem = 0);
-    uint8_t *BSSID(uint8_t networkItem = 0);
-    String BSSIDstr(uint8_t networkItem = 0);
+    /* No-argument forms report the current STA connection, matching the
+     * ESP32 Arduino API used by the UNO R4 bridge AT commands. */
+    String SSID();
+    int32_t RSSI();
+    uint8_t *BSSID();
+    String BSSIDstr();
+    /* NetworkItem forms report scan results. */
+    String SSID(uint8_t networkItem);
+    int32_t RSSI(uint8_t networkItem);
+    uint8_t *BSSID(uint8_t networkItem);
+    String BSSIDstr(uint8_t networkItem);
     uint8_t encryptionType(uint8_t networkItem = 0);
     uint8_t channel(uint8_t networkItem = 0);
 
