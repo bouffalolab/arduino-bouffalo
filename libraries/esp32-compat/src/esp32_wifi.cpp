@@ -33,6 +33,22 @@ enum {
 
 WiFiClass WiFi;
 
+/* lwIP's tcpip thread and mbox must exist before any socket API is used.
+ * The bridge AT layer can issue socket commands (ping, client connect, ...)
+ * before WiFi.begin(), and without this the first such call hits
+ * LWIP_ASSERT("Invalid mbox") on the never-created tcpip_mbox and crashes
+ * the board.  Initialize tcpip eagerly at C++ static-init time (before the
+ * scheduler starts); ensure_wifi_started() only brings up the radio. */
+namespace {
+struct TcpipEarlyInit {
+    TcpipEarlyInit()
+    {
+        tcpip_init(NULL, NULL);
+    }
+};
+static TcpipEarlyInit g_tcpip_early_init;
+}  // namespace
+
 static bool g_init_started = false;
 static bool g_mgmr_started = false;
 static bool g_scan_pending = false;
@@ -136,7 +152,6 @@ static void ensure_wifi_started(void)
     g_init_started = true;
 
     rfparam_init(0, NULL, 0);
-    tcpip_init(NULL, NULL);
     async_event_init(wifi_async_event_loop_wake);
     async_register_event_filter(EV_WIFI, wifi_event_handler, NULL);
     wifi_task_create();

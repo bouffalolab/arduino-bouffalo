@@ -27,6 +27,10 @@ public:
     virtual int available() override;
     virtual int read() override;
     virtual int peek() override;
+    /* Free space in the CDC OUT ring.  The USB endpoint re-arms only when
+     * this is large enough for a full staging transfer, otherwise incoming
+     * data is silently truncated by onOutData(). */
+    uint32_t rxRoom() const { return sizeof(rx_buffer_) - rx_count_; }
     virtual size_t write(uint8_t value) override;
     virtual size_t write(const uint8_t *buffer, size_t size) override;
     virtual int availableForWrite() override;
