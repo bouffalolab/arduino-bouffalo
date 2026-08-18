@@ -2542,6 +2542,10 @@
       "sha256": "cb340c9bcb89e373a97e5c6c86d9a42c588e2ba819602f1ab6eea8b081796a5c",
       "size": 5158
     },
+    "include/usb_config.h": {
+      "sha256": "9544c13bd4eda7a7aea00de383ea1c826c28673f1e78939ba853fed7b2a5aea5",
+      "size": 9899
+    },
     "include/wifi/fhost/antenna_al.h": {
       "sha256": "ae42eecb4b0abc556bb37a0015fcba51cdc71cbfd29975d30a0f5e6b126ed5ed",
       "size": 7094
@@ -2703,75 +2707,75 @@
       "size": 1781054
     },
     "lib/libblestack.a": {
-      "sha256": "f99fbc298f38ce35d8d24b4210fb857843c7575d99cdf4ded765dc9751210d0d",
+      "sha256": "4a45299fb0f31f4d289539f43c75525db1474b53a35c7948eee840aab6014008",
       "size": 3811750
     },
     "lib/libbtblecontroller_bl616cl_m2s1.a": {
-      "sha256": "be3d05eb8db56a00c6ddb763f9a8c7411e820450b095d946cde2367529ad9bff",
+      "sha256": "b9ca73670a6c5a5d869e19536f4400d142fbea4d169eb605584f6af46c2a6d1a",
       "size": 6631058
     },
     "lib/libcherryusb.a": {
-      "sha256": "91e0c5b0992ab6efd214f696d1599bdf0dcfc530805272fa0fa987646b9d0243",
+      "sha256": "89e1bbcd779e731b7a493eb90b6f2c27e9f70f188b751abf13784f78512a80a8",
       "size": 282262
     },
     "lib/libdebug.a": {
-      "sha256": "a309fbca0e63c73c2b077c84cd975e2b91f12a430771fe245fd03b50c8163d1f",
+      "sha256": "f187a58f3c3e6b65eae2384dc775d71d28c0658639fd587a1e9d56ef95b23ca5",
       "size": 118794
     },
     "lib/libfhost_bl616cl_default.a": {
-      "sha256": "5557734ceca68fac29713cf691bc27a2bceca810d731cacd6677e9d3c7172ea4",
+      "sha256": "cfaacecd26c16e472df757b012ff51e3269c4ca721e0ace1d535ab1b328254b3",
       "size": 2507326
     },
     "lib/libfhost_config.a": {
-      "sha256": "80ffe344c31e2e1d34d84349209efa417ec8b11436dc195c55b0f5c31acfc388",
+      "sha256": "faeafaa24df518b55edf3e1023106e861052580cda732af663072b429679f206",
       "size": 51626
     },
     "lib/libfreertos.a": {
-      "sha256": "028894d7a233fec2ba74a9f0de1c00b7f9c8d2dcfd917bf4cd42f8681d325d62",
+      "sha256": "aef41047bdca018fbe0759131215c58e844fdfed141dd003cd5b559ab791eb30",
       "size": 1476730
     },
     "lib/liblhal.a": {
-      "sha256": "3e78cfefa7b41703bc70784f698a68e21a0121738023dc44d959505974a088bd",
-      "size": 2759830
+      "sha256": "f1e8ffebe7e79c891fdac98404f1f8a76abcc6e15f93c25df1011a878102bfdb",
+      "size": 2759458
     },
     "lib/liblibc.a": {
-      "sha256": "dbe67e56846ad8db1bfe32ab2cfcfd66cfd70c477eb4f8e6a19ac41b872412df",
+      "sha256": "00ef1ee866b2ace8e55c0bc5ffc2a266d76afcd7089de52298ffda52afae8fee",
       "size": 652628
     },
     "lib/liblittlefs.a": {
-      "sha256": "f9c09debc3ddde7453fe513a558db616dc6714b00a332cd6d693301cb94416fe",
+      "sha256": "9f2e60b79f9553ce93530d30bff2dc2fbb21b38c2de3c7670916b8ffba4444a7",
       "size": 922760
     },
     "lib/liblwip.a": {
-      "sha256": "daae58e250b258613dae0601d8c6972943339c54f401a2d51d9e35a1a2a414d9",
+      "sha256": "78fab8c6480cf12273cb3084f89237b47fd0ae151a6ab9ad9012c3dc1c0a9db1",
       "size": 3516066
     },
     "lib/libmacsw_bl616cl.a": {
-      "sha256": "7049ec1359184c53e75d37fc30f22e8715408e5caa61c5b320be2d237484d446",
-      "size": 16553928
+      "sha256": "5de18ca8f192ff6a416e27e1496c6e2fa5e4e9bf36077e1a386f55215d066cb4",
+      "size": 16554048
     },
     "lib/libmacsw_config_bl616cl_default.a": {
-      "sha256": "6ca232620cfb5c7eaa650c9511fd7cd5fb6ed572a46140373ccb25fa925be89d",
+      "sha256": "68ea6ab7d50878090b29e081cb4f7900ffb79f4100c2f4ea247c750b4a17d0b7",
       "size": 65598
     },
     "lib/libmacsw_os_adapter.a": {
-      "sha256": "390cfdada369447c8d4ff8803a2e18792b0b26d8d33256c19c790546ba0cc5ee",
+      "sha256": "9405debbb24291d19d42891fe45cb99617c2f4151280d7e255b12fc287181ef0",
       "size": 92642
     },
     "lib/libmacsw_plat.a": {
-      "sha256": "b1f4280757176ff7f12e666b6053c31a9568e3072f98333a0a330ab836f4f5a9",
+      "sha256": "5b8400acf09753e13c538d90ed66820b633d532e5400886267e0e4ee1bde2d40",
       "size": 39488
     },
     "lib/libmbedtls.a": {
-      "sha256": "85a20764f302c58be58d5b367400480e1d6826d03be8dc6b5daebc71064a94ee",
+      "sha256": "ffd91a0524638cc80b072f291f5e653f6f50754b1f9d50e7fcea80133fc78487",
       "size": 5378726
     },
     "lib/libmm.a": {
-      "sha256": "bba5fc8522b168118fbb916a1f1513bb8929dfc7f2b9ac77766caab5afc66497",
+      "sha256": "04dd584cc3cd3ccc1ed31c28c0359f659798de169c3e80dbae787ffc29e3b8ff",
       "size": 340162
     },
     "lib/libping.a": {
-      "sha256": "02901bfed89101c1876004106c6b1b6cf8de0c10b37a390271b03b0bab5d79a4",
+      "sha256": "b1934600144c6de6fecfb807dbee2d40517be4cb98e4b92cd22ce7fae6bdf8c2",
       "size": 35756
     },
     "lib/libpka_bl616cl.a": {
@@ -2779,35 +2783,35 @@
       "size": 87832
     },
     "lib/librfparam.a": {
-      "sha256": "bb4167cc170ffc23bd7a2813d673ac5baf59bd2ec48ff6723335136d8628395a",
+      "sha256": "dc2fa2c5f3652704bebc1ec24424d0bb347907f92beedeb7be8f2842b384f908",
       "size": 123050
     },
     "lib/libstd.a": {
-      "sha256": "4447bc7a2b9a4a822684c235fc08f0c3e7b99af6add1e5cc75e0cdeb107a887a",
+      "sha256": "b5b8bb8dbb3e451bdc6b6bd12e26a11b2cb488583a88ac9020b66fb9b57299a9",
       "size": 1037028
     },
     "lib/libsys.a": {
-      "sha256": "d4901c964c1dface66574c3bfd03470ce99a4df189e2755d271ea2444a7845a1",
+      "sha256": "56271e09125cf79a6564e1b448e68927080e004d63d8f85d6c69194207785121",
       "size": 658660
     },
     "lib/libsysinit.a": {
-      "sha256": "7af8a0d7065204b6f480e4684bbb51ecc4bc167313151bbf093e21f264bfba06",
+      "sha256": "2da6819dc2c62bfd4026bcf7de6ee5486bd76b048737e9599e49f50128ff055c",
       "size": 5716
     },
     "lib/libutils.a": {
-      "sha256": "efb5bec47b30a5f326fdce5e1d4da359c72f3667ad4b0c38778662baf7184bc0",
+      "sha256": "af2bc0136a316a5648bb3a63cc8769779a42fbc5042b4b9a87d596f8df215f77",
       "size": 1105104
     },
     "lib/libwifi6_lwip_adapter.a": {
-      "sha256": "61aa4cee3e45ee83a747fc5f4c21f68ba11335424edcd56cbb2bfd257f40723b",
+      "sha256": "892fa6db0922a281cdea174126237dbdec383b5cd1f5e730bbcfd7451b6a535b",
       "size": 296082
     },
     "lib/libwpa_supplicant.a": {
-      "sha256": "1ca0a208b22f159f9cf162800f77b1ecf8483b3c7817608715617764b054a928",
+      "sha256": "0d464ee07e9cd3086242319c372b1802d4ffee362453db75f1d660ff9d460fea",
       "size": 18791772
     },
     "lib_board/libapp.a": {
-      "sha256": "fefaab3c43373fde9381d52f50c6f5b57385819ff423e0f8bbf2f64ea12ddaa6",
+      "sha256": "85698e7b14a0be5a3349554cea82fb2df862ce65b1a4a125b835e4faa678e2e5",
       "size": 212974
     },
     "macsw_cache_affinity.ld.in": {

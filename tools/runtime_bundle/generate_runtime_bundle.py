@@ -843,6 +843,10 @@ def main() -> int:
     if profile_lwipopts.is_file():
         copy_file(profile_lwipopts, sdk_staging / "include" /
                   "lwipopts_user.h")
+    profile_usb_config = profile_source / "usb_config.h"
+    if profile_usb_config.is_file():
+        copy_file(profile_usb_config, sdk_staging / "include" /
+                  "usb_config.h")
 
     # ——— SDK include roots ——————————————————————————————————————
     sdk_include_roots: list[tuple[Path, Path]] = [
