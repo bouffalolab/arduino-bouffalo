@@ -104,21 +104,29 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config,
     begin(baud, config);
 }
 
-void HardwareSerial::updateBaudRate(uint32_t baud)
+bool HardwareSerial::updateBaudRate(unsigned long baud)
 {
-    baud_rate_ = baud;
+    if (device_ == nullptr || baud == 0UL) {
+        return false;
+    }
+
+    flush();
+    if (bflb_uart_feature_control(
+            device_,
+            UART_CMD_SET_BAUD_RATE,
+            static_cast<size_t>(baud)) != 0) {
+        return false;
+    }
+    baud_rate_ = static_cast<uint32_t>(baud);
+    peeked_ = -1;
+    return true;
+}
+
+void HardwareSerial::clearRx()
+{
+    peeked_ = -1;
     if (device_ != nullptr) {
-        struct bflb_uart_config_s uart_config = {};
-        uart_config.baudrate = baud;
-        uart_config.direction = UART_DIRECTION_TXRX;
-        uart_config.data_bits = 3;
-        uart_config.stop_bits = 0;
-        uart_config.parity = 0;
-        uart_config.bit_order = UART_LSB_FIRST;
-        uart_config.flow_ctrl = UART_FLOWCTRL_NONE;
-        uart_config.tx_fifo_threshold = 7;
-        uart_config.rx_fifo_threshold = 7;
-        bflb_uart_init(device_, &uart_config);
+        (void)bflb_uart_feature_control(device_, UART_CMD_CLR_RX_FIFO, 0);
     }
 }
 
@@ -130,6 +138,31 @@ void HardwareSerial::end()
         device_ = nullptr;
     }
     peeked_ = -1;
+}
+
+bool HardwareSerial::updateBaudRate(unsigned long baud)
+{
+    if (device_ == nullptr || baud == 0UL) {
+        return false;
+    }
+
+    flush();
+    if (bflb_uart_feature_control(
+            device_,
+            UART_CMD_SET_BAUD_RATE,
+            static_cast<size_t>(baud)) != 0) {
+        return false;
+    }
+    peeked_ = -1;
+    return true;
+}
+
+void HardwareSerial::clearRx()
+{
+    peeked_ = -1;
+    if (device_ != nullptr) {
+        (void)bflb_uart_feature_control(device_, UART_CMD_CLR_RX_FIFO, 0);
+    }
 }
 
 int HardwareSerial::available()

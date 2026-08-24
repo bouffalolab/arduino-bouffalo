@@ -41,9 +41,10 @@ public:
     void begin(unsigned long baud, uint8_t config, int8_t rxPin, int8_t txPin);
     void end();
     uint32_t baudRate() const { return baud_rate_; }
-    void updateBaudRate(uint32_t baud);
+    bool updateBaudRate(unsigned long baud);
     void setRxBufferSize(size_t size) { (void)size; }
     void setTxBufferSize(size_t size) { (void)size; }
+    void clearRx();
 
     int available() override;
     int peek() override;
