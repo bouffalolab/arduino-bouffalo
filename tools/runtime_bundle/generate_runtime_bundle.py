@@ -466,14 +466,20 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
 # ===================================================================
 
 
-def record_source_versions(sdk: Path) -> dict[str, str]:
-    """Record actual commits of SDK and its sub-repos.  Warn if dirty."""
+def record_source_versions(
+    sdk: Path,
+    chip: str,
+    allow_dirty_sdk: bool,
+) -> dict[str, str]:
+    """Record source commits and reject uncommitted build inputs by default."""
     commit = run(["git", "-C", str(sdk), "rev-parse", "HEAD"], capture=True)
     source_commits = {"bouffalo_sdk": commit}
     sub_repos = [
         "drivers/lhal",
         "drivers/sys",
         "tools/bflb_tools",
+        "components/wireless/macsw",
+        f"drivers/soc/{chip}/std",
     ]
     for relative in sub_repos:
         repo = sdk / relative
@@ -495,15 +501,31 @@ def record_source_versions(sdk: Path) -> dict[str, str]:
             except subprocess.CalledProcessError:
                 pass
 
-    repos_to_check = [sdk] + [sdk / r for r in sub_repos]
-    dirty = any(tracked_source_is_dirty(repo)
-                for repo in repos_to_check
-                if repo.is_dir())
+    dirty_repositories = []
+    for repo in [sdk] + [sdk / r for r in sub_repos]:
+        if not repo.is_dir() or not tracked_source_is_dirty(repo):
+            continue
+        relative = repo.relative_to(sdk)
+        dirty_repositories.append(
+            "bouffalo_sdk" if relative == Path(".") else str(relative)
+        )
 
-    if dirty:
-        print("WARNING: one or more source repositories have uncommitted "
-              "changes.  The manifest will record '-dirty' and the bundle "
-              "may not be reproducible.", file=sys.stderr)
+    if dirty_repositories and not allow_dirty_sdk:
+        raise RuntimeError(
+            "SDK source tree is dirty in: "
+            + ", ".join(dirty_repositories)
+            + ". Commit or clean these build inputs, or pass "
+              "--allow-dirty-sdk for a development-only bundle."
+        )
+
+    if dirty_repositories:
+        print(
+            "WARNING: one or more source repositories have uncommitted "
+            "changes. The manifest will record '-dirty' and the bundle "
+            "is development-only: "
+            + ", ".join(dirty_repositories),
+            file=sys.stderr,
+        )
         source_commits["bouffalo_sdk"] += "-dirty"
 
     return source_commits
@@ -606,6 +628,14 @@ def main() -> int:
                              "(bflb_fw_post_proc, BLFlashCommand) and toolchain")
     parser.add_argument("--keep-build", action="store_true",
                         help="retain the temporary CMake build directory")
+    parser.add_argument(
+        "--allow-dirty-sdk",
+        action="store_true",
+        help=(
+            "allow uncommitted SDK source changes for a development-only "
+            "bundle; never use for a release bundle"
+        ),
+    )
     args = parser.parse_args()
 
     chip = args.chip
@@ -658,7 +688,11 @@ def main() -> int:
         raise RuntimeError(f"LHAL config directory not found: {lhal_config_dir}")
 
     version = sdk_version(sdk)
-    source_commits = record_source_versions(sdk)
+    source_commits = record_source_versions(
+        sdk,
+        chip,
+        args.allow_dirty_sdk,
+    )
     commit = source_commits["bouffalo_sdk"]
 
     # ——— output paths ——————————————————————————————————————————

@@ -47,7 +47,10 @@ list and apply them to a fresh SDK checkout before regenerating a bundle.
 
 No SDK commit is hardcoded — the generator records whatever commit is currently
 checked out.  Uncommitted source changes produce a warning and a `-dirty`
-suffix in the manifest.
+suffix in the manifest.  By default, the generator now rejects dirty SDK
+inputs.  Pass `--allow-dirty-sdk` only for a development bundle that must be
+tested before the SDK worktree is clean; such a bundle is not release
+reproducible.
 
 From the repository root:
 
@@ -84,3 +87,26 @@ header, copies only versioned FlashCube chip resources (not `img_create`,
 generated `.ini`, or logs), and writes SHA-256 manifests.  Regenerate and
 review manifests whenever the SDK commit, `defconfig`, toolchain, ABI flags, or
 partition layout change.
+
+## Verify a bundle
+
+The bridge bundle verifier checks every manifest file hash and size, the
+bridge `defconfig`, the required Wi-Fi/MACSW/FHOST/lwIP/WPA and BLE archives,
+the public headers, and (when `--sdk` is supplied) the recorded SDK and
+sub-repository commits:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
+      --bundle hardware/bouffalo/bl616cl/tools/sdk/bl616cl/bridge \
+      --sdk /path/to/bouffalo_sdk
+
+The verifier rejects `-dirty` source records by default.  For development-only
+inspection of the current provisional bundle:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
+      --allow-dirty \
+      --sdk /path/to/bouffalo_sdk
+
+The release gate is the first command without `--allow-dirty`; it must print
+`SOURCE_REPRODUCIBILITY=REPRODUCIBLE` and
+`BL616CL_RUNTIME_BUNDLE_VERIFY_PASS`.  The final product still needs a pinned
+SDK source snapshot or submodule and a clean regeneration before publication.
