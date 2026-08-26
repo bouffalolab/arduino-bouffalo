@@ -142,8 +142,19 @@
 
 ## 第四阶段：存储与 OTA
 
-- [ ] 在 BL616CL 上实现 `SPIFFS`/`FS` 兼容层，底层选择 LittleFS 或 Flash 文件系统
-- [ ] 实现 `Preferences` NVM 后端
+- [x] 在 BL616CL 上实现 `SPIFFS`/`FS` 兼容层：SDK LittleFS vendored 进
+      esp32-compat，`SPIFFS.begin` 挂载 `media` 分区（挂载点 `/spiffs`），
+      `File` 支持读写/seek/目录遍历；newlib `fopen("/spiffs/...")` 经裁剪
+      syscalls 分发到同一实例；StorageTest 全 PASS + 复位持久化验证
+- [x] 实现 `Preferences` NVM 后端：对接 EasyFlash（底层 LittleFS on PSM），
+      put/get 全类型 + getType/remove/clear/freeEntries，StorageTest round-trip
+- [ ] 平台镜像布局与分区表槽位冲突：`bflb_fw_post_proc` 产出的完整镜像把 app
+      代码放在 flash 0xE000 起的区域，与 boot2 分区表槽位（0xE000/0xF000）
+      重叠；用 `write_flash_files 0xE000 partition.bin` 写入时按 4KB 扇区
+      擦除，抹掉 0xE000-0xFFFF 的 app 代码（bridge 固件表现为启动时非法指令
+      崩溃，mepc=0x8000eede 处读到 0xFFFFFFFF）。StorageTest（小镜像）不受
+      影响；bridge 需要存储/OTA 功能前须在平台侧为分区表预留 0xE000-0xF200
+      或调整槽位地址，并让上传流程自动烧写分区表
 - [ ] 实现 `Update` 和 `Arduino_ESP32_OTA` 后端
 - [ ] 接入 BOSSA 刷写 RA4M1 的路径
 - [ ] 验证证书分区读取、OTA 下载和重启
