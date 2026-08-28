@@ -168,6 +168,78 @@
 - [ ] 验证 BLE HCI 透传
 - [ ] 执行端到端 bridge 回归和更新包打包
 
+## 第六阶段：BLE HCI 透传（RA4M1 AT → BL616CL 蓝牙广播）
+
+架构：RA4M1 上跑 ArduinoBLE host，通过 bridge 的 AT+HCI_* 命令把 HCI 透传给
+BL616CL；BL616CL 只跑 BLE controller（external-host / HCI 透传模式），广播
+参数全部由 host 侧决定。对应 bridge 侧 `cmds_ble_bridge.h` 的
+AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
+
+- [x] esp32-compat 实现 HCIVirtualTransport（AT 侧 HCI 字节流 ↔ 环形缓冲）
+      + btblecontroller port 覆写（`btble_uart_read/write/flow_on/flow_off`
+      等，接 `hci_transport` 队列；lib 经 `rwip_eif_api uart_api` 函数指针表
+      调用这些端口函数）
+- [x] BLE 启动路径：AT+HCIBEGIN → `HCIVirtualTransport::begin()` →
+      `ble_controller_start()` → `ensure_rfparam()`（与 WiFi 共享一次性
+      rfparam_init 保护）+ `btble_controller_init(configMAX_PRIORITIES-1)`
+- [x] runtime bundle 的 BLE controller flavor 从 m2s1 切到 **uarthci**
+      （controller-only 外部 host 库，m2s1 是片上 host 组合 flavor、
+      PLF_UART=0 不带 eif 表）：重建 libbtblecontroller_bl616cl_uarthci.a，
+      platform.txt 改为 -lbtblecontroller_bl616cl_uarthci。
+      ⚠️ bundle 生成器不产 WiFi/blestack 库也不处理 autoconf.h 手工段，
+      重新生成后必须：合并 fresh WiFi 库、恢复 libblestack/libpka 等、
+      补回 autoconf.h 的 CONFIG_POSIX undef 块与 MACSW_SELECT_INCLUDE
+      （缺 CONFIG_POSIX undef 会触发 libstdc++ gthreads 头错误）
+- [x] 链接验证：`uart_api` 表（uarthci lib arch_main.o）与我们的
+      `btble_uart_*`（ble_hci_port.cpp.o）正确解析
+- [x] 烧写流程打通：进 ISP = DTR 拉高 BOOT + RTS 脉冲复位（picocom
+      `--lower-dtr --lower-rts` 或 python 脉冲）；烧写 = BLFlashCommand
+      `--interface=uart --chipname=bl616cl --port=<ROM CDC 设备>`
+      —— ROM 把 ISP 桥接到 USB CDC（Generics 0xFFFF:0xFFFF），CDC 才是
+      烧录口；FT232 UART 上的 ROM ISP 不响应（FTDI DTR# 低有效与工具
+      CH343 极性相反，工具的复位时序会把 BOOT 拉低）
+- [x] AT+HCI 通路硬件验证：AT+HCIBEGIN/WRITE/READ/AVAILABLE 全通
+      （二分定位 bisect 1/2），USB CDC 上 AT 服务器工作正常
+- [x] **btble_controller_init 崩溃根因 = 链接时未预留 BT 交换内存**：
+      SDK 例子链接带 `-Wl,--defsym,__LD_CONFIG_EM_SIZE=32`（EM 32KB），
+      我们的 ELF 里 `__EM_SIZE=0`，ROM-code controller 无交换内存即崩。
+      修复：platform.txt `compiler.c.elf.extra_flags` 加同样的 defsym；
+      AT+HCIBEGIN 不再崩溃。已排除：rfparam、AT 通路、堆（heap_3→malloc
+      →TLSF，空闲 131KB）、低 128K SRAM 布局（两构建一致）
+- [x] HCI host→controller 通路打通：H4TL 的 RX 走 djob 延迟处理，该链在
+      无 UART ISR 的传输上不工作（RW 任务有消息、队列清空、prevent_sleep=0
+      但 djob 从不执行）。改由 HCIVirtualTransport 自己解析 HCI 组帧，
+      直接调 `hci_tl_cmd_received(HCI_TL_H4=0, opcode, len, payload)` /
+      `hci_tl_acl_tx_data_*`，不再喂 H4TL 的 armed read
+- [x] HCI 首条事件回传验证：AT+HCIWRITE(HCI_Reset) → Command Complete
+      （04 0F 04 ...）经 h4tl_write→eif write→AT+HCIREAD 回读成功
+- [x] 第二条命令起事件不回传的根因：`hci_tl_cmd_received()` 读的是
+      `hci_env.p_cmd_desc`（由 `hci_tl_cmd_get_max_param_size(opcode)` 的
+      副作用设置），直接调用时描述符为 NULL、命令被当"不支持"丢弃。
+      修复：解析器在每条命令前调用 `hci_tl_cmd_get_max_param_size()`。
+      另外在 write 回调与 wake 路径同步调 `btble_ke_event_schedule()`
+      排空 djob（tx_done 链）
+- [x] **LE 广播命令序列实机全通**（状态均 0x00 成功）：
+      HCI_Reset(0x0C03) → Set_Event_Mask(0x2001) →
+      Set_Adv_Params(0x2006, 100ms/ADV_IND/37+38+39) →
+      Set_Adv_Data(0x2008, flags + name "BL616CL") →
+      Set_Advertise_Enable(0x200A, 1) 全部返回 Command Complete
+      且重复 enable 返回 0x0C（Command Disallowed = 广播已在运行，
+      佐证广播状态活跃）；广播开启后 20s+ 板子稳定无崩溃
+- [ ] 空口确认：需要手机（nRF Connect/LightBlue）或 Mac 蓝牙授权
+      （blueutil 因 TCC 权限对话框阻塞）扫描确认 "BL616CL" 广播可见
+- [ ] 实验台 UART0 控制台静默：连纯 SDK btblecontroller_test 例子
+      （BFLB_LOG=y）board_init 横幅都不输出；23:22 时 macsw shell 响应
+      还正常，此后 FT232 数据线可能被改动/断开（RST/BOOT 控制线正常）。
+      需要确认 FT232 是否仍接在 BL616CL GPIO34/35
+- [ ] 崩溃诊断工具已就位：`cores/bl616cl/crash_debug.cpp`（覆写
+      exception_entry，mcause/mepc/mtval 直推 CDC IN EP 0x83）+
+      AT+GETCRASH 命令。经验：SRAM noinit 区跨复位被清（计数器实验），
+      不能跨 boot 记录；exception_entry 覆写必须放 cores（放库会被 GC）
+- [ ] 后续：确认 FT232 接线 → 重跑 SDK btblecontroller_test 差分实验
+      （BFLB_LOG=y 版本已构建）→ 定位崩溃 → HCI host 驱动 LE 广播
+      （Set_Adv_Data/Params/Advertise_Enable）→ 手机扫描可见
+
 ## 测试与交付
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令

@@ -22,11 +22,24 @@ extern "C" {
 #include "lwip/netdb.h"
 #include "lwip/ip_addr.h"
 #include "lwip/err.h"
+#include "rfparam_adapter.h"
 }
 
 Arduino_DebugUtils Debug;
 UpdateClass Update;
 HCIVirtualTransportClass HCIVirtualTransport;
+
+/* Shared RF-parameter init guard: both the WiFi and the BLE controller paths
+ * need rfparam_init(), but it must run exactly once. */
+static bool g_rfparam_done = false;
+extern "C" void ensure_rfparam(void)
+{
+    if (g_rfparam_done) {
+        return;
+    }
+    rfparam_init(0, NULL, 0);
+    g_rfparam_done = true;
+}
 
 int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
 {
