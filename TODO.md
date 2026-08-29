@@ -266,7 +266,11 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
          0x80000400，boot2 设 XIP 偏移 0x1000），TLV 魔数
          BLRFPARA+O6DkXb1k；btblecontroller_test 构建只生成 HEAD1、
          HEAD2 为空 → rfparam_init 失败。`--firmware=<bin>` 是整包从
-         0x0 烧写（flash 内容 == bin 偏移已验证）
+         0x0 烧写（flash 内容 == bin 偏移已验证）。对照：bridge 镜像
+         0x1400 有完整 TLV（platform.txt 的 bflb_fw_post_proc 注入）
+         → rfparam 通过 → WiFi 可用；Blink 镜像同样只有 HEAD1。
+         rfparam 失败 ⟺ WiFi 不可用（板上 eFuse rcal 正常：xtal 40MHz、
+         icx 34、iptat 11），与本板 RF 无关，也非 BLE 不上天的原因
       5) 方向：a) 问 Bouffalo（uarthci+BL616CL 的 LLM→BT core 编程
          路径）；b) 换 m2s1 flavor + 我们的虚拟传输直灌 controller
          （不启动片上 host，需验证 m2s1 的 HCI 入口）；c) 完整栈放
