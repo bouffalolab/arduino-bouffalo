@@ -240,30 +240,46 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
 - [x] WiFi 全链路复测通过（同一块板、同一 RF 前端）：扫描 16 AP、
       连接 bts + DHCP（192.168.184.138）、ping 网关 17ms、ping 公网
       9ms、ping 域名 207ms —— WiFi 收发完全正常
-- [x] **BLE 空口问题根因定位（软件侧追踪完成）**：
-      1) 对照 btble_cli（m2s1，可出波）抓取了片上 host 的内部 HCI 序列
-         （hci_driver 加打印）：开广播的命令序列与我们完全一致，
-         无任何特殊命令 → 命令序列不是原因
-      2) 我们的 uarthci 路径其实**能出波**：AT 使能/停止广播在空口上
-         可验证（-38~-49dBm）——此前"不上天"的假象是两件事叠加：
-         a) H4TL 被绕过导致 prevent_sleep 的 RW_TL_1_RX_ONGOING 卡位，
-            LL 不调度 RF 事件（已修复：解析后 clear 0x400）
-         b) 广播内容一直显示 "testblezrr"（btble_cli 时代的残留），
-            掩盖了"我们的广播在发射"的事实
-      3) 外部 HCI 的 Set_Adv_Data 内容不生效：HCIIN 探针证实命令描述符、
-         ll_dest=BLE_MNG、TASK_LLM 分发、unpack 全部正常，但空口内容
-         仍是残留的 testblezrr → **EM（交换内存，wifi RAM 区）跨热复位
-         残留**，LL 广播活动/数据缓冲带着旧状态；外部 HCI 的 adv data
-         更新路径（llm_adv.c 的 hci_le_set_adv_data_cmd_handler 已确认
-         存在且走 em_wr）与残留活动之间存在错位
-      4) 下一步修复方向：(a) BLE init 时清空 EM 区域（需确认 EM 基址：
-         __EM_SIZE=32K 位于 wifi RAM 区顶部）；(b) 或向 Bouffalo 确认
-         外部 host 模式下 adv 数据缓冲/活动的正确更新路径
+- [x] **BLE 空口问题根因定位（2026-08-29 判别实验，推翻"RF 已工作"）**：
+      0) 撤回前一日结论：空口看到的 "testblezrr" 是用户的另一块实验板发出
+         的（用户澄清）；本板自己的广播名字从未在空口出现。milestone 标签
+         milestone-ble-adv-on-air 描述不再成立（见 repo tag 说明）
+      1) 判别实验 A：btble_cli（m2s1 完整栈）在本板用唯一名 ZZTESTSDK
+         广播 → 空口可见 17 次/25s（RSSI -44dBm）→ RF 硬件/前端正常
+      2) 判别实验 B：官方 SDK 参照 btblecontroller_test（uarthci 纯
+         controller + 真 UART H4 host，HCI UART 补丁到 GPIO8/9 @2M）：
+         全部 HCI 命令 CMD_COMPLETE status=0（含 ADV_ENABLE），
+         HCIIN/unpack/LLM 分发全正常 —— **但空口 0 次**。排除：
+         虚拟传输（真 UART 同样结果）、rfparam（TLV 缺失会直接
+         "PHY RF init failed" 拒绝启动，已用 btble_cli 镜像 0x1400 处的
+         2048B TLV 拼入修复）、BTDM 复位（清不掉）
+      3) 真根因（证据链）：空口的 ZZTESTSDK 广告与我们 HCI 的
+         enable/disable 严格同步、RSSI -44、把本板按在复位里就消失 →
+         **空口广告是本板 BT core 的陈旧自主状态**（上一次 m2s1 会话的
+         残留），uarthci 的 LLM 无法重新编程它：探针证实 LLM 收到正确
+         adv data 并 em_wr 进 EM（new_buf=0x1054, len=16 全对），
+         EM CS 区也被写入调度结构 —— 但 BT core 持续发送旧内容。
+         uarthci 在 BL616CL 上是上游未验证路径：README 支持列表无
+         BL616CL；rwip_config 的 HCI_UPDATE_UART_CONF 只开 BL616；
+         btblecontroller_software_btdm_reset 也只编译 BL616/BL618DG
+      4) 附带根因：SDK 例子的 rfparam TLV 位于镜像内 0x1400（XIP
+         0x80000400，boot2 设 XIP 偏移 0x1000），TLV 魔数
+         BLRFPARA+O6DkXb1k；btblecontroller_test 构建只生成 HEAD1、
+         HEAD2 为空 → rfparam_init 失败。`--firmware=<bin>` 是整包从
+         0x0 烧写（flash 内容 == bin 偏移已验证）
+      5) 方向：a) 问 Bouffalo（uarthci+BL616CL 的 LLM→BT core 编程
+         路径）；b) 换 m2s1 flavor + 我们的虚拟传输直灌 controller
+         （不启动片上 host，需验证 m2s1 的 HCI 入口）；c) 完整栈放
+         BL616CL + AT 高层命令（RA4M1 协议需改）
 - [x] 实验台经验（已入 README/TODO）：FT232 开端口会拉低 RST 复位芯片
       （CDC 掉线根因）；SDK 例子烧写必须镜像+分区表一起烧（0xE000 最后写，
       否则 easyflash 失败栈溢出）；btble_cli 的 shell 也要 UART1 重映射；
       bridge 的 USB 初始化会破坏 printf 的 console 绑定（调试打印须用
-      bflb_uart_putchar 直写）
+      bflb_uart_putchar 直写）；HCI Set_Adv_Data 的 payload 必须带
+      adv_data_len 前导字节且补齐到 CMD 表要求的 32 字节（"B31B"）
+- [ ] SDK 探针清理：btble_dma_uart.c/btblecontroller_port_uart.c/
+      llm_adv.c/btblecontroller_test main.c 的调试探针与引脚补丁是本地
+      实验状态（用户维护的 SDK 副本），后续需还原或移入 patch 存档
 - [ ] 实验台 UART0 控制台静默：连纯 SDK btblecontroller_test 例子
       （BFLB_LOG=y）board_init 横幅都不输出；23:22 时 macsw shell 响应
       还正常，此后 FT232 数据线可能被改动/断开（RST/BOOT 控制线正常）。
