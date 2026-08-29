@@ -133,7 +133,8 @@ static volatile bool cdc_out_rearm_pending = false;
 #ifdef BL616CL_USB_DEBUG_LOG
 static void usb_log(const char *message)
 {
-    struct bflb_device_s *uart = bflb_device_get_by_name("uart0");
+    // Console is remapped to UART1 (GPIO8/9) on this bench/carrier BSP.
+    struct bflb_device_s *uart = bflb_device_get_by_name("uart1");
     if (uart == NULL) {
         return;
     }

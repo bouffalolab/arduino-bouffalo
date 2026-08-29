@@ -21,6 +21,7 @@ extern "C" {
 
 extern "C" void wl80211_init(void);
 extern "C" void wifi_task_create(void);
+extern "C" void ensure_rfparam(void);
 
 #define SCAN_LIST_CAPACITY 16
 
@@ -151,7 +152,7 @@ static void ensure_wifi_started(void)
     }
     g_init_started = true;
 
-    rfparam_init(0, NULL, 0);
+    ensure_rfparam();
     async_event_init(wifi_async_event_loop_wake);
     async_register_event_filter(EV_WIFI, wifi_event_handler, NULL);
     wifi_task_create();
