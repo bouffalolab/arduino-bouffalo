@@ -1,0 +1,41 @@
+# UNO R4 carrier adaptation: move the board console from UART0 (GPIO34/35)
+# to UART1 (GPIO8/9).  The bench FT232 is wired to GPIO8/9, so every
+# firmware built from this SDK must carry the remap to be visible on the
+# bench console.
+#
+# Applies to the BouffaloSDK checkout:
+#   bsp/board/bl616cldk/board.c
+#   examples/wifi/macsw_bare/main.c
+diff --git a/bsp/board/bl616cldk/board.c b/bsp/board/bl616cldk/board.c
+--- a/bsp/board/bl616cldk/board.c
++++ b/bsp/board/bl616cldk/board.c
+@@ -269,8 +269,8 @@ static void console_init()
+     pm_disable_gpio_keep(GPIO_PIN_34);
+     pm_disable_gpio_keep(GPIO_PIN_35);
+
+-    bflb_gpio_uart_init(gpio, GPIO_PIN_34, GPIO_UART_FUNC_UART0_TX);
+-    bflb_gpio_uart_init(gpio, GPIO_PIN_35, GPIO_UART_FUNC_UART0_RX);
++    bflb_gpio_uart_init(gpio, GPIO_PIN_8, GPIO_UART_FUNC_UART1_TX);
++    bflb_gpio_uart_init(gpio, GPIO_PIN_9, GPIO_UART_FUNC_UART1_RX);
+
+     struct bflb_uart_config_s cfg = { 0 };
+     cfg.baudrate = CONFIG_CONSOLE_UART_BAUDRATE;
+@@ -282,7 +282,7 @@ static void console_init()
+     cfg.rx_fifo_threshold = 7;
+     cfg.bit_order = UART_LSB_FIRST;
+
+-    uart0 = bflb_device_get_by_name("uart0");
++    uart0 = bflb_device_get_by_name("uart1");
+
+     bflb_uart_init(uart0, &cfg);
+     bflb_uart_set_console(uart0);
+diff --git a/examples/wifi/macsw_bare/main.c b/examples/wifi/macsw_bare/main.c
+--- a/examples/wifi/macsw_bare/main.c
++++ b/examples/wifi/macsw_bare/main.c
+@@ -162,7 +162,7 @@ int main(void)
+     bflb_mtd_init();
+ #endif
+
+-    uart0 = bflb_device_get_by_name("uart0");
++    uart0 = bflb_device_get_by_name("uart1");
+     shell_init_with_task(uart0);
