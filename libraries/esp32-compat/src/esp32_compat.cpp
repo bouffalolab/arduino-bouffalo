@@ -23,6 +23,8 @@ extern "C" {
 #include "lwip/ip_addr.h"
 #include "lwip/err.h"
 #include "rfparam_adapter.h"
+#include "bflb_gpio.h"
+#include "bflb_uart.h"
 }
 
 Arduino_DebugUtils Debug;
@@ -59,6 +61,34 @@ int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
 extern "C" void usb_persist_restart(int mode)
 {
     (void)mode;
+}
+
+extern "C" void bflb_uart_set_console(struct bflb_device_s *dev);
+
+/* The USB device init chain clobbers the console UART1 (GPIO8/9) on the
+ * bench.  Restore it after USB.begin() so post-setup printf output remains
+ * visible on the FT232. */
+extern "C" void compat_console_restore(void)
+{
+    struct bflb_device_s *gpio = bflb_device_get_by_name("gpio");
+    struct bflb_device_s *uart1 = bflb_device_get_by_name("uart1");
+    struct bflb_uart_config_s cfg;
+    if (gpio == NULL || uart1 == NULL) {
+        return;
+    }
+    bflb_gpio_uart_init(gpio, GPIO_PIN_8, GPIO_UART_FUNC_UART1_TX);
+    bflb_gpio_uart_init(gpio, GPIO_PIN_9, GPIO_UART_FUNC_UART1_RX);
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.baudrate = 2000000;
+    cfg.data_bits = UART_DATA_BITS_8;
+    cfg.stop_bits = UART_STOP_BITS_1;
+    cfg.parity = UART_PARITY_NONE;
+    cfg.flow_ctrl = 0;
+    cfg.tx_fifo_threshold = 7;
+    cfg.rx_fifo_threshold = 7;
+    cfg.bit_order = UART_LSB_FIRST;
+    bflb_uart_init(uart1, &cfg);
+    bflb_uart_set_console(uart1);
 }
 
 /* Do NOT define a freeaddrinfo() stub here.  lwip/netdb.h maps the POSIX

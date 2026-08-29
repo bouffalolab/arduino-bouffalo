@@ -18,6 +18,7 @@ extern "C" void *rw_main_task_hdl;
 extern "C" int btblecontroller_queue_send(void *q, void *msg, uint32_t size,
                                           uint32_t timeout);
 extern "C" uint32_t rwip_prevent_sleep_get(void);
+extern "C" void rwip_prevent_sleep_clear(uint32_t value);
 extern "C" void btble_ke_event_schedule(void);
 
 // The H4TL layer defers its RX processing through the RW djob machinery,
@@ -193,6 +194,11 @@ static void hci_parser_pump(void)
         taskENTER_CRITICAL();
     }
     taskEXIT_CRITICAL();
+
+    // Experiment: the bypassed H4TL leaves RW_TL_1_RX_ONGOING (0x400) set,
+    // and the LL appears to gate advertising activity on the HCI RX state.
+    // Clear the stuck bit after delivering host commands.
+    rwip_prevent_sleep_clear(0x400);
 }
 
 
