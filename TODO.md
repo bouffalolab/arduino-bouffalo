@@ -237,9 +237,12 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
 - [x] SDK adv 例子（m0b1 beacon-only）运行验证：3 个广播周期全部
       err=0、adv_start OK、无内存泄漏；RF 参数走默认（pwr_ble=13，
       eFuse 槽全空：no pwr_offset/no capcode）
+- [x] WiFi 全链路复测通过（同一块板、同一 RF 前端）：扫描 16 AP、
+      连接 bts + DHCP（192.168.184.138）、ping 网关 17ms、ping 公网
+      9ms、ping 域名 207ms —— WiFi 收发完全正常
 - [ ] **BLE 发射不上天（最终定位）**：扫描覆盖 adv 例子全部 3 个广播
       窗口（14s，266 条房间设备记录），iBeacon 仍不可见；而 WiFi 射频
-      实测正常（连接/DHCP/吞吐）→ RF 前端与天线完好，问题在 BLE 专用
+      在同一块板上收发正常 → RF 前端与天线完好，问题锁定 BLE 专用
       发射路径。头号嫌疑：样片 eFuse RF 参数未烧写（BLE 用默认参数发射
       无效）或 BLE RF 事件调度（RWIP 硬件定时器 IRQ）未触发。
       下一步：向 Bouffalo 确认该 BL616CL 样片是否需要烧写 RF eFuse/
