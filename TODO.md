@@ -240,13 +240,30 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
 - [x] WiFi 全链路复测通过（同一块板、同一 RF 前端）：扫描 16 AP、
       连接 bts + DHCP（192.168.184.138）、ping 网关 17ms、ping 公网
       9ms、ping 域名 207ms —— WiFi 收发完全正常
-- [ ] **BLE 发射不上天（最终定位）**：扫描覆盖 adv 例子全部 3 个广播
-      窗口（14s，266 条房间设备记录），iBeacon 仍不可见；而 WiFi 射频
-      在同一块板上收发正常 → RF 前端与天线完好，问题锁定 BLE 专用
-      发射路径。头号嫌疑：样片 eFuse RF 参数未烧写（BLE 用默认参数发射
-      无效）或 BLE RF 事件调度（RWIP 硬件定时器 IRQ）未触发。
-      下一步：向 Bouffalo 确认该 BL616CL 样片是否需要烧写 RF eFuse/
-      校准数据，或提供 BLE RF 验证固件
+- [x] **BLE 空口问题根因定位（软件侧追踪完成）**：
+      1) 对照 btble_cli（m2s1，可出波）抓取了片上 host 的内部 HCI 序列
+         （hci_driver 加打印）：开广播的命令序列与我们完全一致，
+         无任何特殊命令 → 命令序列不是原因
+      2) 我们的 uarthci 路径其实**能出波**：AT 使能/停止广播在空口上
+         可验证（-38~-49dBm）——此前"不上天"的假象是两件事叠加：
+         a) H4TL 被绕过导致 prevent_sleep 的 RW_TL_1_RX_ONGOING 卡位，
+            LL 不调度 RF 事件（已修复：解析后 clear 0x400）
+         b) 广播内容一直显示 "testblezrr"（btble_cli 时代的残留），
+            掩盖了"我们的广播在发射"的事实
+      3) 外部 HCI 的 Set_Adv_Data 内容不生效：HCIIN 探针证实命令描述符、
+         ll_dest=BLE_MNG、TASK_LLM 分发、unpack 全部正常，但空口内容
+         仍是残留的 testblezrr → **EM（交换内存，wifi RAM 区）跨热复位
+         残留**，LL 广播活动/数据缓冲带着旧状态；外部 HCI 的 adv data
+         更新路径（llm_adv.c 的 hci_le_set_adv_data_cmd_handler 已确认
+         存在且走 em_wr）与残留活动之间存在错位
+      4) 下一步修复方向：(a) BLE init 时清空 EM 区域（需确认 EM 基址：
+         __EM_SIZE=32K 位于 wifi RAM 区顶部）；(b) 或向 Bouffalo 确认
+         外部 host 模式下 adv 数据缓冲/活动的正确更新路径
+- [x] 实验台经验（已入 README/TODO）：FT232 开端口会拉低 RST 复位芯片
+      （CDC 掉线根因）；SDK 例子烧写必须镜像+分区表一起烧（0xE000 最后写，
+      否则 easyflash 失败栈溢出）；btble_cli 的 shell 也要 UART1 重映射；
+      bridge 的 USB 初始化会破坏 printf 的 console 绑定（调试打印须用
+      bflb_uart_putchar 直写）
 - [ ] 实验台 UART0 控制台静默：连纯 SDK btblecontroller_test 例子
       （BFLB_LOG=y）board_init 横幅都不输出；23:22 时 macsw shell 响应
       还正常，此后 FT232 数据线可能被改动/断开（RST/BOOT 控制线正常）。
