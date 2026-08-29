@@ -226,8 +226,24 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
       Set_Advertise_Enable(0x200A, 1) 全部返回 Command Complete
       且重复 enable 返回 0x0C（Command Disallowed = 广播已在运行，
       佐证广播状态活跃）；广播开启后 20s+ 板子稳定无崩溃
-- [ ] 空口确认：需要手机（nRF Connect/LightBlue）或 Mac 蓝牙授权
-      （blueutil 因 TCC 权限对话框阻塞）扫描确认 "BL616CL" 广播可见
+- [x] Mac 蓝牙授权完成；Swift CoreBluetooth 扫描器可用
+      （blueutil 2.13 无 LE 扫描，--inquiry 是经典查询），
+      能扫到房间内大量 BLE 设备（iPad/PC/显示器等）
+- [x] **UART0 静默悬案破解**：实验台 FT232 接的是 UART1 GPIO8/GPIO9
+      （不是 UART0 GPIO34/35）。此前用未打重映射补丁的本地 SDK 构建的
+      固件控制台在 UART0 → 自然静默。已把控制台重映射补丁应用到本地
+      SDK（board.c + macsw_bare/main.c），重建 adv 例子后 FT232 控制台
+      完全恢复（boot banner + 周期日志全可见）
+- [x] SDK adv 例子（m0b1 beacon-only）运行验证：3 个广播周期全部
+      err=0、adv_start OK、无内存泄漏；RF 参数走默认（pwr_ble=13，
+      eFuse 槽全空：no pwr_offset/no capcode）
+- [ ] **BLE 发射不上天（最终定位）**：扫描覆盖 adv 例子全部 3 个广播
+      窗口（14s，266 条房间设备记录），iBeacon 仍不可见；而 WiFi 射频
+      实测正常（连接/DHCP/吞吐）→ RF 前端与天线完好，问题在 BLE 专用
+      发射路径。头号嫌疑：样片 eFuse RF 参数未烧写（BLE 用默认参数发射
+      无效）或 BLE RF 事件调度（RWIP 硬件定时器 IRQ）未触发。
+      下一步：向 Bouffalo 确认该 BL616CL 样片是否需要烧写 RF eFuse/
+      校准数据，或提供 BLE RF 验证固件
 - [ ] 实验台 UART0 控制台静默：连纯 SDK btblecontroller_test 例子
       （BFLB_LOG=y）board_init 横幅都不输出；23:22 时 macsw shell 响应
       还正常，此后 FT232 数据线可能被改动/断开（RST/BOOT 控制线正常）。
