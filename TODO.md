@@ -1,5 +1,20 @@
 # BL616CL UNO R4 Bridge TODO
 
+## 新板重调试（2026-08-29 起）
+
+- [x] 控制台重映射（UART0→UART1 GPIO8/9）全部作废：SDK 副本
+      board.c / macsw_bare / btble_cli 已 git 回退；bluetooth 子模块
+      5 个探针文件（btblecontroller_port_uart.c、btble_dma_uart.c、
+      llm_adv.c、hci_tl.c、hci_driver.c）已回退；bridge 侧
+      compat_console_restore / usb_log 改回 UART0 GPIO34/35（4324a54），
+      patches/bl616cldk-console-uart1-gpio8-9.patch 删除；
+      bridge README 同步（32bf38b）。此前基于旧板（UNO R4 载板，
+      FT232 接 GPIO8/9）的调试结论与实验状态作废，milestone 标签
+      milestone-ble-adv-on-air 前提已失效（待用户决定删除）
+- [ ] 新板接线确认（串口设备名、控制台引脚、RST/BOOT 控制线）
+- [ ] 新板上重新调试 HCI：SDK 默认配置（控制台 UART0 GPIO34/35，
+      HCI UART1 GPIO27-30 DMA 2M）跑 btble_cli / btblecontroller_test 基线
+
 ## 当前进度
 
 - [x] 第一阶段：ESP32 Arduino API 兼容骨架
