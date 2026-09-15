@@ -1,0 +1,41 @@
+--- a/components/wireless/wifi6/fhost/include/cfgmacsw.h
++++ b/components/wireless/wifi6/fhost/include/cfgmacsw.h
+@@ -444,7 +444,8 @@
+     struct cfgmacsw_msg_hdr hdr;
+     /// Vif idx
+     int fhost_vif_idx;
+-    const char *msg;
++    /// Owned NUL-terminated control message appended to this allocation.
++    char msg[];
+ 
+ };
+ typedef void (*cfgmacsw_raw_send_done)(void* env);
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c
+@@ -104,15 +104,23 @@
+         !strncmp(txt, "SAE-ACCEPTED", sizeof("SAE-ACCEPTED")-1) ||
+         !strncmp(txt, "CTRL-EVENT-CONNECTED", sizeof("CTRL-EVENT-CONNECTED")-1)) {
+ 
+-        cmd = rtos_calloc(1, sizeof(struct cfgmacsw_status_code_print));
++        /*
++         * wpa_msg_ctrl() releases txt once this callback returns. The FHOST
++         * control task processes this command asynchronously, so make the
++         * status message part of the queued allocation.
++         */
++        cmd = rtos_calloc(
++            1, sizeof(struct cfgmacsw_status_code_print) + len + 1);
+         if (cmd == NULL) {
+           abort();
+         }
+ 
+-        wpa_macsw_msg_hdr_init(drv, &cmd->hdr, CFGMACSW_STATUS_CODE_PRINT_CMD, sizeof(*cmd));
++        wpa_macsw_msg_hdr_init(
++            drv, &cmd->hdr, CFGMACSW_STATUS_CODE_PRINT_CMD,
++            sizeof(*cmd) + len + 1);
+ 
+         cmd->fhost_vif_idx = drv->fhost_vif_idx;
+-        cmd->msg = txt;
++        memcpy(cmd->msg, txt, len);
+ 
+         (void)fhost_cntrl_cfgmacsw_cmd_send(&cmd->hdr, NULL);
+     }

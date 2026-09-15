@@ -1,0 +1,58 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -808,6 +808,7 @@
+     bool bridge_ap_add_network;
+     bool bridge_ap_set_sae_pwe;
+     uint8_t bridge_ap_command;
++    bool bridge_ap_set_network;
+ 
+     if ((fhost_vif_idx < FHOST_WPA_GLOBAL_VIF) &&
+         (!wpa_vif || (wpa_vif->state == FHOST_WPA_STATE_STOPPED))) {
+@@ -815,6 +816,11 @@
+         return -1;
+     }
+ 
++    bridge_ap_set_network = fhost_vif_idx == MGMR_VIF_AP &&
++        strncmp(fmt, "SET_NETWORK ",
++                sizeof("SET_NETWORK ") - 1) == 0;
++    if (bridge_ap_set_network)
++        fhost_bridge_ap_start_progress(238, 0);
+     bridge_ap_add_network = fhost_vif_idx == MGMR_VIF_AP &&
+         strcmp(fmt, "ADD_NETWORK") == 0;
+     if (bridge_ap_add_network) {
+@@ -827,7 +833,11 @@
+         fhost_bridge_ap_start_progress(204, 0);
+         fhost_bridge_ap_start_heap_before_allocate(600);
+     }
++    if (bridge_ap_set_network)
++        fhost_bridge_ap_start_progress(239, 0);
+     req = rtos_malloc(600);
++    if (bridge_ap_set_network)
++        fhost_bridge_ap_start_progress(240, req ? 0 : -1);
+     if (bridge_ap_add_network) {
+         fhost_bridge_ap_start_heap_after_allocate((uint32_t)(uintptr_t)req);
+         fhost_bridge_ap_start_progress(152, req ? 0 : -1);
+@@ -843,15 +853,23 @@
+ 
+     p = req;
+     if (wpa_vif) {
++        if (bridge_ap_set_network)
++            fhost_bridge_ap_start_progress(241, 0);
+         offset = snprintf(req, 600, "IFNAME=%s ",
+                  wpa_vif->iface_name);
+         p += offset;
++        if (bridge_ap_set_network)
++            fhost_bridge_ap_start_progress(242, offset);
+     }
+ 
+     // Format command
++    if (bridge_ap_set_network)
++        fhost_bridge_ap_start_progress(243, 0);
+     va_start(args, fmt);
+     req_len = dbg_vsnprintf(p, 600 - offset, fmt, args);
+     va_end(args);
++    if (bridge_ap_set_network)
++        fhost_bridge_ap_start_progress(244, (int)req_len);
+ 
+     if ((req_len + offset) >= 600) {
+         //TRACE_FHOST(ERR, "WPA Command truncated. need %d bytes", req_len);

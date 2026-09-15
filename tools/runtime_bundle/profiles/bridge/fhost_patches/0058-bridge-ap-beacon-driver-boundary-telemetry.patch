@@ -1,0 +1,129 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/beacon.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/beacon.c
+@@ -32,11 +32,30 @@
+ #include "dfs.h"
+ #include "taxonomy.h"
+ #include "ieee802_11_auth.h"
++#include "fhost.h"
+ 
+ struct wpa_macsw_driver_itf_data;
+ int wpa_macsw_driver_control_bcn(struct wpa_macsw_driver_itf_data *drv,
+                                   uint8_t bcn_mode, int bcn_timer, bool bcn_stop);
+ 
++static int bridge_ap_start_beacon_active(const struct hostapd_data *hapd)
++{
++	return hapd && hapd->iface && hapd->conf &&
++		os_strcmp(hapd->conf->iface, "wl2") == 0;
++}
++
++static void bridge_ap_start_beacon(struct hostapd_data *hapd,
++				   uint8_t phase, int result,
++				   uint32_t detail0, uint32_t detail1)
++{
++	if (!bridge_ap_start_beacon_active(hapd))
++		return;
++
++	fhost_bridge_ap_start_hostapd_lifecycle(
++		phase, result, hapd->iface->state, hapd->iface->wait_channel_update,
++		detail0, detail1);
++}
++
+ 
+ #ifdef NEED_AP_MLME
+ 
+@@ -1814,11 +1833,19 @@
+ 
+ 	hapd->beacon_set_done = 1;
+ 
+-	if (ieee802_11_build_ap_params(hapd, &params) < 0)
++	bridge_ap_start_beacon(
++		hapd, 55, 0, hapd->conf->ssid.ssid_len, iconf->channel);
++	res = ieee802_11_build_ap_params(hapd, &params);
++	bridge_ap_start_beacon(
++		hapd, 56, res, res < 0 ? 0 : params.head_len,
++		res < 0 ? 0 : params.tail_len);
++	if (res < 0)
+ 		return -1;
+ 
+-	if (hostapd_build_ap_extra_ies(hapd, &beacon, &proberesp, &assocresp) <
+-	    0)
++	bridge_ap_start_beacon(hapd, 57, 0, params.head_len, params.tail_len);
++	res = hostapd_build_ap_extra_ies(hapd, &beacon, &proberesp, &assocresp);
++	bridge_ap_start_beacon(hapd, 58, res, 0, 0);
++	if (res < 0)
+ 		goto fail;
+ 
+ 	params.beacon_ies = beacon;
+@@ -1869,7 +1896,10 @@
+ 				    &cmode->he_capab[IEEE80211_MODE_AP]) == 0)
+ 		params.freq = &freq;
+ 
++	bridge_ap_start_beacon(hapd, 59, 0, params.head_len, params.tail_len);
+ 	res = hostapd_drv_set_ap(hapd, &params);
++	bridge_ap_start_beacon(
++		hapd, 60, res, params.beacon_int, params.dtim_period);
+ 	hostapd_free_ap_extra_ies(hapd, beacon, proberesp, assocresp);
+ 	if (res)
+ 		wpa_printf(MSG_ERROR, "Failed to set beacon parameters");
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -2194,18 +2194,33 @@
+ #ifdef CFG_FOR_COEXISTENCE_TEST_STOPAP_PATCH
+ struct wpa_macsw_driver_itf_data *g_ap_drv = NULL;
+ #endif
++
++static void bridge_ap_start_driver_set_ap(
++	struct wpa_macsw_driver_itf_data *drv, uint8_t phase, int result,
++	uint32_t detail0, uint32_t detail1)
++{
++	if (!drv || drv->fhost_vif_idx != MGMR_VIF_AP)
++		return;
++
++	fhost_bridge_ap_start_hostapd_lifecycle(
++		phase, result, (uint8_t)drv->status, 0, detail0, detail1);
++}
++
+ static int wpa_macsw_driver_set_ap(void *priv, struct wpa_driver_ap_params *params)
+ {
+ 	struct wpa_macsw_driver_itf_data *drv = priv;
+ 	struct cfgmacsw_start_ap cmd;
+ 	struct cfgmacsw_resp resp;
+ 	int res = -1;
++	int command_result;
+ 
+ //In order to do coexistence test, Made a temporary patch
+ #ifdef CFG_FOR_COEXISTENCE_TEST_STOPAP_PATCH
+     g_ap_drv = drv;
+ #endif
+ 
++	bridge_ap_start_driver_set_ap(
++		drv, 61, 0, params->head_len, params->tail_len);
+ 	drv->dtim_period = params->dtim_period;
+ 
+ 	if (drv->status & MACSW_AP_STARTED)
+@@ -2227,7 +2242,11 @@
+ 	}
+ 	hostapd_to_macsw_op_channel(params->freq, &cmd.chan);
+ 
++	bridge_ap_start_driver_set_ap(
++		drv, 62, 0, params->head_len, params->tail_len);
+ 	cmd.bcn = wpa_macsw_build_bcn(params, &cmd.bcn_len, &cmd.tim_oft, &cmd.tim_len);
++	bridge_ap_start_driver_set_ap(
++		drv, 63, cmd.bcn ? 0 : -1, cmd.bcn_len, cmd.tim_oft);
+ 	if (!cmd.bcn)
+ 		return -1;
+ 	cmd.bcn_int = params->beacon_int;
+@@ -2240,8 +2259,11 @@
+ 		cmd.flags |= WPA_WPA2_IN_USE;
+ 	cmd.ctrl_ethertype = htons(ETH_P_PAE);
+ 
+-	if (!fhost_cntrl_cfgmacsw_cmd_send(&cmd.hdr, &resp.hdr) &&
+-	    (resp.status == CFGMACSW_SUCCESS)) {
++	bridge_ap_start_driver_set_ap(drv, 64, 0, cmd.bcn_len, cmd.flags);
++	command_result = fhost_cntrl_cfgmacsw_cmd_send(&cmd.hdr, &resp.hdr);
++	bridge_ap_start_driver_set_ap(
++		drv, 65, command_result, resp.status, cmd.bcn_len);
++	if (!command_result && (resp.status == CFGMACSW_SUCCESS)) {
+ 		res = 0;
+ 		drv->status |= MACSW_AP_STARTED;
+ 	}

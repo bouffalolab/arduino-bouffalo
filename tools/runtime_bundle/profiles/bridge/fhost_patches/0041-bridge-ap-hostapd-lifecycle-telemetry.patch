@@ -1,0 +1,351 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -79,6 +79,9 @@
+     uint8_t callback_slot);
+ extern void fhost_bridge_ap_start_create_ap(
+     uint8_t phase, int result, uint8_t wpa_state, uint32_t detail);
++extern void fhost_bridge_ap_start_hostapd_lifecycle(
++    uint8_t phase, int result, uint8_t iface_state,
++    uint8_t wait_channel_update, uint32_t detail0, uint32_t detail1);
+ extern void fhost_bridge_ap_start_allocator_heap_walk(void);
+ 
+ /*
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
+@@ -55,6 +55,7 @@
+ #include "hs20.h"
+ #include "airtime_policy.h"
+ #include "wpa_auth_kay.h"
++#include "fhost.h"
+ 
+ 
+ static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason);
+@@ -67,6 +68,26 @@
+ static void hostapd_interface_setup_failure_handler(void *eloop_ctx,
+ 						    void *timeout_ctx);
+ 
++static int bridge_ap_start_active(const struct hostapd_iface *iface)
++{
++	return iface && iface->num_bss && iface->bss && iface->bss[0] &&
++		iface->bss[0]->conf &&
++		os_strcmp(iface->bss[0]->conf->iface, "wl2") == 0;
++}
++
++
++static void bridge_ap_start_hostapd(struct hostapd_iface *iface,
++				    uint8_t phase, int result,
++				    uint32_t detail0, uint32_t detail1)
++{
++	if (!bridge_ap_start_active(iface))
++		return;
++
++	fhost_bridge_ap_start_hostapd_lifecycle(
++		phase, result, iface->state, iface->wait_channel_update,
++		detail0, detail1);
++}
++
+ 
+ int hostapd_for_each_interface(struct hapd_interfaces *interfaces,
+ 			       int (*cb)(struct hostapd_iface *iface,
+@@ -1537,6 +1558,8 @@
+ {
+ 	struct hostapd_iface *iface = eloop_ctx;
+ 
++	bridge_ap_start_hostapd(iface, 10, iface->wait_channel_update ? 0 : -1,
++				0, 0);
+ 	if (!iface->wait_channel_update) {
+ 		wpa_printf(MSG_INFO, "Channel list update timeout, but interface was not waiting for it");
+ 		return;
+@@ -1553,6 +1576,10 @@
+ 
+ void hostapd_channel_list_updated(struct hostapd_iface *iface, int initiator)
+ {
++	bridge_ap_start_hostapd(
++		iface, 11,
++		iface->wait_channel_update && initiator == REGDOM_SET_BY_USER ? 0 : -1,
++		(uint32_t) initiator, 0);
+ 	if (!iface->wait_channel_update || initiator != REGDOM_SET_BY_USER)
+ 		return;
+ 
+@@ -1566,6 +1593,11 @@
+ {
+ 	struct hostapd_data *hapd = iface->bss[0];
+ 	size_t i;
++	int result;
++
++	bridge_ap_start_hostapd(iface, 3, 0, iface->conf->channel,
++				((uint32_t) hapd->iconf->country[0]) |
++				((uint32_t) hapd->iconf->country[1] << 8));
+ 
+ 	/*
+ 	 * It is possible that setup_interface() is called after the interface
+@@ -1593,7 +1625,9 @@
+ 		iface->bss[i]->drv_priv = hapd->drv_priv;
+ 	}
+ 
+-	if (hostapd_validate_bssid_configuration(iface))
++	result = hostapd_validate_bssid_configuration(iface);
++	bridge_ap_start_hostapd(iface, 4, result, 0, 0);
++	if (result)
+ 		return -1;
+ 
+ 	/*
+@@ -1601,19 +1635,30 @@
+ 	 * channel setup operations that may take considerable amount of time
+ 	 * especially for DFS cases.
+ 	 */
+-	if (start_ctrl_iface(iface))
++	result = start_ctrl_iface(iface);
++	bridge_ap_start_hostapd(iface, 5, result, 0, 0);
++	if (result)
+ 		return -1;
+ 
+ 	if (hapd->iconf->country[0] && hapd->iconf->country[1]) {
+ 		char country[4], previous_country[4];
+ 
+ 		hostapd_set_state(iface, HAPD_IFACE_COUNTRY_UPDATE);
+-		if (hostapd_get_country(hapd, previous_country) < 0)
++		result = hostapd_get_country(hapd, previous_country);
++		bridge_ap_start_hostapd(
++			iface, 6, result,
++			((uint32_t) previous_country[0]) |
++			((uint32_t) previous_country[1] << 8),
++			((uint32_t) hapd->iconf->country[0]) |
++			((uint32_t) hapd->iconf->country[1] << 8));
++		if (result < 0)
+ 			previous_country[0] = '\0';
+ 
+ 		os_memcpy(country, hapd->iconf->country, 3);
+ 		country[3] = '\0';
+-		if (hostapd_set_country(hapd, country) < 0) {
++		result = hostapd_set_country(hapd, country);
++		bridge_ap_start_hostapd(iface, 7, result, 0, 0);
++		if (result < 0) {
+ 			wpa_printf(MSG_ERROR, "Failed to set country code");
+ 			return -1;
+ 		}
+@@ -1628,11 +1673,14 @@
+ 			eloop_register_timeout(5, 0,
+ 					       channel_list_update_timeout,
+ 					       iface, NULL);
++			bridge_ap_start_hostapd(iface, 8, 0, 5, 0);
+ 			return 0;
+ 		}
+ 	}
+ 
+-	return setup_interface2(iface);
++	result = setup_interface2(iface);
++	bridge_ap_start_hostapd(iface, 9, result, 0, 0);
++	return result;
+ }
+ 
+ 
+@@ -1703,15 +1751,21 @@
+ 
+ static int setup_interface2(struct hostapd_iface *iface)
+ {
++	int result;
++
+ 	iface->wait_channel_update = 0;
++	bridge_ap_start_hostapd(iface, 12, 0, iface->conf->channel, 0);
+ 
+-	if (hostapd_get_hw_features(iface)) {
++	result = hostapd_get_hw_features(iface);
++	bridge_ap_start_hostapd(iface, 13, result, 0, 0);
++	if (result) {
+ 		/* Not all drivers support this yet, so continue without hw
+ 		 * feature data. */
+ 	} else {
+ 		int ret;
+ 
+ 		ret = configured_fixed_chan_to_freq(iface);
++		bridge_ap_start_hostapd(iface, 14, ret, iface->freq, 0);
+ 		if (ret < 0)
+ 			goto fail;
+ 
+@@ -1724,6 +1778,7 @@
+ 		}
+ 
+ 		ret = hostapd_select_hw_mode(iface);
++		bridge_ap_start_hostapd(iface, 15, ret, iface->freq, 0);
+ 		if (ret < 0) {
+ 			wpa_printf(MSG_ERROR, "Could not select hw_mode and "
+ 				   "channel. (%d)", ret);
+@@ -1731,6 +1786,7 @@
+ 		}
+ 		if (ret == 1) {
+ 			wpa_printf(MSG_DEBUG, "Interface initialization will be completed in a callback (ACS)");
++			bridge_ap_start_hostapd(iface, 16, ret, 0, 0);
+ 			return 0;
+ 		}
+ 		ret = hostapd_check_edmg_capab(iface);
+@@ -1740,20 +1796,25 @@
+ 		if (ret < 0)
+ 			goto fail;
+ 		ret = hostapd_check_ht_capab(iface);
++		bridge_ap_start_hostapd(iface, 17, ret, 0, 0);
+ 		if (ret < 0)
+ 			goto fail;
+ 		if (ret == 1) {
+ 			wpa_printf(MSG_DEBUG, "Interface initialization will "
+ 				   "be completed in a callback");
++			bridge_ap_start_hostapd(iface, 18, ret, 0, 0);
+ 			return 0;
+ 		}
+ 
+ 		if (iface->conf->ieee80211h)
+ 			wpa_printf(MSG_DEBUG, "DFS support is enabled");
+ 	}
+-	return hostapd_setup_interface_complete(iface, 0);
++	result = hostapd_setup_interface_complete(iface, 0);
++	bridge_ap_start_hostapd(iface, 19, result, 0, 0);
++	return result;
+ 
+ fail:
++	bridge_ap_start_hostapd(iface, 30, -1, 0, 0);
+ 	hostapd_set_state(iface, HAPD_IFACE_DISABLED);
+ 	wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, AP_EVENT_DISABLED);
+ 	if (iface->interfaces && iface->interfaces->terminate_on_error)
+@@ -1999,6 +2060,7 @@
+ 	if (iface->num_bss < 1 || !iface->bss || !iface->bss[0])
+ 		return;
+ 	hapd = iface->bss[0];
++	bridge_ap_start_hostapd(iface, 31, 0, 0, 0);
+ 	if (hapd->setup_complete_cb)
+ 		hapd->setup_complete_cb(hapd->setup_complete_cb_ctx);
+ }
+@@ -2012,7 +2074,9 @@
+ 	u8 *prev_addr;
+ 	int delay_apply_cfg = 0;
+ 	int res_dfs_offload = 0;
++	int result;
+ 
++	bridge_ap_start_hostapd(iface, 20, err, iface->freq, 0);
+ 	if (err)
+ 		goto fail;
+ 
+@@ -2070,8 +2134,9 @@
+ 		}
+ #endif /* CONFIG_MESH */
+ 
+-		if (!delay_apply_cfg &&
+-		    hostapd_set_freq(hapd, hapd->iconf->hw_mode, iface->freq,
++		if (!delay_apply_cfg) {
++			int set_freq_result = hostapd_set_freq(
++				hapd, hapd->iconf->hw_mode, iface->freq,
+ 				     hapd->iconf->channel,
+ 				     hapd->iconf->enable_edmg,
+ 				     hapd->iconf->edmg_channel,
+@@ -2082,12 +2147,17 @@
+ 				     hostapd_get_oper_chwidth(hapd->iconf),
+ 				     hostapd_get_oper_centr_freq_seg0_idx(
+ 					     hapd->iconf),
+-				     hostapd_get_oper_centr_freq_seg1_idx(
+-					     hapd->iconf))) {
+-			wpa_printf(MSG_ERROR, "Could not set channel for "
+-				   "kernel driver");
+-			goto fail;
+-		}
++					     hostapd_get_oper_centr_freq_seg1_idx(
++						     hapd->iconf));
++			bridge_ap_start_hostapd(
++				iface, 21, set_freq_result, iface->freq,
++				hapd->iconf->channel);
++			if (set_freq_result) {
++				wpa_printf(MSG_ERROR, "Could not set channel for "
++					   "kernel driver");
++				goto fail;
++			}
++		}
+	}
+ 
+	if (iface->current_mode) {
+@@ -2123,7 +2192,9 @@
+ 		hapd = iface->bss[j];
+ 		if (j)
+ 			os_memcpy(hapd->own_addr, prev_addr, ETH_ALEN);
+-		if (hostapd_setup_bss(hapd, j == 0)) {
++		result = hostapd_setup_bss(hapd, j == 0);
++		bridge_ap_start_hostapd(iface, 22, result, (uint32_t) j, 0);
++		if (result) {
+ 			for (;;) {
+ 				hapd = iface->bss[j];
+ 				hostapd_bss_deinit_no_free(hapd);
+@@ -2145,7 +2216,9 @@
+ 
+ 	hostapd_set_acl(hapd);
+ 
+-	if (hostapd_driver_commit(hapd) < 0) {
++	result = hostapd_driver_commit(hapd);
++	bridge_ap_start_hostapd(iface, 23, result, 0, 0);
++	if (result < 0) {
+ 		wpa_printf(MSG_ERROR, "%s: Failed to commit driver "
+ 			   "configuration", __func__);
+ 		goto fail;
+@@ -2194,10 +2267,13 @@
+ #endif /* CONFIG_FST */
+ 
+ 	hostapd_set_state(iface, HAPD_IFACE_ENABLED);
++	bridge_ap_start_hostapd(iface, 24, 0, 0, 0);
+ 	hostapd_owe_update_trans(iface);
+ 	airtime_policy_update_init(iface);
+ 	wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, AP_EVENT_ENABLED);
+ 	if (hapd->setup_complete_cb)
++		bridge_ap_start_hostapd(iface, 25, 0, 0, 0);
++	if (hapd->setup_complete_cb)
+ 		hapd->setup_complete_cb(hapd->setup_complete_cb_ctx);
+ 
+ #ifdef CONFIG_MESH
+@@ -2215,9 +2291,11 @@
+ 	for (j = 0; j < iface->num_bss; j++)
+ 		hostapd_neighbor_set_own_report(iface->bss[j]);
+ 
++	bridge_ap_start_hostapd(iface, 26, 0, 0, 0);
+ 	return 0;
+ 
+ fail:
++	bridge_ap_start_hostapd(iface, 30, -1, 0, 0);
+ 	wpa_printf(MSG_ERROR, "Interface initialization failed");
+ 	hostapd_set_state(iface, HAPD_IFACE_DISABLED);
+ 	wpa_msg(hapd->msg_ctx, MSG_INFO, AP_EVENT_DISABLED);
+@@ -2259,8 +2337,12 @@
+ 	unsigned int i;
+ 	int not_ready_in_sync_ifaces = 0;
+ 
+-	if (!iface->need_to_start_in_sync)
+-		return hostapd_setup_interface_complete_sync(iface, err);
++	bridge_ap_start_hostapd(iface, 27, err, iface->need_to_start_in_sync, 0);
++	if (!iface->need_to_start_in_sync) {
++		int result = hostapd_setup_interface_complete_sync(iface, err);
++		bridge_ap_start_hostapd(iface, 29, result, 0, 0);
++		return result;
++	}
+ 
+ 	if (err) {
+ 		wpa_printf(MSG_ERROR, "Interface initialization failed");
+@@ -2302,6 +2384,7 @@
+ 	if (not_ready_in_sync_ifaces > 1) {
+ 		/* need to wait as there are other interfaces still coming up */
+ 		iface->ready_to_start_in_sync = 1;
++		bridge_ap_start_hostapd(iface, 28, 0, not_ready_in_sync_ifaces, 0);
+ 		wpa_printf(MSG_INFO,
+ 			   "%s: Interface waiting to sync with other interfaces",
+ 			   iface->bss[0]->conf->iface);
+@@ -2323,6 +2406,7 @@
+ 		}
+ 	}
+ 
++	bridge_ap_start_hostapd(iface, 29, 0, 0, 0);
+ 	return 0;
+ }
+ 
+@@ -2349,7 +2433,9 @@
+ 
+ 	if (!iface->conf)
+ 		return -1;
++	bridge_ap_start_hostapd(iface, 1, 0, iface->conf->channel, 0);
+ 	ret = setup_interface(iface);
++	bridge_ap_start_hostapd(iface, 2, ret, 0, 0);
+ 	if (ret) {
+ 		wpa_printf(MSG_ERROR, "%s: Unable to setup interface.",
+ 			   iface->conf->bss[0]->iface);
