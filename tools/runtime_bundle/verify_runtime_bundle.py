@@ -10,6 +10,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from verify_source_manifests import verify_dependency_manifests
+
 
 REQUIRED_LIBRARIES = {
     "libfhost_bl616cl_default.a",
@@ -136,7 +138,13 @@ def verify_sdk_commits(
             )
 
 
-def verify_bundle(bundle: Path, sdk: Path | None, allow_dirty: bool) -> None:
+def verify_bundle(
+    bundle: Path,
+    sdk: Path | None,
+    allow_dirty: bool,
+    source_manifest: Path,
+    proprietary_manifest: Path,
+) -> None:
     manifest_path = bundle / "manifest.json"
     if not manifest_path.is_file():
         raise RuntimeError(f"manifest is missing: {manifest_path}")
@@ -183,6 +191,14 @@ def verify_bundle(bundle: Path, sdk: Path | None, allow_dirty: bool) -> None:
     if sdk is not None:
         verify_sdk_commits(sdk, source_commits, allow_dirty)
 
+    verify_dependency_manifests(
+        bundle,
+        manifest,
+        source_manifest,
+        proprietary_manifest,
+        sdk,
+    )
+
     print(f"BUNDLE={bundle}")
     print(f"PROFILE={manifest['profile']}")
     print(f"SDK_COMMIT={source_commits['bouffalo_sdk']}")
@@ -216,12 +232,30 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="allow a development-only bundle or dirty SDK checkout",
     )
+    parser.add_argument(
+        "--source-manifest",
+        type=Path,
+        default=Path(__file__).resolve().parent / "source_manifest.json",
+        help="source dependency manifest for the bridge runtime",
+    )
+    parser.add_argument(
+        "--proprietary-manifest",
+        type=Path,
+        default=Path(__file__).resolve().parent / "proprietary_manifest.json",
+        help="supplier binary and ROM ABI manifest for the bridge runtime",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_arguments()
-    verify_bundle(args.bundle.resolve(), args.sdk.resolve() if args.sdk else None, args.allow_dirty)
+    verify_bundle(
+        args.bundle.resolve(),
+        args.sdk.resolve() if args.sdk else None,
+        args.allow_dirty,
+        args.source_manifest.resolve(),
+        args.proprietary_manifest.resolve(),
+    )
     return 0
 
 

@@ -97,7 +97,11 @@ Bouffalo SDK checkout is never modified.
 The bridge bundle verifier checks every manifest file hash and size, the
 bridge `defconfig`, the required Wi-Fi/MACSW/FHOST/lwIP/WPA and BLE archives,
 the public headers, and (when `--sdk` is supplied) the recorded SDK and build
-input sub-repository commits, including mbedTLS, LittleFS, lwIP, CherryUSB,
+input sub-repository commits. It also checks
+`source_manifest.json` and `proprietary_manifest.json`: every bridge link
+archive must be classified exactly once as a public-source build input or a
+supplier-prebuilt artifact, while BL616CL ROM ABI dependencies are explicit.
+The recorded source repositories include mbedTLS, LittleFS, lwIP, CherryUSB,
 Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system, and post-processing
 tools:
 
@@ -114,5 +118,8 @@ inspection of the current provisional bundle:
 
 The release gate is the first command without `--allow-dirty`; it must print
 `SOURCE_REPRODUCIBILITY=REPRODUCIBLE` and
-`BL616CL_RUNTIME_BUNDLE_VERIFY_PASS`.  The final product still needs a pinned
-SDK source snapshot or submodule and a clean regeneration before publication.
+`BL616CL_RUNTIME_BUNDLE_VERIFY_PASS`. `BL616CL_SOURCE_BOUNDARY_VERIFY_PASS`
+means that the binary boundary is auditable; it does not approve supplier
+binary redistribution. The final product still needs a pinned SDK source
+snapshot or submodule, supplier license confirmation, and a clean regeneration
+before publication.

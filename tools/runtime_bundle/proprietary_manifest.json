@@ -1,0 +1,37 @@
+{
+  "artifacts": [
+    {
+      "archive": "lib/libbl616cl_phyrf.a",
+      "classification": "supplier-prebuilt",
+      "license_status": "Bouffalo SDK root is Apache-2.0; PHY/RF artifact-specific redistribution notice requires supplier confirmation before release.",
+      "reason": "The BL616CL PHY/RF implementation is explicitly imported as a static archive by the SDK and is required by Wi-Fi and BLE coexistence.",
+      "sdk_source_path": "drivers/soc/bl616cl/phyrf/lib-gcc_10.2.0-toolchain_V2.6.1/libbl616cl_phyrf.a",
+      "sha256": "4136fb7b2666e595a51d84007bfad0e08a06a2d349880d43788ae88a69e943df"
+    },
+    {
+      "archive": "lib/libpka_bl616cl.a",
+      "classification": "supplier-prebuilt",
+      "license_status": "Bouffalo SDK root is Apache-2.0; PKA artifact-specific redistribution notice requires supplier confirmation before release.",
+      "reason": "The SDK links the BL616CL hardware PKA accelerator implementation as a static archive for the mbedTLS hardware-acceleration path.",
+      "sdk_source_path": "drivers/lhal/src/pka/libpka_bl616cl.a",
+      "sha256": "da06e6bf980e14bae0d2898f1c2b9e41c21dead4702d1cd3e0e9f43ec8f69269"
+    }
+  ],
+  "chip": "bl616cl",
+  "profile": "bridge",
+  "rom_boundaries": [
+    {
+      "classification": "chip-rom-abi",
+      "name": "BL616CL ROM API",
+      "reason": "The bridge profile sets CONFIG_ROMAPI=y. libstd is built from source, but its ROM API stubs bind to the BL616CL mask-ROM ABI and cannot be replaced independently of the silicon ROM version.",
+      "source_paths": [
+        "drivers/soc/bl616cl/std/CMakeLists.txt",
+        "drivers/soc/bl616cl/std/src/bl616cl_romapi_e907.c",
+        "drivers/soc/bl616cl/std/src/bl616cl_romapi_patch.c"
+      ]
+    }
+  ],
+  "schema": 1,
+  "scope": "bl616cl-bridge-proprietary-boundaries",
+  "sdk_commit": "240ff49ba0189ebeba92e6d5c42533f63d90a161"
+}
