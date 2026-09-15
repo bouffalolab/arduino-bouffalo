@@ -8,9 +8,13 @@ Generates the checked-in runtime bundles used by the Arduino platform:
 
 Example:
     python3 generate_runtime_bundle.py \\
-      --sdk /path/to/bouffalo_sdk \\
       --chip bl616cl \\
+      --profile bridge \\
       --toolchain /opt/Xuantie-900-gcc
+
+The default SDK input is the project-controlled
+``third_party/bouffalo_sdk`` source. Use ``--sdk`` only when intentionally
+testing another checkout.
 
 Chip-specific settings (toolchain prefix, ABI flags, toolchain directory name,
 FreeRTOS MTIME addresses) are drawn from the CHIP_CONFIG table below.  Add
@@ -175,6 +179,30 @@ def require_file(path: Path, description: str) -> Path:
     if not path.is_file():
         raise RuntimeError(f"missing {description}: {path}")
     return path
+
+
+def project_root(script_dir: Path) -> Path:
+    """Return the root repository containing third_party/bouffalo_sdk."""
+    return script_dir.parents[1]
+
+
+def resolve_sdk_path(script_dir: Path, sdk_arg: Path | None) -> Path:
+    """Resolve the controlled SDK source with an actionable bootstrap error."""
+    if sdk_arg is not None:
+        sdk = sdk_arg.expanduser().resolve()
+    else:
+        sdk = project_root(script_dir) / "third_party" / "bouffalo_sdk"
+    if (sdk / "project.build").is_file():
+        return sdk
+    if sdk_arg is None:
+        raise RuntimeError(
+            f"project-controlled Bouffalo SDK is not initialized: {sdk}\n"
+            "Run: python3 tools/prepare_bouffalo_sdk_source.py --init"
+        )
+    raise RuntimeError(
+        f"{sdk} does not look like a BouffaloSDK root "
+        f"(missing project.build)"
+    )
 
 
 def sha256(path: Path) -> str:
@@ -492,6 +520,7 @@ def record_source_versions(
     sub_repos = [
         "components/crypto/mbedtls/mbedtls",
         "components/crypto/mbedtls/mbedtls_v3",
+        "components/crypto/mbedtls/mbedtls_v3/framework",
         "components/fs",
         "components/net/lwip/lwip",
         "components/usb/cherryusb",
@@ -510,19 +539,6 @@ def record_source_versions(
             source_commits[relative] = run(
                 ["git", "-C", str(repo), "rev-parse", "HEAD"], capture=True
             )
-
-    # Also record soc/{chip}/std if it is a git repo
-    soc_std = sdk / "drivers" / "soc"
-    for child in soc_std.iterdir() if soc_std.is_dir() else []:
-        child_git = child / "std" / ".git"
-        if child_git.exists() or (child / "std").is_dir():
-            try:
-                source_commits[f"drivers/soc/{child.name}/std"] = run(
-                    ["git", "-C", str(child / "std"),
-                     "rev-parse", "HEAD"], capture=True
-                )
-            except subprocess.CalledProcessError:
-                pass
 
     dirty_repositories = []
     for repo in [sdk] + [sdk / r for r in sub_repos]:
@@ -633,8 +649,15 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--sdk", required=True, type=Path,
-                        help="BouffaloSDK root directory")
+    parser.add_argument(
+        "--sdk",
+        type=Path,
+        default=None,
+        help=(
+            "optional SDK override; defaults to the project-controlled "
+            "third_party/bouffalo_sdk checkout"
+        ),
+    )
     parser.add_argument("--chip", required=True,
                         choices=sorted(CHIP_CONFIG.keys()),
                         help="target chip (e.g. bl616cl)")
@@ -688,16 +711,10 @@ def main() -> int:
     if not profile_freertos_config.is_file():
         profile_freertos_config = script_dir / "FreeRTOSConfig.h"
 
-    sdk = args.sdk.expanduser().resolve()
+    sdk = resolve_sdk_path(script_dir, args.sdk)
     toolchain_root = resolve_toolchain(args.toolchain, chip_cfg)
 
     # ——— validate SDK sources ————————————————————————————————
-    if not (sdk / "project.build").is_file():
-        raise RuntimeError(
-            f"{sdk} does not look like a BouffaloSDK root "
-            f"(missing project.build)"
-        )
-
     board_dir = sdk / "bsp" / "board" / board
     if not board_dir.is_dir():
         raise RuntimeError(f"board directory not found: {board_dir}")

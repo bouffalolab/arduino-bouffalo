@@ -44,7 +44,7 @@ EXPECTED_LINK_ARCHIVES = {
 
 def project_root(script_dir: Path) -> Path:
     """Return the root repository containing third_party/bouffalo_sdk."""
-    return script_dir.parents[4]
+    return script_dir.parents[1]
 
 
 def controlled_sdk_path(script_dir: Path) -> Path:

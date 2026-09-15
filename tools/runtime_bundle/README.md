@@ -43,37 +43,48 @@ Some checked-in archives are built from patched SDK sources.  Local SDK fixes
 are tracked as unified diffs under `patches/`; see `patches/README.md` for the
 list and apply them to a fresh SDK checkout before regenerating a bundle.
 
+## Controlled SDK Source
+
+The bridge runtime uses this repository's project-controlled
+`third_party/bouffalo_sdk` Git submodule by default. Its root commit, required
+recursive submodules, remote URLs, and sparse checkout closure are locked in
+`third_party/bouffalo_sdk.lock.json`. Initialize and check it from this
+repository root:
+
+```bash
+python3 tools/prepare_bouffalo_sdk_source.py --init
+python3 tools/prepare_bouffalo_sdk_source.py --check
+```
+
+Do not edit `third_party/bouffalo_sdk`; bridge-owned configuration and
+generated bundle compatibility fixes remain in this platform repository.
+`--sdk` is an explicit development override, not the normal build path.
+
 ## Regenerate
 
-No SDK commit is hardcoded — the generator records whatever commit is currently
-checked out.  Uncommitted source changes produce a warning and a `-dirty`
-suffix in the manifest.  By default, the generator now rejects dirty SDK
-inputs.  Pass `--allow-dirty-sdk` only for a development bundle that must be
-tested before the SDK worktree is clean; such a bundle is not release
-reproducible.
+The generator records the checked-out controlled SDK commit. Uncommitted source
+changes are rejected by default. Pass `--allow-dirty-sdk` only for a
+development bundle that must be tested before the SDK worktree is clean; such
+a bundle is not release reproducible.
 
 From the repository root:
 
     # For BL616CL (default Xuantie-900 toolchain)
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
-      --sdk /path/to/bouffalo_sdk \
+    python3 tools/runtime_bundle/generate_runtime_bundle.py \
       --chip bl616cl
 
     # For BL618DG (Zephyr toolchain required)
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
-      --sdk /path/to/bouffalo_sdk \
+    python3 tools/runtime_bundle/generate_runtime_bundle.py \
       --chip bl618dg \
       --toolchain /opt/riscv64-zephyr-elf
 
     # Custom board
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
-      --sdk /path/to/bouffalo_sdk \
+    python3 tools/runtime_bundle/generate_runtime_bundle.py \
       --chip bl616cl \
       --board my_custom_board
 
     # BL616CL provisional bridge runtime
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
-      --sdk /path/to/bouffalo_sdk \
+    python3 tools/runtime_bundle/generate_runtime_bundle.py \
       --chip bl616cl \
       --profile bridge \
       --toolchain /path/to/Xuantie-900-gcc
@@ -96,8 +107,8 @@ Bouffalo SDK checkout is never modified.
 
 The bridge bundle verifier checks every manifest file hash and size, the
 bridge `defconfig`, the required Wi-Fi/MACSW/FHOST/lwIP/WPA and BLE archives,
-the public headers, and (when `--sdk` is supplied) the recorded SDK and build
-input sub-repository commits. It also checks
+the public headers, and the recorded controlled SDK and build-input
+sub-repository commits. It also checks
 `source_manifest.json` and `proprietary_manifest.json`: every bridge link
 archive must be classified exactly once as a public-source build input or a
 supplier-prebuilt artifact, while BL616CL ROM ABI dependencies are explicit.
@@ -105,14 +116,14 @@ The recorded source repositories include mbedTLS, LittleFS, lwIP, CherryUSB,
 Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system, and post-processing
 tools:
 
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
-      --bundle hardware/bouffalo/bl616cl/tools/sdk/bl616cl/bridge \
+    python3 tools/runtime_bundle/verify_runtime_bundle.py \
+      --bundle tools/sdk/bl616cl/bridge \
       --sdk /path/to/bouffalo_sdk
 
-The verifier rejects `-dirty` source records by default.  For development-only
-inspection of the current provisional bundle:
+The verifier rejects `-dirty` source records by default. For development-only
+inspection against an intentionally selected SDK checkout:
 
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
+    python3 tools/runtime_bundle/verify_runtime_bundle.py \
       --allow-dirty \
       --sdk /path/to/bouffalo_sdk
 

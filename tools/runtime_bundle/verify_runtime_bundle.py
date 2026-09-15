@@ -35,6 +35,15 @@ REQUIRED_HEADERS = {
 }
 
 
+def project_root(script_dir: Path) -> Path:
+    """Return the root repository containing third_party/bouffalo_sdk."""
+    return script_dir.parents[1]
+
+
+def controlled_sdk_path(script_dir: Path) -> Path:
+    return project_root(script_dir) / "third_party" / "bouffalo_sdk"
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -225,7 +234,10 @@ def parse_arguments() -> argparse.Namespace:
         "--sdk",
         type=Path,
         default=None,
-        help="optional Bouffalo SDK checkout to compare with manifest commits",
+        help=(
+            "SDK checkout to compare with manifest commits; defaults to the "
+            "project-controlled third_party/bouffalo_sdk checkout"
+        ),
     )
     parser.add_argument(
         "--allow-dirty",
@@ -249,9 +261,25 @@ def parse_arguments() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_arguments()
+    script_dir = Path(__file__).resolve().parent
+    sdk = (
+        args.sdk.expanduser().resolve()
+        if args.sdk is not None
+        else controlled_sdk_path(script_dir)
+    )
+    if not (sdk / "project.build").is_file():
+        if args.sdk is None:
+            raise RuntimeError(
+                f"project-controlled Bouffalo SDK is not initialized: {sdk}\n"
+                "Run: python3 tools/prepare_bouffalo_sdk_source.py --init"
+            )
+        raise RuntimeError(
+            f"{sdk} does not look like a BouffaloSDK root "
+            f"(missing project.build)"
+        )
     verify_bundle(
         args.bundle.resolve(),
-        args.sdk.resolve() if args.sdk else None,
+        sdk,
         args.allow_dirty,
         args.source_manifest.resolve(),
         args.proprietary_manifest.resolve(),
