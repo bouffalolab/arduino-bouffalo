@@ -861,6 +861,17 @@
           "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
         }
       ]
+    },
+    {
+      "id": "0059-bridge-mbedtls-configurable-content-buffer",
+      "path": "0059-bridge-mbedtls-configurable-content-buffer.patch",
+      "targets": [
+        {
+          "after_sha256": "eaaf973248077e882f450e7b7faacbc41fbe76da46b13df389a0bf7b3b1a599f",
+          "before_sha256": "2afe049be555457503ddb94d3ac056be36c6f202e9e2cd426390f706d42072ed",
+          "path": "components/crypto/mbedtls/CMakeLists.txt"
+        }
+      ]
     }
   ],
   "schema": 1

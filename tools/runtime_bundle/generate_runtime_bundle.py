@@ -400,9 +400,9 @@ def create_patched_sdk_overlay(
     """Build an ephemeral SDK view with bridge-owned Wi-Fi source patches.
 
     The controlled SDK checkout stays clean. Patchable Wi-Fi, MACSW, FreeRTOS,
-    and allocator trees are copied; every other SDK path is linked into a
-    temporary tree so SDK CMake still builds its normal dependency graph from
-    the locked source closure.
+    allocator, and mbedTLS trees are copied; every other SDK path is linked
+    into a temporary tree so SDK CMake still builds its normal dependency graph
+    from the locked source closure.
     """
     overlay = Path(tempfile.mkdtemp(prefix="bl616cl-sdk-overlay-"))
     link_directory_except(sdk, overlay, {".git", "components"})
@@ -412,7 +412,7 @@ def create_patched_sdk_overlay(
     wireless = components / "wireless"
     wifi6 = wireless / "wifi6"
     link_directory_except(
-        components, overlay / "components", {"wireless", "os", "mm"}
+        components, overlay / "components", {"wireless", "os", "mm", "crypto"}
     )
     link_directory_except(wireless, overlay / "components" / "wireless",
                           {"wifi6", "macsw"})
@@ -428,6 +428,15 @@ def create_patched_sdk_overlay(
     # back into the controlled SDK checkout.
     shutil.copytree(components / "os", overlay / "components" / "os")
     shutil.copytree(components / "mm", overlay / "components" / "mm")
+    link_directory_except(
+        components / "crypto",
+        overlay / "components" / "crypto",
+        {"mbedtls"},
+    )
+    shutil.copytree(
+        components / "crypto" / "mbedtls",
+        overlay / "components" / "crypto" / "mbedtls",
+    )
     shutil.copytree(
         wireless / "macsw", overlay / "components" / "wireless" / "macsw"
     )
@@ -1205,6 +1214,20 @@ def main() -> int:
     if profile_usb_config.is_file():
         copy_file(profile_usb_config, sdk_staging / "include" /
                   "usb_config.h")
+    if profile == "bridge":
+        # Applications including mbedTLS public headers must resolve the same
+        # config-tls-generic.h and Bouffalo allocator port used by libmbedtls.
+        copy_file(
+            build_sdk / "components" / "crypto" / "mbedtls" /
+            "config-tls-generic.h",
+            sdk_staging / "include" / "mbedtls" / "config-tls-generic.h",
+        )
+        copy_file(
+            build_sdk / "components" / "crypto" / "mbedtls" / "port" /
+            "mbedtls_port_bouffalo_sdk.h",
+            sdk_staging / "include" / "mbedtls" /
+            "mbedtls_port_bouffalo_sdk.h",
+        )
 
     # ——— SDK include roots ——————————————————————————————————————
     sdk_include_roots: list[tuple[Path, Path]] = [
@@ -1249,6 +1272,10 @@ def main() -> int:
              Path("sdk/littlefs/easyflash")),
             (build_sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
              "include", Path("mbedtls")),
+            # The SDK's Kconfig-selected hardware accelerators are included
+            # from mbedTLS public headers as sibling *_alt.h files.
+            (build_sdk / "components" / "crypto" / "mbedtls" / "port" /
+             "hw_acc", Path("mbedtls/mbedtls")),
             (build_sdk / "components" / "net" / "lwip" / "lwip" / "src" /
              "include", Path("lwip")),
             (build_sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
@@ -1281,6 +1308,11 @@ def main() -> int:
                      sdk_staging / "include")
     if profile == "bridge":
         patch_bridge_cpp_compat_headers(sdk_staging / "include")
+        copy_file(
+            profile_source / "mbedtls_config.h",
+            sdk_staging / "include" / "mbedtls" / "mbedtls" /
+            "mbedtls_config.h",
+        )
     # ring_buffer and other utils
     copy_headers(
         [(build_sdk / "components" / "utils" / "ring_buffer",

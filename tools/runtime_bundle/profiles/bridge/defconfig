@@ -6,6 +6,11 @@ CONFIG_PARTITION             =y
 CONFIG_LITTLEFS              =y
 CONFIG_LITTLEFS_KV_EASYFLASH =y
 
+# mbedTLS allocates independent input and output record buffers during
+# mbedtls_ssl_setup(). Keep each at 4 KiB for the complete Wi-Fi/BLE/USB
+# bridge image; the client negotiates RFC 6066 maximum_fragment_length=4096.
+CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN = 4096
+
 # The bridge needs a FreeRTOS USB device with CDC ACM and vendor HID.
 CONFIG_BSP_USB                 =y
 CONFIG_CHERRYUSB               =y

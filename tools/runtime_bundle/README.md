@@ -108,8 +108,17 @@ its target file baseline/result SHA-256 in the profile manifest, and the
 generated runtime manifest records the patch file hash and target metadata.
 Multiple patches may touch one target only when their SHA-256 values form a
 contiguous manifest-order chain.
-This is the mechanism for bridge-owned FHOST and WPA fixes such as AP+STA
-channel selection, protocol-UART log suppression, and AP-start telemetry.
+This is the mechanism for bridge-owned FHOST, WPA, and mbedTLS build fixes such
+as AP+STA channel selection, protocol-UART log suppression, AP-start telemetry,
+and profile-controlled TLS record-buffer sizing.
+
+The bridge bundle also ships the mbedTLS Kconfig config, Bouffalo allocator port
+header, and any Kconfig-selected hardware accelerator `*_alt.h` headers. Its
+`mbedtls/mbedtls_config.h` is a bridge-owned wrapper: it imports the generated
+Kconfig values and mirrors the fixed feature definitions that Bouffalo's
+mbedTLS CMake target supplies while building `libmbedtls.a`. This keeps Arduino
+translation units and the linked archive on one mbedTLS public API/ABI
+configuration without relying on quoted `MBEDTLS_CONFIG_FILE` compiler flags.
 
 ## Verify a bundle
 
