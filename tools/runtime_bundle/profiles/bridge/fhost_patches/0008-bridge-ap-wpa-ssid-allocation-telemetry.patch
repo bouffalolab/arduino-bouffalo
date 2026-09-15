@@ -1,0 +1,12 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
+@@ -3072,7 +3072,9 @@ struct wpa_ssid * wpa_config_add_network(struct wpa_config *config)
+ 	id++;
+ 
+ 	fhost_bridge_ap_start_progress(189, 0);
++	fhost_bridge_ap_start_heap_before_allocate(sizeof(*ssid));
+ 	ssid = os_zalloc(sizeof(*ssid));
++	fhost_bridge_ap_start_heap_after_allocate((uint32_t)(uintptr_t)ssid);
+ 	fhost_bridge_ap_start_progress(190, ssid ? 0 : -1);
+ 	if (ssid == NULL)
+ 		return NULL;

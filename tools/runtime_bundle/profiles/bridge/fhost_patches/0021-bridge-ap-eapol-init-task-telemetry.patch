@@ -1,0 +1,111 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpas_glue.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpas_glue.c
+@@ -12,6 +12,7 @@
+ #include "eapol_supp/eapol_supp_sm.h"
+ #include "eap_peer/eap.h"
+ #include "rsn_supp/wpa.h"
++#include "fhost.h"
+ #include "eloop.h"
+ #include "config.h"
+ #include "l2_packet/l2_packet.h"
+@@ -1157,7 +1158,9 @@
+ {
+ #ifdef IEEE8021X_EAPOL
+ 	struct eapol_ctx *ctx;
++	fhost_bridge_ap_start_progress(240, 0);
+ 	ctx = os_zalloc(sizeof(*ctx));
++	fhost_bridge_ap_start_progress(241, ctx ? 0 : -1);
+ 	if (ctx == NULL) {
+ 		wpa_printf(MSG_ERROR, "Failed to allocate EAPOL context.");
+ 		return -1;
+@@ -1197,7 +1200,9 @@
+ 	ctx->confirm_auth_cb = wpa_supplicant_eap_auth_start_cb;
+ 	ctx->set_anon_id = wpa_supplicant_set_anon_id;
+ 	ctx->cb_ctx = wpa_s;
++	fhost_bridge_ap_start_progress(242, 0);
+ 	wpa_s->eapol = eapol_sm_init(ctx);
++	fhost_bridge_ap_start_progress(243, wpa_s->eapol ? 0 : -1);
+ 	if (wpa_s->eapol == NULL) {
+ 		os_free(ctx);
+ 		wpa_printf(MSG_ERROR, "Failed to initialize EAPOL state "
+--- a/components/wireless/wifi6/wpa_supplicant/src/eapol_supp/eapol_supp_sm.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/eapol_supp/eapol_supp_sm.c
+@@ -18,6 +18,7 @@
+ #include "eap_peer/eap.h"
+ #include "eap_peer/eap_config.h"
+ #include "eap_peer/eap_proxy.h"
++#include "fhost.h"
+ #include "eapol_supp_sm.h"
+ 
+ #define STATE_MACHINE_DATA struct eapol_sm
+@@ -2111,7 +2112,9 @@
+ {
+ 	struct eapol_sm *sm;
+ 	struct eap_config conf;
++	fhost_bridge_ap_start_progress(244, 0);
+ 	sm = os_zalloc(sizeof(*sm));
++	fhost_bridge_ap_start_progress(245, sm ? 0 : -1);
+ 	if (sm == NULL)
+ 		return NULL;
+ 	sm->ctx = ctx;
+@@ -2134,7 +2137,9 @@
+ 	conf.wps = ctx->wps;
+ 	conf.cert_in_cb = ctx->cert_in_cb;
+ 
++	fhost_bridge_ap_start_progress(246, 0);
+ 	sm->eap = eap_peer_sm_init(sm, &eapol_cb, sm->ctx->msg_ctx, &conf);
++	fhost_bridge_ap_start_progress(247, sm->eap ? 0 : -1);
+ 	if (sm->eap == NULL) {
+ 		os_free(sm);
+ 		return NULL;
+@@ -2151,12 +2156,19 @@
+ 	/* Initialize EAPOL state machines */
+ 	sm->force_authorized_update = true;
+ 	sm->initialize = true;
++	fhost_bridge_ap_start_progress(252, 0);
+ 	eapol_sm_step(sm);
++	fhost_bridge_ap_start_progress(253, 0);
+ 	sm->initialize = false;
+ 	eapol_sm_step(sm);
++	fhost_bridge_ap_start_progress(254, 0);
+ 
+-	if (eloop_register_timeout(1, 0, eapol_port_timers_tick, NULL, sm) == 0)
++	if (eloop_register_timeout(1, 0, eapol_port_timers_tick, NULL, sm) == 0) {
+ 		sm->timer_tick_enabled = 1;
++		fhost_bridge_ap_start_progress(255, 0);
++	} else {
++		fhost_bridge_ap_start_progress(255, -1);
++	}
+ 
+ 	return sm;
+ }
+--- a/components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap.c
+@@ -21,6 +21,7 @@
+ #include "pcsc_funcs.h"
+ #include "state_machine.h"
+ #include "ext_password.h"
++#include "fhost.h"
+ #include "wpa_crypto/crypto.h"
+ #include "wpa_crypto/tls.h"
+ #include "wpa_crypto/sha256.h"
+@@ -2173,7 +2174,9 @@
+ 	struct eap_sm *sm;
+ 	struct tls_config tlsconf;
+ 
++	fhost_bridge_ap_start_progress(248, 0);
+ 	sm = os_zalloc(sizeof(*sm));
++	fhost_bridge_ap_start_progress(249, sm ? 0 : -1);
+ 	if (sm == NULL)
+ 		return NULL;
+ 	sm->eapol_ctx = eapol_ctx;
+@@ -2194,7 +2197,9 @@
+ 	tlsconf.event_cb = eap_peer_sm_tls_event;
+ 	tlsconf.cb_ctx = sm;
+ 	tlsconf.cert_in_cb = conf->cert_in_cb;
++	fhost_bridge_ap_start_progress(250, 0);
+ 	sm->ssl_ctx = tls_init(&tlsconf);
++	fhost_bridge_ap_start_progress(251, sm->ssl_ctx ? 0 : -1);
+ 	if (sm->ssl_ctx == NULL) {
+ 		wpa_printf(MSG_WARNING, "SSL: Failed to initialize TLS "
+ 			   "context.");

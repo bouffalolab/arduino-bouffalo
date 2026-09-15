@@ -1,0 +1,31 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
+@@ -12559,12 +12559,27 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
+ 					 char *buf, size_t *resp_len)
+ {
+ 	char *reply;
+-	const int reply_size = 2048;
++	int reply_size;
+ 	int reply_len;
+ 	const int bridge_ap_add_network =
+ 		os_strcmp(wpa_s->ifname, "wl2") == 0 &&
+ 		os_strcmp(buf, "ADD_NETWORK") == 0;
++	const int bridge_ap_short_reply =
++		os_strcmp(wpa_s->ifname, "wl2") == 0 &&
++		(os_strcmp(buf, "ADD_NETWORK") == 0 ||
++		 os_strcmp(buf, "SET sae_pwe 2") == 0 ||
++		 os_strncmp(buf, "SET_NETWORK ", 12) == 0 ||
++		 os_strncmp(buf, "AP_SCAN ", 8) == 0 ||
++		 os_strncmp(buf, "ENABLE_NETWORK ", 15) == 0);
+ 
++	/*
++	 * The AP setup commands used by FHOST only return "OK\n" or the
++	 * decimal network id. Avoid holding the generic 2 KiB control reply
++	 * buffer while WPA keeps its 964-byte network configuration record.
++	 * Query commands retain the SDK default so their response capacity is
++	 * unchanged.
++	 */
++	reply_size = bridge_ap_short_reply ? 64 : 2048;
+ 	if (bridge_ap_add_network)
+ 		fhost_bridge_ap_start_progress(170, 0);
+ 	reply = os_malloc(reply_size);

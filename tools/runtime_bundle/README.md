@@ -37,28 +37,23 @@ LTO executables required by MACSW's `-flto -ffat-lto-objects` archives.
 See `CHIP_CONFIG` in `generate_runtime_bundle.py` for the full per-chip
 settings (ABI flags, MTIME addresses, FreeRTOS extension directory).
 
-## SDK patches
-
-Some checked-in archives are built from patched SDK sources.  Local SDK fixes
-are tracked as unified diffs under `patches/`; see `patches/README.md` for the
-list and apply them to a fresh SDK checkout before regenerating a bundle.
-
 ## Controlled SDK Source
 
-The bridge runtime uses this repository's project-controlled
+The bridge runtime uses the root repository's project-controlled
 `third_party/bouffalo_sdk` Git submodule by default. Its root commit, required
-recursive submodules, remote URLs, and sparse checkout closure are locked in
-`third_party/bouffalo_sdk.lock.json`. Initialize and check it from this
-repository root:
+recursive submodules, remote URLs and sparse checkout closure are locked in
+`third_party/bouffalo_sdk.lock.json`. Initialize and check it from the root
+repository:
 
 ```bash
 python3 tools/prepare_bouffalo_sdk_source.py --init
 python3 tools/prepare_bouffalo_sdk_source.py --check
 ```
 
-Do not edit `third_party/bouffalo_sdk`; bridge-owned configuration and
-generated bundle compatibility fixes remain in this platform repository.
-`--sdk` is an explicit development override, not the normal build path.
+This materializes the minimum source closure needed by the bridge profile. Do
+not edit `third_party/bouffalo_sdk`; bridge-owned configuration and generated
+bundle compatibility fixes remain in this platform checkout. `--sdk` is an
+explicit development override, not the normal build path.
 
 ## Regenerate
 
@@ -99,9 +94,22 @@ generated `.ini`, or logs), and writes SHA-256 manifests.  Regenerate and
 review manifests whenever the SDK commit, `defconfig`, toolchain, ABI flags, or
 partition layout change.
 
-For the bridge profile, the generator applies explicitly named compatibility
-fixes only to copied public headers in the generated bundle. The external
-Bouffalo SDK checkout is never modified.
+For the bridge profile, the generator may apply explicitly named compatibility
+fixes to the copied public headers required by the Arduino C++ build. These
+patches affect only the generated bundle; the external Bouffalo SDK checkout is
+never modified. The current fix adds an explicit cast in the MACSW inline
+classifier where the latest SDK uses a C-only `const void *` conversion; the
+cast remains valid when the same header is included from C.
+
+The bridge profile also applies source patches from
+`profiles/bridge/fhost_patches/` to an ephemeral hard-linked SDK view used only
+for that build. The controlled SDK checkout remains clean. Each patch records
+its target file baseline/result SHA-256 in the profile manifest, and the
+generated runtime manifest records the patch file hash and target metadata.
+Multiple patches may touch one target only when their SHA-256 values form a
+contiguous manifest-order chain.
+This is the mechanism for bridge-owned FHOST and WPA fixes such as AP+STA
+channel selection, protocol-UART log suppression, and AP-start telemetry.
 
 ## Verify a bundle
 
@@ -113,14 +121,13 @@ sub-repository commits. It also checks
 archive must be classified exactly once as a public-source build input or a
 supplier-prebuilt artifact, while BL616CL ROM ABI dependencies are explicit.
 The recorded source repositories include mbedTLS, LittleFS, lwIP, CherryUSB,
-Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system, and post-processing
+Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system and post-processing
 tools:
 
     python3 tools/runtime_bundle/verify_runtime_bundle.py \
-      --bundle tools/sdk/bl616cl/bridge \
-      --sdk /path/to/bouffalo_sdk
+      --bundle tools/sdk/bl616cl/bridge
 
-The verifier rejects `-dirty` source records by default. For development-only
+The verifier rejects `-dirty` source records by default.  For development-only
 inspection against an intentionally selected SDK checkout:
 
     python3 tools/runtime_bundle/verify_runtime_bundle.py \

@@ -154,6 +154,7 @@ RUNTIME_PROFILES = {
         "source_directory": "profiles/bridge",
         "output_directory": "bridge",
         "board_overlay_directory": "board_overlay",
+        "source_patch_manifest": "fhost_patches/manifest.json",
     },
 }
 
@@ -242,39 +243,236 @@ def copy_headers(source_roots: list[tuple[Path, Path]],
 
 
 def patch_bridge_cpp_compat_headers(include_root: Path) -> None:
-    """Apply narrow C++ compatibility fixes to copied bridge headers."""
+    """Apply narrow C++ compatibility fixes to copied bridge headers.
+
+    Bouffalo's MACSW public header is consumed as both C and C++ by Arduino
+    sketches.  The latest SDK keeps a C-only implicit conversion from
+    ``const void *`` to ``const uint8_t *`` in an inline helper.  Keep the
+    external SDK untouched and patch only the generated Arduino bundle copy.
+    """
     macsw_header = include_root / "wifi" / "macsw" / "macsw.h"
     require_file(macsw_header, "copied MACSW public header")
     source = macsw_header.read_text(encoding="utf-8")
     old = "    const uint8_t *data = frame;\n"
     new = "    const uint8_t *data = (const uint8_t *)frame;\n"
+    if old not in source:
+        raise RuntimeError(
+            "MACSW C++ compatibility pattern is missing or already changed: "
+            f"{macsw_header}"
+        )
     if source.count(old) != 1:
         raise RuntimeError(
-            "MACSW C++ compatibility pattern is missing or not unique: "
+            "MACSW C++ compatibility pattern is not unique: "
             f"{macsw_header}"
         )
     macsw_header.write_text(source.replace(old, new), encoding="utf-8")
 
+    pec_header = include_root / "sdk" / "lhal" / "bflb_pec_v2_instance.h"
+    require_file(pec_header, "copied PEC public header")
+    source = pec_header.read_text(encoding="utf-8")
+    old = " * frame_timeout > idle tolerance maximums. \n"
+    new = " * frame_timeout > idle tolerance maximums.\n"
+    if source.count(old) != 1:
+        raise RuntimeError(
+            "PEC header whitespace pattern is missing or not unique: "
+            f"{pec_header}"
+        )
+    pec_header.write_text(source.replace(old, new), encoding="utf-8")
 
-def copy_cherryusb_headers(sdk: Path, include_root: Path,
-                           runtime_bundle: Path) -> None:
-    """Copy CherryUSB's flat include surface into the SDK runtime include dir.
 
-    CherryUSB headers deliberately use short, unqualified include names such as
-    ``usbd_core.h`` and ``usbd_hid.h``.  Flattening them into ``include/`` keeps
-    the Arduino platform recipes small and matches the upstream SDK examples.
+def load_source_patch_manifest(path: Path) -> dict[str, object]:
+    """Load and validate one profile-owned SDK source patch manifest."""
+    require_file(path, "profile source patch manifest")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError(f"source patch manifest must be an object: {path}")
+    if data.get("schema") != 1:
+        raise RuntimeError(
+            f"unsupported source patch manifest schema in {path}: "
+            f"{data.get('schema')!r}"
+        )
+    patches = data.get("patches")
+    if not isinstance(patches, list) or not patches:
+        raise RuntimeError(f"source patch manifest has no patches: {path}")
+    return data
+
+
+def source_patch_records(
+    manifest: dict[str, object],
+    *,
+    manifest_path: Path,
+    platform_root: Path,
+) -> list[dict[str, object]]:
+    """Validate profile patch inputs and return manifest-ready records."""
+    raw_patches = manifest["patches"]
+    assert isinstance(raw_patches, list)
+    records: list[dict[str, object]] = []
+    seen_ids: set[str] = set()
+    target_chain_ends: dict[str, str] = {}
+
+    for patch in raw_patches:
+        if not isinstance(patch, dict):
+            raise RuntimeError(
+                f"source patch record is invalid in {manifest_path}"
+            )
+        patch_id = patch.get("id")
+        relative_patch = patch.get("path")
+        targets = patch.get("targets")
+        if not isinstance(patch_id, str) or not patch_id:
+            raise RuntimeError(
+                f"source patch id is missing in {manifest_path}"
+            )
+        if patch_id in seen_ids:
+            raise RuntimeError(
+                f"duplicate source patch id {patch_id!r} in {manifest_path}"
+            )
+        if not isinstance(relative_patch, str) or not relative_patch:
+            raise RuntimeError(
+                f"source patch path is missing for {patch_id!r}"
+            )
+        patch_path = manifest_path.parent / relative_patch
+        require_file(patch_path, f"source patch {patch_id!r}")
+        if not isinstance(targets, list) or not targets:
+            raise RuntimeError(
+                f"source patch targets are missing for {patch_id!r}"
+            )
+
+        target_records: list[dict[str, str]] = []
+        for target in targets:
+            if not isinstance(target, dict):
+                raise RuntimeError(
+                    f"source patch target is invalid for {patch_id!r}"
+                )
+            relative_target = target.get("path")
+            before_sha256 = target.get("before_sha256")
+            after_sha256 = target.get("after_sha256")
+            if (
+                not isinstance(relative_target, str) or not relative_target or
+                not isinstance(before_sha256, str) or len(before_sha256) != 64 or
+                not isinstance(after_sha256, str) or len(after_sha256) != 64
+            ):
+                raise RuntimeError(
+                    f"source patch target metadata is invalid for {patch_id!r}"
+                )
+            previous_after_sha256 = target_chain_ends.get(relative_target)
+            if (
+                previous_after_sha256 is not None
+                and before_sha256 != previous_after_sha256
+            ):
+                raise RuntimeError(
+                    f"source patch {patch_id!r} does not continue the SHA-256 "
+                    f"chain for {relative_target!r}"
+                )
+            target_chain_ends[relative_target] = after_sha256
+            target_records.append({
+                "path": relative_target,
+                "before_sha256": before_sha256,
+                "after_sha256": after_sha256,
+            })
+
+        seen_ids.add(patch_id)
+        records.append({
+            "id": patch_id,
+            "path": str(patch_path.relative_to(platform_root)),
+            "sha256": sha256(patch_path),
+            "targets": target_records,
+        })
+
+    return records
+
+
+def link_directory_except(source: Path, destination: Path,
+                          excluded: set[str]) -> None:
+    """Create a directory whose ordinary entries are links to ``source``."""
+    destination.mkdir(parents=True, exist_ok=True)
+    for entry in source.iterdir():
+        if entry.name in excluded:
+            continue
+        (destination / entry.name).symlink_to(entry)
+
+
+def create_patched_sdk_overlay(
+    sdk: Path,
+    *,
+    patch_records: list[dict[str, object]],
+) -> Path:
+    """Build an ephemeral SDK view with bridge-owned Wi-Fi source patches.
+
+    The controlled SDK checkout stays clean. The patchable FHOST and WPA
+    supplicant trees are copied; every other SDK path is linked into a
+    temporary tree so SDK CMake still builds its normal dependency graph from
+    the locked source closure.
     """
-    cherryusb_root = sdk / "components" / "usb" / "cherryusb"
-    if not cherryusb_root.is_dir():
-        raise RuntimeError(f"missing CherryUSB source tree: {cherryusb_root}")
+    overlay = Path(tempfile.mkdtemp(prefix="bl616cl-sdk-overlay-"))
+    link_directory_except(sdk, overlay, {".git", "components"})
+    (overlay / ".git").symlink_to(sdk / ".git")
 
-    for source in sorted(cherryusb_root.rglob("*.h")):
-        copy_file(source, include_root / source.name)
-
-    copy_file(
-        require_file(runtime_bundle / "usb_config.h", "CherryUSB config"),
-        include_root / "usb_config.h",
+    components = sdk / "components"
+    wireless = components / "wireless"
+    wifi6 = wireless / "wifi6"
+    link_directory_except(
+        components, overlay / "components", {"wireless", "os", "mm"}
     )
+    link_directory_except(wireless, overlay / "components" / "wireless",
+                          {"wifi6"})
+    link_directory_except(
+        wifi6,
+        overlay / "components" / "wireless" / "wifi6",
+        {"fhost", "wpa_supplicant", "macsw_os_adapter"},
+    )
+
+    # Bridge patches currently instrument FreeRTOS heap_3.c, the Wi-Fi
+    # control path, and the MM/TLSF allocator boundary. Keep those complete
+    # subtrees private so patch(1) never follows a symlink back into the
+    # controlled SDK checkout.
+    shutil.copytree(components / "os", overlay / "components" / "os")
+    shutil.copytree(components / "mm", overlay / "components" / "mm")
+
+    for patchable_tree in ("fhost", "wpa_supplicant", "macsw_os_adapter"):
+        shutil.copytree(
+            wifi6 / patchable_tree,
+            overlay / "components" / "wireless" / "wifi6" / patchable_tree,
+        )
+
+    return overlay
+
+
+def apply_source_patches(
+    overlay: Path,
+    *,
+    patch_records: list[dict[str, object]],
+    patch_paths: dict[str, Path],
+) -> None:
+    """Apply and verify profile patches in an ephemeral SDK overlay."""
+    for record in patch_records:
+        patch_id = str(record["id"])
+        patch_path = patch_paths[patch_id]
+        targets = record["targets"]
+        assert isinstance(targets, list)
+
+        for target in targets:
+            assert isinstance(target, dict)
+            source = overlay / str(target["path"])
+            require_file(source, f"source patch target for {patch_id!r}")
+            if sha256(source) != target["before_sha256"]:
+                raise RuntimeError(
+                    f"source patch {patch_id!r} baseline SHA-256 mismatch for "
+                    f"{target['path']}"
+                )
+
+        run(["patch", "--batch", "--forward", "--dry-run", "-p1",
+             "--input", str(patch_path)], cwd=overlay)
+        run(["patch", "--batch", "--forward", "-p1",
+             "--input", str(patch_path)], cwd=overlay)
+
+        for target in targets:
+            assert isinstance(target, dict)
+            source = overlay / str(target["path"])
+            if sha256(source) != target["after_sha256"]:
+                raise RuntimeError(
+                    f"source patch {patch_id!r} result SHA-256 mismatch for "
+                    f"{target['path']}"
+                )
 
 
 def copy_linker_fragments(linker_script: Path, *, sdk: Path,
@@ -694,8 +892,7 @@ def main() -> int:
     arch = chip_cfg["arch"]
 
     script_dir = Path(__file__).resolve().parent
-    # platform root = hardware/bouffalo/bl616cl → tools/runtime_bundle is
-    # two levels down
+    # platform root = repository root → tools/runtime_bundle is two levels down.
     platform_root = script_dir.parent.parent
     profile_source = script_dir / str(profile_cfg["source_directory"])
     require_file(profile_source / "defconfig",
@@ -706,6 +903,36 @@ def main() -> int:
     if board_overlay_dir is not None and not board_overlay_dir.is_dir():
         raise RuntimeError(
             f"missing {profile} board overlay directory: {board_overlay_dir}"
+        )
+    source_patch_manifest_path = None
+    source_patch_records_for_manifest: list[dict[str, object]] = []
+    source_patch_paths: dict[str, Path] = {}
+    source_patch_manifest_sha256 = None
+    source_patch_manifest_relative = None
+    source_patch_name = profile_cfg.get("source_patch_manifest")
+    if source_patch_name is not None:
+        source_patch_manifest_path = profile_source / str(source_patch_name)
+        source_patch_manifest = load_source_patch_manifest(
+            source_patch_manifest_path
+        )
+        source_patch_records_for_manifest = source_patch_records(
+            source_patch_manifest,
+            manifest_path=source_patch_manifest_path,
+            platform_root=platform_root,
+        )
+        source_patch_paths = {
+            str(record["id"]): source_patch_manifest_path.parent /
+            str(next(
+                patch["path"]
+                for patch in source_patch_manifest["patches"]
+                if isinstance(patch, dict) and
+                patch.get("id") == record["id"]
+            ))
+            for record in source_patch_records_for_manifest
+        }
+        source_patch_manifest_sha256 = sha256(source_patch_manifest_path)
+        source_patch_manifest_relative = str(
+            source_patch_manifest_path.relative_to(platform_root)
         )
     profile_freertos_config = profile_source / "FreeRTOSConfig.h"
     if not profile_freertos_config.is_file():
@@ -782,7 +1009,20 @@ def main() -> int:
         shutil.rmtree(build_dir)
 
     env = os.environ.copy()
-    env["BL_SDK_BASE"] = str(sdk)
+    build_sdk = sdk
+    sdk_overlay = None
+    if source_patch_records_for_manifest:
+        sdk_overlay = create_patched_sdk_overlay(
+            sdk,
+            patch_records=source_patch_records_for_manifest,
+        )
+        apply_source_patches(
+            sdk_overlay,
+            patch_records=source_patch_records_for_manifest,
+            patch_paths=source_patch_paths,
+        )
+        build_sdk = sdk_overlay
+    env["BL_SDK_BASE"] = str(build_sdk)
     env["PATH"] = str(toolchain_root / "bin") + os.pathsep + \
                   env.get("PATH", "")
 
@@ -794,7 +1034,7 @@ def main() -> int:
         "CONFIG_MULTIMEDIA_VIDEO=n",
         f"CONFIG_ARDUINO_RUNTIME_PROFILE={profile}",
         f"SDK_DEMO_PATH={build_source}",
-        f"BL_SDK_BASE={sdk}",
+        f"BL_SDK_BASE={build_sdk}",
     ]
     run(make_args, cwd=build_source, env=env)
 
@@ -904,7 +1144,7 @@ def main() -> int:
     copy_file(linker_script, sdk_staging / "ld")
     copy_linker_fragments(
         linker_script,
-        sdk=sdk,
+        sdk=build_sdk,
         board_dir=board_dir,
         generated=generated,
         destination=sdk_staging,
@@ -924,25 +1164,25 @@ def main() -> int:
 
     # ——— SDK include roots ——————————————————————————————————————
     sdk_include_roots: list[tuple[Path, Path]] = [
-        (sdk / "components" / "mm", Path("sdk/mm")),
-        (sdk / "components" / "sysinit", Path("sdk/sysinit")),
-        (sdk / "components" / "libc", Path("sdk/libc")),
-        (sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
-        (sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
+        (build_sdk / "components" / "mm", Path("sdk/mm")),
+        (build_sdk / "components" / "sysinit", Path("sdk/sysinit")),
+        (build_sdk / "components" / "libc", Path("sdk/libc")),
+        (build_sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
+        (build_sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
         (lhal_config_dir, Path("sdk/lhal-config")),
-        (sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
-        (sdk / "drivers" / "soc" / chip / "std" / "include",
+        (build_sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
+        (build_sdk / "drivers" / "soc" / chip / "std" / "include",
          Path("sdk/soc")),
-        (sdk / "drivers" / "sys", Path("sdk/sys")),
-        (sdk / "components" / "os" / "freertos" / "include",
+        (build_sdk / "drivers" / "sys", Path("sdk/sys")),
+        (build_sdk / "components" / "os" / "freertos" / "include",
          Path("freertos")),
-        (sdk / "components" / "os" / "freertos" / "portable" /
+        (build_sdk / "components" / "os" / "freertos" / "portable" /
          "GCC" / "RISC-V" / "common", Path("freertos/portable")),
     ]
     # chip-specific FreeRTOS extension
     freertos_ext = chip_cfg.get("freertos_extension")
     if freertos_ext:
-        ext_dir = (sdk / "components" / "os" / "freertos" /
+        ext_dir = (build_sdk / "components" / "os" / "freertos" /
                    "portable" / "GCC" / "RISC-V" / "common" /
                    "chip_specific_extensions" / str(freertos_ext))
         if ext_dir.is_dir():
@@ -952,43 +1192,42 @@ def main() -> int:
 
     if profile == "bridge":
         sdk_include_roots.extend([
-            (sdk / "components" / "utils" / "bflb_mtd" / "include",
+            (build_sdk / "components" / "utils" / "bflb_mtd" / "include",
              Path("sdk/bflb_mtd")),
-            (sdk / "components" / "utils" / "async_event",
+            (build_sdk / "components" / "utils" / "async_event",
              Path("sdk/utils/async_event")),
-            (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
-            (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+            (build_sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+            (build_sdk / "drivers" / "soc" / chip / "phyrf" / "include",
              Path("sdk/rfparam")),
-            (sdk / "components" / "fs" / "littlefs" / "littlefs",
+            (build_sdk / "components" / "fs" / "littlefs" / "littlefs",
              Path("sdk/littlefs/littlefs")),
-            (sdk / "components" / "fs" / "littlefs" / "easyflash_port",
+            (build_sdk / "components" / "fs" / "littlefs" / "easyflash_port",
              Path("sdk/littlefs/easyflash")),
-            (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+            (build_sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
              "include", Path("mbedtls")),
-            (sdk / "components" / "net" / "lwip" / "lwip" / "src" /
+            (build_sdk / "components" / "net" / "lwip" / "lwip" / "src" /
              "include", Path("lwip")),
-            (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+            (build_sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
              Path("lwip")),
-            (sdk / "components" / "wireless" / "macsw" / "inc",
+            (build_sdk / "components" / "wireless" / "macsw" / "inc",
              Path("wifi/macsw")),
-            (sdk / "components" / "wireless" / "wifi6" / "fhost" /
+            (build_sdk / "components" / "wireless" / "wifi6" / "fhost" /
              "include", Path("wifi/fhost")),
-            (sdk / "components" / "usb" / "cherryusb" / "common",
+            (build_sdk / "components" / "usb" / "cherryusb" / "common",
              Path("cherryusb/common")),
-            (sdk / "components" / "usb" / "cherryusb" / "core",
+            (build_sdk / "components" / "usb" / "cherryusb" / "core",
              Path("cherryusb/core")),
-            (sdk / "components" / "usb" / "cherryusb" / "class" / "cdc",
+            (build_sdk / "components" / "usb" / "cherryusb" / "class" / "cdc",
              Path("cherryusb/class/cdc")),
-            (sdk / "components" / "usb" / "cherryusb" / "class" / "hid",
+            (build_sdk / "components" / "usb" / "cherryusb" / "class" / "hid",
              Path("cherryusb/class/hid")),
-            (sdk / "components" / "wireless" / "bluetooth" /
+            (build_sdk / "components" / "wireless" / "bluetooth" /
              "btblecontroller" / "btble_inc", Path("bluetooth/controller")),
-            (sdk / "components" / "wireless" / "bluetooth" / "blestack" /
+            (build_sdk / "components" / "wireless" / "bluetooth" / "blestack" /
              "src" / "include", Path("bluetooth/blestack")),
         ])
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
-    copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
     # Board headers → sdk/include/board. Project-local overlay headers are
     # shipped too so Arduino sources observe the exact board API used to build
     # libapp.a, without requiring the external SDK checkout at compile time.
@@ -1000,21 +1239,21 @@ def main() -> int:
         patch_bridge_cpp_compat_headers(sdk_staging / "include")
     # ring_buffer and other utils
     copy_headers(
-        [(sdk / "components" / "utils" / "ring_buffer",
+        [(build_sdk / "components" / "utils" / "ring_buffer",
           Path("sdk/utils/ring_buffer")),
-         (sdk / "components" / "utils" / "bflb_block_pool",
+         (build_sdk / "components" / "utils" / "bflb_block_pool",
           Path("sdk/utils/bflb_block_pool")),
-         (sdk / "components" / "utils" / "bflb_timestamp",
+         (build_sdk / "components" / "utils" / "bflb_timestamp",
           Path("sdk/utils/bflb_timestamp")),
-         (sdk / "components" / "utils" / "getopt",
+         (build_sdk / "components" / "utils" / "getopt",
           Path("sdk/utils/getopt")),
-         (sdk / "components" / "utils" / "coredump",
+         (build_sdk / "components" / "utils" / "coredump",
           Path("sdk/utils/coredump")),
-         (sdk / "components" / "utils" / "cjson",
+         (build_sdk / "components" / "utils" / "cjson",
           Path("sdk/utils/cjson")),
-         (sdk / "components" / "utils" / "math" / "include",
+         (build_sdk / "components" / "utils" / "math" / "include",
           Path("sdk/utils/math/include")),
-         (sdk / "components" / "utils" / "list",
+         (build_sdk / "components" / "utils" / "list",
           Path("sdk/utils/list")),
          ],
         sdk_staging / "include",
@@ -1077,7 +1316,7 @@ def main() -> int:
                     "size": path.stat().st_size,
                 }
         manifest = {
-            "schema": 3,
+            "schema": 4,
             "scope": scope,
             "chip": chip,
             "board": board,
@@ -1112,6 +1351,12 @@ def main() -> int:
                 "directory": str(board_overlay_dir.relative_to(platform_root)),
                 "files": overlay_files,
             }
+        if source_patch_manifest_path is not None:
+            manifest["source_patches"] = {
+                "manifest": source_patch_manifest_relative,
+                "manifest_sha256": source_patch_manifest_sha256,
+                "patches": source_patch_records_for_manifest,
+            }
         return manifest
 
     (sdk_staging / "manifest.json").write_text(
@@ -1129,6 +1374,8 @@ def main() -> int:
         shutil.rmtree(build_dir)
         if profile_build_source is not None:
             shutil.rmtree(profile_build_source)
+        if sdk_overlay is not None:
+            shutil.rmtree(sdk_overlay)
 
     print(f"\nChip runtime installed in  {sdk_runtime}")
     print(f"Toolchain installed in     {tc_dest}")

@@ -1,0 +1,142 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -59,6 +59,9 @@
+                                                  uint32_t chan5g_count);
+ extern void fhost_bridge_ap_start_heap_before_allocate(uint32_t size);
+ extern void fhost_bridge_ap_start_heap_after_allocate(uint32_t address);
++extern void fhost_bridge_ap_start_command(uint8_t command, uint8_t phase,
++                                          int fhost_vif_idx, int wpa_state,
++                                          int network_id);
+ 
+ /*
+ * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -623,6 +623,73 @@
+     return 0;
+ }
+ 
++enum bridge_ap_command {
++    BRIDGE_AP_COMMAND_NONE = 0,
++    BRIDGE_AP_COMMAND_INTERFACE_ADD = 1,
++    BRIDGE_AP_COMMAND_INTERFACE_REMOVE = 2,
++    BRIDGE_AP_COMMAND_ADD_NETWORK = 3,
++    BRIDGE_AP_COMMAND_SET_SAE_PWE = 4,
++    BRIDGE_AP_COMMAND_SET_COUNTRY = 5,
++    BRIDGE_AP_COMMAND_SET_NON_PREF_CHAN = 6,
++    BRIDGE_AP_COMMAND_SET_NETWORK_KEY_MGMT = 7,
++    BRIDGE_AP_COMMAND_SET_NETWORK_MODE = 8,
++    BRIDGE_AP_COMMAND_SET_NETWORK_SSID = 9,
++    BRIDGE_AP_COMMAND_SET_NETWORK_PSK = 10,
++    BRIDGE_AP_COMMAND_SET_NETWORK_GENERIC = 11,
++    BRIDGE_AP_COMMAND_AP_SCAN = 12,
++    BRIDGE_AP_COMMAND_ENABLE_NETWORK = 13,
++    BRIDGE_AP_COMMAND_OTHER = 14,
++};
++
++static uint8_t bridge_ap_command_class(int fhost_vif_idx, const char *command)
++{
++    const char *setting;
++
++    if (fhost_vif_idx == FHOST_WPA_GLOBAL_VIF) {
++        if (strncmp(command, "INTERFACE_ADD wl2",
++                    sizeof("INTERFACE_ADD wl2") - 1) == 0)
++            return BRIDGE_AP_COMMAND_INTERFACE_ADD;
++        if (strncmp(command, "INTERFACE_REMOVE wl2",
++                    sizeof("INTERFACE_REMOVE wl2") - 1) == 0)
++            return BRIDGE_AP_COMMAND_INTERFACE_REMOVE;
++        return BRIDGE_AP_COMMAND_NONE;
++    }
++
++    if (fhost_vif_idx != MGMR_VIF_AP)
++        return BRIDGE_AP_COMMAND_NONE;
++
++    if (strcmp(command, "ADD_NETWORK") == 0)
++        return BRIDGE_AP_COMMAND_ADD_NETWORK;
++    if (strcmp(command, "SET sae_pwe 2") == 0)
++        return BRIDGE_AP_COMMAND_SET_SAE_PWE;
++    if (strncmp(command, "SET country ", sizeof("SET country ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_COUNTRY;
++    if (strncmp(command, "SET non_pref_chan ",
++                sizeof("SET non_pref_chan ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_NON_PREF_CHAN;
++    if (strncmp(command, "AP_SCAN ", sizeof("AP_SCAN ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_AP_SCAN;
++    if (strncmp(command, "ENABLE_NETWORK ",
++                sizeof("ENABLE_NETWORK ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_ENABLE_NETWORK;
++    if (strncmp(command, "SET_NETWORK ", sizeof("SET_NETWORK ") - 1) != 0)
++        return BRIDGE_AP_COMMAND_OTHER;
++
++    setting = strchr(command + sizeof("SET_NETWORK ") - 1, ' ');
++    if (!setting || !setting[1])
++        return BRIDGE_AP_COMMAND_SET_NETWORK_GENERIC;
++    ++setting;
++    if (strncmp(setting, "key_mgmt ", sizeof("key_mgmt ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_NETWORK_KEY_MGMT;
++    if (strncmp(setting, "mode ", sizeof("mode ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_NETWORK_MODE;
++    if (strncmp(setting, "ssid ", sizeof("ssid ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_NETWORK_SSID;
++    if (strncmp(setting, "psk ", sizeof("psk ") - 1) == 0)
++        return BRIDGE_AP_COMMAND_SET_NETWORK_PSK;
++    return BRIDGE_AP_COMMAND_SET_NETWORK_GENERIC;
++}
++
+ int fhost_wpa_execute_cmd(int fhost_vif_idx, char *resp_buf, int *resp_buf_len,
+                           const char *fmt, ...)
+ {
+@@ -637,6 +704,7 @@
+     int res = -1;
+     bool bridge_ap_add_network;
+     bool bridge_ap_set_sae_pwe;
++    uint8_t bridge_ap_command;
+ 
+     if ((fhost_vif_idx < FHOST_WPA_GLOBAL_VIF) &&
+         (!wpa_vif || (wpa_vif->state == FHOST_WPA_STATE_STOPPED))) {
+@@ -690,6 +758,12 @@
+         return res;
+     }
+ 
++    bridge_ap_command = bridge_ap_command_class(fhost_vif_idx, p);
++    if (bridge_ap_command != BRIDGE_AP_COMMAND_NONE)
++        fhost_bridge_ap_start_command(bridge_ap_command, 1, fhost_vif_idx,
++                                      wpa_vif ? wpa_vif->state : -1,
++                                      wpa_vif ? wpa_vif->network_id : -1);
++
+     /*
+      * Record synchronous AP control boundaries without changing the request
+      * ownership or wait semantics.
+@@ -701,6 +775,10 @@
+         fhost_bridge_ap_start_progress(153, 0);
+     if (bridge_ap_set_sae_pwe)
+         fhost_bridge_ap_start_progress(206, 0);
++    if (bridge_ap_command != BRIDGE_AP_COMMAND_NONE)
++        fhost_bridge_ap_start_command(bridge_ap_command, 2, fhost_vif_idx,
++                                      wpa_vif ? wpa_vif->state : -1,
++                                      wpa_vif ? wpa_vif->network_id : -1);
+     if (eloop_event_commit_sync(ELOOP_EVT_WPA_IFACE_CTRL,
+                             req, req_len + offset + 1, &resp, &len, -1) < 0) {
+         fhost_printf("failed to commit eloop sync event\r\n");
+@@ -709,6 +787,10 @@
+         res = -3;
+         goto end;
+     }
++    if (bridge_ap_command != BRIDGE_AP_COMMAND_NONE)
++        fhost_bridge_ap_start_command(bridge_ap_command, 3, fhost_vif_idx,
++                                      wpa_vif ? wpa_vif->state : -1,
++                                      wpa_vif ? wpa_vif->network_id : -1);
+     if (fhost_vif_idx == FHOST_WPA_GLOBAL_VIF &&
+         strncmp(req, "INTERFACE_ADD wl2", sizeof("INTERFACE_ADD wl2") - 1) == 0)
+         fhost_bridge_ap_start_progress(66, 0);
+@@ -749,6 +831,10 @@
+     }
+ 
+ end:
++    if (bridge_ap_command != BRIDGE_AP_COMMAND_NONE)
++        fhost_bridge_ap_start_command(bridge_ap_command, 4, fhost_vif_idx,
++                                      wpa_vif ? wpa_vif->state : -1,
++                                      wpa_vif ? wpa_vif->network_id : -1);
+     rtos_free(req);
+     rtos_free(resp);
+     return res;

@@ -1,0 +1,61 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -62,6 +62,8 @@
+ extern void fhost_bridge_ap_start_command(uint8_t command, uint8_t phase,
+                                           int fhost_vif_idx, int wpa_state,
+                                           int network_id);
++extern void fhost_bridge_ap_start_sync(uint8_t phase, uint32_t semaphore,
++                                       int result, uint32_t count);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -404,6 +404,7 @@
+ /* sync done cb */
+ static void event_commit_sync_done(void *data) {
+   struct event_sync_msg *msg = data;
++  int signal_result;
+   int bridge_ap_add_network =
+       msg != NULL &&
+       strncmp((char *)(msg + 1), "IFNAME=wl2 ADD_NETWORK",
+@@ -423,13 +424,23 @@
+     fhost_bridge_ap_start_progress(217, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(225, 0);
+-  rtos_semaphore_signal(msg->done, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_sync(2, (uint32_t)(uintptr_t)msg->done, 0,
++                               rtos_semaphore_get_count(msg->done));
++  signal_result = rtos_semaphore_signal(msg->done, 0);
++  if (bridge_ap_enable_network) {
++    fhost_bridge_ap_start_sync(3, (uint32_t)(uintptr_t)msg->done,
++                               signal_result, 0);
++    fhost_bridge_ap_start_sync(4, (uint32_t)(uintptr_t)msg->done, 0,
++                               rtos_semaphore_get_count(msg->done));
++  }
+ }
+ 
+ /////////////////////////////////////////////////////////////////////////////
+ int eloop_event_commit_sync(int type, const char *request, int req_len,
+                             char **resp, int *resp_len, int timeout_ms) {
+   int ret = 0;
++  int wait_result;
+   int bridge_ap_interface_add =
+       type == ELOOP_EVT_WPA_IFACE_CTRL &&
+       request != NULL &&
+@@ -478,7 +489,13 @@
+     fhost_bridge_ap_start_progress(210, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(219, ret);
+-  rtos_semaphore_wait(data->done, timeout_ms);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
++                               rtos_semaphore_get_count(data->done));
++  wait_result = rtos_semaphore_wait(data->done, timeout_ms);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_sync(5, (uint32_t)(uintptr_t)data->done,
++                               wait_result, rtos_semaphore_get_count(data->done));
+   if (bridge_ap_set_sae_pwe)
+     fhost_bridge_ap_start_progress(211, 0);
+   if (bridge_ap_enable_network)

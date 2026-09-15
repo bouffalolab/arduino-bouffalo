@@ -159,7 +159,7 @@ def verify_bundle(
         raise RuntimeError(f"manifest is missing: {manifest_path}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    if manifest.get("schema") != 3:
+    if manifest.get("schema") != 4:
         raise RuntimeError(f"unsupported manifest schema: {manifest.get('schema')!r}")
     if manifest.get("scope") != "chip-runtime":
         raise RuntimeError("manifest scope is not chip-runtime")
@@ -173,6 +173,63 @@ def verify_bundle(
         raise RuntimeError("bridge defconfig SHA-256 mismatch")
 
     verify_manifest_files(bundle, manifest)
+
+    source_patches = manifest.get("source_patches")
+    if not isinstance(source_patches, dict):
+        raise RuntimeError("runtime manifest source_patches field is missing")
+    patch_manifest_relative = source_patches.get("manifest")
+    patch_manifest_sha256 = source_patches.get("manifest_sha256")
+    patch_records = source_patches.get("patches")
+    if (
+        not isinstance(patch_manifest_relative, str) or
+        not isinstance(patch_manifest_sha256, str) or
+        not isinstance(patch_records, list) or
+        not patch_records
+    ):
+        raise RuntimeError("runtime manifest source_patches field is invalid")
+    platform_root = bundle.parents[3]
+    patch_manifest = platform_root / patch_manifest_relative
+    if not patch_manifest.is_file():
+        raise RuntimeError(f"source patch manifest is missing: {patch_manifest}")
+    if sha256(patch_manifest) != patch_manifest_sha256:
+        raise RuntimeError("source patch manifest SHA-256 mismatch")
+    patch_manifest_data = json.loads(patch_manifest.read_text(encoding="utf-8"))
+    if patch_manifest_data.get("schema") != 1:
+        raise RuntimeError("source patch manifest schema is invalid")
+    manifest_patch_ids = {
+        record.get("id")
+        for record in patch_records
+        if isinstance(record, dict)
+    }
+    source_patch_ids = {
+        record.get("id")
+        for record in patch_manifest_data.get("patches", [])
+        if isinstance(record, dict)
+    }
+    if manifest_patch_ids != source_patch_ids:
+        raise RuntimeError("runtime/source patch manifest ids differ")
+    for record in patch_records:
+        if not isinstance(record, dict):
+            raise RuntimeError("runtime source patch record is invalid")
+        patch_relative = record.get("path")
+        patch_hash = record.get("sha256")
+        if not isinstance(patch_relative, str) or not isinstance(patch_hash, str):
+            raise RuntimeError("runtime source patch metadata is invalid")
+        patch_path = platform_root / patch_relative
+        if not patch_path.is_file() or sha256(patch_path) != patch_hash:
+            raise RuntimeError(f"source patch hash mismatch: {patch_relative}")
+        targets = record.get("targets")
+        if not isinstance(targets, list) or not targets:
+            raise RuntimeError(f"source patch targets are missing: {patch_relative}")
+        for target in targets:
+            if not isinstance(target, dict):
+                raise RuntimeError(f"source patch target is invalid: {patch_relative}")
+            if (
+                not isinstance(target.get("path"), str) or
+                not isinstance(target.get("before_sha256"), str) or
+                not isinstance(target.get("after_sha256"), str)
+            ):
+                raise RuntimeError(f"source patch target metadata is invalid: {patch_relative}")
 
     for relative in REQUIRED_HEADERS:
         if not (bundle / relative).is_file():
