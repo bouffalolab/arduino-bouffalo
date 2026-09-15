@@ -1,0 +1,19 @@
+--- a/components/wireless/macsw/inc/macsw_default_config.h
++++ b/components/wireless/macsw/inc/macsw_default_config.h
+@@ -17,3 +17,16 @@
+ #define CFG_TWT 8
+ #define CFG_BARX 2
+ #define CFG_BATX 1
++
++/*
++ * UNO R4 bridge builds retain concurrent AP/STA and the default station
++ * limits, but do not need the SDK default's high-throughput RX reorder
++ * budget. Ten FHOST RX buffers leave room for SoftAP hostapd allocations in
++ * BL616CL WRAM while keeping 802.11n aggregation enabled.
++ */
++#ifdef CONFIG_UNOR4_BRIDGE_RESOURCE_PROFILE
++#undef CFG_REORD_BUF
++#define CFG_REORD_BUF 8
++#undef CFG_BARX
++#define CFG_BARX 1
++#endif

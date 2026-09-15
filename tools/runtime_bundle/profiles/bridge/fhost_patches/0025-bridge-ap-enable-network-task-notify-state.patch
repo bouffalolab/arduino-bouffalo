@@ -1,0 +1,92 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -67,3 +67,6 @@
+ extern void fhost_bridge_ap_start_trace(uint8_t event, uint32_t semaphore,
+                                        int result, uint32_t count);
++extern void fhost_bridge_ap_start_notification_ab(
++    uint8_t phase, uint32_t message, uint32_t waiting_task,
++    uint8_t request_matches, uint8_t use_task_notification, int result);
+ 
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -428,8 +428,17 @@
+     fhost_bridge_ap_start_progress(217, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(225, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(
++        4, (uint32_t)(uintptr_t)msg,
++        (uint32_t)(uintptr_t)msg->waiting_task,
++        1, msg->use_task_notification, 0);
+   if (msg->use_task_notification) {
+     if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_notification_ab(
++          5, (uint32_t)(uintptr_t)msg,
++          (uint32_t)(uintptr_t)msg->waiting_task, 1, 1, 0);
++    if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_trace(5, (uint32_t)(uintptr_t)msg->waiting_task,
+                                   0, 0);
+     if (bridge_ap_enable_network)
+@@ -445,6 +454,10 @@
+     return;
+   }
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(
++        6, (uint32_t)(uintptr_t)msg,
++        (uint32_t)(uintptr_t)msg->waiting_task, 1, 0, 0);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(234, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_pointer(8, (uint32_t)(uintptr_t)msg->done);
+@@ -508,6 +521,9 @@
+       (bridge_ap_enable_network && timeout_ms >= 0))
+     return -1;
+ 
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(1, 0, 0, 1, 0, 0);
++
+   data = os_zalloc(sizeof(struct event_sync_msg) + req_len);
+ 
+   if (bridge_ap_set_sae_pwe)
+@@ -528,10 +544,20 @@
+     ret = -1;
+     goto exit;
+   }
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(
++        2, (uint32_t)(uintptr_t)data,
++        (uint32_t)(uintptr_t)data->waiting_task,
++        1, data->use_task_notification, ret);
+   data->resp = resp;
+   data->resp_len = resp_len;
+ 
+   ret = eloop_post_event(type, sizeof(struct event_sync_msg) + req_len, data, event_commit_sync_done);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(
++        3, (uint32_t)(uintptr_t)data,
++        (uint32_t)(uintptr_t)data->waiting_task,
++        1, data->use_task_notification, ret);
+   if (ret) {
+     goto exit;
+   }
+@@ -551,6 +577,10 @@
+     fhost_bridge_ap_start_progress(233, 0);
+   if (data->use_task_notification) {
+     if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_notification_ab(
++          7, (uint32_t)(uintptr_t)data,
++          (uint32_t)(uintptr_t)data->waiting_task, 1, 1, 0);
++    if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_trace(7,
+                                   (uint32_t)(uintptr_t)data->waiting_task,
+                                   0, 0);
+@@ -564,6 +594,10 @@
+                                   wait_result, 0);
+   } else {
+     if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_notification_ab(
++          8, (uint32_t)(uintptr_t)data,
++          (uint32_t)(uintptr_t)data->waiting_task, 1, 0, 0);
++    if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_pointer(7, (uint32_t)(uintptr_t)data->done);
+     if (bridge_ap_enable_network)

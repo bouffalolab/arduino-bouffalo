@@ -1,0 +1,120 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -22,6 +22,9 @@
+ #define wpa_printf(l, f, ...) printf(f, ##__VA_ARGS__)
+ 
+ extern void fhost_bridge_ap_start_progress(uint8_t stage, int result);
++extern void fhost_bridge_ap_start_eloop_post(
++    uint8_t phase, uint32_t body, uint32_t body_length, uint8_t event_type,
++    uint8_t request_matches, uint32_t request, uint32_t request_word);
+ 
+ #define ELOOP_MSGQ_SIZE_MAX   (16)
+ 
+@@ -366,8 +369,53 @@
+ /* post a event to eloop */
+ int eloop_post_event(int sock, unsigned int body_len, void *body, void (*done)(void *)) {
+   struct eloop_event_request *evreq = NULL;
++  int bridge_ap_enable_network = 0;
++  const char *bridge_ap_request = NULL;
++  unsigned int bridge_ap_request_len = 0;
++  unsigned int bridge_ap_request_word = 0;
++  unsigned int command_offset;
++
++  if (sock == ELOOP_EVT_WPA_IFACE_CTRL && body != NULL &&
++      body_len >= sizeof(struct event_sync_msg)) {
++    bridge_ap_request = (char *)(((struct event_sync_msg *)body) + 1);
++    bridge_ap_request_len = body_len - sizeof(struct event_sync_msg);
++    if (bridge_ap_request_len >= sizeof(uint32_t)) {
++      bridge_ap_request_word =
++          (uint32_t)(unsigned char)bridge_ap_request[0] |
++          ((uint32_t)(unsigned char)bridge_ap_request[1] << 8) |
++          ((uint32_t)(unsigned char)bridge_ap_request[2] << 16) |
++          ((uint32_t)(unsigned char)bridge_ap_request[3] << 24);
++    }
++    fhost_bridge_ap_start_eloop_post(
++        2, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 0,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
++
++    if (bridge_ap_request_len >= sizeof("IFNAME=") - 1 &&
++        strncmp(bridge_ap_request, "IFNAME=", sizeof("IFNAME=") - 1) == 0) {
++      fhost_bridge_ap_start_eloop_post(
++          3, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 0,
++          (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
++      for (command_offset = sizeof("IFNAME=") - 1;
++           command_offset + sizeof(" ENABLE_NETWORK ") - 1 <=
++               bridge_ap_request_len;
++           ++command_offset) {
++        if (strncmp(bridge_ap_request + command_offset, " ENABLE_NETWORK ",
++                    sizeof(" ENABLE_NETWORK ") - 1) == 0) {
++          bridge_ap_enable_network = 1;
++          fhost_bridge_ap_start_eloop_post(
++              4, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++              (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
++          break;
++        }
++      }
++    }
++  }
+ 
+   evreq = os_zalloc(sizeof(struct eloop_event_request));
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        5, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   if (evreq == NULL) {
+     wpa_printf(MSG_WARNING, "failed to create request\r\n");
+     return -1;
+@@ -379,12 +427,36 @@
+   evreq->body_len = body_len;
+   evreq->done = done;
+ 
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        6, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   rtos_mutex_lock(eloop.mtx);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        7, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   dl_list_add_tail(&eloop.event_requests, &evreq->entry);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        8, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   rtos_mutex_unlock(eloop.mtx);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        9, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+ 
+   /* trigger eloop */
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        10, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   rtos_semaphore_signal(eloop.event_trigger, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        11, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
++        (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+   return 0;
+ }
+ 
+@@ -557,6 +629,15 @@
+         3, (uint32_t)(uintptr_t)data,
+         (uint32_t)(uintptr_t)data->waiting_task,
+         1, data->use_task_notification, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_eloop_post(
++        1, (uint32_t)(uintptr_t)data,
++        sizeof(struct event_sync_msg) + req_len, (uint8_t)type, 1,
++        (uint32_t)(uintptr_t)(data + 1),
++        (uint32_t)(unsigned char)request[0] |
++            ((uint32_t)(unsigned char)request[1] << 8) |
++            ((uint32_t)(unsigned char)request[2] << 16) |
++            ((uint32_t)(unsigned char)request[3] << 24));
+ 
+   ret = eloop_post_event(type, sizeof(struct event_sync_msg) + req_len, data, event_commit_sync_done);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_notification_ab(

@@ -155,6 +155,7 @@ RUNTIME_PROFILES = {
         "output_directory": "bridge",
         "board_overlay_directory": "board_overlay",
         "source_patch_manifest": "fhost_patches/manifest.json",
+        "linker_overlay": "hbn_noinit_diagnostics",
     },
 }
 
@@ -398,8 +399,8 @@ def create_patched_sdk_overlay(
 ) -> Path:
     """Build an ephemeral SDK view with bridge-owned Wi-Fi source patches.
 
-    The controlled SDK checkout stays clean. The patchable FHOST and WPA
-    supplicant trees are copied; every other SDK path is linked into a
+    The controlled SDK checkout stays clean. Patchable Wi-Fi, MACSW, FreeRTOS,
+    and allocator trees are copied; every other SDK path is linked into a
     temporary tree so SDK CMake still builds its normal dependency graph from
     the locked source closure.
     """
@@ -414,19 +415,22 @@ def create_patched_sdk_overlay(
         components, overlay / "components", {"wireless", "os", "mm"}
     )
     link_directory_except(wireless, overlay / "components" / "wireless",
-                          {"wifi6"})
+                          {"wifi6", "macsw"})
     link_directory_except(
         wifi6,
         overlay / "components" / "wireless" / "wifi6",
         {"fhost", "wpa_supplicant", "macsw_os_adapter"},
     )
 
-    # Bridge patches currently instrument FreeRTOS heap_3.c, the Wi-Fi
-    # control path, and the MM/TLSF allocator boundary. Keep those complete
-    # subtrees private so patch(1) never follows a symlink back into the
-    # controlled SDK checkout.
+    # Bridge patches currently instrument FreeRTOS heap_3.c, the Wi-Fi control
+    # path, MACSW resource configuration, and the MM/TLSF allocator boundary.
+    # Keep those complete subtrees private so patch(1) never follows a symlink
+    # back into the controlled SDK checkout.
     shutil.copytree(components / "os", overlay / "components" / "os")
     shutil.copytree(components / "mm", overlay / "components" / "mm")
+    shutil.copytree(
+        wireless / "macsw", overlay / "components" / "wireless" / "macsw"
+    )
 
     for patchable_tree in ("fhost", "wpa_supplicant", "macsw_os_adapter"):
         shutil.copytree(
@@ -511,6 +515,41 @@ def copy_linker_fragments(linker_script: Path, *, sdk: Path,
             copy_file(fragment, destination / name)
             copied.add(name)
             pending.append(fragment)
+
+
+def apply_linker_overlay(linker_script: Path, overlay: str | None) -> None:
+    """Apply a small, auditable linker extension owned by a runtime profile."""
+    if overlay is None:
+        return
+    if overlay != "hbn_noinit_diagnostics":
+        raise RuntimeError(f"unsupported linker overlay: {overlay}")
+
+    marker = "    __hbn_memory_end__ = ABSOLUTE(.);"
+    section = """\
+    /*
+     * HBN RAM is retained across an MCU watchdog reset. Keep the bridge's
+     * concise reset diagnostics here instead of ordinary OCRAM .noinit data.
+     * The 512-byte window ends before the SDK-owned IOT2LP area at 0x20010400.
+     */
+    __hbn_noinit_start__ = ABSOLUTE(ADDR(hbn_noinit)); __hbn_noinit_end__ = ABSOLUTE(ADDR(hbn_noinit) + SIZEOF(hbn_noinit)); hbn_noinit (NOLOAD) :
+    {
+        . = ALIGN(4);
+        KEEP(*(.hbn_noinit*))
+        . = ALIGN(4);
+    } > hbn_memory
+"""
+    text = linker_script.read_text(encoding="utf-8")
+    if "hbn_noinit (NOLOAD)" in text:
+        return
+    if text.count(marker) != 1:
+        raise RuntimeError(
+            f"could not apply {overlay}: expected one HBN end marker in "
+            f"{linker_script}"
+        )
+    linker_script.write_text(
+        text.replace(marker, section + marker),
+        encoding="utf-8",
+    )
 
 
 def sdk_version(sdk: Path) -> str:
@@ -1142,6 +1181,11 @@ def main() -> int:
     linker_script = require_file(generated / "linker.ld",
                                  f"{chip} linker script")
     copy_file(linker_script, sdk_staging / "ld")
+    linker_overlay = profile_cfg.get("linker_overlay")
+    apply_linker_overlay(
+        sdk_staging / "ld",
+        None if linker_overlay is None else str(linker_overlay),
+    )
     copy_linker_fragments(
         linker_script,
         sdk=build_sdk,
@@ -1357,6 +1401,8 @@ def main() -> int:
                 "manifest_sha256": source_patch_manifest_sha256,
                 "patches": source_patch_records_for_manifest,
             }
+        if linker_overlay is not None:
+            manifest["linker_overlay"] = str(linker_overlay)
         return manifest
 
     (sdk_staging / "manifest.json").write_text(

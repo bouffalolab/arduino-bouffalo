@@ -1,0 +1,20 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -79,6 +79,7 @@
+     int operstate, int old_wpa_state, int new_wpa_state, int result,
+     uint8_t callback_slot);
+ extern void fhost_bridge_ap_start_create_ap(
+     uint8_t phase, int result, uint8_t wpa_state, uint32_t detail);
++extern void fhost_bridge_ap_start_allocator_heap_walk(void);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -1143,4 +1143,6 @@
+ 				9, 0, wpa_s->wpa_state, i);
+ 		if (bridge_ap)
+ 			fhost_bridge_ap_start_progress(250, 0);
++		if (bridge_ap)
++			fhost_bridge_ap_start_allocator_heap_walk();
+ 		hapd_iface->bss[i] =

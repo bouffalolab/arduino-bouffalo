@@ -9,6 +9,7 @@
 #include "bflb_sec_mutex.h"
 #include "bflb_sf_ctrl.h"
 #include "bflb_xip_sflash.h"
+#include "bflb_wo.h"
 #include "bl616cl_glb.h"
 #include "bl616cl_pm.h"
 #include "bl616cl_tzc_sec.h"
@@ -18,6 +19,8 @@ extern uint32_t __HeapBase;
 extern uint32_t __HeapLimit;
 extern uint32_t _heap_wifi_start;
 extern uint32_t _heap_wifi_size;
+
+extern void bflb_wo_set_console(struct bflb_device_s *dev);
 
 static void system_bod_init(void)
 {
@@ -129,6 +132,21 @@ static void ebreak_cpu(void)
     __ASM volatile("ebreak");
 }
 
+static void console_init(void)
+{
+#ifdef CONFIG_CONSOLE_WO
+    struct bflb_device_s *wo = bflb_device_get_by_name("wo");
+    if (wo != NULL) {
+        /*
+         * GPIO8 is the dedicated BL616CL log TX on the final carrier.
+         * Keep UART0 free for the RA4M1 user bridge on GPIO34/35.
+         */
+        bflb_wo_uart_init(wo, CONFIG_CONSOLE_UART_BAUDRATE, GPIO_PIN_8);
+        bflb_wo_set_console(wo);
+    }
+#endif
+}
+
 void board_init(void)
 {
     int flash_result = -1;
@@ -161,9 +179,10 @@ void board_init(void)
 #endif
 
     /*
-     * Deliberately no console_init(): GPIO34/35 are the RA4M1 user UART.
-     * SDK startup output must never be emitted on that bridge data path.
+     * Console output is write-only on GPIO8. It must not use UART0 because
+     * GPIO34/35 are the RA4M1 user UART.
      */
+    console_init();
 
     bflb_irq_attach(BOD_IRQn, system_bod_isr, NULL);
     bflb_irq_enable(BOD_IRQn);

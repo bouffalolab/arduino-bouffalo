@@ -33,6 +33,13 @@ CONFIG_DEBUG                  =y
 CONFIG_ROMAPI                 =y
 CONFIG_LOG_LEVEL              =3
 CONFIG_CONSOLE_UART_BAUDRATE  =2000000
+# Route SDK printf/stdout through the BL616CL write-only UART on GPIO8.
+# UART0 remains reserved for the RA4M1 user UART on GPIO34/35.
+CONFIG_CONSOLE_WO             =y
+
+# Retain AP+STA capability while reserving enough WRAM for SoftAP hostapd
+# allocations. The matching SDK overlay only reduces RX reorder/BA capacity.
+CONFIG_UNOR4_BRIDGE_RESOURCE_PROFILE =y
 
 # WiFiS3 does not expose WPS. Keep it out of the bridge profile while the
 # SoftAP/WPS initialization path is under hardware validation.

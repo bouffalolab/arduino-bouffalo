@@ -1,0 +1,61 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -57,9 +57,6 @@
+   rtos_mutex mtx;
+   rtos_task_handle eloop_task;
+ 
+-  /* tirgger it when new event coming */
+-  rtos_semaphore event_trigger;
+-
+   /* the list for all kinds of events */
+   struct dl_list event_handlers;
+ 
+@@ -89,12 +86,6 @@
+     return -1;
+   }
+ 
+-  if (rtos_semaphore_create(&eloop.event_trigger, 1, 0) < 0) {
+-    wpa_printf(MSG_ERROR, "failed to create eloop_msg sema\r\n");
+-    rtos_mutex_delete(eloop.mtx);
+-    return -1;
+-  }
+-
+   return 0;
+ }
+ 
+@@ -447,12 +438,15 @@
+         9, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
+         (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+ 
+-  /* trigger eloop */
++  /*
++   * The bridge polls this mutex-protected queue at a bounded fixed interval.
++   * On BL616CL, both semaphore give and task notification wake-ups can stall
++   * while the caller holds the synchronous FHOST request path.
++   */
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_eloop_post(
+         10, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
+         (uint32_t)(uintptr_t)bridge_ap_request, bridge_ap_request_word);
+-  rtos_semaphore_signal(eloop.event_trigger, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_eloop_post(
+         11, (uint32_t)(uintptr_t)body, body_len, (uint8_t)sock, 1,
+@@ -872,7 +867,9 @@
+     timeout_ms = eloop_process_timeouts();
+ 
+     /* waiting events before timeouts arrive */
+-    rtos_semaphore_wait(eloop.event_trigger, timeout_ms);
++    if (timeout_ms > 10)
++      timeout_ms = 10;
++    rtos_task_suspend(timeout_ms);
+   }
+ 
+   eloop.state = ELOOP_STATE_STOP;
+@@ -894,7 +891,6 @@
+     eloop_remove_timeout(timeout);
+   }
+ 
+-  rtos_semaphore_delete(eloop.event_trigger);
+   rtos_mutex_delete(eloop.mtx);
+ }
