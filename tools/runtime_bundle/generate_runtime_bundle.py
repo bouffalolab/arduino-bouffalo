@@ -213,6 +213,21 @@ def copy_headers(source_roots: list[tuple[Path, Path]],
             copy_file(source, destination)
 
 
+def patch_bridge_cpp_compat_headers(include_root: Path) -> None:
+    """Apply narrow C++ compatibility fixes to copied bridge headers."""
+    macsw_header = include_root / "wifi" / "macsw" / "macsw.h"
+    require_file(macsw_header, "copied MACSW public header")
+    source = macsw_header.read_text(encoding="utf-8")
+    old = "    const uint8_t *data = frame;\n"
+    new = "    const uint8_t *data = (const uint8_t *)frame;\n"
+    if source.count(old) != 1:
+        raise RuntimeError(
+            "MACSW C++ compatibility pattern is missing or not unique: "
+            f"{macsw_header}"
+        )
+    macsw_header.write_text(source.replace(old, new), encoding="utf-8")
+
+
 def copy_cherryusb_headers(sdk: Path, include_root: Path,
                            runtime_bundle: Path) -> None:
     """Copy CherryUSB's flat include surface into the SDK runtime include dir.
@@ -475,10 +490,18 @@ def record_source_versions(
     commit = run(["git", "-C", str(sdk), "rev-parse", "HEAD"], capture=True)
     source_commits = {"bouffalo_sdk": commit}
     sub_repos = [
+        "components/crypto/mbedtls/mbedtls",
+        "components/crypto/mbedtls/mbedtls_v3",
+        "components/fs",
+        "components/net/lwip/lwip",
+        "components/usb/cherryusb",
+        "components/wireless/bluetooth",
         "drivers/lhal",
         "drivers/sys",
         "tools/bflb_tools",
         "components/wireless/macsw",
+        "components/wireless/wifi6",
+        f"drivers/soc/{chip}/phyrf",
         f"drivers/soc/{chip}/std",
     ]
     for relative in sub_repos:
@@ -956,6 +979,8 @@ def main() -> int:
     if board_overlay_dir is not None:
         copy_headers([(board_overlay_dir, Path("board"))],
                      sdk_staging / "include")
+    if profile == "bridge":
+        patch_bridge_cpp_compat_headers(sdk_staging / "include")
     # ring_buffer and other utils
     copy_headers(
         [(sdk / "components" / "utils" / "ring_buffer",

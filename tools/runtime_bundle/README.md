@@ -88,12 +88,18 @@ generated `.ini`, or logs), and writes SHA-256 manifests.  Regenerate and
 review manifests whenever the SDK commit, `defconfig`, toolchain, ABI flags, or
 partition layout change.
 
+For the bridge profile, the generator applies explicitly named compatibility
+fixes only to copied public headers in the generated bundle. The external
+Bouffalo SDK checkout is never modified.
+
 ## Verify a bundle
 
 The bridge bundle verifier checks every manifest file hash and size, the
 bridge `defconfig`, the required Wi-Fi/MACSW/FHOST/lwIP/WPA and BLE archives,
-the public headers, and (when `--sdk` is supplied) the recorded SDK and
-sub-repository commits:
+the public headers, and (when `--sdk` is supplied) the recorded SDK and build
+input sub-repository commits, including mbedTLS, LittleFS, lwIP, CherryUSB,
+Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system, and post-processing
+tools:
 
     python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
       --bundle hardware/bouffalo/bl616cl/tools/sdk/bl616cl/bridge \
