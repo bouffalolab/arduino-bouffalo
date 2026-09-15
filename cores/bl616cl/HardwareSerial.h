@@ -59,6 +59,7 @@ public:
     operator bool() const { return device_ != nullptr; }
     struct bflb_device_s *nativeHandle() const { return device_; }
     uint16_t bufferedRxCount() const;
+    uint32_t rxReceivedCount() const { return rx_received_count_; }
     uint32_t rxOverflowCount() const { return rx_overflow_count_; }
 
 private:
@@ -77,6 +78,7 @@ private:
     uint8_t rx_buffer_[kRxBufferSize];
     volatile uint16_t rx_head_;
     volatile uint16_t rx_tail_;
+    volatile uint32_t rx_received_count_;
     volatile uint32_t rx_overflow_count_;
 };
 

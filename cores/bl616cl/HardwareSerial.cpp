@@ -37,6 +37,7 @@ HardwareSerial::HardwareSerial(uint8_t index, int8_t rx_pin, int8_t tx_pin)
       rx_buffer_{},
       rx_head_(0U),
       rx_tail_(0U),
+      rx_received_count_(0U),
       rx_overflow_count_(0U)
 {
 }
@@ -69,6 +70,7 @@ void HardwareSerial::drainHardwareRx()
             break;
         }
 
+        ++rx_received_count_;
         const uint16_t next = static_cast<uint16_t>(
             (rx_head_ + 1U) & kRxBufferMask);
         if (next == rx_tail_) {
@@ -84,6 +86,7 @@ void HardwareSerial::resetRxBuffer()
 {
     rx_head_ = 0U;
     rx_tail_ = 0U;
+    rx_received_count_ = 0U;
     rx_overflow_count_ = 0U;
 }
 
