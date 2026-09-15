@@ -131,7 +131,7 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_GOT_IP:
             g_sta_got_ip = 1;
-            wifi_mgmr_sta_ip_get(&g_ip, &g_mask, &g_gw, &g_dns);
+            wifi_sta_ip4_addr_get(&g_ip, &g_mask, &g_gw, &g_dns);
             emit_wifi_event(ARDUINO_EVENT_WIFI_STA_GOT_IP);
             break;
         case CODE_WIFI_ON_DISCONNECT:
@@ -293,7 +293,7 @@ bool WiFiClass::mode(wifi_mode_t mode)
     g_mode = mode;
 
     if (mode == WIFI_MODE_NULL) {
-        wifi_mgmr_sta_disconnect();
+        wifi_sta_disconnect();
         return true;
     }
     if ((mode == WIFI_MODE_STA) || (mode == WIFI_MODE_APSTA)) {
@@ -392,7 +392,7 @@ bool WiFiClass::disconnect(bool wifiOff)
     }
     g_sta_connected = 0;
     g_sta_got_ip = 0;
-    return wifi_mgmr_sta_disconnect() == 0;
+    return wifi_sta_disconnect() == 0;
 }
 
 wl_status_t WiFiClass::status()
@@ -428,7 +428,7 @@ IPAddress WiFiClass::localIP()
         return IPAddress(g_ip);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(ip);
     }
     return IPAddress((uint32_t)0);
@@ -440,7 +440,7 @@ IPAddress WiFiClass::gatewayIP()
         return IPAddress(g_gw);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(gw);
     }
     return IPAddress((uint32_t)0);
@@ -452,7 +452,7 @@ IPAddress WiFiClass::subnetMask()
         return IPAddress(g_mask);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(mask);
     }
     return IPAddress((uint32_t)0);
@@ -465,7 +465,7 @@ IPAddress WiFiClass::dnsIP(uint8_t dnsNo)
         return IPAddress(g_dns);
     }
     uint32_t ip = 0, mask = 0, gw = 0, dns = 0;
-    if (wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns) == 0) {
+    if (wifi_sta_ip4_addr_get(&ip, &mask, &gw, &dns) == 0) {
         return IPAddress(dns);
     }
     return IPAddress((uint32_t)0);
