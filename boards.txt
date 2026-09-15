@@ -40,6 +40,7 @@ bl616cl_bridge_smoke.build.extra_flags=-DBL616CL_BRIDGE_SMOKE=1
 bl616cl_bridge_smoke.build.sdk_profile=bridge
 bl616cl_bridge_smoke.build.sdk_extra_includes={compiler.sdk.bridge.includes}
 bl616cl_bridge_smoke.build.sdk_preinclude={compiler.sdk.bridge.preinclude}
+bl616cl_bridge_smoke.build.sdk_extra_defines={compiler.sdk.bridge.defines}
 bl616cl_bridge_smoke.build.sdk_libraries={compiler.sdk.bridge.libs}
 bl616cl_bridge_smoke.build.sdk_linker_flags={compiler.sdk.bridge.linker_flags}
 bl616cl_bridge_smoke.build.partition_config=partition_cfg_4M.toml
@@ -65,6 +66,7 @@ unor4_bl616cl_provisional.build.extra_flags=-DBL616CL_BRIDGE_PROVISIONAL=1
 unor4_bl616cl_provisional.build.sdk_profile=bridge
 unor4_bl616cl_provisional.build.sdk_extra_includes={compiler.sdk.bridge.includes}
 unor4_bl616cl_provisional.build.sdk_preinclude={compiler.sdk.bridge.preinclude}
+unor4_bl616cl_provisional.build.sdk_extra_defines={compiler.sdk.bridge.defines}
 unor4_bl616cl_provisional.build.sdk_libraries={compiler.sdk.bridge.libs}
 unor4_bl616cl_provisional.build.sdk_linker_flags={compiler.sdk.bridge.linker_flags}
 # The bridge bundle uses the SDK bl616cldk BSP until a UNO R4 carrier BSP is
