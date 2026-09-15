@@ -444,7 +444,8 @@ struct cfgmacsw_status_code_print {
     struct cfgmacsw_msg_hdr hdr;
     /// Vif idx
     int fhost_vif_idx;
-    const char *msg;
+    /// Owned NUL-terminated control message appended to this allocation.
+    char msg[];
 
 };
 typedef void (*cfgmacsw_raw_send_done)(void* env);
@@ -994,11 +995,7 @@ struct cfgmacsw_coex_enable {
     struct cfgmacsw_msg_hdr hdr;
     /// Vif idx
     uint16_t fhost_vif_idx;
-    /// Whether config_id was explicitly supplied by the application
-    bool config_present;
-    /// Fixed configuration ID carried as a stable wire value
-    uint8_t config_id;
-    /// Request software TBTT/PS_PTA runtime
+    /// Request software TBTT/PS_PTA runtime when the current band/path supports it
     bool ps_pta_enable;
 };
 

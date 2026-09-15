@@ -2551,6 +2551,7 @@ struct bt_hci_evt_vs_le_chnl_map_update_complete {
 #define BT_EVT_MASK_REMOTE_VERSION_INFO          BT_EVT_BIT(11)
 #define BT_EVT_MASK_HARDWARE_ERROR               BT_EVT_BIT(15)
 #define BT_EVT_MASK_ROLE_CHANGE                  BT_EVT_BIT(17)
+#define BT_EVT_MASK_MODE_CHANGE                  BT_EVT_BIT(19)
 #define BT_EVT_MASK_PIN_CODE_REQ                 BT_EVT_BIT(21)
 #define BT_EVT_MASK_LINK_KEY_REQ                 BT_EVT_BIT(22)
 #define BT_EVT_MASK_LINK_KEY_NOTIFY              BT_EVT_BIT(23)

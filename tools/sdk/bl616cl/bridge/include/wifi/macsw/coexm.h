@@ -61,15 +61,7 @@ enum pta_role {
     PTA_ROLE_PTI,                       ///< PTI (Packet Traffic Information) mode
 };
 
-/** Fixed coexistence configurations selected for the current Wi-Fi link. */
-enum coex_config_id {
-    COEX_CONFIG_COMBO = 0,
-    COEX_CONFIG_STANDALONE_DUAL_ANT = 1,
-    COEX_CONFIG_STANDALONE_SPDT = 2,
-    COEX_CONFIG_MAX = 3,
-};
-
-/** Result codes returned while resolving or applying a fixed configuration. */
+/** Result codes returned while applying a coexistence operation. */
 enum coex_config_status {
     COEX_CONFIG_OK = 0,
     COEX_CONFIG_ERR_INVALID_PARAM = -1,
@@ -78,19 +70,6 @@ enum coex_config_status {
     COEX_CONFIG_ERR_INVALID_COMBINATION = -4,
     COEX_CONFIG_ERR_HARDWARE_NOT_READY = -5,
     COEX_CONFIG_ERR_BUSY = -6,
-};
-
-/** Raw request received from the Wi-Fi control layer. */
-struct coex_config_request {
-    bool config_present;
-    uint8_t config_id;
-    bool ps_pta_requested;
-};
-
-/** Chip backend result used by the common control flow. */
-struct coex_config_resolved {
-    enum coex_config_id config_id;
-    bool ps_pta_enable;
 };
 
 /*
@@ -171,18 +150,6 @@ bool coex_coord_is_active(void);
  * @deprecated Prefer @ref coex_coord_is_enabled for coordinator semantics.
  */
 bool ps_is_coex_mode(void);
-
-/** Return true when the selected platform supports explicit 2.4 GHz configs. */
-bool coexm_supports_explicit_2g_config(void);
-
-/** Resolve a user request for the specified Wi-Fi band. */
-int coexm_resolve_config(const struct coex_config_request *request,
-                         uint8_t band,
-                         struct coex_config_resolved *resolved);
-
-/** Apply a previously resolved hardware configuration. */
-int coexm_apply_config(const struct coex_config_resolved *resolved,
-                       uint8_t band);
 
 /*
  * COEX coordinator - Stage 1 entrypoints
@@ -388,11 +355,13 @@ struct pm_coex_status {
 
     /** BT-path coexistence configuration snapshot */
     bool bt_path_spdt_ctrl_enabled;     ///< User enabled BT path SPDT control.
-    bool bt_path_adj_tx_power_enabled;  ///< BT path adjusted TX power configured.
+    bool bt_path_adj_tx_power_enabled;  ///< BT path TX power adjustment configured.
     bool bt_path_channel_overlay_enabled; ///< BT path channel overlay detection configured.
+    bool bt_path_channel_bw_40;             ///< Connected channel uses 40 MHz.
 
+    uint8_t bt_path_channel_connected;     ///< 2.4 GHz center channel, 0 means invalid.
     uint8_t bt_path_channel_overlay_margin; ///< Channel overlay detection margin.
-    uint32_t bt_path_adj_tx_power_reg;  ///< RF power control register snapshot for adjusted TX power.
+    uint32_t bt_path_adj_tx_power_reg;  ///< RF power control register snapshot for TX power adjustment.
 };
 
 /**
@@ -413,9 +382,8 @@ void pm_coex_dump_registers(void);
 /**
  * @brief Error codes returned by BT-path coexistence configuration APIs.
  *
- * Mutating BT-path configuration APIs return
- * COEXM_CONFIG_BT_PATH_COEX_ERR_BUSY while PS_PTA is enabled. Disable the
- * Wi-Fi coex runtime before changing RF topology or its hardware recipe.
+ * Channel overlay and TX power adjustment are mutually exclusive with PS-PTA.
+ * SPDT control is independent and may be changed while PS-PTA is enabled.
  */
 typedef enum {
     COEXM_CONFIG_BT_PATH_COEX_OK = 0,                                             ///< BT path coexistence configured.
@@ -423,10 +391,15 @@ typedef enum {
     COEXM_CONFIG_BT_PATH_COEX_ERR_BLE_TX_POWER_RANGE = -6,                        ///< BLE TX power value is out of range.
     COEXM_CONFIG_BT_PATH_COEX_ERR_IEEE802154_TX_POWER_RANGE = -7,                 ///< IEEE 802.15.4 TX power value is out of range.
     COEXM_CONFIG_BT_PATH_COEX_ERR_BT_TX_POWER_RANGE = -8,                         ///< BT TX power value is out of range.
-    COEXM_CONFIG_BT_PATH_COEX_ERR_CHANNEL_MARGIN_RANGE = -9,                     ///< Channel margin is out of range.
-    COEXM_CONFIG_BT_PATH_COEX_ERR_SPDT_CTRL_ON_2G_PATH = -10,                    ///< SPDT control is only valid when BT uses BT path.
-    COEXM_CONFIG_BT_PATH_COEX_ERR_BUSY = -11,                                    ///< PS_PTA is active; disable coex before changing BT-path hardware.
-    COEXM_CONFIG_BT_PATH_COEX_ERR_BT_PATH_REQUIRED = -12,                         ///< Requested mode requires BT to use BT path.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_WIFI_TX_POWER_RANGE = -9,                       ///< Wi-Fi TX power value is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_CHANNEL_MARGIN_RANGE = -10,                    ///< Channel margin is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_SPDT_CTRL_ON_2G_PATH = -11,                    ///< SPDT control is only valid when BT uses BT path.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_CHANNEL_OVERLAY_REQUIRED = -12,                 ///< TX power adjustment requires channel overlay enabled first.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_BT_PATH_REQUIRED = -13,                         ///< Requested mode requires BT to use BT path.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_PS_PTA_CONFLICT = -14,                          ///< PTA-CHAN/PTA-CHAN-PWR cannot run with PS-PTA.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_INVALID_POWER_TYPE = -15,                       ///< Invalid adjusted TX power type.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_ADJ_TX_PWR_ENABLED = -16,
+    COEXM_CONFIG_BT_PATH_COEX_ERR_SPDT_ENABLED = -17,
 } coexm_config_bt_path_coex_err_t;
 
 /**
@@ -452,90 +425,50 @@ typedef enum {
 coexm_config_bt_path_coex_err_t coexm_bt_set_spdt_ctrl(bool enable);
 
 /**
- * @brief Configure BLE adjusted TX power when BT path uses a dedicated
- *        antenna.
- *
- * @param pwr BLE adjusted TX power, in 0.25 dBm units.
- *
- * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
- * @note This enables BT path TX power reduction and disables channel overlay
- *       detection because the two features are mutually exclusive.
- *
- * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
- *         coexm_config_bt_path_coex_err_t error codes.
- */
-coexm_config_bt_path_coex_err_t coexm_bt_set_adj_ble_tx_power(
-    int8_t pwr);
-
-/**
- * @brief Configure IEEE 802.15.4 adjusted TX power when BT path uses a
- *        dedicated antenna.
- *
- * @param pwr IEEE 802.15.4 adjusted TX power, in 0.25 dBm units.
- *
- * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
- * @note This enables BT path TX power reduction and disables channel overlay
- *       detection because the two features are mutually exclusive.
- *
- * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
- *         coexm_config_bt_path_coex_err_t error codes.
- */
-coexm_config_bt_path_coex_err_t coexm_bt_set_adj_ieee802154_tx_power(
-    int8_t pwr);
-
-/**
- * @brief Configure BT adjusted TX power when BT path uses a dedicated
- *        antenna.
- *
- * @param pwr BT adjusted TX power, in 0.25 dBm units.
- *
- * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
- * @note This enables BT path TX power reduction and disables channel overlay
- *       detection because the two features are mutually exclusive.
- *
- * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
- *         coexm_config_bt_path_coex_err_t error codes.
- */
-coexm_config_bt_path_coex_err_t coexm_bt_set_adj_bt_tx_power(
-    int8_t pwr);
-
-/**
- * @brief Disable BT path adjusted TX power.
- *
- * @note This only disables the TX power reduction feature and clears the
- *       corresponding coexm state. It does not change BT path routing.
- *
- * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
- *         coexm_config_bt_path_coex_err_t error codes.
- */
-coexm_config_bt_path_coex_err_t coexm_bt_set_adj_tx_power_off(void);
-
-/**
  * @brief Configure channel overlay detection when BT path uses a dedicated
  *        antenna.
  *
+ * @param enable true to enable channel overlay, false to disable it. When
+ *               false, margin is ignored.
  * @param margin Channel overlay detection margin, valid range is 0..63.
  *
  * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
- * @note This enables channel overlay detection and disables BT path TX power
- *       reduction because the two features are mutually exclusive.
+ * @note Existing TX power adjustment remains enabled on top of channel overlay.
  *
  * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
  *         coexm_config_bt_path_coex_err_t error codes.
  */
 coexm_config_bt_path_coex_err_t coexm_bt_set_channel_overlay(
-    int margin);
+    bool enable, int margin);
+
+/** Select the RF_PWR_CTRL_1 field updated by coexm_bt_set_adj_tx_power(). */
+typedef enum {
+    COEXM_BT_ADJ_TX_POWER_BLE = 0,
+    COEXM_BT_ADJ_TX_POWER_IEEE802154,
+    COEXM_BT_ADJ_TX_POWER_BT,
+    COEXM_BT_ADJ_TX_POWER_WIFI,
+} coexm_bt_adj_tx_power_type_t;
 
 /**
- * @brief Disable BT path channel overlay detection.
+ * @brief Configure one radio's TX power adjustment.
  *
- * @note This only disables channel overlay detection and clears the configured
- *       margin. It does not change BT path routing.
+ * @param enable true to enable adjustment, false to disable it. When false,
+ *               type and pwr are ignored.
+ * @param type Radio whose adjusted TX power should be changed.
+ * @param pwr TX power adjustment, in 0.25 dBm units.
+ *
+ * @note Only the selected radio field is changed; the other register fields
+ *       retain their current values.
+ * @note Channel overlay must be enabled before configuring TX power adjustment.
+ * @note The implementation validates the value and returns the corresponding
+ *       range error; callers do not need to duplicate the range checks.
+ * @note Enabling requires BT path routing and cannot be used with PS-PTA.
  *
  * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
  *         coexm_config_bt_path_coex_err_t error codes.
  */
-coexm_config_bt_path_coex_err_t coexm_bt_set_channel_overlay_off(void);
+coexm_config_bt_path_coex_err_t coexm_bt_set_adj_tx_power(
+    bool enable, coexm_bt_adj_tx_power_type_t type, int8_t pwr);
 
 /**
  * @brief Update BT path coexistence configuration with the current Wi-Fi channel.
@@ -549,11 +482,21 @@ coexm_config_bt_path_coex_err_t coexm_bt_set_channel_overlay_off(void);
  * @note Passing a 2.4 GHz channel with center1_freq set to 0 is treated as a
  *       priority reset before scan activity. It restores default Wi-Fi
  *       priority and does not update channel overlay channel information.
- * @note Configure channel overlay detection or adjusted TX power before Wi-Fi
- *       connects. If either feature is enabled after Wi-Fi is already connected,
- *       call this API again with the current operating channel.
+ * @note A valid 2.4 GHz update stores the center channel and 20/40 MHz state.
+ *       Later overlay or TX-power changes automatically reapply that saved
+ *       channel. Passing a zero center frequency only resets hardware priority
+ *       for a temporary scan operation and preserves the saved channel.
  */
 void coexm_bt_update_wifi_channel(struct mac_chan_op const *chan);
+
+/**
+ * @brief Reset Wi-Fi channel coexistence priority before temporary scanning.
+ *
+ * @note This restores the default Wi-Fi hardware priority without clearing the
+ *       saved connected channel. The saved channel is reapplied by subsequent
+ *       channel-overlay or TX-power configuration changes.
+ */
+void coexm_bt_reset_wifi_channel(void);
 
 /**
  * @brief Check whether BT is routed through the BT path.
@@ -561,6 +504,14 @@ void coexm_bt_update_wifi_channel(struct mac_chan_op const *chan);
  * @return true if BT uses the BT path; false 2G path.
  */
 bool coexm_bt_is_bt_path(void);
+
+/**
+ * @brief Check whether configuration allows for PS-PTA.
+ *
+ * @param band Current Wi-Fi PHY band.
+ * @return true if the current band/path/configuration allows PS-PTA.
+ */
+bool coexm_bt_is_ps_pta_allowed(uint8_t band);
 
 #ifdef __cplusplus
 }

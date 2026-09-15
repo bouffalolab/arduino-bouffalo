@@ -133,4 +133,6 @@ void wifi_mgmr_sta_info_save(void *param);
 int wifi_mgmr_sta_connect_params_get();
 void wifi_mgmr_ap_sta_info_del(uint8_t sta_idx);
 void wifi_mgmr_ap_sta_info_add(uint8_t sta_idx, uint16_t aid, struct mac_addr *addr);
+void wifi_mgmr_scan_frame_notify(const uint8_t *data, uint16_t length, uint16_t frequency, int16_t rssi);
+void wifi_mgmr_scan_frame_callback_clear(void);
 #endif

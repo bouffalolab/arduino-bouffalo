@@ -400,6 +400,7 @@ lp_fw_custom_rx_cfg_t *bl_lp_custom_rx_config_get(void);
 #endif
 
 void bl_lp_rc32k_save_code(uint32_t code);
+void bl_lp_rc32k_restore_code(uint32_t state);
 
 int bl_lp_pds_enter_with_restore(uint32_t pds_level, uint32_t sleep_time);
 

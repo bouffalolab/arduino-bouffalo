@@ -649,6 +649,28 @@ struct bt_br_discovery_result {
 typedef void bt_br_discovery_cb_t(struct bt_br_discovery_result *results,
 				  size_t count);
 
+#if defined(BFLB_BREDR_PATCH_EXTENDED_INQUIRY_RESULT_CALLBACK)
+/** @typedef bt_br_discovery_result_cb_t
+ *  @brief Callback type for reporting each BR/EDR discovery result.
+ *
+ *  The callback is called when an Extended Inquiry Result is received and
+ *  the result has been populated. The result points to storage owned by the
+ *  caller of bt_br_discovery_start() and may be reused by a later report.
+ *
+ *  @param result The newly received discovery result.
+ */
+typedef void bt_br_discovery_result_cb_t(
+		struct bt_br_discovery_result *result);
+
+/** @brief Register a callback for individual BR/EDR discovery results.
+ *
+ *  Pass NULL to unregister the callback.
+ *
+ *  @param cb Callback to notify each discovery result.
+ */
+void bt_br_discovery_result_cb_register(bt_br_discovery_result_cb_t cb);
+#endif /* BFLB_BREDR_PATCH_EXTENDED_INQUIRY_RESULT_CALLBACK */
+
 /** BR/EDR discovery parameters */
 struct bt_br_discovery_param {
 	/** Maximum length of the discovery in units of 1.28 seconds.

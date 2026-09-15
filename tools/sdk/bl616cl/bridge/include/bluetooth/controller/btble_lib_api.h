@@ -63,6 +63,18 @@ uint8_t btble_controller_get_state(void);
 
 void btble_controller_reset(void);
 
+#if defined(BL618DG)
+/**
+ *  Force the shared RF to the Bluetooth-only state on BL618DG.
+ */
+void btble_controller_set_coex_bt_only(void);
+
+/**
+ *  Force the shared RF to the WiFi-only state on BL618DG.
+ */
+void btble_controller_set_coex_wifi_only(void);
+
+#endif
 typedef struct {
     /* BLE EM control structure byte offset. */
     uint16_t cs_off;
@@ -96,6 +108,8 @@ typedef struct {
      * btble_controller_lp_fw_activity_t.state.
      */
     uint8_t state;
+    /* True when the next BLE wake-up is for a scheduled radio event; false for other internal controller timer. */
+    bool is_arbTarget;
     /* Current RX descriptor byte offset in BLE EM. */
     uint16_t rx_desc_off;
     /* RX data buffer byte offset in BLE EM. */
@@ -204,6 +218,27 @@ uint32_t btble_controller_get_event_priority(uint8_t event);
  *       to optimize overall system performance.
  */
 int btble_controller_set_event_priority(uint8_t event, uint8_t priority);
+
+/**
+ * @brief BT coex event types for priority configuration
+ */
+#define BT_COEX_EVENT_SCO   0   /**< SCO/eSCO traffic (incl. retransmission) */
+#define BT_COEX_EVENT_ACL   1   /**< ACL data traffic (incl. retransmission) */
+/**
+ * @brief Get the BT coex priority of SCO or ACL traffic
+ *
+ * @param event BT_COEX_EVENT_SCO or BT_COEX_EVENT_ACL
+ * @return uint32_t Priority value (0-15) or 0xFFFFFFFF if event is invalid
+ */
+uint32_t btble_controller_get_bt_coex_priority(uint8_t event);
+/**
+ * @brief Set the BT coex priority of SCO or ACL traffic
+ *
+ * @param event BT_COEX_EVENT_SCO or BT_COEX_EVENT_ACL
+ * @param priority Priority value to set (0-15, where 15 is highest priority)
+ * @return int 0 on success, -1 if event or priority is invalid
+ */
+int btble_controller_set_bt_coex_priority(uint8_t event, uint8_t priority);
 
 
 /* key: 32 bytes ecdh private key. This key shall be malloced and passed to btblecontroller_set_private_key api,

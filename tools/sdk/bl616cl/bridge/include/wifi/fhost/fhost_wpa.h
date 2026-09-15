@@ -262,6 +262,25 @@ int fhost_wpa_execute_cmd(int fhost_vif_idx, char *resp_buf, int *resp_buf_len,
 
 /**
  ****************************************************************************************
+ * @brief Set extra information elements for STA association requests.
+ *
+ * The WPA interface must have been added before calling this function. Existing
+ * association-request vendor elements are replaced. Passing a zero length removes
+ * them without adding new elements. The input contains complete 802.11 information
+ * elements, including each element ID and length, and is copied before this function
+ * returns.
+ *
+ * @param[in] fhost_vif_idx  Index of the FHOST interface.
+ * @param[in] ies            Information elements to append, or NULL when @p ies_len is 0.
+ * @param[in] ies_len        Length, in bytes, of @p ies.
+ *
+ * @return 0 on success, <0 if an error occurred.
+ ****************************************************************************************
+ */
+int fhost_wpa_set_assoc_ie(int fhost_vif_idx, const uint8_t *ies, uint16_t ies_len);
+
+/**
+ ****************************************************************************************
  * @brief Add interface to WPA task and create a network configuration.
  *
  * This function should be used instead of @ref fhost_wpa_add_vif to start the
@@ -274,11 +293,15 @@ int fhost_wpa_execute_cmd(int fhost_vif_idx, char *resp_buf, int *resp_buf_len,
  * @param[in] fhost_vif_idx  Index of the FHOST interface.
  * @param[in] net_cfg        Network configuration.
  * @param[in] enable         Whether network should be enabled.
+ * @param[in] assoc_ies      Extra information elements for STA association requests.
+ * @param[in] assoc_ies_len  Length, in bytes, of @p assoc_ies.
  *
  * @return 0 on success, <0 if error occurred.
  ****************************************************************************************
  */
-int fhost_wpa_create_network(int fhost_vif_idx, char *net_cfg, char *ssid_cfg, char *key_cfg, bool enable, const char *country_code);
+int fhost_wpa_create_network(int fhost_vif_idx, char *net_cfg, char *ssid_cfg,
+                             char *key_cfg, bool enable, const char *country_code,
+                             const uint8_t *assoc_ies, uint16_t assoc_ies_len);
 
 /**
  ****************************************************************************************
@@ -389,10 +412,24 @@ int fhost_wpa_ap_sta_del(int fhost_vif_idx, uint8_t *mac_addr);
 
 /**
  ****************************************************************************************
- * @brief Start wps mode
+ * @brief Start WPS PBC enrollee mode for an optional target BSSID.
+ *
+ * A NULL BSSID selects any AP advertising an active PBC session.
+ *
+ * @param[in] bssid          Target AP BSSID, or NULL for any PBC AP
+ * @return 0 on success and a negative value on failure
  ****************************************************************************************
  */
-int fhost_wpa_wps_pbc_start(void);
+int fhost_wpa_wps_pbc_start(const uint8_t *bssid);
+
+/**
+ ****************************************************************************************
+ * @brief Cancel WPS PBC and remove its temporary supplicant interface.
+ *
+ * @return 0 on success and a negative value on failure
+ ****************************************************************************************
+ */
+int fhost_wpa_wps_pbc_cancel(void);
 
 /**
  * @}

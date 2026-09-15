@@ -6,6 +6,11 @@ CONFIG_PARTITION             =y
 CONFIG_LITTLEFS              =y
 CONFIG_LITTLEFS_KV_EASYFLASH =y
 
+# mbedTLS allocates independent input and output record buffers during
+# mbedtls_ssl_setup(). Keep each at 4 KiB for the complete Wi-Fi/BLE/USB
+# bridge image; the client negotiates RFC 6066 maximum_fragment_length=4096.
+CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN = 4096
+
 # The bridge needs a FreeRTOS USB device with CDC ACM and vendor HID.
 CONFIG_BSP_USB                 =y
 CONFIG_CHERRYUSB               =y
@@ -33,3 +38,14 @@ CONFIG_DEBUG                  =y
 CONFIG_ROMAPI                 =y
 CONFIG_LOG_LEVEL              =3
 CONFIG_CONSOLE_UART_BAUDRATE  =2000000
+# Route SDK printf/stdout through the BL616CL write-only UART on GPIO8.
+# UART0 remains reserved for the RA4M1 user UART on GPIO34/35.
+CONFIG_CONSOLE_WO             =y
+
+# Retain AP+STA capability while reserving enough WRAM for SoftAP hostapd
+# allocations. The matching SDK overlay only reduces RX reorder/BA capacity.
+CONFIG_UNOR4_BRIDGE_RESOURCE_PROFILE =y
+
+# WiFiS3 does not expose WPS. Keep it out of the bridge profile while the
+# SoftAP/WPS initialization path is under hardware validation.
+CONFIG_BRIDGE_DISABLE_WPS      =y

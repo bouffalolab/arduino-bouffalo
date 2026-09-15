@@ -49,7 +49,57 @@ uint32_t dbg_vsnprintf_offset(char *buffer, uint32_t size, uint32_t offset, cons
 #include "net_al.h"
 #include "fhost_api.h"
 
-#define fhost_printf(...) printf(__VA_ARGS__)
+/*
+ * Optional bridge-owned AP-start telemetry. The implementation lives in the
+ * Arduino application and is linked only by the bridge runtime profile.
+ */
+extern void fhost_bridge_ap_start_progress(uint8_t stage, int result);
+extern void fhost_bridge_ap_start_pointer(uint8_t location, uint32_t address);
+extern void fhost_bridge_ap_start_channel_counts(uint32_t chan2g4_count,
+                                                 uint32_t chan5g_count);
+extern void fhost_bridge_ap_start_heap_before_allocate(uint32_t size);
+extern void fhost_bridge_ap_start_heap_after_allocate(uint32_t address);
+extern void fhost_bridge_ap_start_command(uint8_t command, uint8_t phase,
+                                          int fhost_vif_idx, int wpa_state,
+                                          int network_id);
+extern void fhost_bridge_ap_start_sync(uint8_t phase, uint32_t semaphore,
+                                       int result, uint32_t count);
+extern void fhost_bridge_ap_start_trace(uint8_t event, uint32_t semaphore,
+                                        int result, uint32_t count);
+extern void fhost_bridge_ap_start_notification_ab(
+    uint8_t phase, uint32_t message, uint32_t waiting_task,
+    uint8_t request_matches, uint8_t use_task_notification, int result);
+extern void fhost_bridge_ap_start_wpa_wait(
+    uint8_t phase, int fhost_vif_idx, uint8_t expected_event,
+    uint8_t observed_event, uint32_t target, uint32_t waiting_task,
+    uint32_t callback_task, int result, uint8_t wpa_state);
+extern void fhost_bridge_ap_start_wpa_event_path(
+    uint8_t phase, int fhost_vif_idx, uint8_t event, uint8_t fhost_wpa_state,
+    int operstate, int old_wpa_state, int new_wpa_state, int result,
+    uint8_t callback_slot);
+extern void fhost_bridge_ap_start_create_ap(
+    uint8_t phase, int result, uint8_t wpa_state, uint32_t detail);
+extern void fhost_bridge_ap_start_hostapd_lifecycle(
+    uint8_t phase, int result, uint8_t iface_state,
+    uint8_t wait_channel_update, uint32_t detail0, uint32_t detail1);
+extern void fhost_bridge_ap_start_status_code(
+    uint8_t phase, int fhost_vif_idx, uint8_t message_kind,
+    uint16_t message_length, uint8_t raw_state, uint8_t vif_state,
+    int result);
+extern void fhost_bridge_ap_start_hostapd_state_update(
+    uint8_t hostapd_state, uint8_t enabled, uint8_t raw_state_before,
+    uint8_t vif_state_before, uint8_t raw_state_after,
+    uint8_t vif_state_after);
+extern void fhost_ap_state_update_from_hostapd(
+    uint8_t hostapd_state, bool enabled);
+extern void fhost_bridge_ap_start_allocator_heap_walk(void);
+extern void fhost_bridge_ap_start_liveness(uint8_t phase);
+
+/*
+ * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+ * out of that protocol channel.
+ */
+#define fhost_printf(...) ((void)0)
 
 #define INVARIANTS
 

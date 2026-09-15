@@ -229,6 +229,17 @@ SECTIONS
         KEEP(*(.hbn_data.*))
         . = ALIGN(32);
     } > hbn_memory AT > rom
+    /*
+     * HBN RAM is retained across an MCU watchdog reset. Keep the bridge's
+     * concise reset diagnostics here instead of ordinary OCRAM .noinit data.
+     * The 512-byte window ends before the SDK-owned IOT2LP area at 0x20010400.
+     */
+    __hbn_noinit_start__ = ABSOLUTE(ADDR(hbn_noinit)); __hbn_noinit_end__ = ABSOLUTE(ADDR(hbn_noinit) + SIZEOF(hbn_noinit)); hbn_noinit (NOLOAD) :
+    {
+        . = ALIGN(4);
+        KEEP(*(.hbn_noinit*))
+        . = ALIGN(4);
+    } > hbn_memory
     __hbn_memory_end__ = ABSOLUTE(.);
     .get_rom_lma 0x0:
     {
@@ -238,8 +249,8 @@ SECTIONS
     . = ALIGN(4);
     __rom_text_start__ = ABSOLUTE(ADDR(rom_text)); __rom_text_end__ = ABSOLUTE(ADDR(rom_text) + SIZEOF(rom_text)); __rom_text_load__ = ABSOLUTE(LOADADDR(rom_text)); rom_text :
     {
-        *(.text*)
         INCLUDE macsw_cache_affinity.ld.in
+        *(.text*)
         . = ALIGN(4);
     } > rom
     . = ALIGN(4);

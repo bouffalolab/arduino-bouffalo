@@ -3,6 +3,7 @@
 *(.text.fhost_tx_start)
 *(.text.rtos_mutex_lock)
 *(.text.rtos_mutex_unlock)
+*(.text.wl80211_mac_tx .text.fhost_tx_buffer_get)
 *(.text.fhost_tx_req .text.fhost_tx_get_staid .text.mac_vif_get_type .text.mac_vif_get_active)
 *(.text.mac_vif_get_index .text.vif_mgmt_get_staid)
 *(.text.net_buf_tx_info .text.net_if_vif_info .text.mac_vif_get_index)

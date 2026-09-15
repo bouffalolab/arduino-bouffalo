@@ -396,6 +396,7 @@ int bl_lp_pds_enter_with_restore(uint32_t pds_level, uint32_t sleep_time,
 void lp_fw_print_cpu_para(uint32_t save_addr);
 
 void bl_lp_rc32k_save_code(uint32_t code);
+void bl_lp_rc32k_restore_code(uint32_t state);
 void board_ext_dcdc_init(void);
 
 int bl_lp_beacon_tim_update(uint8_t *tim, uint8_t mode);

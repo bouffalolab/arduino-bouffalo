@@ -202,7 +202,36 @@ typedef struct wifi_mgmr_sta_connect_params {
     uint8_t eapol_1_timeout;
     // Remaining EAPOL session timeout, in sec. 0, use default value
     uint8_t eapol_rem_timeout;
+    /// Borrowed until the connection completes.
+    const uint8_t *extra_ies;
+    // Total length of extra_ies in bytes; maximum 64 bytes.
+    uint16_t extra_ies_len;
 } wifi_mgmr_sta_connect_params_t;
+
+/**
+ * Raw management frame received during a scan.
+ *
+ * The frame data is owned by fhost and is valid only for the duration of the
+ * scan frame callback. A callback that needs the frame after returning must
+ * make its own copy.
+ */
+typedef struct wifi_mgmr_scan_frame {
+    const uint8_t *data;
+    uint16_t length;
+    uint16_t frequency;
+    int16_t rssi;
+} wifi_mgmr_scan_frame_t;
+
+/**
+ * Process a Beacon or Probe Response received during a scan.
+ *
+ * Called synchronously in the WiFi task context. The callback is responsible
+ * for filtering the frame and, if accepted, copying it into @p frame_queue.
+ * It must be limited to fast filtering and non-blocking queue submission. It
+ * must not wait, perform time-consuming work, or retain pointers from
+ * @p frame, because doing so blocks fhost processing in the WiFi task.
+ */
+typedef void (*wifi_mgmr_scan_frame_cb_t)(void *arg, void *frame_queue, const wifi_mgmr_scan_frame_t *frame);
 
 /// scan params
 typedef struct wifi_mgmr_scan_params {
@@ -216,6 +245,19 @@ typedef struct wifi_mgmr_scan_params {
     uint32_t duration;
     /// 0: active scan; 1: Passive scan request
     bool passive;
+    /// Borrowed until the scan completes.
+    const uint8_t *extra_ies;
+    // Total length of extra_ies in bytes; maximum 64 bytes.
+    uint16_t extra_ies_len;
+    /// Optional raw Beacon/Probe Response callback; defaults to NULL.
+    wifi_mgmr_scan_frame_cb_t frame_cb;
+    /// Caller context passed to frame_cb; defaults to NULL.
+    void *frame_cb_arg;
+    /**
+     * Caller-owned queue passed unchanged to frame_cb. It must be created
+     * before wifi_mgmr_sta_scan() and remain valid until scan completion.
+     */
+    void *frame_queue;
 } wifi_mgmr_scan_params_t;
 
 typedef struct wifi_mgmr_raw_send_params {
@@ -271,9 +313,11 @@ typedef struct wifi_mgmr_ap_params {
     int start;
     /// DHCP server pool limit.
     int limit;
-    /// AP IP address.
+    /// AP IP address. The AP IPv4 subnet should not overlap the active STA
+    /// IPv4 subnet. If overlap is unavoidable, bind application sockets to
+    /// the intended netif to avoid ambiguous routing.
     uint32_t ap_ipaddr;
-    /// AP subnet mask.
+    /// AP subnet mask. See ap_ipaddr for the AP/STA overlap restriction.
     uint32_t ap_mask;
     /// STA max inactivity while connected.
     uint32_t ap_max_inactivity;
@@ -564,6 +608,19 @@ int wifi_sta_dhcp_client_start(uint32_t to_ms);
  *  Others is Failed
  */
 int wifi_mgmr_sniffer_enable(wifi_mgmr_sniffer_item_t sniffer_item);
+
+/**
+ * Change the channel of an enabled sniffer interface.
+ *
+ * The interface must already be in monitor mode. The call completes after the
+ * channel configuration has been acknowledged by the WiFi firmware; it does
+ * not disable monitor mode or recreate the interface.
+ *
+ * @param sniffer_item Sniffer configuration containing the interface, channel
+ *                     and receive callback.
+ * @return 0 on success, -1 on failure.
+ */
+int wifi_mgmr_sniffer_set_channel(wifi_mgmr_sniffer_item_t sniffer_item);
 
 /**
  * wifi_mgmr_sniffer_disable
@@ -996,12 +1053,16 @@ int wifi_mgmr_sta_reconnect_policy_get(wifi_mgmr_sta_reconnect_policy_t *cfg);
  *  2: WIFI_EVENT_BEACON_IND_AUTH_WPA_PSK
  *  3: WIFI_EVENT_BEACON_IND_AUTH_WPA2_PSK
  *  4: WIFI_EVENT_BEACON_IND_AUTH_WPA_WPA2_PSK
+ *  bssid: Target AP BSSID, or NULL for any AP advertising an active PBC session.
  * return:
  *  0 : Success
  *  -1 : Failed
  *  Others is Failed
  */
-int wifi_mgmr_sta_wps_pbc(uint8_t auth);
+int wifi_mgmr_sta_wps_pbc(uint8_t auth, const uint8_t *bssid);
+
+/** Cancel the active STA WPS PBC session. */
+int wifi_mgmr_sta_wps_pbc_cancel(void);
 
 /**
  * wifi_mgmr_sta_non_pref_chan_set - Set the non-preferred channel list for Wi-Fi management
@@ -1062,13 +1123,6 @@ int wifi_mgmr_sta_ps_exit(void);
 
 int wifi_mgmr_sta_ps_active_time(uint32_t ms);
 
-/** Public fixed coexistence configurations. Keep values aligned with MACSW. */
-typedef enum {
-    WIFI_COEX_CONFIG_COMBO = 0,
-    WIFI_COEX_CONFIG_STANDALONE_DUAL_ANT = 1,
-    WIFI_COEX_CONFIG_STANDALONE_SPDT = 2,
-} wifi_coex_config_t;
-
 /**
  * @brief Enable WiFi/BLE coexistence mode
  *
@@ -1092,16 +1146,6 @@ int wifi_mgmr_sta_coex_enable(void);
  * @return 0 on success, -1 on failure.
  */
 int wifi_mgmr_ap_coex_enable(void);
-
-/**
- * @brief Enable BL618DG 2.4 GHz coexistence with an explicit configuration.
- *
- * @param config COEX combo or standalone SPDT configuration.
- * @param ps_pta_enable Enable the software TBTT/PS_PTA runtime.
- * @return 0 on success, -1 on failure.
- */
-int wifi_mgmr_sta_coex_enable_2g(wifi_coex_config_t config,
-                                 bool ps_pta_enable);
 
 /**
  * @brief Disable WiFi/BLE coexistence mode

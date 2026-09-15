@@ -22,8 +22,8 @@
         "size": 3275
       },
       "board_overlay.c": {
-        "sha256": "6871a5fbe0cf1362d19c09d9d51df46a9bf192f36bd255d3f4077ad3a1aedc5e",
-        "size": 6357
+        "sha256": "d5b31758bf74c953113a89abba1b8dca9fcae26d89fc96457e26d9fd249bfd25",
+        "size": 6854
       },
       "board_overlay.h": {
         "sha256": "0a63bdb7fab5c37efdbaf704943eb0a379afe70905820bb92d1028a32beeab31",
@@ -32,23 +32,23 @@
     }
   },
   "chip": "bl616cl",
-  "defconfig_sha256": "5507dfb506680c7362f1df5fe2f748d12f95f2d905c495c4edbc7a6645246f7e",
+  "defconfig_sha256": "c1d099e1ade10c2e07175fdc848febbd92451469e9448abf0e087b3b45d30060",
   "files": {
     "boot2/boot2_bl616cl_isp_release_v8.2.1.bin": {
       "sha256": "5db40a7b3dde93058f596d003099032edc692e7b21e0aee4df664bc91481d0f8",
       "size": 49696
     },
     "defconfig": {
-      "sha256": "5507dfb506680c7362f1df5fe2f748d12f95f2d905c495c4edbc7a6645246f7e",
-      "size": 1173
+      "sha256": "c1d099e1ade10c2e07175fdc848febbd92451469e9448abf0e087b3b45d30060",
+      "size": 1969
     },
     "dts/bl_factory_params_IoTKitA_auto.dts": {
       "sha256": "ae33ff0a22c8fe9ab3abaf9bf206a60c3a0b6184c0dd63697802774b7ae8b8ae",
       "size": 10718
     },
     "include/autoconf.h": {
-      "sha256": "736db5dcbb86b8c0630257739ce2f474159bedfd6e09f90f6ff4ad84cd0f2116",
-      "size": 1940
+      "sha256": "783952a053085a30232d463942c9f07f795a8566fc6974f89ef15d681e91908c",
+      "size": 2099
     },
     "include/bluetooth/blestack/bluetooth/addr.h": {
       "sha256": "eadd784215f6e410c10d4fc4b3530bd5d2e2abe8058165a356da3334f2f95daa",
@@ -59,8 +59,8 @@
       "size": 1859
     },
     "include/bluetooth/blestack/bluetooth/bluetooth.h": {
-      "sha256": "55efdb609fd3850818fa416e736d923719aaebf790f684bfee8570cabe0bc517",
-      "size": 32897
+      "sha256": "18cbab7cc918dc9a0471f77373c0f675bf1eeb863b5a457013f45049103c4218",
+      "size": 33764
     },
     "include/bluetooth/blestack/bluetooth/bt_uuid.h": {
       "sha256": "9118d3f374b73fbaf8d90b980324bb9d8b6a78a87f49b4286318334216691416",
@@ -91,8 +91,8 @@
       "size": 2480
     },
     "include/bluetooth/blestack/bluetooth/hci_host.h": {
-      "sha256": "fca8a3525462d7ba2e8e6aaa0982c5d9d18b22f7b2fdd816d0d71ad5ade1525d",
-      "size": 80217
+      "sha256": "c16b9bf2642134fb45de98c4b4dd718992b46b28a177936ec353786a1dbbc1fd",
+      "size": 80281
     },
     "include/bluetooth/blestack/bluetooth/hci_raw.h": {
       "sha256": "7b8b5caea245b4d6b641c797b031d754b75067f5fdc952799c838f80e6ba9175",
@@ -119,8 +119,8 @@
       "size": 5531
     },
     "include/bluetooth/controller/btble_lib_api.h": {
-      "sha256": "269c786c91f3effcb83acee7e2bcba6a1d5ec78e2b43b791935503c80bb2eed5",
-      "size": 10325
+      "sha256": "7c92a0baa5f9eec8c3b01c3caef12fc82a9f8425465588d0269938e5b26c70ff",
+      "size": 11556
     },
     "include/bluetooth/controller/btble_test_cmd.h": {
       "sha256": "64c95ed563cde395488d6807559de9f7d9e7177bbbe319c42e4eea96260723dd",
@@ -139,8 +139,8 @@
       "size": 369
     },
     "include/board/board_gpio.h": {
-      "sha256": "b9b232e584eb7d66eeb8a3298c7a68797b28e08494ba109fee01a00db29ed4af",
-      "size": 3349
+      "sha256": "f2046b2f3802992004045259a9138123657b96b5058c540d21ad4bbac7b849ad",
+      "size": 3424
     },
     "include/board/board_gpio_overlay.h": {
       "sha256": "d9fe9d230a98f10fe147221a66b28a87baa41607e1d95f0e0d494ba677d50619",
@@ -267,8 +267,8 @@
       "size": 51362
     },
     "include/freertos/FreeRTOSConfig.h": {
-      "sha256": "114c249dfbe25e37ab16fd0cda8e1e7b972742eae66aa2e6a222e75d509d58e5",
-      "size": 5355
+      "sha256": "47216250fdb4a646ff94225555a20e0ab79f1f277df72841222208e542c2addc",
+      "size": 5401
     },
     "include/freertos/StackMacros.h": {
       "sha256": "59ef7acd70f9c03d76f5760ea82083836530ad05a22aa71d0fa3d5c85b3823bf",
@@ -1063,12 +1063,20 @@
       "size": 2859
     },
     "include/lwipopts_user.h": {
-      "sha256": "49aa27a655ad0f132505a7c7ad28599b3a6a7eeceddfe983303b2340736443e6",
+      "sha256": "8326d07da6943c91496ae5090364f3742b491a8fef4ab4acb0958c9be7ceb330",
       "size": 5517
+    },
+    "include/mbedtls/config-tls-generic.h": {
+      "sha256": "891c135635064d8c6bda282e7300612fb0755a71ed8c178229a014f0ad78df36",
+      "size": 15145
     },
     "include/mbedtls/mbedtls/aes.h": {
       "sha256": "ce71f35d91cf1609bddff21d613863c1177bccc97327f7994c39965ebf044b56",
       "size": 28025
+    },
+    "include/mbedtls/mbedtls/aes_alt.h": {
+      "sha256": "d1595bb153a78622cf56446d7e2d702a3834aaa2ab57d5f57b24fecb52b0c8e4",
+      "size": 775
     },
     "include/mbedtls/mbedtls/aria.h": {
       "sha256": "71fadc4b862611c8a75de841ccf4a346f756cec7345d34d2ed58398ebf79c72a",
@@ -1089,6 +1097,10 @@
     "include/mbedtls/mbedtls/bignum.h": {
       "sha256": "f4167d7a91c3431f37341d0d32c72280fd912dfaf360d6fccb1cd9c5fa9da92c",
       "size": 45718
+    },
+    "include/mbedtls/mbedtls/bignum_ext.h": {
+      "sha256": "9fbda9935b7f3456a80a31e61ca51203aa979d5ab3f6f7e4159efcd642e313d4",
+      "size": 561
     },
     "include/mbedtls/mbedtls/block_cipher.h": {
       "sha256": "edddbf6b03a54e04b2ae3ee3da00a7e243a7ef3f81db5747c69884b222980898",
@@ -1194,6 +1206,10 @@
       "sha256": "c6a40b830c4d519643bcd4f160aaf8e176487d666611311879b2640de0fe386a",
       "size": 70025
     },
+    "include/mbedtls/mbedtls/ecp_alt.h": {
+      "sha256": "02fe4620fb3af4b62b8ad3c0ea91f35d00118fa14d6b5c8b2f9fedc4bd22dcc2",
+      "size": 5679
+    },
     "include/mbedtls/mbedtls/entropy.h": {
       "sha256": "9c3fc1d14497c0989c0f2ea590f708093f4dac39228353eeb1f5f83392df3dca",
       "size": 9558
@@ -1219,8 +1235,8 @@
       "size": 20679
     },
     "include/mbedtls/mbedtls/mbedtls_config.h": {
-      "sha256": "82a5ae69e1290f460bf6b6e7d7ac81005547f075156442e29f315d661cc3d685",
-      "size": 156797
+      "sha256": "dd95b8bdefff7fd01b70761ae8be8679da01143b40056ae7cd98def71ce24f24",
+      "size": 2438
     },
     "include/mbedtls/mbedtls/md.h": {
       "sha256": "89c41b36251ab26facdedc7b379ad5236af8f941cae58941be7f6de690fecd4e",
@@ -1302,9 +1318,17 @@
       "sha256": "e644d96d46d44da66e160eb69ad637f13caef1d192e3361616833b342c6a859b",
       "size": 7501
     },
+    "include/mbedtls/mbedtls/sha1_alt.h": {
+      "sha256": "5495b3a21329d5db3f00095324f18a19fc4901a171ac2e2b5342d7188c3c5b5c",
+      "size": 679
+    },
     "include/mbedtls/mbedtls/sha256.h": {
       "sha256": "a2ee050ca15b7598a8d227cac0e0ec9fd6c38615b817737a8007e90b3feab0d9",
       "size": 6879
+    },
+    "include/mbedtls/mbedtls/sha256_alt.h": {
+      "sha256": "bb22e788c74f3f015865d258bbef7ef9c54c74a0dce87309cf49229d7aaa3096",
+      "size": 542
     },
     "include/mbedtls/mbedtls/sha3.h": {
       "sha256": "8cc0b3928976871e2a4847d0f6bf02da4663a94cc0779afdec3438a0c76a5499",
@@ -1313,6 +1337,10 @@
     "include/mbedtls/mbedtls/sha512.h": {
       "sha256": "0f77abf1b4dfc18b865725e8a221d5d9279899c274e993005359be182b7574a2",
       "size": 7302
+    },
+    "include/mbedtls/mbedtls/sha512_alt.h": {
+      "sha256": "6c9795a7bd9f80b46bfae0e39d9a1ef46cd46ad3022e2e4fe26e0d6436de4ea6",
+      "size": 542
     },
     "include/mbedtls/mbedtls/ssl.h": {
       "sha256": "9d18d3435e706ebaf5833dcd61a35316b9a7eaccc921bb771f01e5060295d969",
@@ -1361,6 +1389,10 @@
     "include/mbedtls/mbedtls/x509_csr.h": {
       "sha256": "dd0bcea7e36ddb018affc8b7b52f1f7e9fb12b5f69c8c712f9c2b7fd2972ed07",
       "size": 14529
+    },
+    "include/mbedtls/mbedtls_port_bouffalo_sdk.h": {
+      "sha256": "d508e29c83b9ea7822d96728086e4865babe54cefd03fbf93b8eee097405fe5f",
+      "size": 537
     },
     "include/mbedtls/psa/build_info.h": {
       "sha256": "9eb0dbed47ac851acee62bd0829ce177aac6fe8515a4ce7e904ecf71829cb3d0",
@@ -1491,8 +1523,8 @@
       "size": 2252
     },
     "include/sdk/lhal-config/bflb_lhal_romdriver.h": {
-      "sha256": "b1bf22b4a3137a7cfccf4e3a585005090cb36ac529e2d2895a0bc0e208c2519c",
-      "size": 62698
+      "sha256": "616ffb7eaa05ccd533e58426740ca0b59035fff4c23a766e3057e033e8737927",
+      "size": 62711
     },
     "include/sdk/lhal-config/bl616cl_irq.h": {
       "sha256": "66cd5f359bd566676487c44736d27e4de5319dfd6c296a88dc9785d174e41886",
@@ -1703,16 +1735,16 @@
       "size": 14860
     },
     "include/sdk/lhal/bflb_common.h": {
-      "sha256": "ee76165749d3c985e9dfb94282adc917673ce6226c472c4697c13596929db3c9",
-      "size": 3953
+      "sha256": "fff7f8ac2f928dcae6a1a0a60207a502223daa9965364e89a63ca32fb6ac3e3d",
+      "size": 4010
     },
     "include/sdk/lhal/bflb_core.h": {
       "sha256": "a5fc46be92368491d967eaefd1184f106edfb7097b27efe6548a5166f41f97e1",
       "size": 4275
     },
     "include/sdk/lhal/bflb_dac.h": {
-      "sha256": "88a6ae4161963a2ead9ff8aa96cbb7fa9ad65619c36df1f302a8a62344b1c143",
-      "size": 2889
+      "sha256": "d04a5d51a7db8af444ceacf4b3117c323e5d3afaed1e6515a91b3aacb1869554",
+      "size": 3204
     },
     "include/sdk/lhal/bflb_dbi.h": {
       "sha256": "b10de334a3bc00dee35709ced8949af9f2fbced59b9d317cc9135cbb9016e07c",
@@ -1831,8 +1863,8 @@
       "size": 11696
     },
     "include/sdk/lhal/bflb_pec_v2_instance.h": {
-      "sha256": "0ea8160d35ad7cac640b92cd287c20ee588612373119f89f331af18ede274b37",
-      "size": 20803
+      "sha256": "bca1f273965afae14ece52fba283e6d5c5ae3037caf2ab931339abe6bb2579a4",
+      "size": 25106
     },
     "include/sdk/lhal/bflb_peri.h": {
       "sha256": "506f253580b29701339de6fc137a76441ad81da023e5437bb494c133e86f717e",
@@ -2114,6 +2146,10 @@
       "sha256": "e6ca400aa80b595d97e98eeceea3bf4176ee048a5acd054596a95b26ace45e1a",
       "size": 16083
     },
+    "include/sdk/libc/console_output.h": {
+      "sha256": "87656e9ecf84ec6416db0cf5689996c36224eaf741693c95101b11cf59b78ef3",
+      "size": 331
+    },
     "include/sdk/libc/newlib/port_file_fd.h": {
       "sha256": "940701f0c22985e78f0ae35481bc2ffdcc510003a32e6c221d22278cbc862bc7",
       "size": 2528
@@ -2291,8 +2327,8 @@
       "size": 73551
     },
     "include/sdk/soc/bl616cl_hbn.h": {
-      "sha256": "8d1b99408b5d3d18cbbb8e3ee5a8d3a3eb39fdf19bc2ae75ef551e7cb03ac8e0",
-      "size": 46849
+      "sha256": "6aa4e0a61ddb033b42202f834da1919b8397e22effcd2ef4620689e08d2aa48e",
+      "size": 46939
     },
     "include/sdk/soc/bl616cl_mfg_efuse.h": {
       "sha256": "fd94d70cee7077a5dbacc61d6580c6c4404ba34090f3abc9ac4dae9ef0a63340",
@@ -2311,8 +2347,8 @@
       "size": 24413
     },
     "include/sdk/soc/bl616cl_pm.h": {
-      "sha256": "1459c39290576db0b5ca46b1df249a41833a89d9bec3de0ba8047ccb7acb7b9e",
-      "size": 10242
+      "sha256": "fabec1dfc7a048dfefc8c56f3a67b28bf77e8fed500d44fce57620ea087ea9ed",
+      "size": 10278
     },
     "include/sdk/soc/bl616cl_psram.h": {
       "sha256": "3c4aaef47a257f4c419a553f1c8a0e10a0bbfb1dd4d11ee9c17962270a10dd90",
@@ -2403,8 +2439,8 @@
       "size": 1623
     },
     "include/sdk/sys/bl616cl/bl616cl_lp.h": {
-      "sha256": "b36e60c9dc7f02ff227ba9074654955d15c26717ccfe6310353690699aef3ad2",
-      "size": 13107
+      "sha256": "bd4cdf9401a8d2320c654eada7615485f7bbeaea6eb904af5beb4c1c5c47268b",
+      "size": 13150
     },
     "include/sdk/sys/bl616cl/bl616cl_lp_internal.h": {
       "sha256": "0ebd4ee0b263236007e8390e92414985e74e98ea779fc48699685383b46a434f",
@@ -2423,8 +2459,8 @@
       "size": 421
     },
     "include/sdk/sys/bl618dg/bl618dg_lp.h": {
-      "sha256": "22ad771422d3a94a92d03ace718545ad62e7a39b5f159165ae9e75ede3a7d9b6",
-      "size": 13015
+      "sha256": "41d2b97c9d129984863616f0c285f014bc163394d0e6d1c6562a088e2d271864",
+      "size": 13059
     },
     "include/sdk/sys/bl618dg/bl618dg_lp_internal.h": {
       "sha256": "92102fec4dfaade9d162977feda4987850d2351589d300ec28ae2cea06516955",
@@ -2455,8 +2491,8 @@
       "size": 455
     },
     "include/sdk/sys/bl_lp.h": {
-      "sha256": "66491e097acbc393a0e3019f1bbb852ad3ca96ee06780ffe40ffae737aaba719",
-      "size": 4721
+      "sha256": "29fd18acbceb2b611419abddea6d5530458165ecb039b0a62e80ab5e5491bde2",
+      "size": 4813
     },
     "include/sdk/sys/bl_lp_internal.h": {
       "sha256": "262382d77c5f3cdca023dd5e83a5e9d7495094789dd497dcf99204f548a9708c",
@@ -2551,20 +2587,20 @@
       "size": 7094
     },
     "include/wifi/fhost/cfgmacsw.h": {
-      "sha256": "9a84999faaa595b98a4cffb0bc8d16cb0550e68cf705c1ae9bfd16d897408c43",
-      "size": 42750
+      "sha256": "cfbcacaf2042fdd68f6bac72d3b6cafdd16785a729889cb77c927a87447732a2",
+      "size": 42679
     },
     "include/wifi/fhost/cli_al.h": {
       "sha256": "fa12401765be20aaa587bf87d6b179d3de2ac0299779d07e4ab8f58f50105a1a",
       "size": 842
     },
     "include/wifi/fhost/fhost.h": {
-      "sha256": "d2eb55bdf072e2692743d3f7dc233db2018131f414049eee94b53b27ffa273b9",
-      "size": 13877
+      "sha256": "ee927444bddfe452fbe9cb28190acca883ded171e6585fd69b85e24c071c6a98",
+      "size": 16619
     },
     "include/wifi/fhost/fhost_api.h": {
-      "sha256": "501da62ee5cd6a88a31c9537a7b4cfdd6476c34ea3b0087c6814d920b77fa475",
-      "size": 27833
+      "sha256": "748d621efba43b1655bd1a40eac428236a43b740c5cd89425e2e981decc41d32",
+      "size": 28283
     },
     "include/wifi/fhost/fhost_ipc.h": {
       "sha256": "b55a8e8cd22d3229712ea50f2493624c369950841d918715adb4c2d46be49ab0",
@@ -2575,8 +2611,8 @@
       "size": 2517
     },
     "include/wifi/fhost/fhost_wpa.h": {
-      "sha256": "438e92c92e2fd47e1a52201d515a547581c037ca2ad5c9830aafd120b5cbfa78",
-      "size": 16059
+      "sha256": "217d3f297b132d166d494c8d8d6a4f0529edb211eebfe523bdce72dd7549b46e",
+      "size": 17887
     },
     "include/wifi/fhost/net_al.h": {
       "sha256": "7936e839bc83f94a779cf55884830f4f0279c5aaf5b17024a0ff527c64fda1f2",
@@ -2607,16 +2643,16 @@
       "size": 10547
     },
     "include/wifi/fhost/wifi_mgmr.h": {
-      "sha256": "9bddf635366ce66c2b9b256c085f2d8a39133025c76d43f35d8ea5e55bbfcd0b",
-      "size": 4409
+      "sha256": "58e2b61a11116c6a25a80983a24d43d6c2458ae62f9ba4e481089393884c5187",
+      "size": 4563
     },
     "include/wifi/fhost/wifi_mgmr_cli.h": {
-      "sha256": "c03297ca1f05b575df76252b29d23c12956adfd1ec86fe04866d4c03e8577d0c",
-      "size": 3607
+      "sha256": "12f306f5693feed56f81ad036b0b89672011b9a22079a2409065cc1f46afc154",
+      "size": 3491
     },
     "include/wifi/fhost/wifi_mgmr_ext.h": {
-      "sha256": "ea03dbeaac97a0b7a6fc999cee5104c595374678be4bdf6b2c072a3a8fbaeff5",
-      "size": 49057
+      "sha256": "e4433bea821f3c8d9f172cb1af9e117001d4f1f3aa5c9c29d21efe72973a1142",
+      "size": 51057
     },
     "include/wifi/fhost/wifi_mgmr_pmk.h": {
       "sha256": "9934e4a60df449d3dadd2d3a07e166963135763025c9ebb85ec896c76d719b52",
@@ -2627,8 +2663,8 @@
       "size": 125
     },
     "include/wifi/macsw/coexm.h": {
-      "sha256": "8c56456c1ab63d5930a53479c5a1a26871758ee79d0d2bf41e79c1ee88e96af5",
-      "size": 20839
+      "sha256": "51350b0dfde737710e57944290430e774304d46573fbf84d06b9f970c22843f7",
+      "size": 19718
     },
     "include/wifi/macsw/ieee80211.h": {
       "sha256": "bf6febb8a6cc262a398344aa95e183ffc972e3b0f3b002f6b3db5fa183a6e5a3",
@@ -2643,8 +2679,8 @@
       "size": 16083
     },
     "include/wifi/macsw/macsw.h": {
-      "sha256": "d03189828b51687397a05da7a5dfe1345bce5a3fc0863bedfe93b6b96097a5b3",
-      "size": 133948
+      "sha256": "d4e7c160d7cc78b9e6caa8f25550f9dbb0d6ed4aa6525a947b12630f7b5a22d5",
+      "size": 140280
     },
     "include/wifi/macsw/macsw_ack_config.h": {
       "sha256": "203097242a3548bb380ecf9050930fc17af2372844605c852f1dcbed5253a98e",
@@ -2667,8 +2703,8 @@
       "size": 2685
     },
     "include/wifi/macsw/macsw_default_config.h": {
-      "sha256": "2ab7c600649cfb7085a73cd6ece8b224403796798eada88cc5e4b69ad67ff386",
-      "size": 347
+      "sha256": "f6b3d4829ed5a00691ad9ae5dc0d161c410eddf5ada1c6c9c9c83871a5e497ab",
+      "size": 837
     },
     "include/wifi/macsw/macsw_p2p_config.h": {
       "sha256": "951e4ed1a6cd09d245ccb0154dad3bb554177284969e9f3b962dfe40c338172e",
@@ -2679,7 +2715,7 @@
       "size": 6681
     },
     "include/wifi/macsw/macsw_tcp_bench_config.h": {
-      "sha256": "6f7c09e6e67ff6f6dca99b04f45b310d28d30be3a840300a6f2f23eb02d08491",
+      "sha256": "b7d92db9df8a17481bbf16b52d24e67163bcd9e418c659711a363a2004e1955e",
       "size": 667
     },
     "include/wifi/macsw/macsw_twt_pds15_config.h": {
@@ -2699,155 +2735,1098 @@
       "size": 468
     },
     "ld": {
-      "sha256": "2ea0fee9a00f6d43248e9fe89be7908434d0f4a0415eac709efeb088a204ed99",
-      "size": 13237
+      "sha256": "0b303d03927c7863a1749ed7a52c7d8b79d72a51f839e66350b6886d882e29a4",
+      "size": 13731
     },
     "lib/libbl616cl_phyrf.a": {
-      "sha256": "47a64069fe980d098b980884e91f2a7abff90d911bc87819c3f6dffc74bb5725",
-      "size": 1781054
+      "sha256": "4136fb7b2666e595a51d84007bfad0e08a06a2d349880d43788ae88a69e943df",
+      "size": 1781258
     },
     "lib/libblestack.a": {
-      "sha256": "4a45299fb0f31f4d289539f43c75525db1474b53a35c7948eee840aab6014008",
-      "size": 3811750
+      "sha256": "7dac702eb155ea7aaa9c290fd47dc13d927fd7e97c85562a18941f6bcfbcec6d",
+      "size": 3814466
     },
     "lib/libbtblecontroller_bl616cl_m2s1.a": {
-      "sha256": "b9ca73670a6c5a5d869e19536f4400d142fbea4d169eb605584f6af46c2a6d1a",
-      "size": 6631058
+      "sha256": "2e1d42a32323d5e0c9aae4245333ffa5e0da3cbfe949a577ec2f9a401b52301d",
+      "size": 6642098
     },
     "lib/libcherryusb.a": {
-      "sha256": "89e1bbcd779e731b7a493eb90b6f2c27e9f70f188b751abf13784f78512a80a8",
-      "size": 282262
+      "sha256": "cdb453378d9c7919a7c0120e9b0b6f2b04d791708b507145edc486a38a891dd8",
+      "size": 282598
     },
     "lib/libdebug.a": {
-      "sha256": "f187a58f3c3e6b65eae2384dc775d71d28c0658639fd587a1e9d56ef95b23ca5",
-      "size": 118794
+      "sha256": "70fbe07bdd333318f97bf2b12685dc3e506cf0d7f6b0def728d98861ca636a19",
+      "size": 118974
     },
     "lib/libfhost_bl616cl_default.a": {
-      "sha256": "cfaacecd26c16e472df757b012ff51e3269c4ca721e0ace1d535ab1b328254b3",
-      "size": 2507326
+      "sha256": "f459ee66e12c8784283355156546ca98ea327a37d12fb80d66d016027a1ab569",
+      "size": 2447528
     },
     "lib/libfhost_config.a": {
-      "sha256": "faeafaa24df518b55edf3e1023106e861052580cda732af663072b429679f206",
-      "size": 51626
+      "sha256": "dcb506bf0d9aab5eb5f983432b53fd10b605b1cd9e2ae132a1e15adb73d02e0e",
+      "size": 18078
     },
     "lib/libfreertos.a": {
-      "sha256": "aef41047bdca018fbe0759131215c58e844fdfed141dd003cd5b559ab791eb30",
-      "size": 1476730
+      "sha256": "369c5de91172ba6729007019a109510a6e02806861c3ba9339e6d1298e96388d",
+      "size": 1483412
     },
     "lib/liblhal.a": {
-      "sha256": "f1e8ffebe7e79c891fdac98404f1f8a76abcc6e15f93c25df1011a878102bfdb",
-      "size": 2759458
+      "sha256": "a5fd60a844fa4ea259f8a715b720354d2968183d083f63503e9de20136c24803",
+      "size": 2769656
     },
     "lib/liblibc.a": {
-      "sha256": "00ef1ee866b2ace8e55c0bc5ffc2a266d76afcd7089de52298ffda52afae8fee",
-      "size": 652628
+      "sha256": "c98b22d06de7253208fc91f6a976b8ba252815fb4b121ef89e0cf01edbc28a83",
+      "size": 652174
     },
     "lib/liblittlefs.a": {
-      "sha256": "9f2e60b79f9553ce93530d30bff2dc2fbb21b38c2de3c7670916b8ffba4444a7",
-      "size": 922760
+      "sha256": "b6bfa80d0ee90314fb1bd45140a8408004f89f8f0fdfd43da4a1f2ca8ac82d97",
+      "size": 923128
     },
     "lib/liblwip.a": {
-      "sha256": "78fab8c6480cf12273cb3084f89237b47fd0ae151a6ab9ad9012c3dc1c0a9db1",
-      "size": 3516066
+      "sha256": "718cca7c6a077f0b310ccfce237b1601028a7f5ed5c1f39ca508ccfb2178983d",
+      "size": 3695724
     },
     "lib/libmacsw_bl616cl.a": {
-      "sha256": "5de18ca8f192ff6a416e27e1496c6e2fa5e4e9bf36077e1a386f55215d066cb4",
-      "size": 16554048
+      "sha256": "3bdb8afedef74f5202a5ca995e8a83f6161d15b2e4a2753743b7773418eb9eda",
+      "size": 16670314
     },
     "lib/libmacsw_config_bl616cl_default.a": {
-      "sha256": "68ea6ab7d50878090b29e081cb4f7900ffb79f4100c2f4ea247c750b4a17d0b7",
-      "size": 65598
+      "sha256": "a71bb31851d7e2b1f7504f381411f4202815632b578fa41304b5d1212fc35e45",
+      "size": 65718
     },
     "lib/libmacsw_os_adapter.a": {
-      "sha256": "9405debbb24291d19d42891fe45cb99617c2f4151280d7e255b12fc287181ef0",
-      "size": 92642
+      "sha256": "4b6d81c2ef250ab4d46b1f21ffdfe9605afdf04afe2e4bb7565a0716074f5137",
+      "size": 95054
     },
     "lib/libmacsw_plat.a": {
-      "sha256": "5b8400acf09753e13c538d90ed66820b633d532e5400886267e0e4ee1bde2d40",
-      "size": 39488
+      "sha256": "2c36a878f316675ae8501ed104f2663ef2161d43248e8ebbd324c952248b830f",
+      "size": 39592
     },
     "lib/libmbedtls.a": {
-      "sha256": "ffd91a0524638cc80b072f291f5e653f6f50754b1f9d50e7fcea80133fc78487",
-      "size": 5378726
+      "sha256": "104fc8b597b537e5972db73fadc274416e7ac09719fc07e8e5f19d4c20f2215a",
+      "size": 5388958
     },
     "lib/libmm.a": {
-      "sha256": "04dd584cc3cd3ccc1ed31c28c0359f659798de169c3e80dbae787ffc29e3b8ff",
-      "size": 340162
+      "sha256": "bb2570286f6518a26ddddc5c591c777ba5c32766c42b8e57fd402383b5543e58",
+      "size": 346264
     },
     "lib/libping.a": {
-      "sha256": "b1934600144c6de6fecfb807dbee2d40517be4cb98e4b92cd22ce7fae6bdf8c2",
-      "size": 35756
+      "sha256": "efd66342c57044069500a4ba9440bfc8fb37cef220c5a96645c5c5b1713bcbb4",
+      "size": 35996
     },
     "lib/libpka_bl616cl.a": {
       "sha256": "da06e6bf980e14bae0d2898f1c2b9e41c21dead4702d1cd3e0e9f43ec8f69269",
       "size": 87832
     },
     "lib/librfparam.a": {
-      "sha256": "dc2fa2c5f3652704bebc1ec24424d0bb347907f92beedeb7be8f2842b384f908",
-      "size": 123050
+      "sha256": "4bb6630e214a6bfd60464692ad7eb0fba2d7b5551ca8b0c7ae02a30275c133fc",
+      "size": 123210
     },
     "lib/libstd.a": {
-      "sha256": "b5b8bb8dbb3e451bdc6b6bd12e26a11b2cb488583a88ac9020b66fb9b57299a9",
-      "size": 1037028
+      "sha256": "886dc9b3d1834e95f90a4f70eecbca89a4d6ba8c836cafc8e98332608788cb6b",
+      "size": 1040830
     },
     "lib/libsys.a": {
-      "sha256": "56271e09125cf79a6564e1b448e68927080e004d63d8f85d6c69194207785121",
-      "size": 658660
+      "sha256": "27713d5c86e0a307dd7aabbdd6de0a67fa8a73d4839f3f2539b386c7e15662f1",
+      "size": 661278
     },
     "lib/libsysinit.a": {
-      "sha256": "2da6819dc2c62bfd4026bcf7de6ee5486bd76b048737e9599e49f50128ff055c",
+      "sha256": "f9aac803b6df48962e64ab13e098f7a5aa4f95762c2089d4e6f8253e0d631f91",
       "size": 5716
     },
     "lib/libutils.a": {
-      "sha256": "af2bc0136a316a5648bb3a63cc8769779a42fbc5042b4b9a87d596f8df215f77",
-      "size": 1105104
+      "sha256": "9a275e3234bd8ca4b47e41391c2134c4d0d1f0c819924b3e7e1d150daca58643",
+      "size": 1106296
     },
     "lib/libwifi6_lwip_adapter.a": {
-      "sha256": "892fa6db0922a281cdea174126237dbdec383b5cd1f5e730bbcfd7451b6a535b",
-      "size": 296082
+      "sha256": "36b026293b3b1cfd91afb63e00abb48a6370657496b7cb2b03d4374e8ebca4b1",
+      "size": 308830
     },
     "lib/libwpa_supplicant.a": {
-      "sha256": "0d464ee07e9cd3086242319c372b1802d4ffee362453db75f1d660ff9d460fea",
-      "size": 18791772
+      "sha256": "e2ba1cc0801b5f179bef2dca70512e475020c89caa7061ce432644af62be7697",
+      "size": 16741762
     },
     "lib_board/libapp.a": {
-      "sha256": "85698e7b14a0be5a3349554cea82fb2df862ce65b1a4a125b835e4faa678e2e5",
-      "size": 212974
+      "sha256": "0715e14d9f9f724b2fb827ab99c9e1ff91797f1de10ab40ea11409bf67db35a8",
+      "size": 214874
     },
     "macsw_cache_affinity.ld.in": {
-      "sha256": "c6e39c5d3565cfc1d7d99eaac5da190a85415dfd8dc130766946be0e2d85ce76",
-      "size": 3397
+      "sha256": "09fdbb9d949c53d2eeb0740ddb5be7b02a28ab465ff1cfb3a0c9e452c37e2230",
+      "size": 3447
     }
   },
   "host_tools": {
     "bflb_fw_post_proc": {
-      "sha256": "32913bcf03caaee3146d741d9e8866831b484c7abd1c462bdaeb11b4e04c0609",
-      "size": 13870592
+      "sha256": "2fca5aeed1c8663a85e9b6bd8a6dfe55bdbcddfa5b04893a065a4276b6ec84a6",
+      "size": 13876392
     },
     "blflash": {
-      "sha256": "575a245511ffecbcfbcd60d367e1d93b0b20e5dd89daffc6c2a8dbf9792e6f5a",
-      "size": 16078064
+      "sha256": "0f4a759f6d30408bfee85e63b7f7ce9031b2a16be2243f55f974372da6f7f046",
+      "size": 16079632
     },
     "gcc": {
       "sha256": "b42c96c3690b5c62a053dcd367ce9d2d796c055d3775febd8d8f823ca2ac0e94",
       "size": 27500976
     }
   },
+  "linker_overlay": "hbn_noinit_diagnostics",
   "profile": "bridge",
-  "schema": 3,
+  "schema": 4,
   "scope": "chip-runtime",
-  "sdk_version": "2.3.30-22-gf9626e52",
+  "sdk_version": "240ff49b",
   "source_commits": {
-    "bouffalo_sdk": "f9626e528c7a979700fb46a354830f6e1d611185-dirty",
-    "drivers/lhal": "d8e8ffe7c6db9ad2ca92beb94b5b70065c760b51",
-    "drivers/soc/bl602/std": "1d253d273aa044ec80c3b0a0f17a7a6f0a0531e1",
-    "drivers/soc/bl616/std": "790d43579ade7f78e481e830b2c6f08346f808cc",
-    "drivers/soc/bl616cl/std": "32387c81a9b8c5e4bceeee91fa8c08fd0a48ecce",
-    "drivers/soc/bl618dg/std": "b0e1208b0a255a9e2ecbb76263309105475c3cfc",
-    "drivers/soc/bl702/std": "63ff630710365510a76d5884f9263d95434b3263",
-    "drivers/soc/bl702l/std": "829debea7cc1af9cd07da9f1b3397d3c703533db",
-    "drivers/sys": "3140f1f832989b2ccf896a5f5d9aa2368d5ddcbc",
-    "tools/bflb_tools": "2f8fd6735eee122af9851fb7a1edae21c745ff2a"
+    "bouffalo_sdk": "240ff49ba0189ebeba92e6d5c42533f63d90a161",
+    "components/crypto/mbedtls/mbedtls": "3bc6321603b0ab07c39ebdbe6ad1c65e0f4beb45",
+    "components/crypto/mbedtls/mbedtls_v3": "4c3acca7109deb4dca6956dd5f3ceaf0947dee58",
+    "components/crypto/mbedtls/mbedtls_v3/framework": "457996474728cb8e968ed21953b72f74d2f536b2",
+    "components/fs": "40632e430ee7e96df00876b38586034304c718c4",
+    "components/net/lwip/lwip": "0869c85c0d5f2868456db533fa17722cb1028139",
+    "components/usb/cherryusb": "2652a5b5be08feb8c007f1cceb3faf8a3a9ee6d6",
+    "components/wireless/bluetooth": "ff6b295ec4c03cb3ee6560a3e1617063af45e9ff",
+    "components/wireless/macsw": "3c51dd79357fb2159a2691b81499b9ce45b19c71",
+    "components/wireless/wifi6": "dd5556963b16d0e7d566360e08dac0175a528d88",
+    "drivers/lhal": "4acfb47d23bf7f0d73e09893b6ac63c8d87366fa",
+    "drivers/soc/bl616cl/phyrf": "10e0a6c372a3f8d8974be7a46de78b8250440466",
+    "drivers/soc/bl616cl/std": "297286558b63c98c5f87a5afe0e338ebdc4091dc",
+    "drivers/sys": "8e53f32692b48c9f304cb98d79059c3aeed92b55",
+    "tools/bflb_tools": "203f74c90230b209d61f1f15d92d8c52d0d8d29e"
+  },
+  "source_patches": {
+    "manifest": "tools/runtime_bundle/profiles/bridge/fhost_patches/manifest.json",
+    "manifest_sha256": "928ad6c6985d873fa9f8db8fb93557c6852fef9c28ebf9a074cf95a0fa174ecd",
+    "patches": [
+      {
+        "id": "0001-bridge-ap-start-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0001-bridge-ap-start-telemetry.patch",
+        "sha256": "091688a155ab350996ce88e37cdfb9e0d572b200f18c82d9aab75e2415c97c1f",
+        "targets": [
+          {
+            "after_sha256": "db17f3874446f9c40633db08849f4a6b822822209f10a5b839d1f41fb40f4da4",
+            "before_sha256": "d2eb55bdf072e2692743d3f7dc233db2018131f414049eee94b53b27ffa273b9",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "90e91a78e7c8d87da7406a40a5c5b3613faff357fd0941ae08c91d05f8d5d46e",
+            "before_sha256": "c07e9473f2c7e56bb64b2ec4250bdcf225deb448565e21db4f3e81e525d4f21b",
+            "path": "components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c"
+          },
+          {
+            "after_sha256": "c3b3185eb2425f0948a749c46f41f09390ec48d8d2e10d7b7b582eea42b5bc43",
+            "before_sha256": "63cc673870f6dadad8f3cc23e931ab9b92f1acfb26abedf1fe8442731d9032ce",
+            "path": "components/wireless/wifi6/fhost/src/fhost.c"
+          },
+          {
+            "after_sha256": "0bfa3862afb875adace8ca1d6178903bc8e1b0e060a406d2e37bc8c89a8da907",
+            "before_sha256": "e63b7d57b9c1ad147e51c6b972daed0ca60ae8177c476ba772fe747b0acbb77a",
+            "path": "components/os/freertos/portable/MemMang/heap_3.c"
+          },
+          {
+            "after_sha256": "2ce64f0c82db9b7c585a3c337d3654946f512ee1866d2bf5affa626581fa40bc",
+            "before_sha256": "85a1002eba018c2f44464c04ca26a7b6b2b26c523094ab5c37e56b37be539621",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          },
+          {
+            "after_sha256": "c91f98d0b7ea3bdc2bf27473569e8ba8daa0b84ac68ae6c1bfb5fd810fcbd4ab",
+            "before_sha256": "0d837be1005c5556535f3dc33cd87b2629a868ba9657d5194763e708df7b6277",
+            "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+          },
+          {
+            "after_sha256": "71a360b5fb8ad43591f8b3ae5178804f50ffacd849a9addadb8049c1713d5639",
+            "before_sha256": "7e62e3ad13900e80e7ec3c00e833c557a2191a79261a77b639b729ca1aff888f",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          },
+          {
+            "after_sha256": "5a6b4e43b8d456a92f27350e46a9b825d7f0bc83356c37838f123c0ba58c8442",
+            "before_sha256": "24443b040794cb3f22962315d419357fa4a7f38d63bd2914e09d6210d24928e3",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+          },
+          {
+            "after_sha256": "bf763781190b794ad6ac0da9ebfe8986ad62620c8430aba1811c0fa5e15e65b3",
+            "before_sha256": "778d9d3a456307cf25c2aa8ccadc87b26eb58a749fd08a584c9bd824fda8243f",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+          },
+          {
+            "after_sha256": "a811af0cbe8929ae53ac0cadb13528ab31358d118660c788ed47cc26cd13c887",
+            "before_sha256": "35355943757ae1404991c1d2fe163fbddab214ef66973cace1f9ca29dec1ae42",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+          },
+          {
+            "after_sha256": "9fa2755a63d1c01c4bca90db196b7f8b1e9f35ecbe9f3768b68d852e020ad9bb",
+            "before_sha256": "3417499c48966848adb7d90c7c440cde62fd99a462134e11df64a96ac00c8fed",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0003-bridge-static-2g-channel-table",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0003-bridge-static-2g-channel-table.patch",
+        "sha256": "43732d64ba0b2e739312226ca765b6f8e353619881e53fd2cf9e8d87dfe0e6fc",
+        "targets": [
+          {
+            "after_sha256": "ed8d0501f1a61a496d53784e5d5fa8a4975499a4d984c83b3c3fbcb7a4ce6b82",
+            "before_sha256": "9fa2755a63d1c01c4bca90db196b7f8b1e9f35ecbe9f3768b68d852e020ad9bb",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0004-bridge-ap-add-network-allocation-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0004-bridge-ap-add-network-allocation-telemetry.patch",
+        "sha256": "943dcfea233be6130906d6f8d32d8bba0125ce1b2d383a57192de0149c70834f",
+        "targets": [
+          {
+            "after_sha256": "788d41d5b7983f15b69297766dd7000feba468563047b4b5a1351ac46b4f80a9",
+            "before_sha256": "2ce64f0c82db9b7c585a3c337d3654946f512ee1866d2bf5affa626581fa40bc",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0005-bridge-ap-add-network-eloop-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0005-bridge-ap-add-network-eloop-telemetry.patch",
+        "sha256": "376a5460d5fe9bf2c8f1f82c2d44b71cef7e3efaa391fcb418714f5cd7e38d20",
+        "targets": [
+          {
+            "after_sha256": "2dd0c455d0d38db60371717f723f820c3f6f4cd0da17e0b88db25f942b5bcb96",
+            "before_sha256": "788d41d5b7983f15b69297766dd7000feba468563047b4b5a1351ac46b4f80a9",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          },
+          {
+            "after_sha256": "bb3653ab67be43c47fcab3199cfbc1c1f6e89e1a31d54886b100988c69a8f28f",
+            "before_sha256": "71a360b5fb8ad43591f8b3ae5178804f50ffacd849a9addadb8049c1713d5639",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          },
+          {
+            "after_sha256": "0f9c9d1850df6ff01eca9d4b3b753e319aeb3156c82a297fac642fc9ea9000d6",
+            "before_sha256": "5a6b4e43b8d456a92f27350e46a9b825d7f0bc83356c37838f123c0ba58c8442",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0006-bridge-ap-add-network-wpa-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0006-bridge-ap-add-network-wpa-telemetry.patch",
+        "sha256": "42961dd7439ac91e25758cc8b52d248fab14a2f75224941a9cf63a01cd89536a",
+        "targets": [
+          {
+            "after_sha256": "3aedcab54856669d6edfa7ec49123b993cdc594fca31a7db405b9ae1a79f10fb",
+            "before_sha256": "bf763781190b794ad6ac0da9ebfe8986ad62620c8430aba1811c0fa5e15e65b3",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+          },
+          {
+            "after_sha256": "80e33c9fd268478cfe8ab239ecfa5cd97a21aaedb98cc87a9ab8a504019e2ade",
+            "before_sha256": "a811af0cbe8929ae53ac0cadb13528ab31358d118660c788ed47cc26cd13c887",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+          }
+        ]
+      },
+      {
+        "id": "0007-bridge-ap-add-network-config-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0007-bridge-ap-add-network-config-telemetry.patch",
+        "sha256": "e6d06baecd866c5bb5541530ff9fc68c67e5acf019bd16c6ba685abf42b2f4fb",
+        "targets": [
+          {
+            "after_sha256": "c03d6780b817037bff9b400517b8955db48ab6799033a9a63c5794ab27717175",
+            "before_sha256": "ebfdcafb7389b610e12a4a70d7c197bc639ddb825b5a7c7ed0f2eadea91fffe7",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+          }
+        ]
+      },
+      {
+        "id": "0008-bridge-ap-wpa-ssid-allocation-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0008-bridge-ap-wpa-ssid-allocation-telemetry.patch",
+        "sha256": "bf9084c8ae8f0be01bbbc59eed8b6cdd16801139e1a319d66d895c4c18897e73",
+        "targets": [
+          {
+            "after_sha256": "1936f8a17ab38f7572b78a39980436004da4097f531cb2d22fec33c219a099c3",
+            "before_sha256": "c03d6780b817037bff9b400517b8955db48ab6799033a9a63c5794ab27717175",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+          }
+        ]
+      },
+      {
+        "id": "0009-bridge-ap-add-network-small-reply-buffer",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0009-bridge-ap-add-network-small-reply-buffer.patch",
+        "sha256": "5340adce4b1873096be91c41b5129e78cf7e311939ee6cc202adb12acb04904a",
+        "targets": [
+          {
+            "after_sha256": "6d00dca39f12fbc62dc260e4eb372652f7170fec3fe8c8b7bae0b2928b43fb8d",
+            "before_sha256": "3aedcab54856669d6edfa7ec49123b993cdc594fca31a7db405b9ae1a79f10fb",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+          }
+        ]
+      },
+      {
+        "id": "0010-bridge-ap-sae-pwe-eloop-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0010-bridge-ap-sae-pwe-eloop-telemetry.patch",
+        "sha256": "47d0e560c1ac0c82551c86520c20c97b1155809f9e52111be134154a19585505",
+        "targets": [
+          {
+            "after_sha256": "b5c697929a43cecc79a2ef295a45364f30024e1370ca24a6e4bc2229ce717338",
+            "before_sha256": "2dd0c455d0d38db60371717f723f820c3f6f4cd0da17e0b88db25f942b5bcb96",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          },
+          {
+            "after_sha256": "24f703838b2b696cc29141afa332e55a33e5a8a29903df14d8fced7b3428b46b",
+            "before_sha256": "bb3653ab67be43c47fcab3199cfbc1c1f6e89e1a31d54886b100988c69a8f28f",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0011-bridge-ap-sae-h2e-only",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0011-bridge-ap-sae-h2e-only.patch",
+        "sha256": "eb8f438343e58611d0c206524d57662d0f22fe19ec87c7cb623af90a824a7504",
+        "targets": [
+          {
+            "after_sha256": "6afdff6801e2444028d575313ca08f00836d6f002a088afb29c54a756eb84b64",
+            "before_sha256": "b5c697929a43cecc79a2ef295a45364f30024e1370ca24a6e4bc2229ce717338",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0012-bridge-ap-command-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0012-bridge-ap-command-telemetry.patch",
+        "sha256": "4d9d2e82f2e15eec03dc7fc4f340a43c28998d518f89c45b771baea37df4ce42",
+        "targets": [
+          {
+            "after_sha256": "433ae29bc8828e114871e96bb09179d0d8874133a9a56833e9e22a8479a0f1b4",
+            "before_sha256": "db17f3874446f9c40633db08849f4a6b822822209f10a5b839d1f41fb40f4da4",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "7f0f1cc509321bb2105a56845c8f4d88b8d3ce0b7ab67e1b4befeaaf25946e5f",
+            "before_sha256": "6afdff6801e2444028d575313ca08f00836d6f002a088afb29c54a756eb84b64",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0013-bridge-ap-skip-country-command",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0013-bridge-ap-skip-country-command.patch",
+        "sha256": "b3230926d8d69f29d192dda90e42f1b1a7801c19db60f05edcd296de05403ec4",
+        "targets": [
+          {
+            "after_sha256": "393df9d7540bbbab474dd0d0b4ef318a43eb852721744a34002e42bfc4d4cdff",
+            "before_sha256": "7f0f1cc509321bb2105a56845c8f4d88b8d3ce0b7ab67e1b4befeaaf25946e5f",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0014-bridge-ap-enable-network-eloop-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0014-bridge-ap-enable-network-eloop-telemetry.patch",
+        "sha256": "d3f4e4c36760fac37cf2b3773341ac8c3fa05347758cf39ad32bbc44391afbdb",
+        "targets": [
+          {
+            "after_sha256": "35eca33362326b7a1815d41bbdd24b2c638f87dea8ff154e5cdb88bbc37da18b",
+            "before_sha256": "24f703838b2b696cc29141afa332e55a33e5a8a29903df14d8fced7b3428b46b",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          },
+          {
+            "after_sha256": "f8785a7333042b7f401f69efe4cf12099c759201c1f32d4c4c70298afbfaeeee",
+            "before_sha256": "0f9c9d1850df6ff01eca9d4b3b753e319aeb3156c82a297fac642fc9ea9000d6",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0015-bridge-ap-enable-network-completion-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0015-bridge-ap-enable-network-completion-telemetry.patch",
+        "sha256": "2fa1fe48e7ed262904cc4f0fa59e71540369f5924109b0f884ca74d52e77ecc4",
+        "targets": [
+          {
+            "after_sha256": "e54cd4d1a4e9b21c868837b97ac22b0547505224ebe232538957541597cc1c6c",
+            "before_sha256": "35eca33362326b7a1815d41bbdd24b2c638f87dea8ff154e5cdb88bbc37da18b",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0016-bridge-ap-enable-network-semaphore-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0016-bridge-ap-enable-network-semaphore-telemetry.patch",
+        "sha256": "24c4d245ab19c1481957c93ba332e7d57b06269851f465757e59c5104c466dfb",
+        "targets": [
+          {
+            "after_sha256": "569a04c35bd41f69e803ba646d2c450051a2a509a9cdac7ddd13c022330d6c3f",
+            "before_sha256": "433ae29bc8828e114871e96bb09179d0d8874133a9a56833e9e22a8479a0f1b4",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "59d136a907ec389a5e3d8878eb5f8d1bf9aa8b856d2465c3d4ff62d838a526c2",
+            "before_sha256": "e54cd4d1a4e9b21c868837b97ac22b0547505224ebe232538957541597cc1c6c",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0017-bridge-ap-enable-network-sync-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0017-bridge-ap-enable-network-sync-boundary-telemetry.patch",
+        "sha256": "c8914fe4850c06917cddeee9c0d3e604bd81b4afac558484556a321735ebb430",
+        "targets": [
+          {
+            "after_sha256": "496056dd8e165c1d43be455ebda40dcf1121ffba2ce800cad5739a84b0523029",
+            "before_sha256": "59d136a907ec389a5e3d8878eb5f8d1bf9aa8b856d2465c3d4ff62d838a526c2",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0018-bridge-ap-enable-network-semaphore-pointer-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0018-bridge-ap-enable-network-semaphore-pointer-telemetry.patch",
+        "sha256": "42a43433d280b77e4f12f0437c5ff1607a5cb4bf552868ae761315293aaf34d1",
+        "targets": [
+          {
+            "after_sha256": "e760aee019a714db61c4c3c927938cddb14945c7c23d4fa7d8b4556bfc108eb4",
+            "before_sha256": "496056dd8e165c1d43be455ebda40dcf1121ffba2ce800cad5739a84b0523029",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0019-bridge-ap-enable-network-append-only-trace",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0019-bridge-ap-enable-network-append-only-trace.patch",
+        "sha256": "ed2317ec9f4232269b5b0ab9bc4b30146afd1bad97dd4694fad37c0dff052b33",
+        "targets": [
+          {
+            "after_sha256": "4dc9417df48e84f387ec4b000852e529946077757f83447069ee23fa2b58a03d",
+            "before_sha256": "569a04c35bd41f69e803ba646d2c450051a2a509a9cdac7ddd13c022330d6c3f",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "5655a2de5b285c4da51548f16b828a58f0e57c6f2241e50eb858bc23564e863c",
+            "before_sha256": "e760aee019a714db61c4c3c927938cddb14945c7c23d4fa7d8b4556bfc108eb4",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0020-bridge-ap-interface-add-append-only-trace",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0020-bridge-ap-interface-add-append-only-trace.patch",
+        "sha256": "eecbff0aaf3d1cdad5761e5aae440a112bbf2cf5897411cca99ef1c5d37fa6e5",
+        "targets": [
+          {
+            "after_sha256": "a2fe20cdaa37731a6fc34a3c89c280e61670b88e732a6ad0a017f854823125ee",
+            "before_sha256": "5655a2de5b285c4da51548f16b828a58f0e57c6f2241e50eb858bc23564e863c",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0021-bridge-ap-eapol-init-task-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0021-bridge-ap-eapol-init-task-telemetry.patch",
+        "sha256": "5a61589f2b74b1c7ebe16f514b82926c8ba006df687307f92ef0858b7d4f8d28",
+        "targets": [
+          {
+            "after_sha256": "e77ed0e6aa6401fec84f3dbd4c93fcedcfb2b8862ae48cea354d4dfd34798708",
+            "before_sha256": "d239f467debf871b4e769efe68f59a7f6fdb189b7d9b9dcd54a2c321434e28dc",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpas_glue.c"
+          },
+          {
+            "after_sha256": "b323c4b07f9fec053b65c8a2ac5b6b1ba0006be858c2400fcc644656ca1fe2c3",
+            "before_sha256": "979e9daf6456923dac1f1a04e99f7b6ea1e0a51b2dd2fac26fda91dbc06d9c93",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/eapol_supp/eapol_supp_sm.c"
+          },
+          {
+            "after_sha256": "174c2ec0f7911921104ac83446a4551e1052e2de68ea6f13b44688203615a017",
+            "before_sha256": "63d9cc0d9de9b5c23aac6e5d6c4e3a434c1954c68e47902249c95a6abeada91e",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap.c"
+          }
+        ]
+      },
+      {
+        "id": "0022-bridge-ap-allocator-boundary-trace",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0022-bridge-ap-allocator-boundary-trace.patch",
+        "sha256": "6f7a6ccea9bf5bc98d4302e438a832f57264867d55a8775dde158bc0e13815d6",
+        "targets": [
+          {
+            "after_sha256": "a5b26c415b63d0308d971b2356b2f62836dbbcfe91316573efaca27c45e77fb2",
+            "before_sha256": "4643515f7899d966e8dc81ad652c6abd70591c16075bd9ad926f3aac382c91a4",
+            "path": "components/mm/mm.c"
+          },
+          {
+            "after_sha256": "c3ccc86942f18f0e41e2fd9b472fa788e19afd5374b20cf52bc6c2401b1179e3",
+            "before_sha256": "cf4ec2d11e0ccc40967bcb1382cd1df99e43596d18d812646798019bdcbcc166",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/os_macsw.c"
+          },
+          {
+            "after_sha256": "94d578a2bef2f425dcd8ed0136fb70c6baf0708a4b5087b57e132c2a97083752",
+            "before_sha256": "2744b9821a1ff6d4917a29c95be940f471493bc5e3962c5565800dffb66ddb5e",
+            "path": "components/wireless/wifi6/macsw_os_adapter/src/platform_bouffalo_sdk.c"
+          },
+          {
+            "after_sha256": "58977db49f9dcb2c9424bf62c609882d7b793a33c8cba3cd9c2bd2ae86d0095b",
+            "before_sha256": "c2f7c37182b54a86aa14ace2c35fb42545e97f85982b69a02bce6b8a4d11e1c2",
+            "path": "components/mm/tlsf/tlsf_allocator.c"
+          }
+        ]
+      },
+      {
+        "id": "0023-bridge-disable-wps",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0023-bridge-disable-wps.patch",
+        "sha256": "32132d42c27ccc71b8c03bc8b6ca511f9892d72665cc1abdaf3a51c9f6a940fd",
+        "targets": [
+          {
+            "after_sha256": "99a6cf32507b34ecc2c99e019ad4e1790c374fe3266af02783f45cad4093c2f2",
+            "before_sha256": "f647e0cab7ee587cfc6df14a2767db5de5908c363f13ecb247d021bbb50a6996",
+            "path": "components/wireless/wifi6/wpa_supplicant/CMakeLists.txt"
+          },
+          {
+            "after_sha256": "17c832ea9a158524f2b17bc6468b910bc4726ba600926e6f87b0691464cf636c",
+            "before_sha256": "b9c5580bc843dbbdbe435d0edbae1ec0d2e400b13ade1c814d9d86f1d5055355",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/build_config.h"
+          }
+        ]
+      },
+      {
+        "id": "0024-bridge-ap-enable-network-task-notify-ab",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0024-bridge-ap-enable-network-task-notify-ab.patch",
+        "sha256": "e11d0cb63455acfbe5a89dda49d75692dc26ea98e6376477733efcddc1aa71ff",
+        "targets": [
+          {
+            "after_sha256": "df19343af971e76630dd9e62aaeaafafaf78911caee9a0f3225026673dd40517",
+            "before_sha256": "a2fe20cdaa37731a6fc34a3c89c280e61670b88e732a6ad0a017f854823125ee",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          },
+          {
+            "after_sha256": "63362596861a0266a9b335f1e5aa2c5a15de0f13e25efab47692cde4b2d61d42",
+            "before_sha256": "3dff9cb2eb1d22e6ca558f28bc86d70e420e6291fceea5ce4573d2710a46bfc2",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h"
+          }
+        ]
+      },
+      {
+        "id": "0025-bridge-ap-enable-network-task-notify-state",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0025-bridge-ap-enable-network-task-notify-state.patch",
+        "sha256": "732a001c5ed7942c6e5c4a0c4081392fcbb51325c1cd9bdd7dab06685ccdc32b",
+        "targets": [
+          {
+            "after_sha256": "badb71becc2abb618b6040e4b21773966efb738798bafd04fbe909143d2ed7b8",
+            "before_sha256": "4dc9417df48e84f387ec4b000852e529946077757f83447069ee23fa2b58a03d",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "2fbc16c00905af07a301045d819e94d72b79de8acdbc544320907d50fe037a77",
+            "before_sha256": "df19343af971e76630dd9e62aaeaafafaf78911caee9a0f3225026673dd40517",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0026-bridge-ap-enable-network-event-queue-boundary",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0026-bridge-ap-enable-network-event-queue-boundary.patch",
+        "sha256": "7c1b19dd4bf7120861a1e27be32198573d99766620313270b98d1cb896a0d465",
+        "targets": [
+          {
+            "after_sha256": "aa47160dc245bcb2a97cf50c331484084eb6a1cb778ae0784738a06f6d72ad41",
+            "before_sha256": "2fbc16c00905af07a301045d819e94d72b79de8acdbc544320907d50fe037a77",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0027-bridge-ap-enable-network-eloop-post-event-boundaries",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0027-bridge-ap-enable-network-eloop-post-event-boundaries.patch",
+        "sha256": "1dd0964cfc856b0c43182e8761cd53509257c8366b304739288983d08411a847",
+        "targets": [
+          {
+            "after_sha256": "e8990a6ebfa7be8d947d23c6e72d5d8424662966422558893c38f872083b6df7",
+            "before_sha256": "aa47160dc245bcb2a97cf50c331484084eb6a1cb778ae0784738a06f6d72ad41",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0028-bridge-eloop-event-trigger-binary-semaphore",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0028-bridge-eloop-event-trigger-binary-semaphore.patch",
+        "sha256": "9601df37ade7d8cd5c41a950ae07ed344c6043742171a9f9a5705084cff80d60",
+        "targets": [
+          {
+            "after_sha256": "9ae5deb688be75395cc91f1c4ee8504866fe8b5641c6dd1c51218b60d494853a",
+            "before_sha256": "e8990a6ebfa7be8d947d23c6e72d5d8424662966422558893c38f872083b6df7",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0029-bridge-eloop-polling-wakeup",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0029-bridge-eloop-polling-wakeup.patch",
+        "sha256": "3dc5e0ec50999167241a6d9b8ed145b85954a47b10f07f7539f2638b306737f2",
+        "targets": [
+          {
+            "after_sha256": "af13a13b47ecae0045423eb5c0560360c0d02c461d4a60d17ada6a73d6a79dac",
+            "before_sha256": "9ae5deb688be75395cc91f1c4ee8504866fe8b5641c6dd1c51218b60d494853a",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0030-bridge-ap-enable-network-callback-classification",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0030-bridge-ap-enable-network-callback-classification.patch",
+        "sha256": "a361ba8066a2c4d78b2e5d31264ae03c6b0fd6e0b44b19b910d7b97a99f91e89",
+        "targets": [
+          {
+            "after_sha256": "036e99229da2866da5e440a3f2fe9f56d6719952bbe5f87dfbbb0042f67acdeb",
+            "before_sha256": "af13a13b47ecae0045423eb5c0560360c0d02c461d4a60d17ada6a73d6a79dac",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0031-bridge-ap-enable-network-poll-completion",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0031-bridge-ap-enable-network-poll-completion.patch",
+        "sha256": "f6296e90905293263d82a915648f01461acde50086628c69514c228b0e0f7dc6",
+        "targets": [
+          {
+            "after_sha256": "cf41820891ad316682d6cf2e267d05cea3ad20fde7b3f64c5ad9f0ac86727aa6",
+            "before_sha256": "63362596861a0266a9b335f1e5aa2c5a15de0f13e25efab47692cde4b2d61d42",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h"
+          },
+          {
+            "after_sha256": "eee70130717a85ec5ceee7bee27f1bbb0526e0a8848c12bfbe5c10e07baa276c",
+            "before_sha256": "036e99229da2866da5e440a3f2fe9f56d6719952bbe5f87dfbbb0042f67acdeb",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+          }
+        ]
+      },
+      {
+        "id": "0032-bridge-ap-wpa-wait-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0032-bridge-ap-wpa-wait-telemetry.patch",
+        "sha256": "6e2577398a6e4d54224bb3c7b945c1f139a509c52b346be6c574f2cf867f8d85",
+        "targets": [
+          {
+            "after_sha256": "4b65686a9257c3552648efaa5ee3f175629dbdccf1984e2049d715a7398cf5ca",
+            "before_sha256": "badb71becc2abb618b6040e4b21773966efb738798bafd04fbe909143d2ed7b8",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "fd0c7ccfbe80f99144a680015ff9203131bbcc3b76537bba4f92700024122502",
+            "before_sha256": "393df9d7540bbbab474dd0d0b4ef318a43eb852721744a34002e42bfc4d4cdff",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0033-bridge-ap-wpa-event-path-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0033-bridge-ap-wpa-event-path-telemetry.patch",
+        "sha256": "e0a3f1a1b205b50f31c73a23fd5c84f9b23f780604577cb5c5032d98d71712db",
+        "targets": [
+          {
+            "after_sha256": "465bd13476032e1aceb799bb569000501949017a78889c0f6c1ffa758a18d115",
+            "before_sha256": "4b65686a9257c3552648efaa5ee3f175629dbdccf1984e2049d715a7398cf5ca",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "7aa10b98ab58c760d20468614b2fc674523c8cbb3136415dba96b345906fd990",
+            "before_sha256": "fd0c7ccfbe80f99144a680015ff9203131bbcc3b76537bba4f92700024122502",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          },
+          {
+            "after_sha256": "5bcf4412ec6361bfb179bc62d915a1565ecf5b68106e11e975e1f0447f1c7d33",
+            "before_sha256": "ed8d0501f1a61a496d53784e5d5fa8a4975499a4d984c83b3c3fbcb7a4ce6b82",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          },
+          {
+            "after_sha256": "dec0e1dd595da543a2a61e18d660eb79227981eab1568c1fe899d8afbf3713df",
+            "before_sha256": "67117fe1410997b88494f00b2e5630ea2fe66971e69b40a33db2842a177a651d",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          },
+          {
+            "after_sha256": "705dd8756463569db8edb0e14f5f44f434b69e46022d822e9c53c0bc555cd9ba",
+            "before_sha256": "80e33c9fd268478cfe8ab239ecfa5cd97a21aaedb98cc87a9ab8a504019e2ade",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+          }
+        ]
+      },
+      {
+        "id": "0034-bridge-ap-enable-network-continuation-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0034-bridge-ap-enable-network-continuation-telemetry.patch",
+        "sha256": "717b7af3b8ece3f8ff6e6101b4cd440c76da1b2d9b845eea3e63589fa2470f78",
+        "targets": [
+          {
+            "after_sha256": "ae0f1cd6a402e86eda1e15a7c8a04176815b0ac433d296b53446aac305bcdcc3",
+            "before_sha256": "705dd8756463569db8edb0e14f5f44f434b69e46022d822e9c53c0bc555cd9ba",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+          }
+        ]
+      },
+      {
+        "id": "0035-bridge-ap-create-ap-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0035-bridge-ap-create-ap-boundary-telemetry.patch",
+        "sha256": "44f898b05ac54297b641ddb3797f32893c95c05f8094dbf802dd439198aeaa82",
+        "targets": [
+          {
+            "after_sha256": "c258c16f8cfe1e8cd90df8d9bddabd7396e882b3f74ef87a63def2a4876246a9",
+            "before_sha256": "465bd13476032e1aceb799bb569000501949017a78889c0f6c1ffa758a18d115",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "c31e67849040fbd1cf5b154261a5610d44c39cf760f8c3113579e963a969a675",
+            "before_sha256": "dec0e1dd595da543a2a61e18d660eb79227981eab1568c1fe899d8afbf3713df",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          }
+        ]
+      },
+      {
+        "id": "0036-bridge-ap-hostapd-allocator-heap-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0036-bridge-ap-hostapd-allocator-heap-telemetry.patch",
+        "sha256": "fb1852b692cac7285ffc5998b4f72bafd0a2ec497b25efaebc1270cab97a9507",
+        "targets": [
+          {
+            "after_sha256": "6d9d922342e346dd8e5f726a78e72dac84811c24bbe6e93ad737751b11b7b981",
+            "before_sha256": "a5b26c415b63d0308d971b2356b2f62836dbbcfe91316573efaca27c45e77fb2",
+            "path": "components/mm/mm.c"
+          }
+        ]
+      },
+      {
+        "id": "0037-bridge-ap-bss-allocation-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0037-bridge-ap-bss-allocation-boundary-telemetry.patch",
+        "sha256": "965a265fea72962446c29378f011048e78480f9bf7c99f2fee24be4186bbde2f",
+        "targets": [
+          {
+            "after_sha256": "07a84e91dfa1add58856732a5e2be0a8daaae4d6d3de03b491e8e82d78ba13b2",
+            "before_sha256": "c31e67849040fbd1cf5b154261a5610d44c39cf760f8c3113579e963a969a675",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          }
+        ]
+      },
+      {
+        "id": "0038-bridge-ap-bss-data-allocator-trace",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0038-bridge-ap-bss-data-allocator-trace.patch",
+        "sha256": "49d0fbb27797ff670bb7b2b2e4bd80fa45ad49fcba6c2378cb7c80fc2c34b4fa",
+        "targets": [
+          {
+            "after_sha256": "2f64cca360ea0f4a3a005a508fdecca354b858cc6b03a4f8ef0c1f4b4c622891",
+            "before_sha256": "07a84e91dfa1add58856732a5e2be0a8daaae4d6d3de03b491e8e82d78ba13b2",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          }
+        ]
+      },
+      {
+        "id": "0039-bridge-ap-allocator-heap-walk",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0039-bridge-ap-allocator-heap-walk.patch",
+        "sha256": "e79c13a2579e7d115245bc1aa4350307c41599345792f9016e4bd06318c04abd",
+        "targets": [
+          {
+            "after_sha256": "c655a30ebd92e5a09f745585f8e251bbd8213b957d074a374f490243a1ea3a01",
+            "before_sha256": "c258c16f8cfe1e8cd90df8d9bddabd7396e882b3f74ef87a63def2a4876246a9",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "c3f6ffe0fc7e0074fe61e962a7adec68d5240993179272bc2bd5342312f5f768",
+            "before_sha256": "2f64cca360ea0f4a3a005a508fdecca354b858cc6b03a4f8ef0c1f4b4c622891",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          }
+        ]
+      },
+      {
+        "id": "0040-bridge-wram-resource-profile",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0040-bridge-wram-resource-profile.patch",
+        "sha256": "0de83658aa6a2daff2a70c21cbae1733d6983c4aee4b53e0d25c14e14bd07f3c",
+        "targets": [
+          {
+            "after_sha256": "f6b3d4829ed5a00691ad9ae5dc0d161c410eddf5ada1c6c9c9c83871a5e497ab",
+            "before_sha256": "2ab7c600649cfb7085a73cd6ece8b224403796798eada88cc5e4b69ad67ff386",
+            "path": "components/wireless/macsw/inc/macsw_default_config.h"
+          }
+        ]
+      },
+      {
+        "id": "0041-bridge-ap-hostapd-lifecycle-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0041-bridge-ap-hostapd-lifecycle-telemetry.patch",
+        "sha256": "89faab7237fd1a2d3289fde844a9d69155f5e081ae01d422c58d3c7f422ea1c2",
+        "targets": [
+          {
+            "after_sha256": "0ecd9b0513dcbe9afdbfc7b74dabf51f0f9a87b50ee18eb51754fea2317587df",
+            "before_sha256": "c655a30ebd92e5a09f745585f8e251bbd8213b957d074a374f490243a1ea3a01",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "3eea3fcba29fcb2fe4851ec75805febde687cc25b6e45136569633cf84225544",
+            "before_sha256": "24f19eb1cf3027209990594d66a7f1790ace1771c32b3f1aba56d8271a4a4418",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0042-bridge-cfgmacsw-status-message-ownership",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0042-bridge-cfgmacsw-status-message-ownership.patch",
+        "sha256": "5a170be275732c8ab679f6ad446196faa42bd88d9aa448e9b9d111041fb875f2",
+        "targets": [
+          {
+            "after_sha256": "cfbcacaf2042fdd68f6bac72d3b6cafdd16785a729889cb77c927a87447732a2",
+            "before_sha256": "07ab2dd12ca19862dcf8b2dc8dbd1f66e1061729e0437eb9a8dba8ba0837755b",
+            "path": "components/wireless/wifi6/fhost/include/cfgmacsw.h"
+          },
+          {
+            "after_sha256": "9b498b9dfd0d7565e4aa9714be606bd4c938de3606f074518bf9e06e9404c288",
+            "before_sha256": "f8785a7333042b7f401f69efe4cf12099c759201c1f32d4c4c70298afbfaeeee",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0043-bridge-ap-status-code-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0043-bridge-ap-status-code-telemetry.patch",
+        "sha256": "3b0c68c756b89794c0292a89acc0afcc5ec84e53a517149ca28b587c3aeff9dc",
+        "targets": [
+          {
+            "after_sha256": "97971c1f72ea1e748dd5e00b475916044532c87f14ec262409d0b1ec10f7e87c",
+            "before_sha256": "0ecd9b0513dcbe9afdbfc7b74dabf51f0f9a87b50ee18eb51754fea2317587df",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "a4ab57597506a04c87e4f78bd1539c6172f11f179f22fa0940c32fa00faba6f2",
+            "before_sha256": "9b498b9dfd0d7565e4aa9714be606bd4c938de3606f074518bf9e06e9404c288",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+          },
+          {
+            "after_sha256": "637b58a1ac24ef393720614bd3dc58949b56e6e0c0aaab4a3b8b009b71052073",
+            "before_sha256": "c91f98d0b7ea3bdc2bf27473569e8ba8daa0b84ac68ae6c1bfb5fd810fcbd4ab",
+            "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+          }
+        ]
+      },
+      {
+        "id": "0044-bridge-ap-vif-state-from-hostapd",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0044-bridge-ap-vif-state-from-hostapd.patch",
+        "sha256": "d6a443d16397a742dcc1af80b3efc35ae0ec93ac678b3b0655866a9fba463a2d",
+        "targets": [
+          {
+            "after_sha256": "ba286927557ef4c1d5d663517dc16323470cde455cccbda27de9590db3634ea0",
+            "before_sha256": "97971c1f72ea1e748dd5e00b475916044532c87f14ec262409d0b1ec10f7e87c",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "11ff560db645a1862a897d7e01c801873f998ffe2af23bb8a861ee49eecab165",
+            "before_sha256": "637b58a1ac24ef393720614bd3dc58949b56e6e0c0aaab4a3b8b009b71052073",
+            "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+          },
+          {
+            "after_sha256": "9968184e798408df41c1c7d1cda7d4e63137faef75c169fb7fe702a22618aaf0",
+            "before_sha256": "3eea3fcba29fcb2fe4851ec75805febde687cc25b6e45136569633cf84225544",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0045-bridge-ap-hostapd-state-update-trace",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0045-bridge-ap-hostapd-state-update-trace.patch",
+        "sha256": "66ef258cd2f1203aced02e7b879c0bcca956fc88e6faa9f41de6935b0990c1d8",
+        "targets": [
+          {
+            "after_sha256": "dfc0a70234650efabd17edbdef25b9f3b19bd54f0dcda43a0e8c465cb69bb70e",
+            "before_sha256": "ba286927557ef4c1d5d663517dc16323470cde455cccbda27de9590db3634ea0",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "bde6984c01a10f9b184f202e3c3ae54aebaf9131d5e9505e9ba2e76f5ecfad2e",
+            "before_sha256": "11ff560db645a1862a897d7e01c801873f998ffe2af23bb8a861ee49eecab165",
+            "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+          },
+          {
+            "after_sha256": "95e5a51d0d324a61c37319614429d92b7ca16175f8f083e651667688f5b65142",
+            "before_sha256": "9968184e798408df41c1c7d1cda7d4e63137faef75c169fb7fe702a22618aaf0",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0046-bridge-ap-shutdown-cause-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0046-bridge-ap-shutdown-cause-telemetry.patch",
+        "sha256": "158e468887ed91454e7a1e92762f362fcdd455a2c022b568f8150bc919b05189",
+        "targets": [
+          {
+            "after_sha256": "c3f82419a587d14c7bb833b413fb396f56d0ae69ca54b0148f979e6158756cf1",
+            "before_sha256": "c3f6ffe0fc7e0074fe61e962a7adec68d5240993179272bc2bd5342312f5f768",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          },
+          {
+            "after_sha256": "589ee9c74921241b1d51387a590ce16377e5a75fb453b66eb11e6b09e83e8440",
+            "before_sha256": "428351af8a26c06ea824f665bc03cc6756184ecad7de48545465ed58b8af16c7",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c"
+          },
+          {
+            "after_sha256": "381c33c5ab1d07c882bc72b699ffe746f2539faa9a5ce18df8ab3e54d0b30901",
+            "before_sha256": "95e5a51d0d324a61c37319614429d92b7ca16175f8f083e651667688f5b65142",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0047-bridge-ap-ignore-interface-disconnect",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0047-bridge-ap-ignore-interface-disconnect.patch",
+        "sha256": "46eb05e513e0afff3a3dfb7e47e703309c325c8447eb6488524b431c53f8e466",
+        "targets": [
+          {
+            "after_sha256": "7e35bb97fe131038f6f030bfb1d4dfebfa7b3233e2cc44311b2c2b6c74e314cc",
+            "before_sha256": "5bcf4412ec6361bfb179bc62d915a1565ecf5b68106e11e975e1f0447f1c7d33",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0048-bridge-ap-mark-disassoc-caller-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0048-bridge-ap-mark-disassoc-caller-telemetry.patch",
+        "sha256": "c95367085fea25f02c59b291f3b1308141a4c371c45ab7216000a595b9a54607",
+        "targets": [
+          {
+            "after_sha256": "57449fcfde900aa3fcdb5ef9faafc1325e38b014b1da07f79045e1ecaf6c55f9",
+            "before_sha256": "589ee9c74921241b1d51387a590ce16377e5a75fb453b66eb11e6b09e83e8440",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c"
+          }
+        ]
+      },
+      {
+        "id": "0049-bridge-ap-deauthenticate-caller-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0049-bridge-ap-deauthenticate-caller-telemetry.patch",
+        "sha256": "c101bd698b262476e738e5d93dbb2853b772e135197ba754302c779ac88b1732",
+        "targets": [
+          {
+            "after_sha256": "6c63e305881848b80bd76921809d155c92e809da1a853c2cbf2901eeaad8348c",
+            "before_sha256": "ae0f1cd6a402e86eda1e15a7c8a04176815b0ac433d296b53446aac305bcdcc3",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+          }
+        ]
+      },
+      {
+        "id": "0050-bridge-ap-disable-network-caller-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0050-bridge-ap-disable-network-caller-telemetry.patch",
+        "sha256": "513e37ef90221a0a37667d8f6a9fd58d152c4fea723d620392b619586f486323",
+        "targets": [
+          {
+            "after_sha256": "9bd3363934b043a1268314c1611e26d5d7271d7d0da48a998dcd1fa3ff344e0d",
+            "before_sha256": "7aa10b98ab58c760d20468614b2fc674523c8cbb3136415dba96b345906fd990",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0051-bridge-ap-stop-caller-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0051-bridge-ap-stop-caller-telemetry.patch",
+        "sha256": "cf91397a6d6296d2a5e8543541c87ac53932a3b84d10af1c39287bfe50669d4b",
+        "targets": [
+          {
+            "after_sha256": "cad25c1babfa8deae26ef08aa0e8522df91304b796985a7a76ba612fe17bc73c",
+            "before_sha256": "90e91a78e7c8d87da7406a40a5c5b3613faff357fd0941ae08c91d05f8d5d46e",
+            "path": "components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c"
+          }
+        ]
+      },
+      {
+        "id": "0052-bridge-ap-config-return-liveness",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0052-bridge-ap-config-return-liveness.patch",
+        "sha256": "4a8af5eca8a3a9ad138426f61c438e4422f6c39d86d8f06eeebf4ba389215739",
+        "targets": [
+          {
+            "after_sha256": "ee927444bddfe452fbe9cb28190acca883ded171e6585fd69b85e24c071c6a98",
+            "before_sha256": "dfc0a70234650efabd17edbdef25b9f3b19bd54f0dcda43a0e8c465cb69bb70e",
+            "path": "components/wireless/wifi6/fhost/include/fhost.h"
+          },
+          {
+            "after_sha256": "dafd399ad4962b96743a0b6c432d114fca9c31053ae8f4eb0a243a7fd2baaaee",
+            "before_sha256": "1936f8a17ab38f7572b78a39980436004da4097f531cb2d22fec33c219a099c3",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+          },
+          {
+            "after_sha256": "ec717e08d1cc205afbfe7f5b2df8b85c9749a711b4a1589ff6975fe1e9d3c7c5",
+            "before_sha256": "6d00dca39f12fbc62dc260e4eb372652f7170fec3fe8c8b7bae0b2928b43fb8d",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+          }
+        ]
+      },
+      {
+        "id": "0053-bridge-ap-set-network-format-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0053-bridge-ap-set-network-format-telemetry.patch",
+        "sha256": "592e2ae5d5cbceb83337befe8ee1a2e6a2f25f6cfaa9c8c59688d871946e3a36",
+        "targets": [
+          {
+            "after_sha256": "3775de45bec83541dc1b5a8918712b24b693930d2f531cc3bc81d494103051d8",
+            "before_sha256": "9bd3363934b043a1268314c1611e26d5d7271d7d0da48a998dcd1fa3ff344e0d",
+            "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+          }
+        ]
+      },
+      {
+        "id": "0054-bridge-ap-config-defaults-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0054-bridge-ap-config-defaults-boundary-telemetry.patch",
+        "sha256": "8588a10b57f2defde1bdd96d8e515c05b78e4b4f41832813b91d5b88cb250724",
+        "targets": [
+          {
+            "after_sha256": "e27e7cce1a41b6f26b2714e5e5f113b2d58241709a3808160e32ab8ac4bf64d0",
+            "before_sha256": "c3f82419a587d14c7bb833b413fb396f56d0ae69ca54b0148f979e6158756cf1",
+            "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+          }
+        ]
+      },
+      {
+        "id": "0055-bridge-ap-setup-bss-lifecycle-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0055-bridge-ap-setup-bss-lifecycle-telemetry.patch",
+        "sha256": "6bd7faf16cb51296a67c11432c26e4f9b0cd8d531a4ff11f825eeaff270101d2",
+        "targets": [
+          {
+            "after_sha256": "f2e3d12a56daa43af62771bd7fe0e3ded1a4685375bc41dc72312e42a3e513ee",
+            "before_sha256": "381c33c5ab1d07c882bc72b699ffe746f2539faa9a5ce18df8ab3e54d0b30901",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0056-bridge-ap-11b-hw-feature-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0056-bridge-ap-11b-hw-feature-telemetry.patch",
+        "sha256": "caba4cdcd16f170afe26e83a9dec7c6fd761eb12a87ebd48c0416d6b76eb9660",
+        "targets": [
+          {
+            "after_sha256": "d490dbb336c257edcea1f2cadecbc12fa37483fd552d0ddf0126b2555382ec78",
+            "before_sha256": "7e35bb97fe131038f6f030bfb1d4dfebfa7b3233e2cc44311b2c2b6c74e314cc",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0057-bridge-ap-accounting-beacon-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0057-bridge-ap-accounting-beacon-boundary-telemetry.patch",
+        "sha256": "60842e6f0071ab07698e13e588e96b3d4d8d7d7147a531d6322504395b74a0f4",
+        "targets": [
+          {
+            "after_sha256": "199c80e0a8d1b05146085907c2001db6f0d7845122d561e538aa4e240a9d62bc",
+            "before_sha256": "f2e3d12a56daa43af62771bd7fe0e3ded1a4685375bc41dc72312e42a3e513ee",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+          }
+        ]
+      },
+      {
+        "id": "0058-bridge-ap-beacon-driver-boundary-telemetry",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0058-bridge-ap-beacon-driver-boundary-telemetry.patch",
+        "sha256": "78c7d0b074096a429f620bb3d7f4ba66fb7fce752bb1ca6dadc8808570decc8e",
+        "targets": [
+          {
+            "after_sha256": "19cc6d7ee0bfc7679907011f9164b09517f359015e5971ab628f7bef422944bd",
+            "before_sha256": "cd8398d578a77a86648178d495dbee0b256d38dbd04e764b8db9e9d2f94542e0",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/ap/beacon.c"
+          },
+          {
+            "after_sha256": "f03f92726b889417e5d85dc782cd06712874400c3d4f15133c2fe42ed20810e6",
+            "before_sha256": "d490dbb336c257edcea1f2cadecbc12fa37483fd552d0ddf0126b2555382ec78",
+            "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+          }
+        ]
+      },
+      {
+        "id": "0059-bridge-mbedtls-configurable-content-buffer",
+        "path": "tools/runtime_bundle/profiles/bridge/fhost_patches/0059-bridge-mbedtls-configurable-content-buffer.patch",
+        "sha256": "e85f0eedc25953ee0653f503666da451a35dde419f5068532fe7191bafe75fc7",
+        "targets": [
+          {
+            "after_sha256": "eaaf973248077e882f450e7b7faacbc41fbe76da46b13df389a0bf7b3b1a599f",
+            "before_sha256": "2afe049be555457503ddb94d3ac056be36c6f202e9e2cd426390f706d42072ed",
+            "path": "components/crypto/mbedtls/CMakeLists.txt"
+          }
+        ]
+      }
+    ]
   },
   "toolchain": "riscv64-unknown-elf-gcc (Xuantie-900 elf newlib gcc Toolchain V2.6.1 B-20220906) 10.2.0"
 }

@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include "bflb_irq.h"
 
+#ifndef CONFIG_RC32K_CAL_ENABLE_HALF_MSB
+#define CONFIG_RC32K_CAL_ENABLE_HALF_MSB 1
+#endif
+
 #if defined(BL702)
 #include "bl702_lp.h"
 #elif defined(BL602)

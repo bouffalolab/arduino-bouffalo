@@ -24,6 +24,6 @@
 
 #define CFG_TWT 1
 #define CFG_REORD_BUF 4
-#define FHOST_RX_BUF_CNT 4
+#define FHOST_RX_BUF_CNT 8
 
 #endif /* __MACSW_TCP_BENCH_CONFIG_H__ */

@@ -516,6 +516,18 @@ struct fhost_vif_sta_cfg
 
     /* Extra flags passed to wpa_supplicant. See FHOST_WPA_SSID_* in fhost_wpa.h. */
     int wpa_flags;
+
+    /**
+     * Extra information elements appended to STA association requests.
+     *
+     * The buffer contains complete 802.11 information elements, including each
+     * element ID and length. Its contents are copied before
+     * @ref fhost_configure_vif returns. Set to NULL when @ref extra_ies_len is 0.
+     */
+    const uint8_t *extra_ies;
+
+    /** Length, in bytes, of the data referenced by @ref extra_ies. */
+    uint16_t extra_ies_len;
 };
 
 
