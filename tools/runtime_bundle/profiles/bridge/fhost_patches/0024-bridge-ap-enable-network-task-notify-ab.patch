@@ -1,0 +1,144 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -428,6 +428,22 @@
+     fhost_bridge_ap_start_progress(217, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(225, 0);
++  if (msg->use_task_notification) {
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_trace(5, (uint32_t)(uintptr_t)msg->waiting_task,
++                                  0, 0);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_sync(6, (uint32_t)(uintptr_t)msg->waiting_task,
++                                 0, 0);
++    rtos_task_notify(msg->waiting_task, false);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_sync(7, (uint32_t)(uintptr_t)msg->waiting_task,
++                                 0, 0);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_trace(6, (uint32_t)(uintptr_t)msg->waiting_task,
++                                  0, 0);
++    return;
++  }
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(234, 0);
+   if (bridge_ap_enable_network)
+@@ -481,7 +497,18 @@
+       request != NULL &&
+       strncmp(request, "IFNAME=wl2 ENABLE_NETWORK ",
+               sizeof("IFNAME=wl2 ENABLE_NETWORK ") - 1) == 0;
+-  struct event_sync_msg * data = os_malloc(sizeof(struct event_sync_msg) + req_len);
++  struct event_sync_msg *data;
++
++  /*
++   * The task-notification variant currently has no cancellation/late-
++   * completion ownership protocol. Reject finite waits before enqueueing so
++   * the callback can never outlive the caller's response storage.
++   */
++  if (!request || req_len <= 0 ||
++      (bridge_ap_enable_network && timeout_ms >= 0))
++    return -1;
++
++  data = os_zalloc(sizeof(struct event_sync_msg) + req_len);
+ 
+   if (bridge_ap_set_sae_pwe)
+     fhost_bridge_ap_start_progress(208, data ? 0 : -1);
+@@ -489,7 +516,18 @@
+     return -1;
+   memcpy(data + 1, request, req_len);
+ 
+-  rtos_semaphore_create(&data->done, 1, 0);
++  data->use_task_notification = bridge_ap_enable_network;
++  if (data->use_task_notification) {
++    data->waiting_task = rtos_task_get_handle(NULL);
++    if (!data->waiting_task ||
++        rtos_task_init_notification(data->waiting_task)) {
++      ret = -1;
++      goto exit;
++    }
++  } else if (rtos_semaphore_create(&data->done, 1, 0)) {
++    ret = -1;
++    goto exit;
++  }
+   data->resp = resp;
+   data->resp_len = resp_len;
+ 
+@@ -511,31 +549,48 @@
+     fhost_bridge_ap_start_progress(219, ret);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(233, 0);
+-  if (bridge_ap_enable_network)
+-    fhost_bridge_ap_start_pointer(7, (uint32_t)(uintptr_t)data->done);
+-  if (bridge_ap_enable_network)
+-    fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
+-                               rtos_semaphore_get_count(data->done));
+-  if (bridge_ap_enable_network || bridge_ap_interface_add)
+-    fhost_bridge_ap_start_trace(1, (uint32_t)(uintptr_t)data->done, 0,
+-                                rtos_semaphore_get_count(data->done));
+-  wait_result = rtos_semaphore_wait(data->done, timeout_ms);
+-  if (bridge_ap_enable_network)
+-    fhost_bridge_ap_start_progress(237, wait_result);
+-  if (bridge_ap_enable_network)
+-    fhost_bridge_ap_start_sync(5, (uint32_t)(uintptr_t)data->done,
+-                               wait_result, rtos_semaphore_get_count(data->done));
+-  if (bridge_ap_enable_network || bridge_ap_interface_add)
+-    fhost_bridge_ap_start_trace(4, (uint32_t)(uintptr_t)data->done,
+-                                wait_result,
+-                                rtos_semaphore_get_count(data->done));
++  if (data->use_task_notification) {
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_trace(7,
++                                  (uint32_t)(uintptr_t)data->waiting_task,
++                                  0, 0);
++    wait_result = rtos_task_wait_notification(timeout_ms);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_sync(8, (uint32_t)(uintptr_t)data->waiting_task,
++                                 wait_result, 0);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_trace(8,
++                                  (uint32_t)(uintptr_t)data->waiting_task,
++                                  wait_result, 0);
++  } else {
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_pointer(7, (uint32_t)(uintptr_t)data->done);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
++                                 rtos_semaphore_get_count(data->done));
++    if (bridge_ap_enable_network || bridge_ap_interface_add)
++      fhost_bridge_ap_start_trace(1, (uint32_t)(uintptr_t)data->done, 0,
++                                  rtos_semaphore_get_count(data->done));
++    wait_result = rtos_semaphore_wait(data->done, timeout_ms);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_progress(237, wait_result);
++    if (bridge_ap_enable_network)
++      fhost_bridge_ap_start_sync(5, (uint32_t)(uintptr_t)data->done,
++                                 wait_result,
++                                 rtos_semaphore_get_count(data->done));
++    if (bridge_ap_enable_network || bridge_ap_interface_add)
++      fhost_bridge_ap_start_trace(4, (uint32_t)(uintptr_t)data->done,
++                                  wait_result,
++                                  rtos_semaphore_get_count(data->done));
++  }
+   if (bridge_ap_set_sae_pwe)
+     fhost_bridge_ap_start_progress(211, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(220, 0);
+ 
+ exit:
+-  rtos_semaphore_delete(data->done);
++  if (!data->use_task_notification && data->done)
++    rtos_semaphore_delete(data->done);
+   os_free(data);
+ 
+   return ret;
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h
+@@ -19,6 +19,8 @@
+ 
+ struct event_sync_msg {
+   rtos_semaphore done;
++  rtos_task_handle waiting_task;
++  bool use_task_notification;
+   char **resp;
+   int *resp_len;
+ };

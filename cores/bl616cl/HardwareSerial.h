@@ -41,9 +41,10 @@ public:
     void begin(unsigned long baud, uint8_t config, int8_t rxPin, int8_t txPin);
     void end();
     uint32_t baudRate() const { return baud_rate_; }
-    void updateBaudRate(uint32_t baud);
+    bool updateBaudRate(unsigned long baud);
     void setRxBufferSize(size_t size) { (void)size; }
     void setTxBufferSize(size_t size) { (void)size; }
+    void clearRx();
 
     int available() override;
     int peek() override;
@@ -56,14 +57,29 @@ public:
     using Print::write;
 
     operator bool() const { return device_ != nullptr; }
+    struct bflb_device_s *nativeHandle() const { return device_; }
+    uint16_t bufferedRxCount() const;
+    uint32_t rxReceivedCount() const { return rx_received_count_; }
+    uint32_t rxOverflowCount() const { return rx_overflow_count_; }
 
 private:
+    static constexpr uint16_t kRxBufferSize = 4096U;
+    static constexpr uint16_t kRxBufferMask = kRxBufferSize - 1U;
+
+    void drainHardwareRx();
+    void resetRxBuffer();
+    static void uartInterrupt(int irq, void *arg);
+
     uint8_t index_;
     int8_t rx_pin_;
     int8_t tx_pin_;
-    int peeked_;
     uint32_t baud_rate_;
     struct bflb_device_s *device_;
+    uint8_t rx_buffer_[kRxBufferSize];
+    volatile uint16_t rx_head_;
+    volatile uint16_t rx_tail_;
+    volatile uint32_t rx_received_count_;
+    volatile uint32_t rx_overflow_count_;
 };
 
 extern HardwareSerial Serial;

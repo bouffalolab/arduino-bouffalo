@@ -1,0 +1,234 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -73,6 +73,10 @@
+     uint8_t phase, int fhost_vif_idx, uint8_t expected_event,
+     uint8_t observed_event, uint32_t target, uint32_t waiting_task,
+     uint32_t callback_task, int result, uint8_t wpa_state);
++extern void fhost_bridge_ap_start_wpa_event_path(
++    uint8_t phase, int fhost_vif_idx, uint8_t event, uint8_t fhost_wpa_state,
++    int operstate, int old_wpa_state, int new_wpa_state, int result,
++    uint8_t callback_slot);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -392,10 +392,22 @@
+     bool reset_cb = (event == FHOST_WPA_EXIT);
+     int i;
+ 
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_wpa_event_path(
++            16, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0, 0xff);
+     for (i = 0 ; i < FHOST_WPA_EVENT_CB_CNT; i++, cb++)
+     {
+-        if (cb->events & CO_BIT(event))
++        if (cb->events & CO_BIT(event)) {
++            if (fhost_vif_idx == MGMR_VIF_AP)
++                fhost_bridge_ap_start_wpa_event_path(
++                    17, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1,
++                    0, i);
+             cb->func(fhost_vif_idx, event, param, cb->arg);
++            if (fhost_vif_idx == MGMR_VIF_AP)
++                fhost_bridge_ap_start_wpa_event_path(
++                    18, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1,
++                    0, i);
++        }
+ 
+         if (reset_cb)
+         {
+@@ -404,6 +416,9 @@
+             cb->arg = NULL;
+         }
+     }
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_wpa_event_path(
++            19, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0, 0xff);
+ }
+ 
+ /**
+@@ -452,6 +467,10 @@
+         if (!wpa_vif)
+             return;
+ 
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_wpa_event_path(
++                13, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0,
++                0xff);
+         switch (event)
+         {
+             case FHOST_WPA_CONNECTED:
+@@ -469,7 +488,19 @@
+                 return;
+         }
+ 
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_wpa_event_path(
++                14, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0,
++                0xff);
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_wpa_event_path(
++                15, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0,
++                0xff);
+         fhost_wpa_call_event_cb(fhost_vif_idx, event, param);
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_wpa_event_path(
++                20, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0,
++                0xff);
+     }
+ }
+ 
+@@ -672,12 +703,26 @@
+ 
+ int fhost_wpa_send_event(uint8_t event, void *param, int param_len, int fhost_vif_idx)
+ {
++    struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
++
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_wpa_event_path(
++            11, fhost_vif_idx, event, wpa_vif ? wpa_vif->state : 0xff,
++            -1, -1, -1, 0, 0xff);
+     if (((event <= FHOST_WPA_STARTED) && (fhost_vif_idx != FHOST_WPA_GLOBAL_VIF)) ||
+         ((event > FHOST_WPA_STARTED) && (fhost_vif_idx > MACSW_VIRT_DEV_MAX)) ||
+         (event >= FHOST_WPA_LAST))
+         return -1;
+ 
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_wpa_event_path(
++            12, fhost_vif_idx, event, wpa_vif ? wpa_vif->state : 0xff,
++            -1, -1, -1, 0, 0xff);
+     fhost_wpa_event_process(event, param, param_len, fhost_vif_idx);
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_wpa_event_path(
++            21, fhost_vif_idx, event, wpa_vif ? wpa_vif->state : 0xff,
++            -1, -1, -1, 0, 0xff);
+     return 0;
+ }
+ 
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -2049,12 +2049,26 @@
+ static int wpa_macsw_driver_set_operstate(void *priv, int state, int  old_state, int new_state)
+ {
+ 	struct wpa_macsw_driver_itf_data *drv = priv;
++	const int bridge_ap = drv->fhost_vif_idx == MGMR_VIF_AP;
++
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			8, drv->fhost_vif_idx, 0xff, 0xff, state, old_state, new_state,
++			0, 0xff);
+ 
+ 	if ((old_state == -1) && (new_state == -1)) {
+ 		if (state == 1) {
+ 			drv->status |= MACSW_COMPLETED;
+ 			drv->next_auth_alg = 0;
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					9, drv->fhost_vif_idx, FHOST_WPA_CONNECTED, 0xff,
++					state, old_state, new_state, 0, 0xff);
+ 			fhost_wpa_send_event(FHOST_WPA_CONNECTED, NULL, 0, drv->fhost_vif_idx);
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					10, drv->fhost_vif_idx, FHOST_WPA_CONNECTED, 0xff,
++					state, old_state, new_state, 0, 0xff);
+ 		} else if (drv->status & MACSW_COMPLETED) {
+ 			// set_operstate is called with state = 0 when wpa state machine
+ 			// enters WPA_ASSOCIATING, WPA_ASSOCIATED or WPA_DISCONNECTED
+@@ -2067,7 +2081,15 @@
+ 		if (state == 1) {
+ 			drv->status |= MACSW_COMPLETED;
+ 			drv->next_auth_alg = 0;
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					9, drv->fhost_vif_idx, FHOST_WPA_CONNECTED, 0xff,
++					state, old_state, new_state, 0, 0xff);
+ 			fhost_wpa_send_event(FHOST_WPA_CONNECTED, NULL, 0, drv->fhost_vif_idx);
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					10, drv->fhost_vif_idx, FHOST_WPA_CONNECTED, 0xff,
++					state, old_state, new_state, 0, 0xff);
+ 		} else if ( (old_state > WPA_INACTIVE) &&
+ 					(new_state == WPA_DISCONNECTED)) {
+ 			// set_operstate is called with state = 0 when wpa state machine
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -31,6 +31,7 @@
+ #include "common/ieee802_11_defs.h"
+ #include "config_ssid.h"
+ #include "config.h"
++#include "fhost.h"
+ #include "wpa_supplicant_i.h"
+ #include "driver_i.h"
+ #include "p2p_supplicant.h"
+@@ -912,10 +913,19 @@
+ static void wpas_ap_configured_cb(void *ctx)
+ {
+ 	struct wpa_supplicant *wpa_s = ctx;
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
+ 
+ 	wpa_printf(MSG_DEBUG, "AP interface setup completed - state %s",
+ 		   hostapd_state_text(wpa_s->ap_iface->state));
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			1, 1, 0xff, 0xff, -1, -1, -1,
++			wpa_s->ap_iface->state, 0xff);
+ 	if (wpa_s->ap_iface->state == HAPD_IFACE_DISABLED) {
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				2, 1, 0xff, 0xff, -1, -1, -1,
++				-1, 0xff);
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return;
+ 	}
+@@ -927,7 +937,15 @@
+ 	}
+ #endif /* CONFIG_ACS */
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			3, 1, 0xff, 0xff, -1, wpa_s->wpa_state,
++			WPA_COMPLETED, 0, 0xff);
+ 	wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			4, 1, 0xff, 0xff, -1, wpa_s->wpa_state,
++			WPA_COMPLETED, 0, 0xff);
+ 
+ 	if (wpa_s->ap_configured_cb)
+ 		wpa_s->ap_configured_cb(wpa_s->ap_configured_cb_ctx,
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
+@@ -944,6 +944,7 @@
+ 			      enum wpa_states state)
+ {
+ 	enum wpa_states old_state = wpa_s->wpa_state;
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
+ #if defined(CONFIG_FILS) && defined(IEEE8021X_EAPOL)
+ 	bool update_fils_connect_params = false;
+ #endif /* CONFIG_FILS && IEEE8021X_EAPOL */
+@@ -951,6 +952,9 @@
+ 	wpa_dbg(wpa_s, MSG_DEBUG, "State: %s -> %s",
+ 		wpa_supplicant_state_txt(wpa_s->wpa_state),
+ 		wpa_supplicant_state_txt(state));
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			5, 1, 0xff, 0xff, -1, old_state, state, 0, 0xff);
+ 
+ 	if (state == WPA_COMPLETED &&
+ 	    os_reltime_initialized(&wpa_s->roam_start)) {
+@@ -1031,7 +1035,15 @@
+ 		wpas_clear_temp_disabled(wpa_s, ssid, 1);
+ 		wpa_s->consecutive_conn_failures = 0;
+ 		wpa_s->new_connection = 0;
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				6, 1, 0xff, 0xff, 1, old_state, state, 0,
++				0xff);
+ 		wpa_drv_set_operstate(wpa_s, 1, old_state, state);
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				7, 1, 0xff, 0xff, 1, old_state, state, 0,
++				0xff);
+ #ifndef IEEE8021X_EAPOL
+ 		wpa_drv_set_supp_port(wpa_s, 1);
+ #endif /* IEEE8021X_EAPOL */

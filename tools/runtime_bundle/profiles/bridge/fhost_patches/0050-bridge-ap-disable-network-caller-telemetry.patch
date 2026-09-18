@@ -1,0 +1,16 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -949,7 +949,13 @@
+ int fhost_wpa_disable_network(int fhost_vif_idx)
+ {
+     struct fhost_wpa_target_event target;
+     struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
++    if (fhost_vif_idx == MGMR_VIF_AP) {
++        fhost_bridge_ap_start_hostapd_lifecycle(
++            40, 0, wpa_vif ? (uint8_t)wpa_vif->state : 0xff, 0,
++            (uint32_t)(uintptr_t)__builtin_return_address(0),
++            (uint32_t)(wpa_vif ? wpa_vif->network_id : -1));
++    }
+ 
+     if (!wpa_vif || (wpa_vif->network_id < 0))
+         return -1;

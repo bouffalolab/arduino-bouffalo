@@ -1,0 +1,11 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -84,7 +84,7 @@ int eloop_init(void)
+     return -1;
+   }
+ 
+-  if (rtos_semaphore_create(&eloop.event_trigger, -1, 0) < 0) {
++  if (rtos_semaphore_create(&eloop.event_trigger, 1, 0) < 0) {
+     wpa_printf(MSG_ERROR, "failed to create eloop_msg sema\r\n");
+     rtos_mutex_delete(eloop.mtx);
+     return -1;

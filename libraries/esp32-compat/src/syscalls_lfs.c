@@ -15,16 +15,16 @@
  * LittleFS POSIX layer needs:
  *
  *  - LittleFS fds (0x5000+) go to the LFS port (_*_file_lfs_r).
- *  - Console fds (0-2) keep the existing UART behavior by forwarding to
- *    liblibc's _console_write_r/_console_read_r, so newlib printf/getchar
- *    continue to work exactly as before.
+ *  - Console output fds (1-2) forward to liblibc's _console_write_r.
+ *    The bridge profile intentionally uses CONFIG_CONSOLE_WO, so stdin is
+ *    unavailable and reads return EBADF instead of referencing an omitted
+ *    SDK console-read implementation.
  *  - Other tty operations (open/close/lseek) return the same errors the
  *    previous default stubs produced.
  */
 
-/* Provided by liblibc.a (syscalls_simple_io.c) when CONFIG_CONSOLE_WO is off. */
+/* Provided by liblibc.a (syscalls_simple_io.c). */
 extern ssize_t _console_write_r(struct _reent *reent, int fd, const void *ptr, size_t size);
-extern ssize_t _console_read_r(struct _reent *reent, int fd, void *ptr, size_t size);
 
 static int tty_open_r(struct _reent *reent, const char *path, int flags, int mode)
 {
@@ -42,7 +42,11 @@ static int tty_close_r(struct _reent *reent, int fd)
 
 static _ssize_t tty_read_r(struct _reent *reent, int fd, void *ptr, size_t len)
 {
-    return _console_read_r(reent, fd, ptr, len);
+    (void)fd;
+    (void)ptr;
+    (void)len;
+    reent->_errno = EBADF;
+    return -1;
 }
 
 static _ssize_t tty_write_r(struct _reent *reent, int fd, const void *ptr, size_t len)

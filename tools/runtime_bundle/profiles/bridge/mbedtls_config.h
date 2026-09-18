@@ -1,0 +1,62 @@
+#ifndef UNOR4_BL616CL_BRIDGE_MBEDTLS_CONFIG_H
+#define UNOR4_BL616CL_BRIDGE_MBEDTLS_CONFIG_H
+
+/*
+ * Keep Arduino bridge sources on the same Kconfig-derived mbedTLS settings
+ * used to build libmbedtls.a. The generated bundle provides this header at
+ * mbedtls/mbedtls_config.h, which is mbedTLS's default configuration entry.
+ *
+ * Bouffalo's mbedTLS CMakeLists adds the following TLS/X.509 feature
+ * selection independently of Kconfig. Mirror that source-controlled contract
+ * here so Arduino application translation units see the same public API as
+ * libmbedtls.a. autoconf.h, force-included by platform.txt, supplies the
+ * board-specific hardware-accelerator flags and record-buffer size.
+ */
+#define CONFIG_MBEDTLS_TLS_VERSION_1_2
+#define CONFIG_MBEDTLS_SSL_ALPN
+#define CONFIG_MBEDTLS_PSK_MAX_LEN 32
+#define CONFIG_MBEDTLS_PK_WRITE_C
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED
+#define CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
+#define CONFIG_MBEDTLS_PEM_CERTIFICATE_FORMAT
+#define CONFIG_MBEDTLS_ECDH_C
+#define CONFIG_MBEDTLS_ECDSA_C
+#define CONFIG_MBEDTLS_ECP_C
+#define CONFIG_MBEDTLS_ECP_DP_SECP256R1_ENABLED
+#define CONFIG_MBEDTLS_ECP_NIST_OPTIM
+#define CONFIG_MBEDTLS_PKCS5_C
+#define CONFIG_MBEDTLS_SOME_AEAD_CIPHER_ENABLED
+#define CONFIG_MBEDTLS_SOME_CIPHER_ENABLED
+#define CONFIG_MBEDTLS_CIPHER_AES_ENABLED
+#define CONFIG_MBEDTLS_AES_ROM_TABLES
+#define CONFIG_MBEDTLS_AES_FEWER_TABLES
+#define CONFIG_MBEDTLS_CIPHER_DES_ENABLED
+#define CONFIG_MBEDTLS_CIPHER_GCM_ENABLED
+#define CONFIG_MBEDTLS_CIPHER_MODE_CBC_ENABLED
+#define CONFIG_MBEDTLS_CIPHER_MODE_CTR_ENABLED
+#define CONFIG_MBEDTLS_MD5
+#define CONFIG_MBEDTLS_SHA1
+#define CONFIG_MBEDTLS_SHA224
+#define CONFIG_MBEDTLS_SHA256
+#define CONFIG_MBEDTLS_SHA256_SMALLER
+#define CONFIG_MBEDTLS_SHA384
+#define CONFIG_MBEDTLS_SHA512
+#define CONFIG_MBEDTLS_CTR_DRBG_ENABLED
+#define CONFIG_MBEDTLS_CIPHER
+#define CONFIG_MBEDTLS_MD
+#define CONFIG_MBEDTLS_GENPRIME_ENABLED
+#define CONFIG_MBEDTLS_HAVE_ASM
+#define CONFIG_MBEDTLS_ENTROPY_C
+#define CONFIG_MBEDTLS_ENTROPY_POLL
+#define CONFIG_MBEDTLS_SERVER_NAME_INDICATION
+#define CONFIG_MBEDTLS_DHM_C
+#define MBEDTLS_NET_C
+
+#include "config-tls-generic.h"
+
+#endif

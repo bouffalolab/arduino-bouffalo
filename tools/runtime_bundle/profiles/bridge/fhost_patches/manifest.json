@@ -1,0 +1,878 @@
+{
+  "patches": [
+    {
+      "id": "0001-bridge-ap-start-telemetry",
+      "path": "0001-bridge-ap-start-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "db17f3874446f9c40633db08849f4a6b822822209f10a5b839d1f41fb40f4da4",
+          "before_sha256": "d2eb55bdf072e2692743d3f7dc233db2018131f414049eee94b53b27ffa273b9",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "90e91a78e7c8d87da7406a40a5c5b3613faff357fd0941ae08c91d05f8d5d46e",
+          "before_sha256": "c07e9473f2c7e56bb64b2ec4250bdcf225deb448565e21db4f3e81e525d4f21b",
+          "path": "components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c"
+        },
+        {
+          "after_sha256": "c3b3185eb2425f0948a749c46f41f09390ec48d8d2e10d7b7b582eea42b5bc43",
+          "before_sha256": "63cc673870f6dadad8f3cc23e931ab9b92f1acfb26abedf1fe8442731d9032ce",
+          "path": "components/wireless/wifi6/fhost/src/fhost.c"
+        },
+        {
+          "after_sha256": "0bfa3862afb875adace8ca1d6178903bc8e1b0e060a406d2e37bc8c89a8da907",
+          "before_sha256": "e63b7d57b9c1ad147e51c6b972daed0ca60ae8177c476ba772fe747b0acbb77a",
+          "path": "components/os/freertos/portable/MemMang/heap_3.c"
+        },
+        {
+          "after_sha256": "2ce64f0c82db9b7c585a3c337d3654946f512ee1866d2bf5affa626581fa40bc",
+          "before_sha256": "85a1002eba018c2f44464c04ca26a7b6b2b26c523094ab5c37e56b37be539621",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        },
+        {
+          "after_sha256": "c91f98d0b7ea3bdc2bf27473569e8ba8daa0b84ac68ae6c1bfb5fd810fcbd4ab",
+          "before_sha256": "0d837be1005c5556535f3dc33cd87b2629a868ba9657d5194763e708df7b6277",
+          "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+        },
+        {
+          "after_sha256": "71a360b5fb8ad43591f8b3ae5178804f50ffacd849a9addadb8049c1713d5639",
+          "before_sha256": "7e62e3ad13900e80e7ec3c00e833c557a2191a79261a77b639b729ca1aff888f",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        },
+        {
+          "after_sha256": "5a6b4e43b8d456a92f27350e46a9b825d7f0bc83356c37838f123c0ba58c8442",
+          "before_sha256": "24443b040794cb3f22962315d419357fa4a7f38d63bd2914e09d6210d24928e3",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+        },
+        {
+          "after_sha256": "bf763781190b794ad6ac0da9ebfe8986ad62620c8430aba1811c0fa5e15e65b3",
+          "before_sha256": "778d9d3a456307cf25c2aa8ccadc87b26eb58a749fd08a584c9bd824fda8243f",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+        },
+        {
+          "after_sha256": "a811af0cbe8929ae53ac0cadb13528ab31358d118660c788ed47cc26cd13c887",
+          "before_sha256": "35355943757ae1404991c1d2fe163fbddab214ef66973cace1f9ca29dec1ae42",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+        },
+        {
+          "after_sha256": "9fa2755a63d1c01c4bca90db196b7f8b1e9f35ecbe9f3768b68d852e020ad9bb",
+          "before_sha256": "3417499c48966848adb7d90c7c440cde62fd99a462134e11df64a96ac00c8fed",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0003-bridge-static-2g-channel-table",
+      "path": "0003-bridge-static-2g-channel-table.patch",
+      "targets": [
+        {
+          "after_sha256": "ed8d0501f1a61a496d53784e5d5fa8a4975499a4d984c83b3c3fbcb7a4ce6b82",
+          "before_sha256": "9fa2755a63d1c01c4bca90db196b7f8b1e9f35ecbe9f3768b68d852e020ad9bb",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0004-bridge-ap-add-network-allocation-telemetry",
+      "path": "0004-bridge-ap-add-network-allocation-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "788d41d5b7983f15b69297766dd7000feba468563047b4b5a1351ac46b4f80a9",
+          "before_sha256": "2ce64f0c82db9b7c585a3c337d3654946f512ee1866d2bf5affa626581fa40bc",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0005-bridge-ap-add-network-eloop-telemetry",
+      "path": "0005-bridge-ap-add-network-eloop-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "2dd0c455d0d38db60371717f723f820c3f6f4cd0da17e0b88db25f942b5bcb96",
+          "before_sha256": "788d41d5b7983f15b69297766dd7000feba468563047b4b5a1351ac46b4f80a9",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        },
+        {
+          "after_sha256": "bb3653ab67be43c47fcab3199cfbc1c1f6e89e1a31d54886b100988c69a8f28f",
+          "before_sha256": "71a360b5fb8ad43591f8b3ae5178804f50ffacd849a9addadb8049c1713d5639",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        },
+        {
+          "after_sha256": "0f9c9d1850df6ff01eca9d4b3b753e319aeb3156c82a297fac642fc9ea9000d6",
+          "before_sha256": "5a6b4e43b8d456a92f27350e46a9b825d7f0bc83356c37838f123c0ba58c8442",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0006-bridge-ap-add-network-wpa-telemetry",
+      "path": "0006-bridge-ap-add-network-wpa-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "3aedcab54856669d6edfa7ec49123b993cdc594fca31a7db405b9ae1a79f10fb",
+          "before_sha256": "bf763781190b794ad6ac0da9ebfe8986ad62620c8430aba1811c0fa5e15e65b3",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+        },
+        {
+          "after_sha256": "80e33c9fd268478cfe8ab239ecfa5cd97a21aaedb98cc87a9ab8a504019e2ade",
+          "before_sha256": "a811af0cbe8929ae53ac0cadb13528ab31358d118660c788ed47cc26cd13c887",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+        }
+      ]
+    },
+    {
+      "id": "0007-bridge-ap-add-network-config-telemetry",
+      "path": "0007-bridge-ap-add-network-config-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "c03d6780b817037bff9b400517b8955db48ab6799033a9a63c5794ab27717175",
+          "before_sha256": "ebfdcafb7389b610e12a4a70d7c197bc639ddb825b5a7c7ed0f2eadea91fffe7",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+        }
+      ]
+    },
+    {
+      "id": "0008-bridge-ap-wpa-ssid-allocation-telemetry",
+      "path": "0008-bridge-ap-wpa-ssid-allocation-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "1936f8a17ab38f7572b78a39980436004da4097f531cb2d22fec33c219a099c3",
+          "before_sha256": "c03d6780b817037bff9b400517b8955db48ab6799033a9a63c5794ab27717175",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+        }
+      ]
+    },
+    {
+      "id": "0009-bridge-ap-add-network-small-reply-buffer",
+      "path": "0009-bridge-ap-add-network-small-reply-buffer.patch",
+      "targets": [
+        {
+          "after_sha256": "6d00dca39f12fbc62dc260e4eb372652f7170fec3fe8c8b7bae0b2928b43fb8d",
+          "before_sha256": "3aedcab54856669d6edfa7ec49123b993cdc594fca31a7db405b9ae1a79f10fb",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+        }
+      ]
+    },
+    {
+      "id": "0010-bridge-ap-sae-pwe-eloop-telemetry",
+      "path": "0010-bridge-ap-sae-pwe-eloop-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "b5c697929a43cecc79a2ef295a45364f30024e1370ca24a6e4bc2229ce717338",
+          "before_sha256": "2dd0c455d0d38db60371717f723f820c3f6f4cd0da17e0b88db25f942b5bcb96",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        },
+        {
+          "after_sha256": "24f703838b2b696cc29141afa332e55a33e5a8a29903df14d8fced7b3428b46b",
+          "before_sha256": "bb3653ab67be43c47fcab3199cfbc1c1f6e89e1a31d54886b100988c69a8f28f",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0011-bridge-ap-sae-h2e-only",
+      "path": "0011-bridge-ap-sae-h2e-only.patch",
+      "targets": [
+        {
+          "after_sha256": "6afdff6801e2444028d575313ca08f00836d6f002a088afb29c54a756eb84b64",
+          "before_sha256": "b5c697929a43cecc79a2ef295a45364f30024e1370ca24a6e4bc2229ce717338",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0012-bridge-ap-command-telemetry",
+      "path": "0012-bridge-ap-command-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "433ae29bc8828e114871e96bb09179d0d8874133a9a56833e9e22a8479a0f1b4",
+          "before_sha256": "db17f3874446f9c40633db08849f4a6b822822209f10a5b839d1f41fb40f4da4",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "7f0f1cc509321bb2105a56845c8f4d88b8d3ce0b7ab67e1b4befeaaf25946e5f",
+          "before_sha256": "6afdff6801e2444028d575313ca08f00836d6f002a088afb29c54a756eb84b64",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0013-bridge-ap-skip-country-command",
+      "path": "0013-bridge-ap-skip-country-command.patch",
+      "targets": [
+        {
+          "after_sha256": "393df9d7540bbbab474dd0d0b4ef318a43eb852721744a34002e42bfc4d4cdff",
+          "before_sha256": "7f0f1cc509321bb2105a56845c8f4d88b8d3ce0b7ab67e1b4befeaaf25946e5f",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0014-bridge-ap-enable-network-eloop-telemetry",
+      "path": "0014-bridge-ap-enable-network-eloop-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "35eca33362326b7a1815d41bbdd24b2c638f87dea8ff154e5cdb88bbc37da18b",
+          "before_sha256": "24f703838b2b696cc29141afa332e55a33e5a8a29903df14d8fced7b3428b46b",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        },
+        {
+          "after_sha256": "f8785a7333042b7f401f69efe4cf12099c759201c1f32d4c4c70298afbfaeeee",
+          "before_sha256": "0f9c9d1850df6ff01eca9d4b3b753e319aeb3156c82a297fac642fc9ea9000d6",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0015-bridge-ap-enable-network-completion-telemetry",
+      "path": "0015-bridge-ap-enable-network-completion-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "e54cd4d1a4e9b21c868837b97ac22b0547505224ebe232538957541597cc1c6c",
+          "before_sha256": "35eca33362326b7a1815d41bbdd24b2c638f87dea8ff154e5cdb88bbc37da18b",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0016-bridge-ap-enable-network-semaphore-telemetry",
+      "path": "0016-bridge-ap-enable-network-semaphore-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "569a04c35bd41f69e803ba646d2c450051a2a509a9cdac7ddd13c022330d6c3f",
+          "before_sha256": "433ae29bc8828e114871e96bb09179d0d8874133a9a56833e9e22a8479a0f1b4",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "59d136a907ec389a5e3d8878eb5f8d1bf9aa8b856d2465c3d4ff62d838a526c2",
+          "before_sha256": "e54cd4d1a4e9b21c868837b97ac22b0547505224ebe232538957541597cc1c6c",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0017-bridge-ap-enable-network-sync-boundary-telemetry",
+      "path": "0017-bridge-ap-enable-network-sync-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "496056dd8e165c1d43be455ebda40dcf1121ffba2ce800cad5739a84b0523029",
+          "before_sha256": "59d136a907ec389a5e3d8878eb5f8d1bf9aa8b856d2465c3d4ff62d838a526c2",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0018-bridge-ap-enable-network-semaphore-pointer-telemetry",
+      "path": "0018-bridge-ap-enable-network-semaphore-pointer-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "e760aee019a714db61c4c3c927938cddb14945c7c23d4fa7d8b4556bfc108eb4",
+          "before_sha256": "496056dd8e165c1d43be455ebda40dcf1121ffba2ce800cad5739a84b0523029",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0019-bridge-ap-enable-network-append-only-trace",
+      "path": "0019-bridge-ap-enable-network-append-only-trace.patch",
+      "targets": [
+        {
+          "after_sha256": "4dc9417df48e84f387ec4b000852e529946077757f83447069ee23fa2b58a03d",
+          "before_sha256": "569a04c35bd41f69e803ba646d2c450051a2a509a9cdac7ddd13c022330d6c3f",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "5655a2de5b285c4da51548f16b828a58f0e57c6f2241e50eb858bc23564e863c",
+          "before_sha256": "e760aee019a714db61c4c3c927938cddb14945c7c23d4fa7d8b4556bfc108eb4",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0020-bridge-ap-interface-add-append-only-trace",
+      "path": "0020-bridge-ap-interface-add-append-only-trace.patch",
+      "targets": [
+        {
+          "after_sha256": "a2fe20cdaa37731a6fc34a3c89c280e61670b88e732a6ad0a017f854823125ee",
+          "before_sha256": "5655a2de5b285c4da51548f16b828a58f0e57c6f2241e50eb858bc23564e863c",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0021-bridge-ap-eapol-init-task-telemetry",
+      "path": "0021-bridge-ap-eapol-init-task-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "e77ed0e6aa6401fec84f3dbd4c93fcedcfb2b8862ae48cea354d4dfd34798708",
+          "before_sha256": "d239f467debf871b4e769efe68f59a7f6fdb189b7d9b9dcd54a2c321434e28dc",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpas_glue.c"
+        },
+        {
+          "after_sha256": "b323c4b07f9fec053b65c8a2ac5b6b1ba0006be858c2400fcc644656ca1fe2c3",
+          "before_sha256": "979e9daf6456923dac1f1a04e99f7b6ea1e0a51b2dd2fac26fda91dbc06d9c93",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/eapol_supp/eapol_supp_sm.c"
+        },
+        {
+          "after_sha256": "174c2ec0f7911921104ac83446a4551e1052e2de68ea6f13b44688203615a017",
+          "before_sha256": "63d9cc0d9de9b5c23aac6e5d6c4e3a434c1954c68e47902249c95a6abeada91e",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap.c"
+        }
+      ]
+    },
+    {
+      "id": "0022-bridge-ap-allocator-boundary-trace",
+      "path": "0022-bridge-ap-allocator-boundary-trace.patch",
+      "targets": [
+        {
+          "after_sha256": "a5b26c415b63d0308d971b2356b2f62836dbbcfe91316573efaca27c45e77fb2",
+          "before_sha256": "4643515f7899d966e8dc81ad652c6abd70591c16075bd9ad926f3aac382c91a4",
+          "path": "components/mm/mm.c"
+        },
+        {
+          "after_sha256": "c3ccc86942f18f0e41e2fd9b472fa788e19afd5374b20cf52bc6c2401b1179e3",
+          "before_sha256": "cf4ec2d11e0ccc40967bcb1382cd1df99e43596d18d812646798019bdcbcc166",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/os_macsw.c"
+        },
+        {
+          "after_sha256": "94d578a2bef2f425dcd8ed0136fb70c6baf0708a4b5087b57e132c2a97083752",
+          "before_sha256": "2744b9821a1ff6d4917a29c95be940f471493bc5e3962c5565800dffb66ddb5e",
+          "path": "components/wireless/wifi6/macsw_os_adapter/src/platform_bouffalo_sdk.c"
+        },
+        {
+          "after_sha256": "58977db49f9dcb2c9424bf62c609882d7b793a33c8cba3cd9c2bd2ae86d0095b",
+          "before_sha256": "c2f7c37182b54a86aa14ace2c35fb42545e97f85982b69a02bce6b8a4d11e1c2",
+          "path": "components/mm/tlsf/tlsf_allocator.c"
+        }
+      ]
+    },
+    {
+      "id": "0023-bridge-disable-wps",
+      "path": "0023-bridge-disable-wps.patch",
+      "targets": [
+        {
+          "after_sha256": "99a6cf32507b34ecc2c99e019ad4e1790c374fe3266af02783f45cad4093c2f2",
+          "before_sha256": "f647e0cab7ee587cfc6df14a2767db5de5908c363f13ecb247d021bbb50a6996",
+          "path": "components/wireless/wifi6/wpa_supplicant/CMakeLists.txt"
+        },
+        {
+          "after_sha256": "17c832ea9a158524f2b17bc6468b910bc4726ba600926e6f87b0691464cf636c",
+          "before_sha256": "b9c5580bc843dbbdbe435d0edbae1ec0d2e400b13ade1c814d9d86f1d5055355",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/build_config.h"
+        }
+      ]
+    },
+    {
+      "id": "0024-bridge-ap-enable-network-task-notify-ab",
+      "path": "0024-bridge-ap-enable-network-task-notify-ab.patch",
+      "targets": [
+        {
+          "after_sha256": "df19343af971e76630dd9e62aaeaafafaf78911caee9a0f3225026673dd40517",
+          "before_sha256": "a2fe20cdaa37731a6fc34a3c89c280e61670b88e732a6ad0a017f854823125ee",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        },
+        {
+          "after_sha256": "63362596861a0266a9b335f1e5aa2c5a15de0f13e25efab47692cde4b2d61d42",
+          "before_sha256": "3dff9cb2eb1d22e6ca558f28bc86d70e420e6291fceea5ce4573d2710a46bfc2",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h"
+        }
+      ]
+    },
+    {
+      "id": "0025-bridge-ap-enable-network-task-notify-state",
+      "path": "0025-bridge-ap-enable-network-task-notify-state.patch",
+      "targets": [
+        {
+          "after_sha256": "badb71becc2abb618b6040e4b21773966efb738798bafd04fbe909143d2ed7b8",
+          "before_sha256": "4dc9417df48e84f387ec4b000852e529946077757f83447069ee23fa2b58a03d",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "2fbc16c00905af07a301045d819e94d72b79de8acdbc544320907d50fe037a77",
+          "before_sha256": "df19343af971e76630dd9e62aaeaafafaf78911caee9a0f3225026673dd40517",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0026-bridge-ap-enable-network-event-queue-boundary",
+      "path": "0026-bridge-ap-enable-network-event-queue-boundary.patch",
+      "targets": [
+        {
+          "after_sha256": "aa47160dc245bcb2a97cf50c331484084eb6a1cb778ae0784738a06f6d72ad41",
+          "before_sha256": "2fbc16c00905af07a301045d819e94d72b79de8acdbc544320907d50fe037a77",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0027-bridge-ap-enable-network-eloop-post-event-boundaries",
+      "path": "0027-bridge-ap-enable-network-eloop-post-event-boundaries.patch",
+      "targets": [
+        {
+          "after_sha256": "e8990a6ebfa7be8d947d23c6e72d5d8424662966422558893c38f872083b6df7",
+          "before_sha256": "aa47160dc245bcb2a97cf50c331484084eb6a1cb778ae0784738a06f6d72ad41",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0028-bridge-eloop-event-trigger-binary-semaphore",
+      "path": "0028-bridge-eloop-event-trigger-binary-semaphore.patch",
+      "targets": [
+        {
+          "after_sha256": "9ae5deb688be75395cc91f1c4ee8504866fe8b5641c6dd1c51218b60d494853a",
+          "before_sha256": "e8990a6ebfa7be8d947d23c6e72d5d8424662966422558893c38f872083b6df7",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0029-bridge-eloop-polling-wakeup",
+      "path": "0029-bridge-eloop-polling-wakeup.patch",
+      "targets": [
+        {
+          "after_sha256": "af13a13b47ecae0045423eb5c0560360c0d02c461d4a60d17ada6a73d6a79dac",
+          "before_sha256": "9ae5deb688be75395cc91f1c4ee8504866fe8b5641c6dd1c51218b60d494853a",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0030-bridge-ap-enable-network-callback-classification",
+      "path": "0030-bridge-ap-enable-network-callback-classification.patch",
+      "targets": [
+        {
+          "after_sha256": "036e99229da2866da5e440a3f2fe9f56d6719952bbe5f87dfbbb0042f67acdeb",
+          "before_sha256": "af13a13b47ecae0045423eb5c0560360c0d02c461d4a60d17ada6a73d6a79dac",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0031-bridge-ap-enable-network-poll-completion",
+      "path": "0031-bridge-ap-enable-network-poll-completion.patch",
+      "targets": [
+        {
+          "after_sha256": "cf41820891ad316682d6cf2e267d05cea3ad20fde7b3f64c5ad9f0ac86727aa6",
+          "before_sha256": "63362596861a0266a9b335f1e5aa2c5a15de0f13e25efab47692cde4b2d61d42",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h"
+        },
+        {
+          "after_sha256": "eee70130717a85ec5ceee7bee27f1bbb0526e0a8848c12bfbe5c10e07baa276c",
+          "before_sha256": "036e99229da2866da5e440a3f2fe9f56d6719952bbe5f87dfbbb0042f67acdeb",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c"
+        }
+      ]
+    },
+    {
+      "id": "0032-bridge-ap-wpa-wait-telemetry",
+      "path": "0032-bridge-ap-wpa-wait-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "4b65686a9257c3552648efaa5ee3f175629dbdccf1984e2049d715a7398cf5ca",
+          "before_sha256": "badb71becc2abb618b6040e4b21773966efb738798bafd04fbe909143d2ed7b8",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "fd0c7ccfbe80f99144a680015ff9203131bbcc3b76537bba4f92700024122502",
+          "before_sha256": "393df9d7540bbbab474dd0d0b4ef318a43eb852721744a34002e42bfc4d4cdff",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0033-bridge-ap-wpa-event-path-telemetry",
+      "path": "0033-bridge-ap-wpa-event-path-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "465bd13476032e1aceb799bb569000501949017a78889c0f6c1ffa758a18d115",
+          "before_sha256": "4b65686a9257c3552648efaa5ee3f175629dbdccf1984e2049d715a7398cf5ca",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "7aa10b98ab58c760d20468614b2fc674523c8cbb3136415dba96b345906fd990",
+          "before_sha256": "fd0c7ccfbe80f99144a680015ff9203131bbcc3b76537bba4f92700024122502",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        },
+        {
+          "after_sha256": "5bcf4412ec6361bfb179bc62d915a1565ecf5b68106e11e975e1f0447f1c7d33",
+          "before_sha256": "ed8d0501f1a61a496d53784e5d5fa8a4975499a4d984c83b3c3fbcb7a4ce6b82",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        },
+        {
+          "after_sha256": "dec0e1dd595da543a2a61e18d660eb79227981eab1568c1fe899d8afbf3713df",
+          "before_sha256": "67117fe1410997b88494f00b2e5630ea2fe66971e69b40a33db2842a177a651d",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        },
+        {
+          "after_sha256": "705dd8756463569db8edb0e14f5f44f434b69e46022d822e9c53c0bc555cd9ba",
+          "before_sha256": "80e33c9fd268478cfe8ab239ecfa5cd97a21aaedb98cc87a9ab8a504019e2ade",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+        }
+      ]
+    },
+    {
+      "id": "0034-bridge-ap-enable-network-continuation-telemetry",
+      "path": "0034-bridge-ap-enable-network-continuation-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "ae0f1cd6a402e86eda1e15a7c8a04176815b0ac433d296b53446aac305bcdcc3",
+          "before_sha256": "705dd8756463569db8edb0e14f5f44f434b69e46022d822e9c53c0bc555cd9ba",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+        }
+      ]
+    },
+    {
+      "id": "0035-bridge-ap-create-ap-boundary-telemetry",
+      "path": "0035-bridge-ap-create-ap-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "c258c16f8cfe1e8cd90df8d9bddabd7396e882b3f74ef87a63def2a4876246a9",
+          "before_sha256": "465bd13476032e1aceb799bb569000501949017a78889c0f6c1ffa758a18d115",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "c31e67849040fbd1cf5b154261a5610d44c39cf760f8c3113579e963a969a675",
+          "before_sha256": "dec0e1dd595da543a2a61e18d660eb79227981eab1568c1fe899d8afbf3713df",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        }
+      ]
+    },
+    {
+      "id": "0036-bridge-ap-hostapd-allocator-heap-telemetry",
+      "path": "0036-bridge-ap-hostapd-allocator-heap-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "6d9d922342e346dd8e5f726a78e72dac84811c24bbe6e93ad737751b11b7b981",
+          "before_sha256": "a5b26c415b63d0308d971b2356b2f62836dbbcfe91316573efaca27c45e77fb2",
+          "path": "components/mm/mm.c"
+        }
+      ]
+    },
+    {
+      "id": "0037-bridge-ap-bss-allocation-boundary-telemetry",
+      "path": "0037-bridge-ap-bss-allocation-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "07a84e91dfa1add58856732a5e2be0a8daaae4d6d3de03b491e8e82d78ba13b2",
+          "before_sha256": "c31e67849040fbd1cf5b154261a5610d44c39cf760f8c3113579e963a969a675",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        }
+      ]
+    },
+    {
+      "id": "0038-bridge-ap-bss-data-allocator-trace",
+      "path": "0038-bridge-ap-bss-data-allocator-trace.patch",
+      "targets": [
+        {
+          "after_sha256": "2f64cca360ea0f4a3a005a508fdecca354b858cc6b03a4f8ef0c1f4b4c622891",
+          "before_sha256": "07a84e91dfa1add58856732a5e2be0a8daaae4d6d3de03b491e8e82d78ba13b2",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        }
+      ]
+    },
+    {
+      "id": "0039-bridge-ap-allocator-heap-walk",
+      "path": "0039-bridge-ap-allocator-heap-walk.patch",
+      "targets": [
+        {
+          "after_sha256": "c655a30ebd92e5a09f745585f8e251bbd8213b957d074a374f490243a1ea3a01",
+          "before_sha256": "c258c16f8cfe1e8cd90df8d9bddabd7396e882b3f74ef87a63def2a4876246a9",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "c3f6ffe0fc7e0074fe61e962a7adec68d5240993179272bc2bd5342312f5f768",
+          "before_sha256": "2f64cca360ea0f4a3a005a508fdecca354b858cc6b03a4f8ef0c1f4b4c622891",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        }
+      ]
+    },
+    {
+      "id": "0040-bridge-wram-resource-profile",
+      "path": "0040-bridge-wram-resource-profile.patch",
+      "targets": [
+        {
+          "after_sha256": "f6b3d4829ed5a00691ad9ae5dc0d161c410eddf5ada1c6c9c9c83871a5e497ab",
+          "before_sha256": "2ab7c600649cfb7085a73cd6ece8b224403796798eada88cc5e4b69ad67ff386",
+          "path": "components/wireless/macsw/inc/macsw_default_config.h"
+        }
+      ]
+    },
+    {
+      "id": "0041-bridge-ap-hostapd-lifecycle-telemetry",
+      "path": "0041-bridge-ap-hostapd-lifecycle-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "0ecd9b0513dcbe9afdbfc7b74dabf51f0f9a87b50ee18eb51754fea2317587df",
+          "before_sha256": "c655a30ebd92e5a09f745585f8e251bbd8213b957d074a374f490243a1ea3a01",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "3eea3fcba29fcb2fe4851ec75805febde687cc25b6e45136569633cf84225544",
+          "before_sha256": "24f19eb1cf3027209990594d66a7f1790ace1771c32b3f1aba56d8271a4a4418",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0042-bridge-cfgmacsw-status-message-ownership",
+      "path": "0042-bridge-cfgmacsw-status-message-ownership.patch",
+      "targets": [
+        {
+          "after_sha256": "cfbcacaf2042fdd68f6bac72d3b6cafdd16785a729889cb77c927a87447732a2",
+          "before_sha256": "07ab2dd12ca19862dcf8b2dc8dbd1f66e1061729e0437eb9a8dba8ba0837755b",
+          "path": "components/wireless/wifi6/fhost/include/cfgmacsw.h"
+        },
+        {
+          "after_sha256": "9b498b9dfd0d7565e4aa9714be606bd4c938de3606f074518bf9e06e9404c288",
+          "before_sha256": "f8785a7333042b7f401f69efe4cf12099c759201c1f32d4c4c70298afbfaeeee",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0043-bridge-ap-status-code-telemetry",
+      "path": "0043-bridge-ap-status-code-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "97971c1f72ea1e748dd5e00b475916044532c87f14ec262409d0b1ec10f7e87c",
+          "before_sha256": "0ecd9b0513dcbe9afdbfc7b74dabf51f0f9a87b50ee18eb51754fea2317587df",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "a4ab57597506a04c87e4f78bd1539c6172f11f179f22fa0940c32fa00faba6f2",
+          "before_sha256": "9b498b9dfd0d7565e4aa9714be606bd4c938de3606f074518bf9e06e9404c288",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c"
+        },
+        {
+          "after_sha256": "637b58a1ac24ef393720614bd3dc58949b56e6e0c0aaab4a3b8b009b71052073",
+          "before_sha256": "c91f98d0b7ea3bdc2bf27473569e8ba8daa0b84ac68ae6c1bfb5fd810fcbd4ab",
+          "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+        }
+      ]
+    },
+    {
+      "id": "0044-bridge-ap-vif-state-from-hostapd",
+      "path": "0044-bridge-ap-vif-state-from-hostapd.patch",
+      "targets": [
+        {
+          "after_sha256": "ba286927557ef4c1d5d663517dc16323470cde455cccbda27de9590db3634ea0",
+          "before_sha256": "97971c1f72ea1e748dd5e00b475916044532c87f14ec262409d0b1ec10f7e87c",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "11ff560db645a1862a897d7e01c801873f998ffe2af23bb8a861ee49eecab165",
+          "before_sha256": "637b58a1ac24ef393720614bd3dc58949b56e6e0c0aaab4a3b8b009b71052073",
+          "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+        },
+        {
+          "after_sha256": "9968184e798408df41c1c7d1cda7d4e63137faef75c169fb7fe702a22618aaf0",
+          "before_sha256": "3eea3fcba29fcb2fe4851ec75805febde687cc25b6e45136569633cf84225544",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0045-bridge-ap-hostapd-state-update-trace",
+      "path": "0045-bridge-ap-hostapd-state-update-trace.patch",
+      "targets": [
+        {
+          "after_sha256": "dfc0a70234650efabd17edbdef25b9f3b19bd54f0dcda43a0e8c465cb69bb70e",
+          "before_sha256": "ba286927557ef4c1d5d663517dc16323470cde455cccbda27de9590db3634ea0",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "bde6984c01a10f9b184f202e3c3ae54aebaf9131d5e9505e9ba2e76f5ecfad2e",
+          "before_sha256": "11ff560db645a1862a897d7e01c801873f998ffe2af23bb8a861ee49eecab165",
+          "path": "components/wireless/wifi6/fhost/src/fhost_cntrl.c"
+        },
+        {
+          "after_sha256": "95e5a51d0d324a61c37319614429d92b7ca16175f8f083e651667688f5b65142",
+          "before_sha256": "9968184e798408df41c1c7d1cda7d4e63137faef75c169fb7fe702a22618aaf0",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0046-bridge-ap-shutdown-cause-telemetry",
+      "path": "0046-bridge-ap-shutdown-cause-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "c3f82419a587d14c7bb833b413fb396f56d0ae69ca54b0148f979e6158756cf1",
+          "before_sha256": "c3f6ffe0fc7e0074fe61e962a7adec68d5240993179272bc2bd5342312f5f768",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        },
+        {
+          "after_sha256": "589ee9c74921241b1d51387a590ce16377e5a75fb453b66eb11e6b09e83e8440",
+          "before_sha256": "428351af8a26c06ea824f665bc03cc6756184ecad7de48545465ed58b8af16c7",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c"
+        },
+        {
+          "after_sha256": "381c33c5ab1d07c882bc72b699ffe746f2539faa9a5ce18df8ab3e54d0b30901",
+          "before_sha256": "95e5a51d0d324a61c37319614429d92b7ca16175f8f083e651667688f5b65142",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0047-bridge-ap-ignore-interface-disconnect",
+      "path": "0047-bridge-ap-ignore-interface-disconnect.patch",
+      "targets": [
+        {
+          "after_sha256": "7e35bb97fe131038f6f030bfb1d4dfebfa7b3233e2cc44311b2c2b6c74e314cc",
+          "before_sha256": "5bcf4412ec6361bfb179bc62d915a1565ecf5b68106e11e975e1f0447f1c7d33",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0048-bridge-ap-mark-disassoc-caller-telemetry",
+      "path": "0048-bridge-ap-mark-disassoc-caller-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "57449fcfde900aa3fcdb5ef9faafc1325e38b014b1da07f79045e1ecaf6c55f9",
+          "before_sha256": "589ee9c74921241b1d51387a590ce16377e5a75fb453b66eb11e6b09e83e8440",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c"
+        }
+      ]
+    },
+    {
+      "id": "0049-bridge-ap-deauthenticate-caller-telemetry",
+      "path": "0049-bridge-ap-deauthenticate-caller-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "6c63e305881848b80bd76921809d155c92e809da1a853c2cbf2901eeaad8348c",
+          "before_sha256": "ae0f1cd6a402e86eda1e15a7c8a04176815b0ac433d296b53446aac305bcdcc3",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c"
+        }
+      ]
+    },
+    {
+      "id": "0050-bridge-ap-disable-network-caller-telemetry",
+      "path": "0050-bridge-ap-disable-network-caller-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "9bd3363934b043a1268314c1611e26d5d7271d7d0da48a998dcd1fa3ff344e0d",
+          "before_sha256": "7aa10b98ab58c760d20468614b2fc674523c8cbb3136415dba96b345906fd990",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0051-bridge-ap-stop-caller-telemetry",
+      "path": "0051-bridge-ap-stop-caller-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "cad25c1babfa8deae26ef08aa0e8522df91304b796985a7a76ba612fe17bc73c",
+          "before_sha256": "90e91a78e7c8d87da7406a40a5c5b3613faff357fd0941ae08c91d05f8d5d46e",
+          "path": "components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c"
+        }
+      ]
+    },
+    {
+      "id": "0052-bridge-ap-config-return-liveness",
+      "path": "0052-bridge-ap-config-return-liveness.patch",
+      "targets": [
+        {
+          "after_sha256": "ee927444bddfe452fbe9cb28190acca883ded171e6585fd69b85e24c071c6a98",
+          "before_sha256": "dfc0a70234650efabd17edbdef25b9f3b19bd54f0dcda43a0e8c465cb69bb70e",
+          "path": "components/wireless/wifi6/fhost/include/fhost.h"
+        },
+        {
+          "after_sha256": "dafd399ad4962b96743a0b6c432d114fca9c31053ae8f4eb0a243a7fd2baaaee",
+          "before_sha256": "1936f8a17ab38f7572b78a39980436004da4097f531cb2d22fec33c219a099c3",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c"
+        },
+        {
+          "after_sha256": "ec717e08d1cc205afbfe7f5b2df8b85c9749a711b4a1589ff6975fe1e9d3c7c5",
+          "before_sha256": "6d00dca39f12fbc62dc260e4eb372652f7170fec3fe8c8b7bae0b2928b43fb8d",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c"
+        }
+      ]
+    },
+    {
+      "id": "0053-bridge-ap-set-network-format-telemetry",
+      "path": "0053-bridge-ap-set-network-format-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "3775de45bec83541dc1b5a8918712b24b693930d2f531cc3bc81d494103051d8",
+          "before_sha256": "9bd3363934b043a1268314c1611e26d5d7271d7d0da48a998dcd1fa3ff344e0d",
+          "path": "components/wireless/wifi6/fhost/src/fhost_wpa.c"
+        }
+      ]
+    },
+    {
+      "id": "0054-bridge-ap-config-defaults-boundary-telemetry",
+      "path": "0054-bridge-ap-config-defaults-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "e27e7cce1a41b6f26b2714e5e5f113b2d58241709a3808160e32ab8ac4bf64d0",
+          "before_sha256": "c3f82419a587d14c7bb833b413fb396f56d0ae69ca54b0148f979e6158756cf1",
+          "path": "components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c"
+        }
+      ]
+    },
+    {
+      "id": "0055-bridge-ap-setup-bss-lifecycle-telemetry",
+      "path": "0055-bridge-ap-setup-bss-lifecycle-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "f2e3d12a56daa43af62771bd7fe0e3ded1a4685375bc41dc72312e42a3e513ee",
+          "before_sha256": "381c33c5ab1d07c882bc72b699ffe746f2539faa9a5ce18df8ab3e54d0b30901",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0056-bridge-ap-11b-hw-feature-telemetry",
+      "path": "0056-bridge-ap-11b-hw-feature-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "d490dbb336c257edcea1f2cadecbc12fa37483fd552d0ddf0126b2555382ec78",
+          "before_sha256": "7e35bb97fe131038f6f030bfb1d4dfebfa7b3233e2cc44311b2c2b6c74e314cc",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0057-bridge-ap-accounting-beacon-boundary-telemetry",
+      "path": "0057-bridge-ap-accounting-beacon-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "199c80e0a8d1b05146085907c2001db6f0d7845122d561e538aa4e240a9d62bc",
+          "before_sha256": "f2e3d12a56daa43af62771bd7fe0e3ded1a4685375bc41dc72312e42a3e513ee",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c"
+        }
+      ]
+    },
+    {
+      "id": "0058-bridge-ap-beacon-driver-boundary-telemetry",
+      "path": "0058-bridge-ap-beacon-driver-boundary-telemetry.patch",
+      "targets": [
+        {
+          "after_sha256": "19cc6d7ee0bfc7679907011f9164b09517f359015e5971ab628f7bef422944bd",
+          "before_sha256": "cd8398d578a77a86648178d495dbee0b256d38dbd04e764b8db9e9d2f94542e0",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/ap/beacon.c"
+        },
+        {
+          "after_sha256": "f03f92726b889417e5d85dc782cd06712874400c3d4f15133c2fe42ed20810e6",
+          "before_sha256": "d490dbb336c257edcea1f2cadecbc12fa37483fd552d0ddf0126b2555382ec78",
+          "path": "components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c"
+        }
+      ]
+    },
+    {
+      "id": "0059-bridge-mbedtls-configurable-content-buffer",
+      "path": "0059-bridge-mbedtls-configurable-content-buffer.patch",
+      "targets": [
+        {
+          "after_sha256": "eaaf973248077e882f450e7b7faacbc41fbe76da46b13df389a0bf7b3b1a599f",
+          "before_sha256": "2afe049be555457503ddb94d3ac056be36c6f202e9e2cd426390f706d42072ed",
+          "path": "components/crypto/mbedtls/CMakeLists.txt"
+        }
+      ]
+    }
+  ],
+  "schema": 1
+}

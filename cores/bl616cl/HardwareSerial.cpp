@@ -1,8 +1,11 @@
 #include "Arduino.h"
 
+#include "bflb_irq.h"
 #include "bflb_gpio.h"
 #include "bflb_uart.h"
 #include "pins_arduino.h"
+
+extern "C" int pm_disable_gpio_keep(uint32_t pin);
 
 HardwareSerial Serial(0, PIN_SERIAL_RX, PIN_SERIAL_TX);
 HardwareSerial Serial1(1, PIN_SERIAL1_RX, PIN_SERIAL1_TX);
@@ -26,9 +29,70 @@ static uint8_t parity(uint8_t config)
 }
 
 HardwareSerial::HardwareSerial(uint8_t index, int8_t rx_pin, int8_t tx_pin)
-    : index_(index), rx_pin_(rx_pin), tx_pin_(tx_pin), peeked_(-1),
-      baud_rate_(0), device_(nullptr)
+    : index_(index),
+      rx_pin_(rx_pin),
+      tx_pin_(tx_pin),
+      baud_rate_(0U),
+      device_(nullptr),
+      rx_buffer_{},
+      rx_head_(0U),
+      rx_tail_(0U),
+      rx_received_count_(0U),
+      rx_overflow_count_(0U)
 {
+}
+
+void HardwareSerial::uartInterrupt(int, void *arg)
+{
+    HardwareSerial *serial = static_cast<HardwareSerial *>(arg);
+    if (serial != nullptr) {
+        serial->drainHardwareRx();
+    }
+}
+
+void HardwareSerial::drainHardwareRx()
+{
+    if (device_ == nullptr) {
+        return;
+    }
+
+    /*
+     * bflb_uart_rxint_mask(..., false) enables RX FIFO threshold and RX
+     * timeout interrupts. The timeout state remains set until acknowledged.
+     */
+    if ((bflb_uart_get_intstatus(device_) & UART_INTSTS_RTO) != 0U) {
+        bflb_uart_int_clear(device_, UART_INTCLR_RTO);
+    }
+
+    while (bflb_uart_rxavailable(device_)) {
+        const int value = bflb_uart_getchar(device_);
+        if (value < 0) {
+            break;
+        }
+
+        ++rx_received_count_;
+        const uint16_t next = static_cast<uint16_t>(
+            (rx_head_ + 1U) & kRxBufferMask);
+        if (next == rx_tail_) {
+            ++rx_overflow_count_;
+            continue;
+        }
+        rx_buffer_[rx_head_] = static_cast<uint8_t>(value);
+        rx_head_ = next;
+    }
+}
+
+void HardwareSerial::resetRxBuffer()
+{
+    rx_head_ = 0U;
+    rx_tail_ = 0U;
+    rx_received_count_ = 0U;
+    rx_overflow_count_ = 0U;
+}
+
+uint16_t HardwareSerial::bufferedRxCount() const
+{
+    return static_cast<uint16_t>((rx_head_ - rx_tail_) & kRxBufferMask);
 }
 
 void HardwareSerial::begin(unsigned long baud, uint8_t config)
@@ -39,6 +103,13 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     if ((gpio == nullptr) || (device_ == nullptr)) {
         return;
     }
+
+    /*
+     * UART pins must leave the BL616CL low-power retention domain before
+     * their mux is assigned. The SDK console follows the same sequence.
+     */
+    pm_disable_gpio_keep(tx_pin_);
+    pm_disable_gpio_keep(rx_pin_);
 
     switch (index_) {
         case 0:
@@ -57,7 +128,7 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     }
 
     struct bflb_uart_config_s uart_config = {};
-    baud_rate_ = baud;
+    baud_rate_ = static_cast<uint32_t>(baud);
     uart_config.baudrate = baud;
     uart_config.direction = UART_DIRECTION_TXRX;
     uart_config.data_bits = data_bits(config);
@@ -66,9 +137,12 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     uart_config.bit_order = UART_LSB_FIRST;
     uart_config.flow_ctrl = UART_FLOWCTRL_NONE;
     uart_config.tx_fifo_threshold = 7;
-    uart_config.rx_fifo_threshold = 7;
+    uart_config.rx_fifo_threshold = 1;
     bflb_uart_init(device_, &uart_config);
-    peeked_ = -1;
+    resetRxBuffer();
+    bflb_uart_rxint_mask(device_, false);
+    (void)bflb_irq_attach(device_->irq_num, uartInterrupt, this);
+    bflb_irq_enable(device_->irq_num);
 }
 
 void HardwareSerial::begin(unsigned long baud, uint8_t config,
@@ -95,32 +169,46 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config,
     begin(baud, config);
 }
 
-void HardwareSerial::updateBaudRate(uint32_t baud)
+bool HardwareSerial::updateBaudRate(unsigned long baud)
 {
-    baud_rate_ = baud;
+    if (device_ == nullptr || baud == 0UL) {
+        return false;
+    }
+
+    flush();
+    if (bflb_uart_feature_control(
+            device_,
+            UART_CMD_SET_BAUD_RATE,
+            static_cast<size_t>(baud)) != 0) {
+        return false;
+    }
+    baud_rate_ = static_cast<uint32_t>(baud);
+    clearRx();
+    return true;
+}
+
+void HardwareSerial::clearRx()
+{
     if (device_ != nullptr) {
-        struct bflb_uart_config_s uart_config = {};
-        uart_config.baudrate = baud;
-        uart_config.direction = UART_DIRECTION_TXRX;
-        uart_config.data_bits = 3;
-        uart_config.stop_bits = 0;
-        uart_config.parity = 0;
-        uart_config.bit_order = UART_LSB_FIRST;
-        uart_config.flow_ctrl = UART_FLOWCTRL_NONE;
-        uart_config.tx_fifo_threshold = 7;
-        uart_config.rx_fifo_threshold = 7;
-        bflb_uart_init(device_, &uart_config);
+        const uintptr_t irq_state = bflb_irq_save();
+        (void)bflb_uart_feature_control(device_, UART_CMD_CLR_RX_FIFO, 0);
+        resetRxBuffer();
+        bflb_irq_restore(irq_state);
+    } else {
+        resetRxBuffer();
     }
 }
 
 void HardwareSerial::end()
 {
     if (device_ != nullptr) {
+        bflb_irq_disable(device_->irq_num);
+        (void)bflb_irq_detach(device_->irq_num);
         flush();
         bflb_uart_deinit(device_);
         device_ = nullptr;
     }
-    peeked_ = -1;
+    resetRxBuffer();
 }
 
 int HardwareSerial::available()
@@ -128,26 +216,25 @@ int HardwareSerial::available()
     if (device_ == nullptr) {
         return 0;
     }
-    int count = bflb_uart_feature_control(device_, UART_CMD_GET_RX_FIFO_CNT, 0);
-    return count + (peeked_ >= 0 ? 1 : 0);
+    return static_cast<int>(bufferedRxCount());
 }
 
 int HardwareSerial::peek()
 {
-    if (peeked_ < 0 && device_ != nullptr) {
-        peeked_ = bflb_uart_getchar(device_);
+    if (device_ == nullptr || rx_head_ == rx_tail_) {
+        return -1;
     }
-    return peeked_;
+    return rx_buffer_[rx_tail_];
 }
 
 int HardwareSerial::read()
 {
-    if (peeked_ >= 0) {
-        int value = peeked_;
-        peeked_ = -1;
-        return value;
+    if (device_ == nullptr || rx_head_ == rx_tail_) {
+        return -1;
     }
-    return device_ == nullptr ? -1 : bflb_uart_getchar(device_);
+    const int value = rx_buffer_[rx_tail_];
+    rx_tail_ = static_cast<uint16_t>((rx_tail_ + 1U) & kRxBufferMask);
+    return value;
 }
 
 size_t HardwareSerial::read(uint8_t *buffer, size_t size)

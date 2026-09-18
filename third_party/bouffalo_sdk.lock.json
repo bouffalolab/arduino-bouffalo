@@ -1,0 +1,85 @@
+{
+  "bootstrap": {
+    "command": "python3 tools/prepare_bouffalo_sdk_source.py --init",
+    "sparse_paths": [
+      "bsp",
+      "cmake",
+      "components",
+      "drivers",
+      "examples/wifi",
+      "project.build",
+      "CMakeLists.txt",
+      "Kconfig",
+      "LICENSE",
+      "tools/byai",
+      "tools/cmake",
+      "tools/bflb_tools"
+    ]
+  },
+  "commit": "240ff49ba0189ebeba92e6d5c42533f63d90a161",
+  "path": "third_party/bouffalo_sdk",
+  "required_submodules": {
+    "components/crypto/mbedtls/mbedtls": {
+      "commit": "3bc6321603b0ab07c39ebdbe6ad1c65e0f4beb45",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/3rdparty/mbedtls.git"
+    },
+    "components/crypto/mbedtls/mbedtls_v3": {
+      "commit": "4c3acca7109deb4dca6956dd5f3ceaf0947dee58",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/3rdparty/mbedtls.git"
+    },
+    "components/crypto/mbedtls/mbedtls_v3/framework": {
+      "commit": "457996474728cb8e968ed21953b72f74d2f536b2",
+      "url": "https://github.com/Mbed-TLS/mbedtls-framework"
+    },
+    "components/fs": {
+      "commit": "40632e430ee7e96df00876b38586034304c718c4",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/fs.git"
+    },
+    "components/graphics": {
+      "commit": "b6edf14d79d23ba6974e56730b0f936177cac782",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/lvgl.git"
+    },
+    "components/net/lwip/lwip": {
+      "commit": "0869c85c0d5f2868456db533fa17722cb1028139",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/lwip.git"
+    },
+    "components/usb/cherryusb": {
+      "commit": "2652a5b5be08feb8c007f1cceb3faf8a3a9ee6d6",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/cherryusb.git"
+    },
+    "components/wireless/bluetooth": {
+      "commit": "ff6b295ec4c03cb3ee6560a3e1617063af45e9ff",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/bluetooth.git"
+    },
+    "components/wireless/macsw": {
+      "commit": "3c51dd79357fb2159a2691b81499b9ce45b19c71",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/wifi6/macsw.git"
+    },
+    "components/wireless/wifi6": {
+      "commit": "dd5556963b16d0e7d566360e08dac0175a528d88",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/wifi6.git"
+    },
+    "drivers/lhal": {
+      "commit": "4acfb47d23bf7f0d73e09893b6ac63c8d87366fa",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/drivers/lhal.git"
+    },
+    "drivers/soc/bl616cl/phyrf": {
+      "commit": "10e0a6c372a3f8d8974be7a46de78b8250440466",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/drivers/phyrf/bl616l/library.git"
+    },
+    "drivers/soc/bl616cl/std": {
+      "commit": "297286558b63c98c5f87a5afe0e338ebdc4091dc",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/drivers/std/bl616l.git"
+    },
+    "drivers/sys": {
+      "commit": "8e53f32692b48c9f304cb98d79059c3aeed92b55",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/components/sys.git"
+    },
+    "tools/bflb_tools": {
+      "commit": "203f74c90230b209d61f1f15d92d8c52d0d8d29e",
+      "url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/bflb_tools.git"
+    }
+  },
+  "schema": 1,
+  "source_url": "ssh://jhwu@gerrit.bouffalolab.com:29418/bouffalo/bouffalo_sdk.git"
+}

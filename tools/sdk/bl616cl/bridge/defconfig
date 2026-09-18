@@ -1,0 +1,51 @@
+-include $(BL_SDK_BASE)/examples/wifi/defconfig
+
+# Persist bridge state in the SDK's LittleFS/EasyFlash implementation.
+CONFIG_BFLB_MTD              =y
+CONFIG_PARTITION             =y
+CONFIG_LITTLEFS              =y
+CONFIG_LITTLEFS_KV_EASYFLASH =y
+
+# mbedTLS allocates independent input and output record buffers during
+# mbedtls_ssl_setup(). Keep each at 4 KiB for the complete Wi-Fi/BLE/USB
+# bridge image; the client negotiates RFC 6066 maximum_fragment_length=4096.
+CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN = 4096
+
+# The bridge needs a FreeRTOS USB device with CDC ACM and vendor HID.
+CONFIG_BSP_USB                 =y
+CONFIG_CHERRYUSB               =y
+CONFIG_CHERRYUSB_DEVICE        =y
+CONFIG_CHERRYUSB_DEVICE_CDC    =y
+CONFIG_CHERRYUSB_DEVICE_CDC_ACM=y
+CONFIG_CHERRYUSB_DEVICE_HID    =y
+
+# Keep the Wi-Fi/BLE coexistence controller selected by the BL616CL SDK demo.
+CONFIG_BLUETOOTH              =y
+CONFIG_BT_SETTINGS            =y
+CONFIG_BT_STACK_CLI           =n
+CONFIG_BTBLECONTROLLER_LIB    =m2s1
+CONFIG_BLE_USE_MAC2           =n
+
+CONFIG_BFLB_LOG               =n
+CONFIG_FREERTOS               =y
+CONFIG_SHELL                  =n
+CONFIG_RF                     =y
+CONFIG_PEC_V2                 =n
+CONFIG_MULTIMEDIA_VIDEO       =n
+CONFIG_GCC_COMPILE_LTO        =n
+CONFIG_TLSF                   =y
+CONFIG_DEBUG                  =y
+CONFIG_ROMAPI                 =y
+CONFIG_LOG_LEVEL              =3
+CONFIG_CONSOLE_UART_BAUDRATE  =2000000
+# Route SDK printf/stdout through the BL616CL write-only UART on GPIO8.
+# UART0 remains reserved for the RA4M1 user UART on GPIO34/35.
+CONFIG_CONSOLE_WO             =y
+
+# Retain AP+STA capability while reserving enough WRAM for SoftAP hostapd
+# allocations. The matching SDK overlay only reduces RX reorder/BA capacity.
+CONFIG_UNOR4_BRIDGE_RESOURCE_PROFILE =y
+
+# WiFiS3 does not expose WPS. Keep it out of the bridge profile while the
+# SoftAP/WPS initialization path is under hardware validation.
+CONFIG_BRIDGE_DISABLE_WPS      =y

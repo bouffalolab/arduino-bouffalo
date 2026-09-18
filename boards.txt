@@ -7,6 +7,11 @@ unor4_bl616cl.build.board=UNOR4_BL616CL
 unor4_bl616cl.build.core=bl616cl
 unor4_bl616cl.build.variant=bl616cldk
 unor4_bl616cl.build.extra_flags=-DBL616CL_STAGE1=1 -DBL616CL_USB_DEBUG_LOG=1
+unor4_bl616cl.build.sdk_profile=.
+unor4_bl616cl.build.sdk_extra_includes=
+unor4_bl616cl.build.sdk_preinclude=
+unor4_bl616cl.build.sdk_libraries={compiler.sdk.stage1.libs}
+unor4_bl616cl.build.sdk_linker_flags={compiler.sdk.stage1.linker_flags}
 unor4_bl616cl.build.partition_config=partition_cfg_4M.toml
 unor4_bl616cl.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
 unor4_bl616cl.build.dts_config=bl_factory_params_IoTKitA_auto.dts
@@ -19,3 +24,60 @@ unor4_bl616cl.upload.speed=2000000
 unor4_bl616cl.upload.maximum_size=2097152
 # BL616CL SRAM is 384 KiB minus the 64 KiB Wi-Fi reservation in this profile.
 unor4_bl616cl.upload.maximum_data_size=327680
+
+bl616cl_bridge_smoke.name=BL616CL DK (Bridge Runtime Smoke)
+bl616cl_bridge_smoke.vid.0=0x0000
+bl616cl_bridge_smoke.pid.0=0x0000
+
+# This target is only for the independent BL616CL DK. It deliberately uses
+# the DK UART0 pin map so CKLink VCOM can observe smoke-test markers while
+# linking the same bridge runtime profile as the provisional UNO R4 target.
+bl616cl_bridge_smoke.build.mcu=bl616cl
+bl616cl_bridge_smoke.build.board=BL616CL_BRIDGE_SMOKE
+bl616cl_bridge_smoke.build.core=bl616cl
+bl616cl_bridge_smoke.build.variant=bl616cldk
+bl616cl_bridge_smoke.build.extra_flags=-DBL616CL_BRIDGE_SMOKE=1
+bl616cl_bridge_smoke.build.sdk_profile=bridge
+bl616cl_bridge_smoke.build.sdk_extra_includes={compiler.sdk.bridge.includes}
+bl616cl_bridge_smoke.build.sdk_preinclude={compiler.sdk.bridge.preinclude}
+bl616cl_bridge_smoke.build.sdk_extra_defines={compiler.sdk.bridge.defines}
+bl616cl_bridge_smoke.build.sdk_libraries={compiler.sdk.bridge.libs}
+bl616cl_bridge_smoke.build.sdk_linker_flags={compiler.sdk.bridge.linker_flags}
+bl616cl_bridge_smoke.build.partition_config=partition_cfg_4M.toml
+bl616cl_bridge_smoke.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+bl616cl_bridge_smoke.build.dts_config=bl_factory_params_IoTKitA_auto.dts
+
+bl616cl_bridge_smoke.upload.tool=blflash
+bl616cl_bridge_smoke.upload.tool.default=blflash
+bl616cl_bridge_smoke.upload.protocol=uart
+bl616cl_bridge_smoke.upload.speed=2000000
+bl616cl_bridge_smoke.upload.maximum_size=2097152
+bl616cl_bridge_smoke.upload.maximum_data_size=327680
+
+unor4_bl616cl_provisional.name=UNO R4 WiFi BL616CL (Provisional Bridge)
+unor4_bl616cl_provisional.vid.0=0x0000
+unor4_bl616cl_provisional.pid.0=0x0000
+
+unor4_bl616cl_provisional.build.mcu=bl616cl
+unor4_bl616cl_provisional.build.board=UNOR4_BL616CL_PROVISIONAL
+unor4_bl616cl_provisional.build.core=bl616cl
+unor4_bl616cl_provisional.build.variant=unor4_bl616cl_provisional
+unor4_bl616cl_provisional.build.extra_flags=-DBL616CL_BRIDGE_PROVISIONAL=1
+unor4_bl616cl_provisional.build.sdk_profile=bridge
+unor4_bl616cl_provisional.build.sdk_extra_includes={compiler.sdk.bridge.includes}
+unor4_bl616cl_provisional.build.sdk_preinclude={compiler.sdk.bridge.preinclude}
+unor4_bl616cl_provisional.build.sdk_extra_defines={compiler.sdk.bridge.defines}
+unor4_bl616cl_provisional.build.sdk_libraries={compiler.sdk.bridge.libs}
+unor4_bl616cl_provisional.build.sdk_linker_flags={compiler.sdk.bridge.linker_flags}
+# The bridge bundle uses the SDK bl616cldk BSP until a UNO R4 carrier BSP is
+# available. Replace the DTS and partition settings when the schematic freezes.
+unor4_bl616cl_provisional.build.partition_config=partition_cfg_4M.toml
+unor4_bl616cl_provisional.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4_bl616cl_provisional.build.dts_config=bl_factory_params_IoTKitA_auto.dts
+
+unor4_bl616cl_provisional.upload.tool=blflash
+unor4_bl616cl_provisional.upload.tool.default=blflash
+unor4_bl616cl_provisional.upload.protocol=uart
+unor4_bl616cl_provisional.upload.speed=2000000
+unor4_bl616cl_provisional.upload.maximum_size=2097152
+unor4_bl616cl_provisional.upload.maximum_data_size=327680

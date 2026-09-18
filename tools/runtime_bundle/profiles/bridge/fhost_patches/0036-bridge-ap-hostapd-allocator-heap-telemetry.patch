@@ -1,0 +1,61 @@
+--- a/components/mm/mm.c
++++ b/components/mm/mm.c
+@@ -17,6 +17,10 @@
+ 
+ extern void fhost_bridge_ap_start_allocator_event(
+     uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
++__attribute__((weak)) int fhost_bridge_ap_start_allocator_trace_active(void)
++{
++    return 0;
++}
+ 
+ #if IS_ENABLED(CONFIG_MM_ENABLE_TRACKING)
+ #include "mm_track.h"
+@@ -432,6 +433,8 @@
+         }
+     } else {
+         /* Automatic selection mode: follow configured heap priority order. */
++        const bool trace_allocator =
++            fhost_bridge_ap_start_allocator_trace_active() != 0;
+         for (uint32_t order_idx = 0; order_idx < CONFIG_MM_HEAP_COUNT; order_idx++) {
+             uint32_t ordered_heap_id = manager->heap_alloc_order[order_idx];
+             if (ordered_heap_id == 0) {
+@@ -448,7 +451,27 @@
+                 continue;
+             }
+ 
++            struct mm_usage_info usage = { 0 };
++            if (trace_allocator) {
++                if (allocator->get_usage_info) {
++                    allocator->get_usage_info(heap, &usage);
++                } else if (allocator->get_free_size) {
++                    usage.free_size =
++                        (uint32_t)allocator->get_free_size(heap);
++                    usage.max_free_size = usage.free_size;
++                }
++            }
++
+             ptr = allocator->malloc(heap, size, flags);
++            if (trace_allocator) {
++                uint32_t attempt = ordered_heap_id |
++                    ((order_idx & 0x7fU) << 24);
++                if (ptr == NULL) {
++                    attempt |= 0x80000000U;
++                }
++                fhost_bridge_ap_start_allocator_event(
++                    19, attempt, usage.free_size, usage.max_free_size);
++            }
+ #if IS_ENABLED(CONFIG_MM_ENABLE_TRACKING)
+             if (mm_track_is_started() && ptr != NULL) {
+                 mm_track_malloc(ptr, allocator->get_block_size(heap, ptr));
+@@ -458,6 +481,10 @@
+                 break;
+             }
+         }
++        if (trace_allocator) {
++            fhost_bridge_ap_start_allocator_event(
++                20, (uint32_t)(uintptr_t)ptr, size, flags);
++        }
+     }
+ 
+     fhost_bridge_ap_start_allocator_event(

@@ -1,0 +1,15 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
+@@ -4258,6 +4259,12 @@
+ 	union wpa_event_data event;
+ 	int zero_addr = 0;
+ 
++	if (wpa_s->ap_iface && os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_hostapd_lifecycle(
++			39, 0, 0xff, 0,
++			(uint32_t)(uintptr_t)__builtin_return_address(0),
++			reason_code);
++
+ 	wpa_dbg(wpa_s, MSG_DEBUG, "Request to deauthenticate - bssid=" MACSTR
+ 		" pending_bssid=" MACSTR " reason=%d (%s) state=%s",
+ 		MAC2STR(wpa_s->bssid), MAC2STR(wpa_s->pending_bssid),

@@ -1,0 +1,121 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
+@@ -2328,6 +2328,8 @@
+ {
+ 	struct wpa_connect_work *cwork;
+ 	int rand_style;
++	int create_ap_result;
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
+ 
+ 	wpa_s->own_disconnect_req = 0;
+ 	wpa_s->own_reconnect_req = 0;
+@@ -2408,7 +2410,18 @@
+ 				"mode");
+ 			return;
+ 		}
+-		if (wpa_supplicant_create_ap(wpa_s, ssid) < 0) {
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				29, 1, ssid->disabled, wpa_s->wpa_state,
++				wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++				wpa_s->reassociate, 0, 0xff);
++		create_ap_result = wpa_supplicant_create_ap(wpa_s, ssid);
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				30, 1, ssid->disabled, wpa_s->wpa_state,
++				wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++				wpa_s->reassociate, create_ap_result, 0xff);
++		if (create_ap_result < 0) {
+ 			wpa_supplicant_set_state(wpa_s, WPA_DISCONNECTED);
+ #ifndef CONFIG_ONLY_STA_AP_MODE
+ 			if (ssid->mode == WPAS_MODE_P2P_GROUP_FORMATION)
+@@ -4347,6 +4360,13 @@
+ static void wpa_supplicant_enable_one_network(struct wpa_supplicant *wpa_s,
+ 					      struct wpa_ssid *ssid)
+ {
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
++
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			22, 1, ssid ? ssid->disabled : 0xff, wpa_s->wpa_state,
++			wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++			wpa_s->reassociate, ssid ? 0 : -1, 0xff);
+ 	if (!ssid || !ssid->disabled || ssid->disabled == 2)
+ 		return;
+ 
+@@ -4361,6 +4381,11 @@
+ 	 */
+ 	if (!wpa_s->current_ssid && !wpa_s->disconnected)
+ 		wpa_s->reassociate = 1;
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			23, 1, ssid->disabled, wpa_s->wpa_state,
++			wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++			wpa_s->reassociate, 0, 0xff);
+ }
+ 
+ 
+@@ -4526,25 +4551,58 @@
+ void wpa_supplicant_enable_network(struct wpa_supplicant *wpa_s,
+ 				   struct wpa_ssid *ssid)
+ {
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
++	int continuation;
++	int fast_associate_result;
++
+ 	if (ssid == NULL) {
+ 		for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next)
+ 			wpa_supplicant_enable_one_network(wpa_s, ssid);
+ 	} else
+ 		wpa_supplicant_enable_one_network(wpa_s, ssid);
+ 
+-	if (wpa_s->reassociate && !wpa_s->disconnected &&
+-	    (!wpa_s->current_ssid ||
+-	     wpa_s->wpa_state == WPA_DISCONNECTED ||
+-	     wpa_s->wpa_state == WPA_SCANNING)) {
++	continuation = wpa_s->reassociate && !wpa_s->disconnected &&
++		(!wpa_s->current_ssid ||
++		 wpa_s->wpa_state == WPA_DISCONNECTED ||
++		 wpa_s->wpa_state == WPA_SCANNING);
++	if (bridge_ap)
++		fhost_bridge_ap_start_wpa_event_path(
++			24, 1, 0xff, wpa_s->wpa_state,
++			wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++			wpa_s->reassociate, continuation, 0xff);
++	if (continuation) {
+ 		if (wpa_s->sched_scanning) {
+ 			wpa_printf(MSG_DEBUG, "Stop ongoing sched_scan to add "
+ 				   "new network to scan filters");
+ 			wpa_supplicant_cancel_sched_scan(wpa_s);
+ 		}
+ 
+-		if (wpa_supplicant_fast_associate(wpa_s) != 1) {
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				25, 1, 0xff, wpa_s->wpa_state,
++				wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++				wpa_s->reassociate, 0, 0xff);
++		fast_associate_result = wpa_supplicant_fast_associate(wpa_s);
++		if (bridge_ap)
++			fhost_bridge_ap_start_wpa_event_path(
++				26, 1, 0xff, wpa_s->wpa_state,
++				wpa_s->current_ssid ? 1 : 0, wpa_s->disconnected,
++				wpa_s->reassociate, fast_associate_result, 0xff);
++		if (fast_associate_result != 1) {
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					27, 1, 0xff, wpa_s->wpa_state,
++					wpa_s->current_ssid ? 1 : 0,
++					wpa_s->disconnected, wpa_s->reassociate,
++					0, 0xff);
+ 			wpa_s->scan_req = NORMAL_SCAN_REQ;
+ 			wpa_supplicant_req_scan(wpa_s, 0, 0);
++			if (bridge_ap)
++				fhost_bridge_ap_start_wpa_event_path(
++					28, 1, 0xff, wpa_s->wpa_state,
++					wpa_s->current_ssid ? 1 : 0,
++					wpa_s->disconnected, wpa_s->reassociate,
++					0, 0xff);
+ 		}
+ 	}
+ }

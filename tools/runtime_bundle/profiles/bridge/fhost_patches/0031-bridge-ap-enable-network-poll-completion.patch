@@ -1,0 +1,48 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.h
+@@ -21,6 +21,7 @@
+   rtos_semaphore done;
+   rtos_task_handle waiting_task;
+   bool use_task_notification;
++  volatile bool completion_ready;
+   char **resp;
+   int *resp_len;
+ };
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -507,7 +507,13 @@
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_sync(6, (uint32_t)(uintptr_t)msg->waiting_task,
+                                  0, 0);
+-    rtos_task_notify(msg->waiting_task, false);
++    /*
++     * The BL616CL bridge's AP start worker has observed a lost task-notify
++     * wake-up at this completion boundary. Publish completion explicitly;
++     * the caller yields in a bounded polling loop below.
++     */
++    __sync_synchronize();
++    msg->completion_ready = true;
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_sync(7, (uint32_t)(uintptr_t)msg->waiting_task,
+                                  0, 0);
+@@ -595,6 +601,7 @@
+     return -1;
+   memcpy(data + 1, request, req_len);
+ 
++  data->completion_ready = false;
+   data->use_task_notification = bridge_ap_enable_network;
+   if (data->use_task_notification) {
+     data->waiting_task = rtos_task_get_handle(NULL);
+@@ -662,7 +669,11 @@
+       fhost_bridge_ap_start_trace(7,
+                                   (uint32_t)(uintptr_t)data->waiting_task,
+                                   0, 0);
+-    wait_result = rtos_task_wait_notification(timeout_ms);
++    while (!data->completion_ready) {
++      rtos_task_suspend(1);
++    }
++    __sync_synchronize();
++    wait_result = 1;
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_sync(8, (uint32_t)(uintptr_t)data->waiting_task,
+                                  wait_result, 0);

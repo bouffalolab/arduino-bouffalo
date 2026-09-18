@@ -1,0 +1,31 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -83,6 +83,7 @@ extern void fhost_bridge_ap_start_hostapd_state_update(
+ extern void fhost_ap_state_update_from_hostapd(
+     uint8_t hostapd_state, bool enabled);
+ extern void fhost_bridge_ap_start_allocator_heap_walk(void);
++extern void fhost_bridge_ap_start_liveness(uint8_t phase);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
+@@ -3072,6 +3072,7 @@ struct wpa_ssid * wpa_config_add_network(struct wpa_config *config)
+ 
+ 	wpa_config_update_prio_list(config);
+ 	fhost_bridge_ap_start_progress(194, 0);
++	fhost_bridge_ap_start_liveness(2);
+ 
+ 	return ssid;
+ }
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
+@@ -3530,6 +3530,8 @@ static int wpa_supplicant_ctrl_iface_add_network(
+ 		fhost_bridge_ap_start_progress(175, 0);
+ 	ssid = wpa_supplicant_add_network(wpa_s);
+ 	if (bridge_ap_add_network)
++		fhost_bridge_ap_start_liveness(3);
++	if (bridge_ap_add_network)
+ 		fhost_bridge_ap_start_progress(176, ssid ? 0 : -1);
+ 	if (ssid == NULL)
+ 		return -1;

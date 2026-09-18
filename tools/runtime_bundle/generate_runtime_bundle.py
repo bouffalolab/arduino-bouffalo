@@ -8,9 +8,13 @@ Generates the checked-in runtime bundles used by the Arduino platform:
 
 Example:
     python3 generate_runtime_bundle.py \\
-      --sdk /path/to/bouffalo_sdk \\
       --chip bl616cl \\
+      --profile bridge \\
       --toolchain /opt/Xuantie-900-gcc
+
+The default SDK input is the project-controlled
+``third_party/bouffalo_sdk`` source. Use ``--sdk`` only when intentionally
+testing another checkout.
 
 Chip-specific settings (toolchain prefix, ABI flags, toolchain directory name,
 FreeRTOS MTIME addresses) are drawn from the CHIP_CONFIG table below.  Add
@@ -27,6 +31,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -137,6 +142,23 @@ EXPECTED_SIDE_CARS = {
     "efusedata_raw.bin",
 }
 
+# A profile selects the SDK defconfig and bundle directory. Keep stage-1 at its
+# original path so its existing FQBN remains stable; bridge gets a sibling
+# runtime until a final UNO R4 carrier BSP is available.
+RUNTIME_PROFILES = {
+    "stage1": {
+        "source_directory": ".",
+        "output_directory": None,
+    },
+    "bridge": {
+        "source_directory": "profiles/bridge",
+        "output_directory": "bridge",
+        "board_overlay_directory": "board_overlay",
+        "source_patch_manifest": "fhost_patches/manifest.json",
+        "linker_overlay": "hbn_noinit_diagnostics",
+    },
+}
+
 
 # ===================================================================
 # Utilities
@@ -159,6 +181,30 @@ def require_file(path: Path, description: str) -> Path:
     if not path.is_file():
         raise RuntimeError(f"missing {description}: {path}")
     return path
+
+
+def project_root(script_dir: Path) -> Path:
+    """Return the root repository containing third_party/bouffalo_sdk."""
+    return script_dir.parents[1]
+
+
+def resolve_sdk_path(script_dir: Path, sdk_arg: Path | None) -> Path:
+    """Resolve the controlled SDK source with an actionable bootstrap error."""
+    if sdk_arg is not None:
+        sdk = sdk_arg.expanduser().resolve()
+    else:
+        sdk = project_root(script_dir) / "third_party" / "bouffalo_sdk"
+    if (sdk / "project.build").is_file():
+        return sdk
+    if sdk_arg is None:
+        raise RuntimeError(
+            f"project-controlled Bouffalo SDK is not initialized: {sdk}\n"
+            "Run: python3 tools/prepare_bouffalo_sdk_source.py --init"
+        )
+    raise RuntimeError(
+        f"{sdk} does not look like a BouffaloSDK root "
+        f"(missing project.build)"
+    )
 
 
 def sha256(path: Path) -> str:
@@ -197,24 +243,321 @@ def copy_headers(source_roots: list[tuple[Path, Path]],
             copy_file(source, destination)
 
 
-def copy_cherryusb_headers(sdk: Path, include_root: Path,
-                           runtime_bundle: Path) -> None:
-    """Copy CherryUSB's flat include surface into the SDK runtime include dir.
+def patch_bridge_cpp_compat_headers(include_root: Path) -> None:
+    """Apply narrow C++ compatibility fixes to copied bridge headers.
 
-    CherryUSB headers deliberately use short, unqualified include names such as
-    ``usbd_core.h`` and ``usbd_hid.h``.  Flattening them into ``include/`` keeps
-    the Arduino platform recipes small and matches the upstream SDK examples.
+    Bouffalo's MACSW public header is consumed as both C and C++ by Arduino
+    sketches.  The latest SDK keeps a C-only implicit conversion from
+    ``const void *`` to ``const uint8_t *`` in an inline helper.  Keep the
+    external SDK untouched and patch only the generated Arduino bundle copy.
     """
-    cherryusb_root = sdk / "components" / "usb" / "cherryusb"
-    if not cherryusb_root.is_dir():
-        raise RuntimeError(f"missing CherryUSB source tree: {cherryusb_root}")
+    macsw_header = include_root / "wifi" / "macsw" / "macsw.h"
+    require_file(macsw_header, "copied MACSW public header")
+    source = macsw_header.read_text(encoding="utf-8")
+    old = "    const uint8_t *data = frame;\n"
+    new = "    const uint8_t *data = (const uint8_t *)frame;\n"
+    if old not in source:
+        raise RuntimeError(
+            "MACSW C++ compatibility pattern is missing or already changed: "
+            f"{macsw_header}"
+        )
+    if source.count(old) != 1:
+        raise RuntimeError(
+            "MACSW C++ compatibility pattern is not unique: "
+            f"{macsw_header}"
+        )
+    macsw_header.write_text(source.replace(old, new), encoding="utf-8")
 
-    for source in sorted(cherryusb_root.rglob("*.h")):
-        copy_file(source, include_root / source.name)
+    pec_header = include_root / "sdk" / "lhal" / "bflb_pec_v2_instance.h"
+    require_file(pec_header, "copied PEC public header")
+    source = pec_header.read_text(encoding="utf-8")
+    old = " * frame_timeout > idle tolerance maximums. \n"
+    new = " * frame_timeout > idle tolerance maximums.\n"
+    if source.count(old) != 1:
+        raise RuntimeError(
+            "PEC header whitespace pattern is missing or not unique: "
+            f"{pec_header}"
+        )
+    pec_header.write_text(source.replace(old, new), encoding="utf-8")
 
-    copy_file(
-        require_file(runtime_bundle / "usb_config.h", "CherryUSB config"),
-        include_root / "usb_config.h",
+
+def load_source_patch_manifest(path: Path) -> dict[str, object]:
+    """Load and validate one profile-owned SDK source patch manifest."""
+    require_file(path, "profile source patch manifest")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError(f"source patch manifest must be an object: {path}")
+    if data.get("schema") != 1:
+        raise RuntimeError(
+            f"unsupported source patch manifest schema in {path}: "
+            f"{data.get('schema')!r}"
+        )
+    patches = data.get("patches")
+    if not isinstance(patches, list) or not patches:
+        raise RuntimeError(f"source patch manifest has no patches: {path}")
+    return data
+
+
+def source_patch_records(
+    manifest: dict[str, object],
+    *,
+    manifest_path: Path,
+    platform_root: Path,
+) -> list[dict[str, object]]:
+    """Validate profile patch inputs and return manifest-ready records."""
+    raw_patches = manifest["patches"]
+    assert isinstance(raw_patches, list)
+    records: list[dict[str, object]] = []
+    seen_ids: set[str] = set()
+    target_chain_ends: dict[str, str] = {}
+
+    for patch in raw_patches:
+        if not isinstance(patch, dict):
+            raise RuntimeError(
+                f"source patch record is invalid in {manifest_path}"
+            )
+        patch_id = patch.get("id")
+        relative_patch = patch.get("path")
+        targets = patch.get("targets")
+        if not isinstance(patch_id, str) or not patch_id:
+            raise RuntimeError(
+                f"source patch id is missing in {manifest_path}"
+            )
+        if patch_id in seen_ids:
+            raise RuntimeError(
+                f"duplicate source patch id {patch_id!r} in {manifest_path}"
+            )
+        if not isinstance(relative_patch, str) or not relative_patch:
+            raise RuntimeError(
+                f"source patch path is missing for {patch_id!r}"
+            )
+        patch_path = manifest_path.parent / relative_patch
+        require_file(patch_path, f"source patch {patch_id!r}")
+        if not isinstance(targets, list) or not targets:
+            raise RuntimeError(
+                f"source patch targets are missing for {patch_id!r}"
+            )
+
+        target_records: list[dict[str, str]] = []
+        for target in targets:
+            if not isinstance(target, dict):
+                raise RuntimeError(
+                    f"source patch target is invalid for {patch_id!r}"
+                )
+            relative_target = target.get("path")
+            before_sha256 = target.get("before_sha256")
+            after_sha256 = target.get("after_sha256")
+            if (
+                not isinstance(relative_target, str) or not relative_target or
+                not isinstance(before_sha256, str) or len(before_sha256) != 64 or
+                not isinstance(after_sha256, str) or len(after_sha256) != 64
+            ):
+                raise RuntimeError(
+                    f"source patch target metadata is invalid for {patch_id!r}"
+                )
+            previous_after_sha256 = target_chain_ends.get(relative_target)
+            if (
+                previous_after_sha256 is not None
+                and before_sha256 != previous_after_sha256
+            ):
+                raise RuntimeError(
+                    f"source patch {patch_id!r} does not continue the SHA-256 "
+                    f"chain for {relative_target!r}"
+                )
+            target_chain_ends[relative_target] = after_sha256
+            target_records.append({
+                "path": relative_target,
+                "before_sha256": before_sha256,
+                "after_sha256": after_sha256,
+            })
+
+        seen_ids.add(patch_id)
+        records.append({
+            "id": patch_id,
+            "path": str(patch_path.relative_to(platform_root)),
+            "sha256": sha256(patch_path),
+            "targets": target_records,
+        })
+
+    return records
+
+
+def link_directory_except(source: Path, destination: Path,
+                          excluded: set[str]) -> None:
+    """Create a directory whose ordinary entries are links to ``source``."""
+    destination.mkdir(parents=True, exist_ok=True)
+    for entry in source.iterdir():
+        if entry.name in excluded:
+            continue
+        (destination / entry.name).symlink_to(entry)
+
+
+def create_patched_sdk_overlay(
+    sdk: Path,
+    *,
+    patch_records: list[dict[str, object]],
+) -> Path:
+    """Build an ephemeral SDK view with bridge-owned Wi-Fi source patches.
+
+    The controlled SDK checkout stays clean. Patchable Wi-Fi, MACSW, FreeRTOS,
+    allocator, and mbedTLS trees are copied; every other SDK path is linked
+    into a temporary tree so SDK CMake still builds its normal dependency graph
+    from the locked source closure.
+    """
+    overlay = Path(tempfile.mkdtemp(prefix="bl616cl-sdk-overlay-"))
+    link_directory_except(sdk, overlay, {".git", "components"})
+    (overlay / ".git").symlink_to(sdk / ".git")
+
+    components = sdk / "components"
+    wireless = components / "wireless"
+    wifi6 = wireless / "wifi6"
+    link_directory_except(
+        components, overlay / "components", {"wireless", "os", "mm", "crypto"}
+    )
+    link_directory_except(wireless, overlay / "components" / "wireless",
+                          {"wifi6", "macsw"})
+    link_directory_except(
+        wifi6,
+        overlay / "components" / "wireless" / "wifi6",
+        {"fhost", "wpa_supplicant", "macsw_os_adapter"},
+    )
+
+    # Bridge patches currently instrument FreeRTOS heap_3.c, the Wi-Fi control
+    # path, MACSW resource configuration, and the MM/TLSF allocator boundary.
+    # Keep those complete subtrees private so patch(1) never follows a symlink
+    # back into the controlled SDK checkout.
+    shutil.copytree(components / "os", overlay / "components" / "os")
+    shutil.copytree(components / "mm", overlay / "components" / "mm")
+    link_directory_except(
+        components / "crypto",
+        overlay / "components" / "crypto",
+        {"mbedtls"},
+    )
+    shutil.copytree(
+        components / "crypto" / "mbedtls",
+        overlay / "components" / "crypto" / "mbedtls",
+    )
+    shutil.copytree(
+        wireless / "macsw", overlay / "components" / "wireless" / "macsw"
+    )
+
+    for patchable_tree in ("fhost", "wpa_supplicant", "macsw_os_adapter"):
+        shutil.copytree(
+            wifi6 / patchable_tree,
+            overlay / "components" / "wireless" / "wifi6" / patchable_tree,
+        )
+
+    return overlay
+
+
+def apply_source_patches(
+    overlay: Path,
+    *,
+    patch_records: list[dict[str, object]],
+    patch_paths: dict[str, Path],
+) -> None:
+    """Apply and verify profile patches in an ephemeral SDK overlay."""
+    for record in patch_records:
+        patch_id = str(record["id"])
+        patch_path = patch_paths[patch_id]
+        targets = record["targets"]
+        assert isinstance(targets, list)
+
+        for target in targets:
+            assert isinstance(target, dict)
+            source = overlay / str(target["path"])
+            require_file(source, f"source patch target for {patch_id!r}")
+            if sha256(source) != target["before_sha256"]:
+                raise RuntimeError(
+                    f"source patch {patch_id!r} baseline SHA-256 mismatch for "
+                    f"{target['path']}"
+                )
+
+        run(["patch", "--batch", "--forward", "--dry-run", "-p1",
+             "--input", str(patch_path)], cwd=overlay)
+        run(["patch", "--batch", "--forward", "-p1",
+             "--input", str(patch_path)], cwd=overlay)
+
+        for target in targets:
+            assert isinstance(target, dict)
+            source = overlay / str(target["path"])
+            if sha256(source) != target["after_sha256"]:
+                raise RuntimeError(
+                    f"source patch {patch_id!r} result SHA-256 mismatch for "
+                    f"{target['path']}"
+                )
+
+
+def copy_linker_fragments(linker_script: Path, *, sdk: Path,
+                          board_dir: Path, generated: Path,
+                          destination: Path) -> None:
+    """Copy linker-script INCLUDE dependencies beside the generated script."""
+    include_pattern = re.compile(r"^\s*INCLUDE\s+(\S+)", re.MULTILINE)
+    search_roots = (
+        linker_script.parent,
+        generated,
+        board_dir,
+        sdk / "components" / "wireless" / "macsw",
+    )
+    pending = [linker_script]
+    copied: set[str] = set()
+
+    while pending:
+        source = pending.pop()
+        for match in include_pattern.finditer(source.read_text(encoding="utf-8")):
+            name = match.group(1)
+            if name in copied:
+                continue
+
+            candidates = [
+                root / name for root in search_roots if (root / name).is_file()
+            ]
+            if not candidates:
+                candidates = sorted(sdk.rglob(name))
+            if len(candidates) != 1:
+                raise RuntimeError(
+                    f"cannot resolve linker fragment {name} required by "
+                    f"{source}: {candidates}"
+                )
+
+            fragment = candidates[0]
+            copy_file(fragment, destination / name)
+            copied.add(name)
+            pending.append(fragment)
+
+
+def apply_linker_overlay(linker_script: Path, overlay: str | None) -> None:
+    """Apply a small, auditable linker extension owned by a runtime profile."""
+    if overlay is None:
+        return
+    if overlay != "hbn_noinit_diagnostics":
+        raise RuntimeError(f"unsupported linker overlay: {overlay}")
+
+    marker = "    __hbn_memory_end__ = ABSOLUTE(.);"
+    section = """\
+    /*
+     * HBN RAM is retained across an MCU watchdog reset. Keep the bridge's
+     * concise reset diagnostics here instead of ordinary OCRAM .noinit data.
+     * The 512-byte window ends before the SDK-owned IOT2LP area at 0x20010400.
+     */
+    __hbn_noinit_start__ = ABSOLUTE(ADDR(hbn_noinit)); __hbn_noinit_end__ = ABSOLUTE(ADDR(hbn_noinit) + SIZEOF(hbn_noinit)); hbn_noinit (NOLOAD) :
+    {
+        . = ALIGN(4);
+        KEEP(*(.hbn_noinit*))
+        . = ALIGN(4);
+    } > hbn_memory
+"""
+    text = linker_script.read_text(encoding="utf-8")
+    if "hbn_noinit (NOLOAD)" in text:
+        return
+    if text.count(marker) != 1:
+        raise RuntimeError(
+            f"could not apply {overlay}: expected one HBN end marker in "
+            f"{linker_script}"
+        )
+    linker_script.write_text(
+        text.replace(marker, section + marker),
+        encoding="utf-8",
     )
 
 
@@ -369,6 +712,8 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1",
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1plus",
         f"libexec/gcc/{prefix}/{gcc_ver}/collect2",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto-wrapper",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto1",
         f"libexec/gcc/{prefix}/{gcc_ver}/liblto_plugin.so.0.0.0",
         f"lib/gcc/{prefix}/{gcc_ver}/libgcc.a",
         f"lib/gcc/{prefix}/{gcc_ver}/crtbegin.o",
@@ -410,14 +755,29 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
 # ===================================================================
 
 
-def record_source_versions(sdk: Path) -> dict[str, str]:
-    """Record actual commits of SDK and its sub-repos.  Warn if dirty."""
+def record_source_versions(
+    sdk: Path,
+    chip: str,
+    allow_dirty_sdk: bool,
+) -> dict[str, str]:
+    """Record source commits and reject uncommitted build inputs by default."""
     commit = run(["git", "-C", str(sdk), "rev-parse", "HEAD"], capture=True)
     source_commits = {"bouffalo_sdk": commit}
     sub_repos = [
+        "components/crypto/mbedtls/mbedtls",
+        "components/crypto/mbedtls/mbedtls_v3",
+        "components/crypto/mbedtls/mbedtls_v3/framework",
+        "components/fs",
+        "components/net/lwip/lwip",
+        "components/usb/cherryusb",
+        "components/wireless/bluetooth",
         "drivers/lhal",
         "drivers/sys",
         "tools/bflb_tools",
+        "components/wireless/macsw",
+        "components/wireless/wifi6",
+        f"drivers/soc/{chip}/phyrf",
+        f"drivers/soc/{chip}/std",
     ]
     for relative in sub_repos:
         repo = sdk / relative
@@ -426,28 +786,31 @@ def record_source_versions(sdk: Path) -> dict[str, str]:
                 ["git", "-C", str(repo), "rev-parse", "HEAD"], capture=True
             )
 
-    # Also record soc/{chip}/std if it is a git repo
-    soc_std = sdk / "drivers" / "soc"
-    for child in soc_std.iterdir() if soc_std.is_dir() else []:
-        child_git = child / "std" / ".git"
-        if child_git.exists() or (child / "std").is_dir():
-            try:
-                source_commits[f"drivers/soc/{child.name}/std"] = run(
-                    ["git", "-C", str(child / "std"),
-                     "rev-parse", "HEAD"], capture=True
-                )
-            except subprocess.CalledProcessError:
-                pass
+    dirty_repositories = []
+    for repo in [sdk] + [sdk / r for r in sub_repos]:
+        if not repo.is_dir() or not tracked_source_is_dirty(repo):
+            continue
+        relative = repo.relative_to(sdk)
+        dirty_repositories.append(
+            "bouffalo_sdk" if relative == Path(".") else str(relative)
+        )
 
-    repos_to_check = [sdk] + [sdk / r for r in sub_repos]
-    dirty = any(tracked_source_is_dirty(repo)
-                for repo in repos_to_check
-                if repo.is_dir())
+    if dirty_repositories and not allow_dirty_sdk:
+        raise RuntimeError(
+            "SDK source tree is dirty in: "
+            + ", ".join(dirty_repositories)
+            + ". Commit or clean these build inputs, or pass "
+              "--allow-dirty-sdk for a development-only bundle."
+        )
 
-    if dirty:
-        print("WARNING: one or more source repositories have uncommitted "
-              "changes.  The manifest will record '-dirty' and the bundle "
-              "may not be reproducible.", file=sys.stderr)
+    if dirty_repositories:
+        print(
+            "WARNING: one or more source repositories have uncommitted "
+            "changes. The manifest will record '-dirty' and the bundle "
+            "is development-only: "
+            + ", ".join(dirty_repositories),
+            file=sys.stderr,
+        )
         source_commits["bouffalo_sdk"] += "-dirty"
 
     return source_commits
@@ -502,18 +865,53 @@ def _update_manifest_toolchain(sdk_runtime: Path, toolchain_version: str,
     )
 
 
+def create_profile_build_source(script_dir: Path, profile: str,
+                                profile_source: Path) -> Path:
+    """Create an SDK demo root for a non-default runtime profile.
+
+    BouffaloSDK builds Wi-Fi and BLE support archives beneath
+    SDK_DEMO_PATH/build. A profile cannot point SDK_DEMO_PATH directly at its
+    configuration subdirectory because that makes those archive paths diverge
+    from the CMake build directory. The temporary root keeps the profile's
+    inputs at its top level and symlinks the shared CMake/Make sources.
+    """
+    source_root = Path(tempfile.mkdtemp(prefix=f"bl616cl-{profile}-"))
+    for name in ("CMakeLists.txt", "Makefile", "main.c", "flash_prog_cfg.ini"):
+        (source_root / name).symlink_to(script_dir / name)
+    (source_root / "profiles").symlink_to(script_dir / "profiles",
+                                          target_is_directory=True)
+
+    for name in ("defconfig", "FreeRTOSConfig.h", "lwipopts_user.h",
+                 "usb_config.h"):
+        source = profile_source / name
+        if source.is_file():
+            copy_file(source, source_root / name)
+
+    return source_root
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--sdk", required=True, type=Path,
-                        help="BouffaloSDK root directory")
+    parser.add_argument(
+        "--sdk",
+        type=Path,
+        default=None,
+        help=(
+            "optional SDK override; defaults to the project-controlled "
+            "third_party/bouffalo_sdk checkout"
+        ),
+    )
     parser.add_argument("--chip", required=True,
                         choices=sorted(CHIP_CONFIG.keys()),
                         help="target chip (e.g. bl616cl)")
     parser.add_argument("--board", type=str, default=None,
                         help="board name (default: {chip}dk)")
+    parser.add_argument("--profile", choices=sorted(RUNTIME_PROFILES),
+                        default="stage1",
+                        help="runtime profile to build (default: stage1)")
     parser.add_argument("--toolchain", type=Path, default=None,
                         help="toolchain root (parent of bin/); "
                              "auto-detected from PATH if omitted")
@@ -522,30 +920,76 @@ def main() -> int:
                              "(bflb_fw_post_proc, BLFlashCommand) and toolchain")
     parser.add_argument("--keep-build", action="store_true",
                         help="retain the temporary CMake build directory")
+    parser.add_argument(
+        "--allow-dirty-sdk",
+        action="store_true",
+        help=(
+            "allow uncommitted SDK source changes for a development-only "
+            "bundle; never use for a release bundle"
+        ),
+    )
     args = parser.parse_args()
 
     chip = args.chip
     chip_cfg = CHIP_CONFIG[chip]
     board = args.board or f"{chip}dk"
+    profile = args.profile
+    profile_cfg = RUNTIME_PROFILES[profile]
     toolchain_dirname = str(chip_cfg["toolchain_dirname"])
     prefix = str(chip_cfg["toolchain_prefix"])
     arch = chip_cfg["arch"]
 
     script_dir = Path(__file__).resolve().parent
-    # platform root = hardware/bouffalo/bl616cl → tools/runtime_bundle is
-    # two levels down
+    # platform root = repository root → tools/runtime_bundle is two levels down.
     platform_root = script_dir.parent.parent
+    profile_source = script_dir / str(profile_cfg["source_directory"])
+    require_file(profile_source / "defconfig",
+                 f"{profile} profile defconfig")
+    overlay_name = profile_cfg.get("board_overlay_directory")
+    board_overlay_dir = None if overlay_name is None else \
+        profile_source / str(overlay_name)
+    if board_overlay_dir is not None and not board_overlay_dir.is_dir():
+        raise RuntimeError(
+            f"missing {profile} board overlay directory: {board_overlay_dir}"
+        )
+    source_patch_manifest_path = None
+    source_patch_records_for_manifest: list[dict[str, object]] = []
+    source_patch_paths: dict[str, Path] = {}
+    source_patch_manifest_sha256 = None
+    source_patch_manifest_relative = None
+    source_patch_name = profile_cfg.get("source_patch_manifest")
+    if source_patch_name is not None:
+        source_patch_manifest_path = profile_source / str(source_patch_name)
+        source_patch_manifest = load_source_patch_manifest(
+            source_patch_manifest_path
+        )
+        source_patch_records_for_manifest = source_patch_records(
+            source_patch_manifest,
+            manifest_path=source_patch_manifest_path,
+            platform_root=platform_root,
+        )
+        source_patch_paths = {
+            str(record["id"]): source_patch_manifest_path.parent /
+            str(next(
+                patch["path"]
+                for patch in source_patch_manifest["patches"]
+                if isinstance(patch, dict) and
+                patch.get("id") == record["id"]
+            ))
+            for record in source_patch_records_for_manifest
+        }
+        source_patch_manifest_sha256 = sha256(source_patch_manifest_path)
+        source_patch_manifest_relative = str(
+            source_patch_manifest_path.relative_to(platform_root)
+        )
+    profile_freertos_config = profile_source / "FreeRTOSConfig.h"
+    if not profile_freertos_config.is_file():
+        profile_freertos_config = script_dir / "FreeRTOSConfig.h"
 
-    sdk = args.sdk.expanduser().resolve()
+    sdk = resolve_sdk_path(script_dir, args.sdk)
     toolchain_root = resolve_toolchain(args.toolchain, chip_cfg)
 
     # ——— validate SDK sources ————————————————————————————————
-    if not (sdk / "project.build").is_file():
-        raise RuntimeError(
-            f"{sdk} does not look like a BouffaloSDK root "
-            f"(missing project.build)"
-        )
-
     board_dir = sdk / "bsp" / "board" / board
     if not board_dir.is_dir():
         raise RuntimeError(f"board directory not found: {board_dir}")
@@ -559,15 +1003,23 @@ def main() -> int:
         raise RuntimeError(f"LHAL config directory not found: {lhal_config_dir}")
 
     version = sdk_version(sdk)
-    source_commits = record_source_versions(sdk)
+    source_commits = record_source_versions(
+        sdk,
+        chip,
+        args.allow_dirty_sdk,
+    )
     commit = source_commits["bouffalo_sdk"]
 
     # ——— output paths ——————————————————————————————————————————
-    sdk_runtime = platform_root / "tools" / "sdk" / chip
+    sdk_root = platform_root / "tools" / "sdk" / chip
+    profile_output = profile_cfg["output_directory"]
+    sdk_runtime = sdk_root if profile_output is None else \
+        sdk_root / str(profile_output)
     tools_root = platform_root / "tools"
 
     print(f"Chip:               {chip}")
     print(f"Board:              {board}")
+    print(f"Profile:            {profile}")
     print(f"SDK version:        {version}")
     print(f"SDK commit:         {commit}")
     print(f"Toolchain:          {toolchain_root}")
@@ -592,12 +1044,33 @@ def main() -> int:
         return 0
 
     # ——— build the probe ———————————————————————————————————————
-    build_dir = script_dir / "build"
+    profile_build_source: Path | None = None
+    build_source = script_dir
+    if profile != "stage1":
+        profile_build_source = create_profile_build_source(
+            script_dir, profile, profile_source
+        )
+        build_source = profile_build_source
+
+    build_dir = build_source / "build"
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
     env = os.environ.copy()
-    env["BL_SDK_BASE"] = str(sdk)
+    build_sdk = sdk
+    sdk_overlay = None
+    if source_patch_records_for_manifest:
+        sdk_overlay = create_patched_sdk_overlay(
+            sdk,
+            patch_records=source_patch_records_for_manifest,
+        )
+        apply_source_patches(
+            sdk_overlay,
+            patch_records=source_patch_records_for_manifest,
+            patch_paths=source_patch_paths,
+        )
+        build_sdk = sdk_overlay
+    env["BL_SDK_BASE"] = str(build_sdk)
     env["PATH"] = str(toolchain_root / "bin") + os.pathsep + \
                   env.get("PATH", "")
 
@@ -607,15 +1080,29 @@ def main() -> int:
         f"BOARD={board}",
         "CONFIG_PEC_V2=n",
         "CONFIG_MULTIMEDIA_VIDEO=n",
-        f"BL_SDK_BASE={sdk}",
+        f"CONFIG_ARDUINO_RUNTIME_PROFILE={profile}",
+        f"SDK_DEMO_PATH={build_source}",
+        f"BL_SDK_BASE={build_sdk}",
     ]
-    run(make_args, cwd=script_dir, env=env)
+    run(make_args, cwd=build_source, env=env)
 
     build_out = build_dir / "build_out"
     generated = build_dir / "generated"
 
     # ——— validate archives —————————————————————————————————————
     archives = {p.name: p for p in (build_out / "lib").glob("*.a")}
+    if profile == "bridge":
+        external_archives = (
+            build_dir / "build_macsw" / f"libmacsw_{chip}.a",
+            build_dir / "build_macsw" /
+            f"libmacsw_config_{chip}_default.a",
+            build_dir / "build_fhost" / f"libfhost_{chip}_default.a",
+        )
+        for archive in external_archives:
+            archives[archive.name] = require_file(
+                archive, f"bridge external archive {archive.name}"
+            )
+
     required = CORE_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
     missing = required - archives.keys()
     if missing:
@@ -627,8 +1114,12 @@ def main() -> int:
         print(f"Note: additional SDK archives (ok): {sorted(extras)}")
 
     # ——— ELF sanity check ——————————————————————————————————————
-    probe_elf_name = f"arduino_bl616cl_runtime_{chip}.elf"
-    source_elf = require_file(build_out / probe_elf_name, "probe ELF")
+    probe_elfs = sorted(build_out.glob("*.elf"))
+    if len(probe_elfs) != 1:
+        raise RuntimeError(
+            f"expected one {profile} profile ELF, found: {probe_elfs}"
+        )
+    source_elf = probe_elfs[0]
     readelf = toolchain_root / "bin" / f"{prefix}-readelf"
     elf_header = run([str(readelf), "-h", str(source_elf)], capture=True)
     if "RISC-V" not in elf_header or \
@@ -683,40 +1174,82 @@ def main() -> int:
             copy_file(phyrf_candidate, sdk_staging / "lib" / phyrf_candidate.name)
             print(f"Note: copied phyrf: {phyrf_candidate.name}")
 
+    # PKA is a precompiled LHAL dependency of the SDK's hardware-accelerated
+    # mbedTLS implementation.
+    pka_library = sdk / "drivers" / "lhal" / "src" / "pka" / f"libpka_{chip}.a"
+    if pka_library.is_file():
+        copy_file(pka_library, sdk_staging / "lib" / pka_library.name)
+        print(f"Note: copied PKA: {pka_library.name}")
+
     # board BSP archive → chip-level SDK (not variant)
     copy_file(archives[EXPECTED_BOARD_ARCHIVE],
               sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
     # autoconf.h and linker script
     copy_file(require_file(generated / "autoconf.h", "autoconf.h"),
               sdk_staging / "include" / "autoconf.h")
-    copy_file(require_file(generated / "linker.ld",
-                           f"{chip} linker script"), sdk_staging / "ld")
-    # defconfig and FreeRTOSConfig.h from this directory
-    copy_file(script_dir / "defconfig", sdk_staging / "defconfig")
-    copy_file(script_dir / "FreeRTOSConfig.h",
+    linker_script = require_file(generated / "linker.ld",
+                                 f"{chip} linker script")
+    copy_file(linker_script, sdk_staging / "ld")
+    linker_overlay = profile_cfg.get("linker_overlay")
+    apply_linker_overlay(
+        sdk_staging / "ld",
+        None if linker_overlay is None else str(linker_overlay),
+    )
+    copy_linker_fragments(
+        linker_script,
+        sdk=build_sdk,
+        board_dir=board_dir,
+        generated=generated,
+        destination=sdk_staging,
+    )
+    # Keep FreeRTOS ABI inputs from the same profile as the generated archives.
+    copy_file(profile_source / "defconfig", sdk_staging / "defconfig")
+    copy_file(profile_freertos_config,
               sdk_staging / "include" / "freertos" / "FreeRTOSConfig.h")
+    profile_lwipopts = profile_source / "lwipopts_user.h"
+    if profile_lwipopts.is_file():
+        copy_file(profile_lwipopts, sdk_staging / "include" /
+                  "lwipopts_user.h")
+    profile_usb_config = profile_source / "usb_config.h"
+    if profile_usb_config.is_file():
+        copy_file(profile_usb_config, sdk_staging / "include" /
+                  "usb_config.h")
+    if profile == "bridge":
+        # Applications including mbedTLS public headers must resolve the same
+        # config-tls-generic.h and Bouffalo allocator port used by libmbedtls.
+        copy_file(
+            build_sdk / "components" / "crypto" / "mbedtls" /
+            "config-tls-generic.h",
+            sdk_staging / "include" / "mbedtls" / "config-tls-generic.h",
+        )
+        copy_file(
+            build_sdk / "components" / "crypto" / "mbedtls" / "port" /
+            "mbedtls_port_bouffalo_sdk.h",
+            sdk_staging / "include" / "mbedtls" /
+            "mbedtls_port_bouffalo_sdk.h",
+        )
 
     # ——— SDK include roots ——————————————————————————————————————
     sdk_include_roots: list[tuple[Path, Path]] = [
-        (sdk / "components" / "mm", Path("sdk/mm")),
-        (sdk / "components" / "sysinit", Path("sdk/sysinit")),
-        (sdk / "components" / "libc", Path("sdk/libc")),
-        (sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
-        (sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
+        (build_sdk / "components" / "mm", Path("sdk/mm")),
+        (build_sdk / "components" / "sysinit", Path("sdk/sysinit")),
+        (build_sdk / "components" / "libc", Path("sdk/libc")),
+        (build_sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
+        (build_sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
         (lhal_config_dir, Path("sdk/lhal-config")),
-        (sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
-        (sdk / "drivers" / "soc" / chip / "std" / "include",
+        (build_sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
+        (build_sdk / "drivers" / "soc" / chip / "std" / "include",
          Path("sdk/soc")),
-        (sdk / "drivers" / "sys", Path("sdk/sys")),
-        (sdk / "components" / "os" / "freertos" / "include",
+        (build_sdk / "drivers" / "sys", Path("sdk/sys")),
+        (build_sdk / "components" / "os" / "freertos" / "include",
          Path("freertos")),
-        (sdk / "components" / "os" / "freertos" / "portable" /
+        (build_sdk / "components" / "os" / "freertos" / "portable" /
          "GCC" / "RISC-V" / "common", Path("freertos/portable")),
     ]
     # chip-specific FreeRTOS extension
     freertos_ext = chip_cfg.get("freertos_extension")
     if freertos_ext:
-        ext_dir = (sdk / "components" / "os" / "freertos" /
+        ext_dir = (build_sdk / "components" / "os" / "freertos" /
                    "portable" / "GCC" / "RISC-V" / "common" /
                    "chip_specific_extensions" / str(freertos_ext))
         if ext_dir.is_dir():
@@ -724,34 +1257,83 @@ def main() -> int:
                 (ext_dir, Path("freertos/chip_specific"))
             )
 
+    if profile == "bridge":
+        sdk_include_roots.extend([
+            (build_sdk / "components" / "utils" / "bflb_mtd" / "include",
+             Path("sdk/bflb_mtd")),
+            (build_sdk / "components" / "utils" / "async_event",
+             Path("sdk/utils/async_event")),
+            (build_sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+            (build_sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+             Path("sdk/rfparam")),
+            (build_sdk / "components" / "fs" / "littlefs" / "littlefs",
+             Path("sdk/littlefs/littlefs")),
+            (build_sdk / "components" / "fs" / "littlefs" / "easyflash_port",
+             Path("sdk/littlefs/easyflash")),
+            (build_sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+             "include", Path("mbedtls")),
+            # The SDK's Kconfig-selected hardware accelerators are included
+            # from mbedTLS public headers as sibling *_alt.h files.
+            (build_sdk / "components" / "crypto" / "mbedtls" / "port" /
+             "hw_acc", Path("mbedtls/mbedtls")),
+            (build_sdk / "components" / "net" / "lwip" / "lwip" / "src" /
+             "include", Path("lwip")),
+            (build_sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+             Path("lwip")),
+            (build_sdk / "components" / "wireless" / "macsw" / "inc",
+             Path("wifi/macsw")),
+            (build_sdk / "components" / "wireless" / "wifi6" / "fhost" /
+             "include", Path("wifi/fhost")),
+            (build_sdk / "components" / "usb" / "cherryusb" / "common",
+             Path("cherryusb/common")),
+            (build_sdk / "components" / "usb" / "cherryusb" / "core",
+             Path("cherryusb/core")),
+            (build_sdk / "components" / "usb" / "cherryusb" / "class" / "cdc",
+             Path("cherryusb/class/cdc")),
+            (build_sdk / "components" / "usb" / "cherryusb" / "class" / "hid",
+             Path("cherryusb/class/hid")),
+            (build_sdk / "components" / "wireless" / "bluetooth" /
+             "btblecontroller" / "btble_inc", Path("bluetooth/controller")),
+            (build_sdk / "components" / "wireless" / "bluetooth" / "blestack" /
+             "src" / "include", Path("bluetooth/blestack")),
+        ])
+
     copy_headers(sdk_include_roots, sdk_staging / "include")
-    copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
-    # board headers → sdk/include/board
+    # Board headers → sdk/include/board. Project-local overlay headers are
+    # shipped too so Arduino sources observe the exact board API used to build
+    # libapp.a, without requiring the external SDK checkout at compile time.
     copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
+    if board_overlay_dir is not None:
+        copy_headers([(board_overlay_dir, Path("board"))],
+                     sdk_staging / "include")
+    if profile == "bridge":
+        patch_bridge_cpp_compat_headers(sdk_staging / "include")
+        copy_file(
+            profile_source / "mbedtls_config.h",
+            sdk_staging / "include" / "mbedtls" / "mbedtls" /
+            "mbedtls_config.h",
+        )
     # ring_buffer and other utils
     copy_headers(
-        [(sdk / "components" / "utils" / "ring_buffer",
+        [(build_sdk / "components" / "utils" / "ring_buffer",
           Path("sdk/utils/ring_buffer")),
-         (sdk / "components" / "utils" / "bflb_block_pool",
+         (build_sdk / "components" / "utils" / "bflb_block_pool",
           Path("sdk/utils/bflb_block_pool")),
-         (sdk / "components" / "utils" / "bflb_timestamp",
+         (build_sdk / "components" / "utils" / "bflb_timestamp",
           Path("sdk/utils/bflb_timestamp")),
-         (sdk / "components" / "utils" / "getopt",
+         (build_sdk / "components" / "utils" / "getopt",
           Path("sdk/utils/getopt")),
-         (sdk / "components" / "utils" / "coredump",
+         (build_sdk / "components" / "utils" / "coredump",
           Path("sdk/utils/coredump")),
-         (sdk / "components" / "utils" / "cjson",
+         (build_sdk / "components" / "utils" / "cjson",
           Path("sdk/utils/cjson")),
-         (sdk / "components" / "utils" / "math" / "include",
+         (build_sdk / "components" / "utils" / "math" / "include",
           Path("sdk/utils/math/include")),
-         (sdk / "components" / "utils" / "list",
+         (build_sdk / "components" / "utils" / "list",
           Path("sdk/utils/list")),
          ],
         sdk_staging / "include",
     )
-
-    # ——— board headers → sdk ——————————————————————————————————
-    copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
 
     # ——— board config → sdk (DTS only) —————————————————————————
     board_cfg_dir = board_dir / "config"
@@ -809,11 +1391,13 @@ def main() -> int:
                     "sha256": sha256(path),
                     "size": path.stat().st_size,
                 }
-        return {
-            "schema": 2,
+        manifest = {
+            "schema": 4,
             "scope": scope,
             "chip": chip,
             "board": board,
+            "profile": profile,
+            "defconfig_sha256": sha256(profile_source / "defconfig"),
             "sdk_version": version,
             "source_commits": source_commits,
             "toolchain": toolchain_version,
@@ -830,6 +1414,28 @@ def main() -> int:
             },
             "files": files,
         }
+        if board_overlay_dir is not None:
+            overlay_files = {
+                str(path.relative_to(board_overlay_dir)): {
+                    "sha256": sha256(path),
+                    "size": path.stat().st_size,
+                }
+                for path in sorted(board_overlay_dir.rglob("*"))
+                if path.is_file()
+            }
+            manifest["board_overlay"] = {
+                "directory": str(board_overlay_dir.relative_to(platform_root)),
+                "files": overlay_files,
+            }
+        if source_patch_manifest_path is not None:
+            manifest["source_patches"] = {
+                "manifest": source_patch_manifest_relative,
+                "manifest_sha256": source_patch_manifest_sha256,
+                "patches": source_patch_records_for_manifest,
+            }
+        if linker_overlay is not None:
+            manifest["linker_overlay"] = str(linker_overlay)
+        return manifest
 
     (sdk_staging / "manifest.json").write_text(
         json.dumps(manifest_for(sdk_staging, "chip-runtime"),
@@ -844,6 +1450,10 @@ def main() -> int:
 
     if not args.keep_build:
         shutil.rmtree(build_dir)
+        if profile_build_source is not None:
+            shutil.rmtree(profile_build_source)
+        if sdk_overlay is not None:
+            shutil.rmtree(sdk_overlay)
 
     print(f"\nChip runtime installed in  {sdk_runtime}")
     print(f"Toolchain installed in     {tc_dest}")

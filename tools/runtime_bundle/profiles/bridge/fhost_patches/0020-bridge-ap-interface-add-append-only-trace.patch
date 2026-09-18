@@ -1,0 +1,51 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -417,6 +417,10 @@
+       msg != NULL &&
+       strncmp((char *)(msg + 1), "IFNAME=wl2 ENABLE_NETWORK ",
+               sizeof("IFNAME=wl2 ENABLE_NETWORK ") - 1) == 0;
++  int bridge_ap_interface_add =
++      msg != NULL &&
++      strncmp((char *)(msg + 1), "INTERFACE_ADD wl2",
++              sizeof("INTERFACE_ADD wl2") - 1) == 0;
+ 
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(165, 0);
+@@ -431,7 +435,7 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(2, (uint32_t)(uintptr_t)msg->done, 0,
+                                rtos_semaphore_get_count(msg->done));
+-  if (bridge_ap_enable_network)
++  if (bridge_ap_enable_network || bridge_ap_interface_add)
+     fhost_bridge_ap_start_trace(2, (uint32_t)(uintptr_t)msg->done, 0,
+                                rtos_semaphore_get_count(msg->done));
+   signal_result = rtos_semaphore_signal(msg->done, 0);
+@@ -446,6 +450,10 @@
+     fhost_bridge_ap_start_sync(4, (uint32_t)(uintptr_t)msg->done, 0,
+                                rtos_semaphore_get_count(msg->done));
+   }
++  if (bridge_ap_interface_add)
++    fhost_bridge_ap_start_trace(3, (uint32_t)(uintptr_t)msg->done,
++                                signal_result,
++                                rtos_semaphore_get_count(msg->done));
+ }
+ 
+ /////////////////////////////////////////////////////////////////////////////
+@@ -508,7 +516,7 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
+                                rtos_semaphore_get_count(data->done));
+-  if (bridge_ap_enable_network)
++  if (bridge_ap_enable_network || bridge_ap_interface_add)
+     fhost_bridge_ap_start_trace(1, (uint32_t)(uintptr_t)data->done, 0,
+                                rtos_semaphore_get_count(data->done));
+   wait_result = rtos_semaphore_wait(data->done, timeout_ms);
+@@ -517,7 +525,7 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(5, (uint32_t)(uintptr_t)data->done,
+                                wait_result, rtos_semaphore_get_count(data->done));
+-  if (bridge_ap_enable_network)
++  if (bridge_ap_enable_network || bridge_ap_interface_add)
+     fhost_bridge_ap_start_trace(4, (uint32_t)(uintptr_t)data->done,
+                                wait_result,
+                                rtos_semaphore_get_count(data->done));

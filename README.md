@@ -1,9 +1,11 @@
-# Arduino BL616CL platform — stage 1
+# Arduino BL616CL platform
 
 This local development platform implements FQBN
-`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Linux
-post-processing tools are supplied by the generator and the checked-in macOS
-post-processor is used automatically on Apple Silicon hosts.
+`bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone and
+`bouffalo:bl616cl:unor4_bl616cl_provisional` for the BL616CL bridge skeleton.
+Linux post-processing tools are supplied by the generator and the checked-in
+macOS post-processor is used automatically on Apple Silicon hosts. Windows
+host packages are not yet supplied.
 
 The platform is self-contained for normal Arduino compilation: it does not
 reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
@@ -12,6 +14,8 @@ reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
     ├── cores/bl616cl/                  Arduino Core sources
     ├── libraries/esp32-compat/         ESP32 Arduino API compatibility stubs
     ├── variants/bl616cldk/             pin mapping (pins_arduino.h)
+    ├── variants/unor4_bl616cl_provisional/
+    │                                   provisional UNO R4 carrier mapping
     ├── tools/sdk/bl616cl/              chip-level runtime bundle
     │   ├── lib/                         SDK archives
     │   ├── lib_board/                   board BSP (libapp.a)
@@ -20,6 +24,7 @@ reach into `arduino-bouffalo` or a Bouffalo SDK checkout. Its layout is:
     │   ├── boot2/                       boot2 binary
     │   ├── dts/                         DTS config
     │   └── ld                           linker script
+    ├── tools/sdk/bl616cl/bridge/       Wi-Fi/BLE/USB bridge runtime bundle
     ├── tools/partitions/               partition TOML (compile-time → bin)
     ├── tools/runtime_bundle/           multi-chip bundle generator
     └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
@@ -39,15 +44,24 @@ Implemented:
 - `Serial1` polling UART on GPIO24 TX / GPIO25 RX;
 - CherryUSB device support for a CDC ACM + HID composite endpoint, backed by
   the Arduino-style `USBCDC`/`USBHID` compatibility classes;
+- `HardwareSerial::nativeHandle()` for applications that need the underlying
+  Bouffalo UART handle after `begin()`; normal Arduino sketches should keep
+  using the portable `Stream` API.
 - C++17 with exceptions and RTTI disabled;
 - `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
 - modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
+- provisional bridge FQBN with SDK Wi-Fi/MACSW/FHOST, BLE, CherryUSB,
+  LittleFS/EasyFlash, lwIP and mbedTLS link profiles;
+- bridge runtime linker fragments, SDK LTO toolchain support and a reproducible
+  `compile-bl616cl-bridge.sh` build entry point.
 
-The variant mapping is for compile/bring-up on `bl616cldk`, not the final UNO R4
-carrier. GPIO32/33 remain reserved for USB. Confirm the production schematic
-before connecting RA4M1 signals. The stage-1 4 MiB partition limits the primary
-firmware slot to 2 MiB; eFuse files are exported for traceability but are not
-burned by the normal Arduino upload action.
+The provisional bridge mapping is for compile/bring-up on `bl616cldk`, not the
+final UNO R4 carrier. GPIO32/33 remain reserved for USB. BOOT, RST, SWDIO and
+SWCLK are intentionally unassigned in `UNOR4BL616CLBridge/bridge_config.h`.
+Confirm the production schematic before connecting RA4M1 signals. The stage-1
+4 MiB partition limits the primary firmware slot to 2 MiB; eFuse files are
+exported for traceability but are not burned by the normal Arduino upload
+action.
 
 ## First-time setup
 
@@ -72,6 +86,14 @@ Regenerate when the SDK, `defconfig`, toolchain, or ABI flags change:
       --toolchain /path/to/Xuantie-900-gcc
 
 See `tools/runtime_bundle/README.md` for multi-chip support and details.
+
+To regenerate the bridge bundle, use the bridge profile:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --sdk /path/to/bouffalo_sdk \
+      --chip bl616cl \
+      --profile bridge \
+      --toolchain /path/to/Xuantie-900-gcc
 
 ## Verify M0
 
@@ -103,3 +125,9 @@ This milestone proves compile/link compatibility and initializes the BL616CL
 USB device controller from the compatibility classes. WiFi, TCP/TLS, storage,
 BLE, and OTA operations remain stubs and are not functional on hardware yet;
 the USB data path still needs on-board validation.
+
+The provisional bridge FQBN uses a separate SDK profile containing the native
+Wi-Fi/MACSW/FHOST, BLE, CherryUSB, LittleFS/EasyFlash, lwIP and mbedTLS
+archives. It is intended for the independent bridge application maintained by
+the UNO R4 WiFi bridge project; compiling that application remains a separate
+project-level build gate.
