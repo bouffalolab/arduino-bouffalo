@@ -296,6 +296,127 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
       bridge 的 USB 初始化会破坏 printf 的 console 绑定（调试打印须用
       bflb_uart_putchar 直写）；HCI Set_Adv_Data 的 payload 必须带
       adv_data_len 前导字节且补齐到 CMD 表要求的 32 字节（"B31B"）
+- [x] 台架 BOOT 悬空失效模式（2026-09-17 破案）：FT232 关端口后 DTR
+      释放把 BOOT 拉高，任何意外复位都让芯片静默进 ROM ISP（无 UART、
+      无 USB，形似挂死）。规程：调试期间保持 FT232 打开且 DTR=1；根治
+      需给 BOOT 加下拉。当天两次"无人值守挂死"均此模式
+- [x] BLE 硬件复核（2026-09-18）：btble_cli（m2s1）烧写+shell 驱动
+      广播（ZZHWTEST918，ble_start_adv 0 0 走默认间隔）→ 空口 22 次/15s、
+      RSSI -38~-63dBm。RF 硬件再次确认正常。注意 CLI 差异：
+      ble_set_device_name 只带名字不带长度；ble_start_adv 带间隔参数会
+      除以 1.6，换算后 <0x20 报 err -22（EINVAL），用两参数形式最稳
+- [x] 应用侧初始化补全 + 判别实验（2026-09-18，ble_hci_port.cpp）：
+      0) AT+HCISTATE? 未启动时崩溃根因 = hci_transport_state() 里
+         eTaskGetState(NULL)/uxQueueMessagesWaiting(NULL) 触发 FreeRTOS
+         断言。已加 NULL 守卫（未启动报 eInvalid/0）
+      1) AT+HCIWRITE 在 HCIBEGIN 之前会把控制器打进 ke_mem 断言
+         （ke_mem.c:319）。HCIVirtualTransport 加 s_controller_started
+         门禁：未启动 write() 返回 0，AT 快速失败（0.2s ERROR）
+      2) EM 判别实验：EM_SEL 探针（GLB_SRAM_CFG3 bits3:0）实测复位
+         默认 = 3（WRAM128K/EM32K），与 bridge 链接的 EM 32KB 一致 →
+         **EM 硬件窗口假设被证伪**（m2s1 不配置也能上天是因为默认档
+         恰好够 16KB；bl_sys_em_config() 只是同步链接值到硬件）
+      3) 补 rf_init(40MHz)（uarthci 对 CL 是空分支，符号在
+         libbl616cl_phyrf.a）+ bl_sys_em_config()（no-op，保留）+
+         BTDM 域复位（等效被编译掉的 software_btdm_reset）：全部无
+         崩溃且 HCI 通路正常，但空口仍 0 包
+      4) 补 PDS 域复位（等效 software_pds_reset）：第一条 HCI 命令
+         当场打崩芯片（USB 掉线）→ 已移除。PDS 域与 BLE 核状态强关联
+      5) 结论：应用侧补丁到极限，问题锁定在 uarthci 库的 flavor 配置。
+         编译定义对比：BL616CL 的 uarthci 构建吃的是 BT+BLE 组合档
+         （BREDR/BIS/CIS/EM32、无 CONFIG_BLE_PDS），而非 BLE-only 档
+         （BLE_PDS+ROM code，ble_common_readonly.cmake:594）
+- [ ] 下一步实验序列：a) 重编 uarthci lib 加 -DCONFIG_BLE_PDS（单变量，
+      lib 与 bridge 链接的 EM 大小必须同步改）；b) 必要时放开
+      arch_main.c:1416 的 pds_reset 门控（defined(BL616CL)）；
+      c) m2s1 + 虚拟传输直灌（需验证 m2s1 的 HCI eif 入口）；
+      d) 问 Bouffalo CL 的 BLE controller ROM 是否存在
+- [x] 实验序列执行结果（2026-09-18 下午，按序）：
+      a) **PDS lib 重编（1a）**：btblecontroller_test 构建目录单变量加
+         -DCONFIG_BLE_PDS（需把 Xuantie bin 加入 PATH 否则 ar 找不到；
+         新 lib md5 fcc5dfa3）。结果：稳定、HCI 全通、空口仍 0 包 →
+         无效但无害
+      b) **pds_reset 放开 CL 门控（1b）**：同时补 port.c:215 和
+         arch_main.c:1416 两处门控（只改一处会缺符号）。结果：AT 任务
+         在 HCIBEGIN 期间卡死（init 走完、alive 还在打、AT 不应答）
+         → 与外部 PDS 复位崩溃同类，**PDS 复位路径在 CL 上被否决**
+         （大概率 CL 的 BLE controller ROM 无 PDS-aware 恢复路径）。
+         两处补丁均已回退（arch_main 留了 REJECTED 注释）
+      c) **m2s1 直灌（2/2b）**：nm 确认 m2s1 库导出 rwip_eif_get +
+         hci_tl_cmd_received/get_max_param_size/acl_tx_*（与 uarthci
+         同机制），platform.txt 换 -lbtblecontroller_bl616cl_m2s1 后
+         链接成功（816KB）。结果：HCIBEGIN 正常，但**第一条 HCIWRITE
+         返回堆损坏图案（\xa5\xa5 填充）且 AT 任务死亡**；加
+         hci_driver_init()（libblestack.a，host 侧描述符初始化）后
+         **完全相同**。结论：m2s1 的 hci_tl 是内嵌 host 槽位模式，
+         直接注入需要重接 HCI slot（等于给 CL 重做 external-host 库）
+      d) **基线已恢复**：platform.txt 回 uarthci、boards.txt 去掉
+         -DUSE_M2S1_CONTROLLER、ble_hci_port.cpp 的补全按 flavor 条件
+         化（uarthci=rf_init+BTDM reset+m2s1=hci_driver_init 门控保留），
+         实测 AT/HCIBEGIN/HCI Reset CC/HCISTATE 全部正常
+      e) m2s1 相关产物留在库里备用：libbtblecontroller_bl616cl_m2s1.a
+         （btble_cli 构建产物）、uarthci 原始 lib 备份
+         .bak-0917、PDS 构建方法论（改 flags.make + Xuantie PATH）
+- [x] **深度取证与大实验矩阵（2026-09-18 晚，全源码级）**：
+      ⚠️ 重要背景：用户澄清这是 Bouffalo 内部研发 SDK（全源码），
+      所有"厂商问题"结论作废，一切都可直接查/改/重编。
+      0) **插桩基础设施（保留在库源码里，-DBT_BRINGUP_TRACE 开关）**：
+         rwip_driver.c/sch_arb.c/sch_prog.c/lld_adv.c/rwble.c 共 15 个
+         trace 探针（AARM/ADIS/T1ISR/ESTR/AES/AEP/SPP/APD/AINS/FIFOISR/
+         TXISR/RXISR/ENDISR/BLEISR/SWISR + actfifostat 直读 AFS=xxxx），
+         btble_trace 由 bridge 直写 UART0；btble_cli 加 ble2dump/blewide/
+         emdump 命令。重编方法：btblecontroller_test/build_btblecontroller
+         目录 make（PATH 加 Xuantie bin），cp 到 tools/sdk/bl616cl/lib/
+      1) **最关键实测结论：MAC 侧从未发射**——广播序列全通后：
+         FIFOISR×79 + ENDISR×79（MAC 在跑事件循环、ET 索引 11..14 前进），
+         但 **TXISR/RXISR/BLEISR 全部为 0**；actfifostat 原始值
+         =0x0X008002（只有 ENDACT，无 TXINT/RXINT）。反向扫描实验
+         （LE_Set_Scan_Parameters+Enable 走 HCI）10 秒**零条 adv report**
+         （房间里 400+ 设备在广播）→ **TX/RX 双哑 = RF/PHY 域不通**，
+         不是调度层、不是 HCI 层
+      2) 工作态（btble_cli/m2s1）寄存器全量快照 vs 静默态（bridge/
+         uarthci）逐字节 diff（112 寄存器）：仅 12 处差异，全部是
+         "运行态 vs 未运行"，含 IP-ic1 的 bit5(TGT1) 差、ACTSCHCNTL=0
+         差；BLE 核 cntl/ver/conf 完全一致（00500707/0b001300/6d02d090）
+      3) 已排除的假设（每个都做了实机单变量实验）：
+         - WLAN coex（唯一 m2s1 没有 uarthci 有的功能性 flag）：改
+           rwip.c 两处 rwip_wlcoex_set(1)→(0)，COEX0/1 读数 00000000，
+           空口仍 0 → 排除
+         - EM 硬件窗口：EM_SEL 探针 before=3 after=3（默认已 32K 档，
+           与链接一致）→ EM_SEL 假设证伪
+         - EM=16 单变量（对齐 m2s1）：HCI 直接不通（更糟）→ 回滚 32
+         - BTDM 域复位（我们补的）：移除后无变化 → 排除
+         - PDS 域复位（1b 已记录）：炸 → 排除
+         - RF 侧 rf_init(40MHz)（uarthci 对 CL 是空分支，已补并保留）：
+           执行正常但 TX 仍 0
+         - ROM 数据指针（btble_data_set 0x20000B9C）：编译门控一致，
+           当前构建走 flash 版全局变量，机制惰性 → 排除
+         - BTBLE_RF_SWITH_TO_COMBOPATH：uarthci=0、m2s1 无此代码 → 排除
+      4) 两边库同源确认：m2s1 和 uarthci 都从 btblecontroller 树编译
+         （build.make 证据），唯一差异 = flags.make 的编译定义集合
+         （m2s1 独有 CONFIG_BLE_HOST/BLE_PDS/EM16；
+          uarthci 独有 ISO 全家/BLE_TEST_MODE_SUPPORT/LE_PWR_CTRL/EM32）
+      5) 下一步实验候选（按性价比）：
+         a) uarthci lib 去掉 uarthci 独有 extras（-DCONFIG_LE_PWR_CTRL、
+            -DCONFIG_BIS/-DCONFIG_CIS/-DCONFIG_EXT_ADV/ISO_*）重编——
+            LE_PWR_CTRL 直接碰 RF 功控路径，最可疑
+         b) dump RF/PHY 寄存器（drivers/soc/bl616/phyrf 的寄存器图）在
+            两种状态下的差异，定位 PHY TX 未使能的寄存器位
+         c) m2s1 库 + 单改 hci_tl 槽位（重接 HCI slot 到虚拟传输）
+         d) 用 m2s1 的 btble_controller_init 完整替换 uarthci 的
+            （两者同源同签名，仅 init 序列差异已知）
+- [ ] ⚠️ 当前部署状态（2026-09-18 晚）：tools/sdk 里的 uarthci lib
+      是"带 trace + coex(0) + EM32 回滚"的实验版；platform.txt 的
+      extra_flags 全部回滚（EM=32）；ble_hci_port.cpp 保留 EM 探针 +
+      rf_init + 宽域 dump + btble_trace；patch 后 bridge 固件 HCI 全通、
+      广播仍不上天（未修复）。若需干净基线：去掉 BT_BRINGUP_TRACE
+      define 重编 lib 即可（探针变 no-op）
+- [ ] 收敛后的根因判断：应用侧与编译配置侧能补的都补了（EM/RF/BTDM/
+      PDS/host-driver），BLE MAC 仍不调度 → 剩余差异在 CL 的 BLE
+      controller ROM 内容或 uarthci 库与 CL ROM 的配对上，属厂商问题。
+      最优路径：向 Bouffalo 提供"uarthci+CL 全 CC 成功但空口 0 包 +
+      m2s1 同板上天"的判别数据要答案；或自建 CL 专用 external-host
+      controller 库（工作量=重做 Bouffalo 的 flavor 生成）
 - [ ] SDK 探针清理：btble_dma_uart.c/btblecontroller_port_uart.c/
       llm_adv.c/btblecontroller_test main.c 的调试探针与引脚补丁是本地
       实验状态（用户维护的 SDK 副本），后续需还原或移入 patch 存档
@@ -310,6 +431,131 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
 - [ ] 后续：确认 FT232 接线 → 重跑 SDK btblecontroller_test 差分实验
       （BFLB_LOG=y 版本已构建）→ 定位崩溃 → HCI host 驱动 LE 广播
       （Set_Adv_Data/Params/Advertise_Enable）→ 手机扫描可见
+
+- [x] **⚠️ 重大发现：插桩破坏 BLE 发射（2026-09-18 深夜，可复现）**：
+      纯净源码重建的 m2s1 btble_cli **重新上天**（ZZHWTEST918，15s 内
+      13 次命中、RSSI -42~-51dBm）；而加了 BT_BRINGUP_TRACE 探针的
+      同一份 m2s1 **不上天**（0 命中）。根因：探针在 ISR 里做 UART 输出
+      （2Mbaud 下每条约 40us），远超半 slot(312us) 的时序裕量，直接
+      破坏 MAC 事件编程/触发的实时性。
+      **教训与纠正**：
+      1) 此前基于插桩的核心观测——"FIFOISR/ENDISR 循环但 TXISR/RXISR/
+         BLEISR 永远为 0"——**不可信**，那是插桩自身的时序破坏，
+         not uarthci 独有现象。该结论作废。
+      2) 所有 BT_BRINGUP_TRACE 探针仅可用于非实时路径（init 阶段），
+         ISR/sch_prog/lld 路径上的探针必须移除或改成"只写 SRAM 计数器"
+         （几纳秒，不碰 UART），后续诊断一律用 SRAM 计数器法+事后读取
+      3) 插桩源码已 git stash（stash@{0}: bringup-instrumentation-
+         20260918），需要时谨慎恢复
+      4) 纯净性恢复：uarthci 库回滚到 .bak-0917（md5 3bc9f344）；
+         m2s1 纯净重建；bridge 侧 BZ-arm/wide-dump 等实验代码已清理，
+         固件尺寸回到 934,962B 基线
+- [x] 基线复现（2026-09-18 深夜，纯净环境最终验证）：
+      - 纯净 m2s1 btble_cli：**上天**（13 次命中，复现上午结果）
+      - 纯净 uarthci bridge：HCI 五条命令全 CC 成功、空口 0 命中
+        （540 设备扫描）——"uarthci 不上天"是真实、独立于插桩的现象
+- [x] **RF 寄存器三方对照法（2026-09-18）**：同固件两次运行间就有
+      38 个 RF 寄存器因校准噪声不同 → 排除 30 处假差异；真差异仅 7 处：
+      TBB(0x20001058 bit8)、RBB2(0x20001070)、5 处校准区
+      (0x1324/0x132c/0x133c/0x1368/0x13d4)。TBB=TX基带、RBB2=RX基带，
+      方向正确但单独调整无效（BZ-arm 实验已试）
+- [ ] **下一步（插桩不可用后的正确方法）**：
+      1) SRAM 计数器探针：ISR 里只 `counter[tag]++`（SRAM noinit 区），
+         空闲任务周期性打印——不破坏时序又能观测中断分布
+      2) 用 SRAM 计数器对比纯净 uarthci 与纯净 m2s1 的中断分布
+         （T1ISR/ESTR/TX/RX/FIFO/END 各计数多少）
+      3) 重点验证：uarthci 的 sch_prog_tx_isr 是否真被调用、ET 状态机
+         是否推进到 TX 触发（对比 m2s1 同点位计数）
+      4) 若中断分布相同：对比两个库反汇编（同 object 文件 diff），
+         定位指令级差异——既然同源同编译器，差异必来自宏定义分支
+- [ ] 单变量排除实验累计（均无效，2026-09-18）：PDS lib 重编、
+      pds_reset 门控、ISO 组(6 个 define)、LE_PWR_CTRL、BZ-arm
+      (wl_cfg mode=2 + wl_init)、WLAN_COEX 置 0、EM_SEL、EM=16、
+      BTDM 复位、rf_init 补全——全部排除后 uarthci 仍静默
+- [x] **本轮排查最终收敛（2026-09-18 深夜）——完整报告见
+      `docs/BLE-UARTHCI-BRINGUP-REPORT.md`**：
+      1) **问题定性**：不是"Arduino vs btble_cli"差异，而是
+         **uarthci flavor 在 BL616CL 上的固有限制**。决定性判据：
+         官方 SDK 自带 uarthci 例程 btblecontroller_test 烧同一块板
+         同样"HCI 全通、空口 0 包"→ Arduino 环境（USB/DAP/任务拓扑）
+         全部排除。旁证：README 的 uarthci 支持列表无 BL616CL；
+         software_btdm_reset / HCI_UPDATE_UART_CONF 仅为 BL616/618DG 编译
+      2) **数据面已证正常**：修正测试脚本 adv_data_len 编码 bug 后，
+         bridge 的 EM 里正确出现完整载荷（02 01 06 08 07 "BL616CL"
+         在 EM+0x1054），与能上天的 cli 载荷偏移完全一致
+      3) **调度软件链正常**：SRAM 计数器（不破坏时序）显示两侧中断
+         分布同构（T1ISR/ESTR/SPP/FIFOISR/ENDISR 计数一致；
+         TXISR/RXISR/BLEISR 两侧均 0，是常态）
+      4) **EM 尺寸非根因**：反向实验——能上天的 cli 切 EM_SEL=3(32K)
+         后仍发射；uarthci 切 EM=16 则初始化即崩（资源布局放不进）
+      5) **RF 仅剩模拟校准级差异**：7 处（TBB/RBB2 + 5 处校准区），
+         单独调整无效
+      6) ⚠️ **方法论教训**：ISR 里写 UART 的 trace 探针会破坏 BLE 时序
+         （40µs vs 312µs 半 slot），导致同一份 m2s1 从"上天"变"静默"。
+         此前基于该插桩的观测全部不可信。正确方法 = SRAM 计数器。
+         插桩已 stash（stash@{0}: bringup-instrumentation-20260918）
+      7) **下一步（推荐）**：本报告即复现单，交 controller 团队；
+         诉求 = BL616CL 是否支持 uarthci / 为何数字域全通而 MAC 不发射
+
+## 第七阶段：core 无线初始化 + BLE 完整栈（2026-09-18 晚）
+
+- [x] **core init() 收口无线初始化**（用户指正：不应为空）：
+      新增 `cores/bl616cl/bl_wireless.cpp` 的 `bl_wireless_init()`，
+      由 `wiring.cpp` 的 `init()` 在调度器启动前调用（等价 SDK 例程在
+      main() 里调 rfparam_init 的位置）：
+      1) `rfparam_init(0,NULL,0)` —— RF 校准参数加载（WiFi/BLE 共享，
+         全平台一次）；2) `bl_sys_em_config()` —— 按链接的
+         __LD_CONFIG_EM_SEL 编程 GLB EM/WRAM 划分（BT controller 仅在
+         beacon-only 构建里自己做，uarthci/m2s1 组合 flavor 需要平台补）。
+      探针：启动横幅后打印 `[rfparam] ret= wl= cfg_status= mode= em_sel=`。
+      注：phyrf 的 `rf_init()` 有意不调——SDK 所有 BL616 系例程都不调，
+      WiFi 走 wl_init/phy_init、BLE 走 btble_rf_init 自管理。
+- [x] esp32-compat 的 `ensure_rfparam()` 改为 core 的薄包装（幂等），
+      `ble_hci_port.cpp` 里重复的 EM_SEL 写入/rf_init 补齐删除（下沉到 core）
+- [x] **修复 lwIP 随机数钩子缺失**：bundle 的 lwipopts 把 LWIP_RAND()
+      映射到 bl_rand()，mbedtls 以 --whole-archive 链接会拉入 igmp.c
+      引用它 → 纯 sketch（Blink 等）链接失败。core 侧提供 weak `bl_rand`
+      （esp32-compat 的强符号在 Bridge 构建里照常覆盖）。
+      修复后 Blink 226,546B / Bridge 937,010B 均编译通过。
+- [x] **修复 WiFi 事件被静默丢弃（既有 bug，非本次改动引入）**：
+      A/B 对照（core 初始化启用 vs 禁用）扫描都是 ~5.5s 超时返回 -1。
+      根因：bundle 的 `sdk/wifi6/wifi_mgmr_ext.h` 仍是 fhost 档的
+      `EV_WIFI 0x0002`，而实际链接的 wl80211 库用
+      `EV_WIFI = (uintptr_t)wifi_mgmr_init`（wl80211/include/wifi_mgmr.h）
+      注册/投递事件 → esp32-compat 注册的 filter 永不触发，
+      g_mgmr_started 永远为 false。修复：esp32_wifi.cpp 里
+      `#undef EV_WIFI` 后按库的值重定义。修复后 AT+WIFISCAN 3.5s 返回
+      11+ AP（CMW-AP-1/vela/tplink334…，RSSI -21~-40）。
+- [x] **BLE 完整栈在 Arduino 工程内上天（首次）**——按用户提示的
+      `examples/wifi/sta/smartconfig_ble`（BL616CL WiFi+BLE 共存官方
+      demo，用 m2s1 而非 uarthci）复刻：新增
+      `examples/BleAdvTest`，顺序 = bflb_mtd_init/easyflash_init →
+      btble_controller_init → hci_driver_init → bt_enable(cb) →
+      bt_set_name/bt_le_adv_start。构建用 btble_cli 产出的
+      libbtblecontroller_bl616cl_m2s1.a + libblestack.a + libblemesh.a
+      （blemesh 提供 adv/loopback/friend buf pool 符号），
+      `__LD_CONFIG_EM_SIZE=16`，454,706B。
+      实机：bt ready（BD_ADDR B4:E8:42:3C:A7:DD）、adv_start ret=0；
+      CoreBluetooth 扫描 45s 命中 12 次 `ZZARDUINO918`
+      （RSSI -40~-65，Connectable=1，厂商数据 "BL616"）；
+      429 台设备共存环境。**结论：BLE 在 Arduino 工程里可用，
+      前提是走 m2s1 完整栈，而非 uarthci external-host。**
+      遗留：EasyFlash 因分区表无 PSM 分区报错（不影响广播），
+      连接/配对路径未测。
+- [x] **里程碑记录**：已提交并打标签 `milestone-ble-adv-m2s1-fullstack`
+      （取代 8/29 失效的 milestone-ble-adv-on-air）；复现构建命令见
+      `examples/BleAdvTest/BleAdvTest.ino` 文件头注释；
+      调查报告附录更新于 `docs/BLE-UARTHCI-BRINGUP-REPORT.md`。
+- [x] 新增无 pyserial 依赖的 AT 测试脚本（本机 python3 无 pyserial，
+      全部用 stdlib termios；位于工作区根目录）：`at_test_termios.py`
+      （AT+HCI 冒烟）、`at_cmd_termios.py`（单条 AT 命令+超时）、
+      `console_while_at.py`（发 AT 期间同步抓 UART0 控制台）、
+      `reset_board.py`（RTS 脉冲复位、DTR 保持 BOOT 低）
+- [ ] 桥接固件 BLE 架构选型（待定）：
+      a) 维持 uarthci + RA4M1 host（现状，空口不发射，等 controller 团队）；
+      b) 改 m2s1 完整栈 + BL616CL 自广播（已验证可行），RA4M1 侧
+         协议需从 HCI 透传改为高层 AT 命令；
+      c) 双模并存需评估 RF/EM 资源。
 
 ## 测试与交付
 
