@@ -145,6 +145,16 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
     }
 }
 
+/* Event-type skew between the bundle header and the linked library.
+ * sdk/wifi6/wifi_mgmr_ext.h still carries the fhost flavor's EV_WIFI
+ * (0x0002), but the WiFi stack this platform links is wl80211, which
+ * registers and posts its events under EV_WIFI = (uintptr_t)wifi_mgmr_init
+ * (SDK components/wireless/wl80211/include/wifi_mgmr.h).  Filtering on the
+ * wrong value silently drops every WiFi event, so the scan/GOT_IP state
+ * machines never advance.  Register under the library's own value. */
+#undef EV_WIFI
+#define EV_WIFI ((uintptr_t)wifi_mgmr_init)
+
 static void ensure_wifi_started(void)
 {
     if (g_init_started) {
