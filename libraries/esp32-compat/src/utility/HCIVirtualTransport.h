@@ -13,6 +13,7 @@ class HCIVirtualTransportClass {
 public:
     bool begin();
     void end();
+    bool started() const;
     void wait(int timeoutMs);
     int available();
     int read();

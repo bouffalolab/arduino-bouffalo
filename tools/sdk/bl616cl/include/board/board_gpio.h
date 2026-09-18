@@ -34,8 +34,11 @@ void board_usb_gpio_init(void);
 #define PEC_I2C_SDA_PIN  GPIO_PIN_9
 void board_pec_i2c_gpio_init(void);
 
-#define PEC_IR_PIN       GPIO_PIN_10
+#define PEC_IR_PIN       GPIO_PIN_9
 void board_pec_ir_gpio_init(void);
+
+#define PEC_IR_RX_PIN    GPIO_PIN_10
+void board_pec_ir_rx_gpio_init(void);
 
 #define PEC_PWM_CH0_PIN  GPIO_PIN_8
 #define PEC_PWM_CH1_PIN  GPIO_PIN_9

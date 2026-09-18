@@ -36,6 +36,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+struct mac_chan_op;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,38 @@ enum pta_role {
     PTA_ROLE_WIFI_AND_BT_DEFAULT,       ///< Compete mode (WiFi and BLE use default priority)
     PTA_ROLE_THREAD,                    ///< Thread exclusive mode
     PTA_ROLE_PTI,                       ///< PTI (Packet Traffic Information) mode
+};
+
+/** Fixed coexistence configurations selected for the current Wi-Fi link. */
+enum coex_config_id {
+    COEX_CONFIG_COMBO = 0,
+    COEX_CONFIG_STANDALONE_DUAL_ANT = 1,
+    COEX_CONFIG_STANDALONE_SPDT = 2,
+    COEX_CONFIG_MAX = 3,
+};
+
+/** Result codes returned while resolving or applying a fixed configuration. */
+enum coex_config_status {
+    COEX_CONFIG_OK = 0,
+    COEX_CONFIG_ERR_INVALID_PARAM = -1,
+    COEX_CONFIG_ERR_UNSUPPORTED = -2,
+    COEX_CONFIG_ERR_MODE_REQUIRED = -3,
+    COEX_CONFIG_ERR_INVALID_COMBINATION = -4,
+    COEX_CONFIG_ERR_HARDWARE_NOT_READY = -5,
+    COEX_CONFIG_ERR_BUSY = -6,
+};
+
+/** Raw request received from the Wi-Fi control layer. */
+struct coex_config_request {
+    bool config_present;
+    uint8_t config_id;
+    bool ps_pta_requested;
+};
+
+/** Chip backend result used by the common control flow. */
+struct coex_config_resolved {
+    enum coex_config_id config_id;
+    bool ps_pta_enable;
 };
 
 /*
@@ -138,6 +172,18 @@ bool coex_coord_is_active(void);
  */
 bool ps_is_coex_mode(void);
 
+/** Return true when the selected platform supports explicit 2.4 GHz configs. */
+bool coexm_supports_explicit_2g_config(void);
+
+/** Resolve a user request for the specified Wi-Fi band. */
+int coexm_resolve_config(const struct coex_config_request *request,
+                         uint8_t band,
+                         struct coex_config_resolved *resolved);
+
+/** Apply a previously resolved hardware configuration. */
+int coexm_apply_config(const struct coex_config_resolved *resolved,
+                       uint8_t band);
+
 /*
  * COEX coordinator - Stage 1 entrypoints
  ****************************************************************************************
@@ -178,9 +224,8 @@ void coex_coord_on_wifi_wake(bool slept_committed);
 /**
  * @brief Coex coordinator runtime hooks (called by PS layer).
  *
- * These hooks reflect the existing coex runtime gating semantics:
- * - enable/disable: persistent master switch
- * - runtime pause/resume: disconnect/reconnect gating while preserving enable flag
+ * These hooks control the explicitly enabled PS_PTA runtime for the current
+ * connection. A real disconnect invokes disable; reconnect does not restore it.
  */
 void coex_coord_on_enable(void);
 void coex_coord_on_disable(void);
@@ -212,13 +257,13 @@ void coex_coord_on_runtime_resume(void);
 /**
  * @brief Pause coexistence runtime behaviors
  * @details Pauses runtime behaviors (PTA switching, TBTT slice, host TX gating)
- *          while preserving the persistent "coex enabled" configuration.
+ *          while preserving the current-connection enable state.
  *
  * This is typically triggered when Wi-Fi PS is turned OFF (e.g. disconnect).
  * Does nothing if coex is disabled.
  *
- * @note Coex protect module enable follows the persistent coex feature enable
- *       and stays enabled while coex is enabled (regardless of runtime pause).
+ * @note Coex protection is controlled separately and remains disabled by
+ *       default in the explicit-activation design.
  */
 void ps_coex_runtime_pause(void);
 
@@ -227,8 +272,7 @@ void ps_coex_runtime_pause(void);
  * @details Resumes runtime behaviors after Wi-Fi PS is turned ON.
  *          Does nothing if coex is disabled.
  * @note Wi-Fi PS re-enable must be handled separately by caller.
- * @note Coex protect module stays enabled while coex is enabled; protection
- *       ref-count state is preserved across runtime pause/resume.
+ * @note This function does not enable or resume coex protection.
  */
 void ps_coex_runtime_resume(void);
 
@@ -278,16 +322,18 @@ bool coex_protect_is_enabled(void);
 /**
  * @brief Acquire RF protection for a specific operation type
  * @param type Protection type (COEX_PROT_SCAN, COEX_PROT_CONNECT, etc.)
- * @return 0 on success, -1 on error
+ * @param band Wi-Fi band value, e.g. PHY_BAND_2G4 or PHY_BAND_5G.
+ * @return 0 if protection was acquired, 1 if skipped by band policy, -1 on error
  */
-int coex_protect_acquire(coex_protect_type_t type);
+int coex_protect_acquire(coex_protect_type_t type, uint8_t band);
 
 /**
  * @brief Release RF protection for a specific operation type
  * @param type Protection type to release
- * @return 0 on success, -1 on error
+ * @param band Wi-Fi band value, e.g. PHY_BAND_2G4 or PHY_BAND_5G.
+ * @return 0 if protection was released, 1 if skipped by band policy, -1 on error
  */
-int coex_protect_release(coex_protect_type_t type);
+int coex_protect_release(coex_protect_type_t type, uint8_t band);
 
 /**
  * @brief Release all RF protections (emergency reset)
@@ -339,6 +385,14 @@ struct pm_coex_status {
     bool protect_enabled;           ///< coex_protect module enabled
     bool protect_active;            ///< any protection currently active
     uint32_t protect_mask;          ///< active protection bitmask
+
+    /** BT-path coexistence configuration snapshot */
+    bool bt_path_spdt_ctrl_enabled;     ///< User enabled BT path SPDT control.
+    bool bt_path_adj_tx_power_enabled;  ///< BT path adjusted TX power configured.
+    bool bt_path_channel_overlay_enabled; ///< BT path channel overlay detection configured.
+
+    uint8_t bt_path_channel_overlay_margin; ///< Channel overlay detection margin.
+    uint32_t bt_path_adj_tx_power_reg;  ///< RF power control register snapshot for adjusted TX power.
 };
 
 /**
@@ -353,6 +407,160 @@ struct pm_coex_status {
  */
 int pm_coex_get_status(struct pm_coex_status *out);
 
+/* Print coex register snapshot (current vs default captured at pm_coex_init). */
+void pm_coex_dump_registers(void);
+
+/**
+ * @brief Error codes returned by BT-path coexistence configuration APIs.
+ *
+ * Mutating BT-path configuration APIs return
+ * COEXM_CONFIG_BT_PATH_COEX_ERR_BUSY while PS_PTA is enabled. Disable the
+ * Wi-Fi coex runtime before changing RF topology or its hardware recipe.
+ */
+typedef enum {
+    COEXM_CONFIG_BT_PATH_COEX_OK = 0,                                             ///< BT path coexistence configured.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_DEDICATED_ANTENNA_ON_2G_PATH = -1,              ///< Dedicated BT path antenna requested while BT path is on 2G path.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_BLE_TX_POWER_RANGE = -6,                        ///< BLE TX power value is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_IEEE802154_TX_POWER_RANGE = -7,                 ///< IEEE 802.15.4 TX power value is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_BT_TX_POWER_RANGE = -8,                         ///< BT TX power value is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_CHANNEL_MARGIN_RANGE = -9,                     ///< Channel margin is out of range.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_SPDT_CTRL_ON_2G_PATH = -10,                    ///< SPDT control is only valid when BT uses BT path.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_BUSY = -11,                                    ///< PS_PTA is active; disable coex before changing BT-path hardware.
+    COEXM_CONFIG_BT_PATH_COEX_ERR_BT_PATH_REQUIRED = -12,                         ///< Requested mode requires BT to use BT path.
+} coexm_config_bt_path_coex_err_t;
+
+/**
+ * @brief Enable or disable SPDT control for BT-path coexistence.
+ *
+ * @param enable true to route BT path through the SPDT shared with Wi-Fi 2G
+ *               antenna, false to disable SPDT control for dedicated BT path
+ *               antenna mode.
+ *
+ * @note These coexm BT APIs configure BT path coexistence hardware, not the BT
+ *       protocol stack.
+ * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
+ * @note This API controls the COEXM/PTA SPDT coexistence bit. It does not
+ *       configure the RF switch GPIO mux or RF/FEM path-selection registers.
+ * @note The application must configure the switch-control GPIO mux function to
+ *       25. After BT wins RF access internally, the mux-25 GPIO polarity is
+ *       index-based: even GPIOs such as IO0 drive high, and odd GPIOs such as
+ *       IO1 drive low.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_spdt_ctrl(bool enable);
+
+/**
+ * @brief Configure BLE adjusted TX power when BT path uses a dedicated
+ *        antenna.
+ *
+ * @param pwr BLE adjusted TX power, in 0.25 dBm units.
+ *
+ * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
+ * @note This enables BT path TX power reduction and disables channel overlay
+ *       detection because the two features are mutually exclusive.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_adj_ble_tx_power(
+    int8_t pwr);
+
+/**
+ * @brief Configure IEEE 802.15.4 adjusted TX power when BT path uses a
+ *        dedicated antenna.
+ *
+ * @param pwr IEEE 802.15.4 adjusted TX power, in 0.25 dBm units.
+ *
+ * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
+ * @note This enables BT path TX power reduction and disables channel overlay
+ *       detection because the two features are mutually exclusive.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_adj_ieee802154_tx_power(
+    int8_t pwr);
+
+/**
+ * @brief Configure BT adjusted TX power when BT path uses a dedicated
+ *        antenna.
+ *
+ * @param pwr BT adjusted TX power, in 0.25 dBm units.
+ *
+ * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
+ * @note This enables BT path TX power reduction and disables channel overlay
+ *       detection because the two features are mutually exclusive.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_adj_bt_tx_power(
+    int8_t pwr);
+
+/**
+ * @brief Disable BT path adjusted TX power.
+ *
+ * @note This only disables the TX power reduction feature and clears the
+ *       corresponding coexm state. It does not change BT path routing.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_adj_tx_power_off(void);
+
+/**
+ * @brief Configure channel overlay detection when BT path uses a dedicated
+ *        antenna.
+ *
+ * @param margin Channel overlay detection margin, valid range is 0..63.
+ *
+ * @note Call this function after PHY/RF has routed BT/IEEE 802.15.4 to BT path.
+ * @note This enables channel overlay detection and disables BT path TX power
+ *       reduction because the two features are mutually exclusive.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_channel_overlay(
+    int margin);
+
+/**
+ * @brief Disable BT path channel overlay detection.
+ *
+ * @note This only disables channel overlay detection and clears the configured
+ *       margin. It does not change BT path routing.
+ *
+ * @return COEXM_CONFIG_BT_PATH_COEX_OK on success; otherwise one of
+ *         coexm_config_bt_path_coex_err_t error codes.
+ */
+coexm_config_bt_path_coex_err_t coexm_bt_set_channel_overlay_off(void);
+
+/**
+ * @brief Update BT path coexistence configuration with the current Wi-Fi channel.
+ *
+ * @param chan Current Wi-Fi operating channel.
+ *
+ * @note This is intended to be called after Wi-Fi connects to an AP or moves to
+ *       a stable operating channel. Scan channel changes should not call this
+ *       API, so channel overlay detection uses the connected AP channel instead
+ *       of temporary scan channels.
+ * @note Passing a 2.4 GHz channel with center1_freq set to 0 is treated as a
+ *       priority reset before scan activity. It restores default Wi-Fi
+ *       priority and does not update channel overlay channel information.
+ * @note Configure channel overlay detection or adjusted TX power before Wi-Fi
+ *       connects. If either feature is enabled after Wi-Fi is already connected,
+ *       call this API again with the current operating channel.
+ */
+void coexm_bt_update_wifi_channel(struct mac_chan_op const *chan);
+
+/**
+ * @brief Check whether BT is routed through the BT path.
+ *
+ * @return true if BT uses the BT path; false 2G path.
+ */
+bool coexm_bt_is_bt_path(void);
 
 #ifdef __cplusplus
 }

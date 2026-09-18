@@ -12,6 +12,21 @@
 #ifndef _MAC_FRAME_H_
 #define _MAC_FRAME_H_
 
+/* Default values for build-configuration macros used with #if.
+ * These are normally defined by macsw.h; guard against undef. */
+#ifndef MACSW_WAPI_EN
+#define MACSW_WAPI_EN 0
+#endif
+#ifndef MACSW_MAC_HE
+#define MACSW_MAC_HE 0
+#endif
+#ifndef MACSW_WFA
+#define MACSW_WFA 0
+#endif
+#ifndef MACSW_11AX_DRAFT_2_0
+#define MACSW_11AX_DRAFT_2_0 0
+#endif
+
 /**
  ****************************************************************************************
  * @addtogroup MAC
@@ -2613,6 +2628,7 @@ enum mac_radio_measurement_action {
 #define MAC_RS_802_1X_AUTH_FAIL                  23
 #define MAC_RS_CIPHER_SUITE_REJECTED             24
 #define MAC_RS_TIMEOUT                           39
+#define MAC_RS_UNEXPECTED_FRAME                  40
 /** @} */
 
 
