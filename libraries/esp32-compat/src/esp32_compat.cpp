@@ -31,16 +31,15 @@ Arduino_DebugUtils Debug;
 UpdateClass Update;
 HCIVirtualTransportClass HCIVirtualTransport;
 
-/* Shared RF-parameter init guard: both the WiFi and the BLE controller paths
- * need rfparam_init(), but it must run exactly once. */
-static bool g_rfparam_done = false;
+/* Wireless platform init now lives in the Arduino core (cores/bl616cl/
+ * bl_wireless.cpp, run from init() before the scheduler starts): RF
+ * parameters, EM window and PHY RF bring-up.  Keep this as a lazy-path
+ * wrapper for the WiFi and BLE callers; the core function is idempotent. */
+extern "C" void bl_wireless_init(void);
+
 extern "C" void ensure_rfparam(void)
 {
-    if (g_rfparam_done) {
-        return;
-    }
-    rfparam_init(0, NULL, 0);
-    g_rfparam_done = true;
+    bl_wireless_init();
 }
 
 int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
@@ -89,6 +88,34 @@ extern "C" void compat_console_restore(void)
     cfg.bit_order = UART_LSB_FIRST;
     bflb_uart_init(uart0, &cfg);
     bflb_uart_set_console(uart0);
+}
+
+/* Raw multi-byte write to the UART0 console for debug sinks that must not
+ * touch the USB CDC (no CRLF mangling, no stdout involvement). */
+extern "C" void compat_uart0_write(const char *s, size_t len)
+{
+    struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
+    if (uart0 == NULL || s == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < len; i++) {
+        bflb_uart_putchar(uart0, s[i]);
+    }
+}
+
+/* Probe: write straight to the UART0 peripheral, bypassing the stdout
+ * redirect, to test the console path from the sketch. */
+extern "C" void compat_uart0_raw_write(const char *s)
+{
+    struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
+    if (uart0 == NULL || s == NULL) {
+        return;
+    }
+    while (*s) {
+        bflb_uart_putchar(uart0, *s++);
+    }
+    bflb_uart_putchar(uart0, '\r');
+    bflb_uart_putchar(uart0, '\n');
 }
 
 /* Do NOT define a freeaddrinfo() stub here.  lwip/netdb.h maps the POSIX
