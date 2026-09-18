@@ -712,6 +712,39 @@ def main() -> int:
          Path("freertos")),
         (sdk / "components" / "os" / "freertos" / "portable" /
          "GCC" / "RISC-V" / "common", Path("freertos/portable")),
+        # Wireless / net stack headers referenced by the platform.txt -I
+        # flags (<lwip/...>, <mbedtls/...>, fhost, supplicant, macsw,
+        # phyrf, rfparam).  Without these the Arduino compile breaks on
+        # lwip/inet.h and friends.
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include",
+         Path("sdk/lwip")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include" /
+         "compat" / "posix", Path("sdk/lwip-posix")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+         Path("sdk/lwip-port")),
+        (sdk / "components" / "wireless" / "wifi6" / "fhost" / "include",
+         Path("sdk/wifi6")),
+        (sdk / "components" / "wireless" / "bl_wpa_supplicant" / "include",
+         Path("sdk/supplicant")),
+        (sdk / "components" / "wireless" / "macsw" / "inc",
+         Path("sdk/macsw")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" / "include",
+         Path("sdk/mbedtls")),
+        # mbedtls hardware-acceleration port headers (ecp_alt.h & friends are
+        # included by name from the public mbedtls/*.h headers)
+        (sdk / "components" / "crypto" / "mbedtls" / "port" / "hw_acc",
+         Path("sdk/mbedtls")),
+        (sdk / "components" / "crypto" / "mbedtls" / "port",
+         Path("sdk/mbedtls/port")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+         "3rdparty" / "everest" / "include",
+         Path("sdk/mbedtls")),
+        (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+         Path("sdk/phyrf")),
+        (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+        # headers included by bare name via the existing -Iinclude/sdk/utils
+        (sdk / "components" / "utils" / "async_event", Path("sdk/utils")),
+        (sdk / "components" / "utils" / "partition", Path("sdk/utils")),
     ]
     # chip-specific FreeRTOS extension
     freertos_ext = chip_cfg.get("freertos_extension")
@@ -726,6 +759,23 @@ def main() -> int:
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
     copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
+    # mbedtls config headers picked up via MBEDTLS_CONFIG_FILE
+    for cfg_name in ("config-tls-generic.h", "config-psa.h"):
+        copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
+                               cfg_name, cfg_name),
+                  sdk_staging / "include" / "sdk" / "mbedtls" / cfg_name)
+    # generated Kconfig autoconf (platform recipe does -include autoconf.h)
+    autoconf = None
+    for candidate in (build_out / "include" / "autoconf.h",
+                      build_dir / "generated" / "include" / "autoconf.h",
+                      build_dir / "generated" / "autoconf.h"):
+        if candidate.is_file():
+            autoconf = candidate
+            break
+    if autoconf is not None:
+        copy_file(autoconf, sdk_staging / "include" / "autoconf.h")
+    else:
+        raise RuntimeError("generated autoconf.h not found in build output")
     # board headers → sdk/include/board
     copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
     # ring_buffer and other utils

@@ -9,6 +9,7 @@
 typedef int (*bl_lp_cb_t)(void *arg);
 typedef struct PM_DCDC_SOC_CFG_Type PM_DCDC_SOC_CFG_Type;
 typedef struct PM_DCDC_SYS_CFG_Type PM_DCDC_SYS_CFG_Type;
+typedef struct PM_LOWPOWER_CFG_Type PM_LOWPOWER_CFG_Type;
 
 #define IOT2LP_PARA_ADDR     (0x20010000 + 0x0400)
 // #define LP_FW_MAX_SIZE            30 * 1024
@@ -270,6 +271,7 @@ typedef struct {
     uint8_t dcdc_sel_pin;
     PM_DCDC_SOC_CFG_Type *dcdc_soc_cfg;
     PM_DCDC_SYS_CFG_Type *dcdc_sys_cfg;
+    uint8_t pds_ldo18io_power_down;
 
     uint32_t mcu_sts;
 
@@ -388,7 +390,8 @@ extern uint32_t __lpfw_share_end__[];   /* ld symbol */
 extern iot2lp_para_t *const iot2lp_para;
 extern bl_lp_fw_cfg_t lpfw_cfg;
 
-int bl_lp_pds_enter_with_restore(uint32_t pds_level, uint32_t sleep_time);
+int bl_lp_pds_enter_with_restore(uint32_t pds_level, uint32_t sleep_time,
+                                 const PM_LOWPOWER_CFG_Type *lowpower_cfg);
 
 void lp_fw_print_cpu_para(uint32_t save_addr);
 

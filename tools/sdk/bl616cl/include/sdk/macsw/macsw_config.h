@@ -10,17 +10,10 @@
 #define CFG_COEX
 #define CFG_BCN
 #define CFG_AGG
-#define CFG_AMSDU_4K
 
 #define CFG_VIF_MAX 2
 #define CFG_STA_MAX 4
 #define CFG_SPC 16
-
-#define CFG_TXDESC0 1
-#define CFG_TXDESC1 32
-#define CFG_TXDESC2 1
-#define CFG_TXDESC3 1
-#define CFG_TXDESC4 4
 
 #define CFG_MAC_VER_V21
 #define CFG_MDM_VER_V30
@@ -31,14 +24,9 @@
 #define CFG_MU_CNT 1
 #define CFG_KEYCFG
 #define CFG_P2P 0
-#define CFG_P2P_GO
+#define CFG_P2P_GO 0
 #define CFG_BWLEN
 #define CFG_HE
-
-#define CFG_TWT 8
-#define CFG_BARX 2
-#define CFG_BATX 1
-#define CFG_REORD_BUF 12
 
 #define CFG_UF 1
 #define CFG_MFP 1
@@ -57,19 +45,25 @@
 
 #define CFG_RAW_SEND_ENABLE
 
-#ifdef BL616L
+#ifdef BL616CL
 #define CFG_PLATFORM_DMA_ENABLE 0
 #else
 #define CFG_PLATFORM_DMA_ENABLE 1
 #endif
 
+/*
+ * Include the selected macsw configuration before common feature defaults.
+ * For WFA builds, macsw_wfa_config.h defines CFG_WFA here so TWT PDS15 is
+ * excluded by the common rule below, instead of relying on a later #undef.
+ */
 #if defined(CONFIG_MACSW_SELECT_INCLUDE)
 #include CONFIG_MACSW_SELECT_INCLUDE
 #endif
 
-/* enable ps by default */
-/* TODO: remove this macro, enable by defualt in code? */
-#define CFG_BL_WIFI_PS_ENABLE 1
+/* Enable TWT PDS15 by default for non-WFA macsw configurations. */
+#if !defined(CFG_WFA) && !defined(CFG_WIFI_TWT_PDS15_ENABLE)
+#define CFG_WIFI_TWT_PDS15_ENABLE
+#endif
 
 #ifndef CFG_TX_PBD_CNT
 #define CFG_TX_PBD_CNT 5
@@ -118,10 +112,6 @@
 
 #ifndef BL_HD_RETRY_MAX
 #define BL_HD_RETRY_MAX 0
-#endif
-
-#ifndef BL_WIFI_LP_FW
-#define BL_WIFI_LP_FW 0
 #endif
 /* hacks end */
 

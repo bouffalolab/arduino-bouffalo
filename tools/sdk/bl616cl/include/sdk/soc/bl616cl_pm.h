@@ -3,10 +3,6 @@
 
 #include "bl616cl_common.h"
 
-#ifndef PM_PDS_LDO18IO_POWER_DOWN
-#define PM_PDS_LDO18IO_POWER_DOWN 0
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,10 +34,41 @@ typedef struct PM_DCDC_SOC_CFG_Type {
 typedef struct PM_DCDC_SYS_CFG_Type {
     uint8_t dcdc_sys_enable_pin;      /*!< GPIO0~36 used to enable DCDC SYS output, 0xFF means not used */
     uint8_t dcdc_sys_pds_enable;      /*!< Whether enable DCDC SYS output in PDS mode */
+    uint8_t ldo_sys_active_level;     /*!< LDO SYS voltage level in active mode */
+    uint8_t ldo_sys_pds_level;        /*!< LDO SYS voltage level in PDS mode */
 } PM_DCDC_SYS_CFG_Type;
 
 #define PM_DCDC_SOC_LEVEL_0P7 0 /*!< DCDC SOC 0.7V, vsel GPIO output low */
 #define PM_DCDC_SOC_LEVEL_0P9 1 /*!< DCDC SOC 0.9V, vsel GPIO output high */
+
+#define PM_LDO13_LDO07_PDSLDO07       (0) /*!< SYS: LDO 1.3V; SOC: LDO 0.9V active, LDO 0.7V in PDS */
+#define PM_LDO13_LDO09_PDSLDO09       (1) /*!< SYS: LDO 1.3V; SOC: LDO 0.9V active, LDO 0.9V in PDS */
+#define PM_DCDC13_DCDC79_PDSDCDC09    (2) /*!< SYS: DCDC 1.3V; SOC: DCDC 0.9V active, DCDC 0.9V in PDS */
+#define PM_DCDC13_DCDC79_PDSDCDC07    (3) /*!< SYS: DCDC 1.3V; SOC: DCDC 0.9V active, DCDC 0.7V in PDS */
+#define PM_DCDC13_LDO0P7_PDSLDO07     (4) /*!< SYS: DCDC 1.3V; SOC: LDO 0.9V active, LDO 0.7V in PDS */
+#define PM_DCDC13_LDO0P9_PDSLDO09     (5) /*!< SYS: DCDC 1.3V; SOC: LDO 0.9V active, LDO 0.9V in PDS */
+#define PM_LDO13_DCDC09_PDSLDO09      (6) /*!< SYS: LDO 1.3V; SOC: DCDC 0.9V active, DCDC 0.9V in PDS */
+#define PM_LDO13_DCDC07_PDSLDO07      (7) /*!< SYS: LDO 1.3V; SOC: DCDC 0.9V active, DCDC 0.7V in PDS */
+#define PM_POWER_MODE_MAX             (8) /*!< Number of predefined power modes */
+
+typedef struct PM_LP_CFG_Type {
+    uint8_t pds_gpio_keep_en;        /*!< Whether keep GPIO state during PDS, reserved for runtime config */
+    uint8_t hbn_gpio_keep_en;        /*!< Whether keep GPIO state during HBN, reserved for runtime config */
+    uint8_t pds_flash_power_off;     /*!< Whether power down flash during PDS */
+    uint8_t pll_power_off;           /*!< Whether power down WiFi PLL during PDS */
+    uint8_t rf_power_off;            /*!< Whether power down RF during PDS */
+    uint8_t clk_default_sel;         /*!< PDS clock select, PM_PDS_CLK_* */
+    uint8_t set_all_ram_ret_en;      /*!< Whether enable all RAM retention during PDS */
+    uint8_t hbn_flash_power_off;     /*!< Whether power down flash before HBN */
+    uint8_t ldo18io_power_down;      /*!< Whether power down LDO18IO during PDS */
+} PM_LP_CFG_Type;
+
+typedef struct PM_LOWPOWER_CFG_Type {
+    const char *name;                /*!< Low power config name */
+    PM_DCDC_SOC_CFG_Type soc_cfg;    /*!< DCDC/LDO SOC config */
+    PM_DCDC_SYS_CFG_Type sys_cfg;    /*!< DCDC/LDO SYS config */
+    PM_LP_CFG_Type lp_cfg;           /*!< PDS/HBN low power behavior config */
+} PM_LOWPOWER_CFG_Type;
 
 typedef struct
 {
@@ -54,6 +81,7 @@ typedef struct
     uint8_t turnoffWifiPLL;       /*!< Whether trun off WiFi PLL */
     uint8_t pdsClkType;           /*!< pds_clk type */
     uint8_t pdsGpioDetClkType;    /*!< pds gpio det clk type */
+    uint8_t pdsLdo18ioPowerDown;  /*!< Whether power down LDO18IO during PDS */
     PM_DCDC_SOC_CFG_Type *dcdc_soc_cfg; /*!< DCDC SOC GPIO and voltage config */
     PM_DCDC_SYS_CFG_Type *dcdc_sys_cfg; /*!< DCDC SYS GPIO config */
     PM_PWR_Cfg ldo_sys_cfg;       /*!< Power Config of ldo_sys */
@@ -125,8 +153,7 @@ typedef struct
 
 void pm_pds_dcdc_soc_set_0v7(uint32_t pin);
 void pm_pds_dcdc_soc_set_0v9(uint32_t pin);
-const PM_DCDC_SOC_CFG_Type *pm_dcdc_soc_default_cfg_get(void);
-const PM_DCDC_SYS_CFG_Type *pm_dcdc_sys_default_cfg_get(void);
+const PM_LOWPOWER_CFG_Type *pm_power_mode_cfg_get(uint8_t mode);
 BL_Err_Type pm_dcdc_soc_enable_ctrl(uint32_t pin, BL_Fun_Type enable);
 void pm_dcdc_soc_vsel_ctrl(uint32_t pin, uint8_t high);
 void pm_dcdc_soc_enter_pds(const PM_DCDC_SOC_CFG_Type *cfg);
@@ -144,8 +171,8 @@ int pm_lowpower_gpio_cfg(lp_gpio_cfg_type *gpio_cfg);
 void pm_pds_mask_all_wakeup_src(void);
 BL_Err_Type pm_set_gpio_int_mask(int pin, int int_mask);
 BL_Err_Type pm_set_gpio_trig_mode_int_mask(int pin, int trig_mode, int int_mask);
-void pm_pds_enable(uint32_t *cfg);
-void pm_pds_mode_enter(uint32_t pds_level, uint32_t sleep_time);
+void pm_pds_enable(uint32_t *cfg, const PM_LOWPOWER_CFG_Type *lowpower_cfg);
+void pm_pds_mode_enter(uint32_t pds_level, uint32_t sleep_time, const PM_LOWPOWER_CFG_Type *lowpower_cfg);
 void pm_hbn_mode_enter(uint32_t hbn_level, uint64_t sleep_time);
 char *pm_get_trig_mode_desc(int index);
 void pm_set_wakeup_callback(void (*wakeup_callback)(void));
