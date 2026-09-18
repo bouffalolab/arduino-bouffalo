@@ -42,6 +42,10 @@ extern "C" void hci_tl_acl_tx_data_received(uint8_t tl_type,
 
 static uint32_t wake_send_count = 0;
 static uint32_t wake_send_result = 0;
+// HCI must not reach the controller before btble_controller_init(): the RW
+// kernel's memory pool does not exist yet and controller-side code asserts
+// (ke_mem.c) on garbage descriptors.
+static bool s_controller_started = false;
 
 static void wake_rw_task(void)
 {
@@ -305,9 +309,15 @@ void hci_transport_state(uint32_t *out)
     out[7] = wake_send_result;
     out[8] = (rw_main_task_hdl != nullptr) ? 1U : 0U;
     out[9] = rwip_prevent_sleep_get();
-    out[10] = (uint32_t)eTaskGetState((TaskHandle_t)rw_main_task_hdl);
-    out[11] = (uint32_t)uxQueueMessagesWaiting(
-        (QueueHandle_t)xRwmainQueue);
+    /* eTaskGetState(NULL) / uxQueueMessagesWaiting(NULL) assert in FreeRTOS,
+     * so the task/queue fields only exist once the controller is running. */
+    out[10] = (rw_main_task_hdl != nullptr)
+                  ? (uint32_t)eTaskGetState((TaskHandle_t)rw_main_task_hdl)
+                  : (uint32_t)eInvalid;
+    out[11] = (rw_main_task_hdl != nullptr)
+                  ? (uint32_t)uxQueueMessagesWaiting(
+                        (QueueHandle_t)xRwmainQueue)
+                  : 0U;
     taskEXIT_CRITICAL();
 }
 
@@ -321,7 +331,13 @@ void hci_transport_note_write(void)
 bool HCIVirtualTransportClass::begin()
 {
     hci_transport_reset();
-    return ble_controller_start();
+    s_controller_started = ble_controller_start();
+    return s_controller_started;
+}
+
+bool HCIVirtualTransportClass::started() const
+{
+    return s_controller_started;
 }
 
 void HCIVirtualTransportClass::end()
@@ -351,6 +367,9 @@ int HCIVirtualTransportClass::read()
 
 size_t HCIVirtualTransportClass::write(const uint8_t *buffer, size_t size)
 {
+    if (!s_controller_started) {
+        return 0;
+    }
     size_t accepted = hci_h2c_push(buffer, size);
     if (accepted > 0) {
         hci_parser_pump();

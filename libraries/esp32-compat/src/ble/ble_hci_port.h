@@ -6,4 +6,11 @@
 // RA4M1 host issues AT+HCI_BEGIN.
 bool ble_controller_start(void);
 
+// Bring-up forensics: dump BLE2 core control/version/irq/event registers.
+void ble2_core_dump(const char *tag);
+void ble_wide_dump(void);
+void ble_wcheck_dump(void);
+void ble_emfull_dump(void);
+void ble_rawmem_dump(void);
+
 #endif
