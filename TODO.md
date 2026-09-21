@@ -635,6 +635,48 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
       流控），以便本机复刻；b) 那份已知可用的 bin（在同事机器上），
       烧到本板做 A/B + map diff，直接定位软件差异
 
+## 第十阶段：btble_cli 剥离阶梯实验（2026-09-21 上午，用户指导）
+
+按用户方案：复制 btble_cli → btble_hci_test，逐级删 host、逐级实测空口。
+工作树回到 9/18 已验证状态（main=674ea3f0、bluetooth=c02b93c6/1.6.198、
+phyrf=825435a、子模块按 8/13 gitlink）。
+
+| 级 | 配置 | 结果 |
+|---|---|---|
+| 对照A | 9/18 已知好 bin（原样） | **上天 18 次 RSSI -54** |
+| 对照B | 今天重建原版 btble_cli + shell 驱动 | **上天 22 次 RSSI -46** |
+| T0-T4 | m2s1 全栈，bt_enable 回调里自动广播（含+5s 延迟变体） | 全部静默（err=0/err=-69） |
+| T5 | 同上，广播改到普通任务（8s 后） | **上天 13 次 RSSI -60** |
+| S2 | m2s1 只留 controller，直灌 hci_tl_cmd_received | **堆损坏乱码+崩溃重启循环**（复现 bridge 当年 m2s1 崩溃） |
+| S3 | uarthci 只留 controller，任务上下文 HCI_TL_H4 注入 | 前 3 条 CC（Reset/EventMask/AdvParams），**Adv_Data/Adv_Enable 被静默丢弃**，空口 0（补 ke_event_schedule 排水无效） |
+| S4 | uarthci + lib 真端口（DMA H4TL）补丁到 uart0/34-35 | 台架 HCI RX 不通（DMA/流控/console 共口移植未竟），待 UART1 27-30 真接线复测 |
+
+**三条硬结论**：
+1. **调用上下文决定发射**（T4 vs T5 唯一变量）：SDK 环境里在
+   bt_enable 回调（host RX 线程）里 bt_le_adv_start = 返回成功但射频
+   永不发射；同样调用放到栈就绪后的普通任务 = 真正上天。
+   （注意：9/18 Arduino BleAdvTest 回调内广播能上天、官方
+   smartconfig_ble 也在回调内广播——该行为与树/环境相关，未收敛）
+2. **m2s1 直灌必崩**（S2）：hci_tl 无 host 槽位初始化时直接注入
+   = 堆损坏，controller-only 不可行，与 bridge 9/18 观察一致。
+3. **uarthci 直灌在健康环境同样失败**（S3）：即便在 m2s1 全栈能上天的
+   同一块板同一棵树，uarthci + 直灌 = 广播两条命令被丢 + 空口 0。
+   → bridge 的静默不是 Arduino 环境特有，是"绕过 H4TL 接收路径的
+   直灌机制"或 uarthci 库本身的问题。用户已验证的可用路径是
+   真实 UART H4TL（stock 例程 + 串口工具，UART1 27-30 带流控）。
+   **bridge 下一步方向：虚拟传输改为喂 controller 原生 H4TL RX
+   （DMA ring buffer / h4tl 层），而不是 hci_tl_cmd_received 直灌**；
+   或由 BLE 团队确认 CL 上直灌是否受支持。
+
+**台架/工具**：flash_and_cli_adv.py（烧录+shell 驱动广播一体）；
+h4_host_termios.py（FT232 H4 主机）；/tmp/ble_scan 扫描器全程正常
+（每轮 400-500 台设备可见）。
+
+**工作区状态（实验后）**：SDK 树=9/18 状态+btble_hci_test 新例程
+（含 BENCH 补丁：port_uart/dma_uart 引脚 34/35、CL 流控关——
+均未提交，btble_hci_test 未提交）；bluetooth 工作树含引脚/流控补丁；
+板子当前跑 S4 固件。
+
 ## 测试与交付
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令
