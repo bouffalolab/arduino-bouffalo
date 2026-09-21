@@ -616,6 +616,25 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
       - 新工具（工作区根）：h4_host_termios.py（FT232 H4 主机）、
         ble_adv_termios.py（CDC 驱动完整广播序列）
 
+## 第九阶段：官方代码可用性的复核（2026-09-21 上午，进行中）
+
+- [x] **用户澄清（推翻第八阶段"板级差异"结论）**：同一块板，官方
+      SDK 代码（btblecontroller_test + 串口工具发 HCI）能正常发空口包
+      → 板子没问题，差异在软件
+- [x] 全树对齐到同事可用窗口：主仓库 dfd20103（8/21，bluetooth 固定
+      1.6.200 的窗口），子模块按该窗口 gitlink 固定（bluetooth 保持
+      43096480=1.6.200），phyrf 新旧两版都测过
+- [x] **关键自查：我今天所有"官方例程"测试都带了 UART0-HCI 补丁**
+      （台架 FT232 只接 GPIO34/35，官方 HCI 在 UART1 27-30）——
+      这个补丁在不同树上表现不同（旧树 HCI 通、对齐树 HCI 死），
+      是污染变量。官方可用验证用的是默认 UART1 引脚
+- [x] 已构建并烧录**完全无补丁**的官方固件（bin md5 37d2c10e，
+      shell 开、HCI=UART1 27/28@2M 流控），等待串口工具在 GPIO27/28
+      上复测
+- [ ] 待用户提供：a) 串口工具的接线方式（哪个 UART/引脚、波特率、
+      流控），以便本机复刻；b) 那份已知可用的 bin（在同事机器上），
+      烧到本板做 A/B + map diff，直接定位软件差异
+
 ## 测试与交付
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令
