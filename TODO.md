@@ -557,6 +557,65 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
          协议需从 HCI 透传改为高层 AT 命令；
       c) 双模并存需评估 RF/EM 资源。
 
+## 第八阶段：BLE 团队 EM 假说复核 + 配置对齐实验（2026-09-21）
+
+- [x] **BLE 团队的"EM 被二次覆盖"假说被证伪**（对方分析我们的
+      ELF/map：bl_sys_em_config → GLB_Set_EM_Sel(2)，认为 2 走
+      default → 16KB）：
+      1) 枚举定义 `GLB_WRAM128KB_EM32KB = (2)`（bl616cl_glb.h:566），
+         GLB_Set_EM_Sel 按**枚举** switch：case 2 → 写字段 0x03（32KB）；
+         对方把 case 标签误读成了寄存器值
+      2) 反汇编确认：bl_sys_em_config 常量折叠出 em_size=0x8000，
+         else 分支传 a0=2（=枚举 32KB），调用 ROM GLB_Set_EM_Sel
+      3) 运行时探针（BridgeCoreInit 启动日志）在 bl_sys_em_config
+         之后实测 em_sel=3 —— 与链接值一致，无覆盖
+- [x] **配置对齐实验矩阵**（目标：复刻 BLE 同事"btblecontroller_test
+      1.6.200 + 真 UART H4 能上天"的实验，全部在我们板上）：
+      | btble lib | phyrf | 传输 | 结果 |
+      |---|---|---|---|
+      | 1.6.198 | 旧(8/5) | 真UART(8/29) | 静默 |
+      | 1.6.198 | 旧 | 虚拟(bridge) | 静默 |
+      | 1.6.200 | 旧 | 虚拟(bridge) | 静默 |
+      | 1.6.200 | 旧 | 真UART | **静默** |
+      | 1.6.200 | **新(9/3)** | 真UART | **静默** |
+      | m2s1 | 旧 | 片上host | **上天**（BleAdvTest） |
+      | 1.6.200(同事板) | 新(推测) | 真UART | **上天**（同事实测） |
+      每轮命令面全通（6 条 CC，re-enable=0x0C），空口 0 命中
+      （425/447 台设备可见，扫描器正常）。
+      真UART 实验 = stock btblecontroller_test（bin 自带 rfparam TLV，
+      0x1400 BLRFPARA，8/29 的 TLV 缺失问题新版已修）+ HCI UART 重映射
+      UART0 GPIO34/35 关流控（bench FT232 当 H4 主机，
+      h4_host_termios.py 驱动 H4 序列）。
+- [x] **结论收敛**：软件侧（controller 库版本、phyrf 版本、flavor、
+      传输层、命令序列）已与同事的可用配置完全对齐，我们这块板依然
+      静默；同板 m2s1 广播强信号、WiFi 双向正常 → RF 硬件 TX 通路
+      正常。剩余变量只在**板级/芯片个体**：
+      a) eFuse RF 参数（本板：slot 全空、no capcode、TLV 默认 128；
+         若同事的板有 capcode/功率偏移且 uarthci 路径对其处理不同，
+         可解释"同软件不同板一通一不通"）
+      b) 芯片个体/Revision（chip id 本板 = dca73c42e8b4，ISP 日志
+         flashcube_20260921.log 可查）
+      → 需同事配合：提供他们板的 rfparam 启动日志（对比 eFuse
+         slot/capcode 行）+ chip id；或在他们板上烧我们的静默 bin
+         （md5 ae445cb7，UART0-HCI 版）交叉验证
+- [x] **工作区状态变更（实验后保留）**：
+      - bluetooth 仓库：detached 于 43096480（=1.6.200）；原 HEAD
+        c02b93c6；SRAM 计数器探针已 stash（stash@{0}
+        sram-counter-probes-20260918，原 bringup-instrumentation
+        顺位 stash@{1}）；port_uart_conf.c 补丁为 UART0/34-35/无流控
+        （原文件备份 /tmp/port_uart_conf.c.orig）
+      - phyrf 仓库：detached 于 origin/master 3722703（新版 lib
+        md5 f5fda106）；原 825435a
+      - Arduino bundle：libbtblecontroller_bl616cl_uarthci.a 已换
+        1.6.200（md5 e99d17b0；1.6.198 版备份
+        /tmp/libuarthci_1.6.198_backup.a）；ble_hci_port.cpp 加
+        btble_bringup_ctr[16] 零值 stub（正式库无探针，AT+BLECTR
+        返回全零）—— 两处均未提交
+      - 板子当前运行：btblecontroller_test（1.6.200+新phyrf+UART0-HCI
+        补丁，bin md5 ae445cb7）
+      - 新工具（工作区根）：h4_host_termios.py（FT232 H4 主机）、
+        ble_adv_termios.py（CDC 驱动完整广播序列）
+
 ## 测试与交付
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令
