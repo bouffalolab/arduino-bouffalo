@@ -220,9 +220,13 @@ typedef	__suseconds_t	suseconds_t;
 typedef	__int64_t	sbintime_t;
 
 #include <sys/features.h>
+#ifdef __cplusplus
+#include <sys/_pthreadtypes.h>
+#else
 #ifndef CONFIG_POSIX
 #ifndef __PICOLIBC__
 #include <sys/_pthreadtypes.h>
+#endif
 #endif
 #endif
 #include <machine/types.h>

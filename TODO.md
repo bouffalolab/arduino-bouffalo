@@ -557,6 +557,126 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
          协议需从 HCI 透传改为高层 AT 命令；
       c) 双模并存需评估 RF/EM 资源。
 
+## 第八阶段：BLE 团队 EM 假说复核 + 配置对齐实验（2026-09-21）
+
+- [x] **BLE 团队的"EM 被二次覆盖"假说被证伪**（对方分析我们的
+      ELF/map：bl_sys_em_config → GLB_Set_EM_Sel(2)，认为 2 走
+      default → 16KB）：
+      1) 枚举定义 `GLB_WRAM128KB_EM32KB = (2)`（bl616cl_glb.h:566），
+         GLB_Set_EM_Sel 按**枚举** switch：case 2 → 写字段 0x03（32KB）；
+         对方把 case 标签误读成了寄存器值
+      2) 反汇编确认：bl_sys_em_config 常量折叠出 em_size=0x8000，
+         else 分支传 a0=2（=枚举 32KB），调用 ROM GLB_Set_EM_Sel
+      3) 运行时探针（BridgeCoreInit 启动日志）在 bl_sys_em_config
+         之后实测 em_sel=3 —— 与链接值一致，无覆盖
+- [x] **配置对齐实验矩阵**（目标：复刻 BLE 同事"btblecontroller_test
+      1.6.200 + 真 UART H4 能上天"的实验，全部在我们板上）：
+      | btble lib | phyrf | 传输 | 结果 |
+      |---|---|---|---|
+      | 1.6.198 | 旧(8/5) | 真UART(8/29) | 静默 |
+      | 1.6.198 | 旧 | 虚拟(bridge) | 静默 |
+      | 1.6.200 | 旧 | 虚拟(bridge) | 静默 |
+      | 1.6.200 | 旧 | 真UART | **静默** |
+      | 1.6.200 | **新(9/3)** | 真UART | **静默** |
+      | m2s1 | 旧 | 片上host | **上天**（BleAdvTest） |
+      | 1.6.200(同事板) | 新(推测) | 真UART | **上天**（同事实测） |
+      每轮命令面全通（6 条 CC，re-enable=0x0C），空口 0 命中
+      （425/447 台设备可见，扫描器正常）。
+      真UART 实验 = stock btblecontroller_test（bin 自带 rfparam TLV，
+      0x1400 BLRFPARA，8/29 的 TLV 缺失问题新版已修）+ HCI UART 重映射
+      UART0 GPIO34/35 关流控（bench FT232 当 H4 主机，
+      h4_host_termios.py 驱动 H4 序列）。
+- [x] **结论收敛**：软件侧（controller 库版本、phyrf 版本、flavor、
+      传输层、命令序列）已与同事的可用配置完全对齐，我们这块板依然
+      静默；同板 m2s1 广播强信号、WiFi 双向正常 → RF 硬件 TX 通路
+      正常。剩余变量只在**板级/芯片个体**：
+      a) eFuse RF 参数（本板：slot 全空、no capcode、TLV 默认 128；
+         若同事的板有 capcode/功率偏移且 uarthci 路径对其处理不同，
+         可解释"同软件不同板一通一不通"）
+      b) 芯片个体/Revision（chip id 本板 = dca73c42e8b4，ISP 日志
+         flashcube_20260921.log 可查）
+      → 需同事配合：提供他们板的 rfparam 启动日志（对比 eFuse
+         slot/capcode 行）+ chip id；或在他们板上烧我们的静默 bin
+         （md5 ae445cb7，UART0-HCI 版）交叉验证
+- [x] **工作区状态变更（实验后保留）**：
+      - bluetooth 仓库：detached 于 43096480（=1.6.200）；原 HEAD
+        c02b93c6；SRAM 计数器探针已 stash（stash@{0}
+        sram-counter-probes-20260918，原 bringup-instrumentation
+        顺位 stash@{1}）；port_uart_conf.c 补丁为 UART0/34-35/无流控
+        （原文件备份 /tmp/port_uart_conf.c.orig）
+      - phyrf 仓库：detached 于 origin/master 3722703（新版 lib
+        md5 f5fda106）；原 825435a
+      - Arduino bundle：libbtblecontroller_bl616cl_uarthci.a 已换
+        1.6.200（md5 e99d17b0；1.6.198 版备份
+        /tmp/libuarthci_1.6.198_backup.a）；ble_hci_port.cpp 加
+        btble_bringup_ctr[16] 零值 stub（正式库无探针，AT+BLECTR
+        返回全零）—— 两处均未提交
+      - 板子当前运行：btblecontroller_test（1.6.200+新phyrf+UART0-HCI
+        补丁，bin md5 ae445cb7）
+      - 新工具（工作区根）：h4_host_termios.py（FT232 H4 主机）、
+        ble_adv_termios.py（CDC 驱动完整广播序列）
+
+## 第九阶段：官方代码可用性的复核（2026-09-21 上午，进行中）
+
+- [x] **用户澄清（推翻第八阶段"板级差异"结论）**：同一块板，官方
+      SDK 代码（btblecontroller_test + 串口工具发 HCI）能正常发空口包
+      → 板子没问题，差异在软件
+- [x] 全树对齐到同事可用窗口：主仓库 dfd20103（8/21，bluetooth 固定
+      1.6.200 的窗口），子模块按该窗口 gitlink 固定（bluetooth 保持
+      43096480=1.6.200），phyrf 新旧两版都测过
+- [x] **关键自查：我今天所有"官方例程"测试都带了 UART0-HCI 补丁**
+      （台架 FT232 只接 GPIO34/35，官方 HCI 在 UART1 27-30）——
+      这个补丁在不同树上表现不同（旧树 HCI 通、对齐树 HCI 死），
+      是污染变量。官方可用验证用的是默认 UART1 引脚
+- [x] 已构建并烧录**完全无补丁**的官方固件（bin md5 37d2c10e，
+      shell 开、HCI=UART1 27/28@2M 流控），等待串口工具在 GPIO27/28
+      上复测
+- [ ] 待用户提供：a) 串口工具的接线方式（哪个 UART/引脚、波特率、
+      流控），以便本机复刻；b) 那份已知可用的 bin（在同事机器上），
+      烧到本板做 A/B + map diff，直接定位软件差异
+
+## 第十阶段：btble_cli 剥离阶梯实验（2026-09-21 上午，用户指导）
+
+按用户方案：复制 btble_cli → btble_hci_test，逐级删 host、逐级实测空口。
+工作树回到 9/18 已验证状态（main=674ea3f0、bluetooth=c02b93c6/1.6.198、
+phyrf=825435a、子模块按 8/13 gitlink）。
+
+| 级 | 配置 | 结果 |
+|---|---|---|
+| 对照A | 9/18 已知好 bin（原样） | **上天 18 次 RSSI -54** |
+| 对照B | 今天重建原版 btble_cli + shell 驱动 | **上天 22 次 RSSI -46** |
+| T0-T4 | m2s1 全栈，bt_enable 回调里自动广播（含+5s 延迟变体） | 全部静默（err=0/err=-69） |
+| T5 | 同上，广播改到普通任务（8s 后） | **上天 13 次 RSSI -60** |
+| S2 | m2s1 只留 controller，直灌 hci_tl_cmd_received | **堆损坏乱码+崩溃重启循环**（复现 bridge 当年 m2s1 崩溃） |
+| S3 | uarthci 只留 controller，任务上下文 HCI_TL_H4 注入 | 前 3 条 CC（Reset/EventMask/AdvParams），**Adv_Data/Adv_Enable 被静默丢弃**，空口 0（补 ke_event_schedule 排水无效） |
+| S4 | uarthci + lib 真端口（DMA H4TL）补丁到 uart0/34-35 | 台架 HCI RX 不通（DMA/流控/console 共口移植未竟），待 UART1 27-30 真接线复测 |
+
+**三条硬结论**：
+1. **调用上下文决定发射**（T4 vs T5 唯一变量）：SDK 环境里在
+   bt_enable 回调（host RX 线程）里 bt_le_adv_start = 返回成功但射频
+   永不发射；同样调用放到栈就绪后的普通任务 = 真正上天。
+   （注意：9/18 Arduino BleAdvTest 回调内广播能上天、官方
+   smartconfig_ble 也在回调内广播——该行为与树/环境相关，未收敛）
+2. **m2s1 直灌必崩**（S2）：hci_tl 无 host 槽位初始化时直接注入
+   = 堆损坏，controller-only 不可行，与 bridge 9/18 观察一致。
+3. **uarthci 直灌在健康环境同样失败**（S3）：即便在 m2s1 全栈能上天的
+   同一块板同一棵树，uarthci + 直灌 = 广播两条命令被丢 + 空口 0。
+   → bridge 的静默不是 Arduino 环境特有，是"绕过 H4TL 接收路径的
+   直灌机制"或 uarthci 库本身的问题。用户已验证的可用路径是
+   真实 UART H4TL（stock 例程 + 串口工具，UART1 27-30 带流控）。
+   **bridge 下一步方向：虚拟传输改为喂 controller 原生 H4TL RX
+   （DMA ring buffer / h4tl 层），而不是 hci_tl_cmd_received 直灌**；
+   或由 BLE 团队确认 CL 上直灌是否受支持。
+
+**台架/工具**：flash_and_cli_adv.py（烧录+shell 驱动广播一体）；
+h4_host_termios.py（FT232 H4 主机）；/tmp/ble_scan 扫描器全程正常
+（每轮 400-500 台设备可见）。
+
+**工作区状态（实验后）**：SDK 树=9/18 状态+btble_hci_test 新例程
+（含 BENCH 补丁：port_uart/dma_uart 引脚 34/35、CL 流控关——
+均未提交，btble_hci_test 未提交）；bluetooth 工作树含引脚/流控补丁；
+板子当前跑 S4 固件。
+
 ## 测试与交付
 
 - [ ] 固化 Blink/Serial/Bridge 三个编译回归命令

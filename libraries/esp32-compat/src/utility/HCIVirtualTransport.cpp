@@ -107,7 +107,8 @@ size_t h2c_count()
 }
 
 }  // namespace
-#define HCI_TL_H4 0U
+// Bouffalo SDK hci_tl_type: HCI_TL_NONE=0, HCI_TL_H4=1.
+#define HCI_TL_H4 1U
 
 static uint8_t hci_payload[256];
 static uint8_t rx_state = 0;   // 0=type, 1=cmd hdr, 2=cmd payload, 3=acl hdr, 4=acl payload

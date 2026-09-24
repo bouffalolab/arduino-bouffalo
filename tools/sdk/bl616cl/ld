@@ -8,11 +8,11 @@ MEMORY
 {
     fw_header (rx) : ORIGIN = 0x80000000 - 0x1000, LENGTH = 4K
     rom_header (rx) : ORIGIN = 0x80000000, LENGTH = 6K
-    rom (rx) : ORIGIN = 0x80000000 + 0x1800, LENGTH = 4096 * 1024
-    ram_nocache (!rx) : ORIGIN = 0x20FC0400, LENGTH = (224K - 1K + 160K - 160 * 1024)
-    ram (!rx) : ORIGIN = 0x60FC0400, LENGTH = (224K - 1K + 160K - 160 * 1024)
-    ram_psram (wxa) : ORIGIN = 0x88000000, LENGTH = 4096 * 1024
-    ram_wifi (wxa) : ORIGIN = 0x21020000 - 160 * 1024, LENGTH = 160 * 1024 - __EM_SIZE
+    rom (rx) : ORIGIN = 0x80000000 + 0x1800, LENGTH = 0x400000
+    ram_nocache (!rx) : ORIGIN = 0x20FC0400, LENGTH = (224K - 1K + 160K - 0x28000)
+    ram (!rx) : ORIGIN = 0x60FC0400, LENGTH = (224K - 1K + 160K - 0x28000)
+    ram_psram (wxa) : ORIGIN = 0x88000000, LENGTH = 0x400000
+    ram_wifi (wxa) : ORIGIN = 0x21020000 - 0x28000, LENGTH = 0x28000 - __EM_SIZE
     hbn_memory (rx) : ORIGIN = 0x20010000, LENGTH = 512
 }
 SECTIONS
@@ -147,7 +147,7 @@ SECTIONS
         *bl616cl_romapi_patch*.o*(.rodata*)
         . = ALIGN(4);
     } > ram AT > rom
-    PROVIDE( __global_pointer$ = . + 0x800 );
+    PROVIDE( __global_pointer$ = (0x60FC0400 + 0x800) );
     __tcm_data_start__ = ABSOLUTE(ADDR(tcm_data)); __tcm_data_end__ = ABSOLUTE(ADDR(tcm_data) + SIZEOF(tcm_data)); __tcm_data_load__ = ABSOLUTE(LOADADDR(tcm_data)); tcm_data :
     {
         . = ALIGN(4);
@@ -238,8 +238,8 @@ SECTIONS
     . = ALIGN(4);
     __rom_text_start__ = ABSOLUTE(ADDR(rom_text)); __rom_text_end__ = ABSOLUTE(ADDR(rom_text) + SIZEOF(rom_text)); __rom_text_load__ = ABSOLUTE(LOADADDR(rom_text)); rom_text :
     {
-        *(.text*)
         INCLUDE macsw_cache_affinity.ld.in
+        *(.text*)
         . = ALIGN(4);
     } > rom
     . = ALIGN(4);

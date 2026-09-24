@@ -46,6 +46,28 @@
 #define  CODE_WIFI_ON_GOT_IP_ABORT      29
 #define  CODE_WIFI_ON_SCAN_DONE_CONNECTING  31
 #define  CODE_WIFI_ON_PARAMS_ERROR      32
+#define  CODE_WIFI_ON_AP_STA_AUTH_FAIL  33
+#ifdef CONFIG_WIFI_P2P
+#define  CODE_WIFI_ON_P2P_DEVICE_FOUND             40
+#define  CODE_WIFI_ON_P2P_DEVICE_LOST              41
+#define  CODE_WIFI_ON_P2P_FIND_STOPPED             42
+#define  CODE_WIFI_ON_P2P_GO_NEG_REQUEST           43
+#define  CODE_WIFI_ON_P2P_GO_NEG_FAILURE           44
+#define  CODE_WIFI_ON_P2P_GO_NEG_SUCCESS           45
+#define  CODE_WIFI_ON_P2P_GROUP_FORMATION_FAILURE  46
+#define  CODE_WIFI_ON_P2P_GROUP_STARTED            47
+#define  CODE_WIFI_ON_P2P_GROUP_REMOVED            48
+#define  CODE_WIFI_ON_P2P_INVITATION_RECEIVED      49
+#define  CODE_WIFI_ON_P2P_INVITATION_RESULT        50
+#define  CODE_WIFI_ON_P2P_GROUP_FORMATION_SUCCESS  51
+#define  CODE_WIFI_ON_P2P_PROV_DISC_SHOW_PIN       52
+#define  CODE_WIFI_ON_P2P_PROV_DISC_ENTER_PIN      53
+#define  CODE_WIFI_ON_P2P_PROV_DISC_PBC_REQ        54
+#define  CODE_WIFI_ON_P2P_PROV_DISC_PBC_RESP       55
+#define  CODE_WIFI_ON_P2P_PROV_DISC_FAILURE        56
+#define  CODE_WIFI_ON_P2P_INVITATION_ACCEPTED      57
+#define  CODE_WIFI_ON_P2P_GOT_IP                   58
+#endif
 
 #define WIFI_MGMR_STA_RECONNECT_DEFAULT_AUTH_FAIL_THRESHOLD 10
 #define WIFI_MGMR_STA_RECONNECT_DEFAULT_FIXED_INTERVAL_SEC  15
@@ -66,6 +88,248 @@ typedef struct wifi_mgmr_sta_reconnect_policy
     uint16_t fixed_interval_sec;          /* Fixed reconnect interval in seconds. */
 } wifi_mgmr_sta_reconnect_policy_t;
 
+#ifdef CONFIG_WIFI_P2P
+#define WIFI_MGMR_P2P_MAX_PEERS         8
+#define WIFI_MGMR_P2P_ADDR_LEN          6
+#define WIFI_MGMR_P2P_ADDR_STR_LEN      18
+#define WIFI_MGMR_P2P_SSID_STR_LEN      (MGMR_SSID_LEN + 1)
+#define WIFI_MGMR_P2P_MODE_STR_LEN      32
+#define WIFI_MGMR_P2P_STATE_STR_LEN     32
+#define WIFI_MGMR_P2P_NAME_STR_LEN      64
+#define WIFI_MGMR_P2P_DEVICE_NAME_MAX_LEN 32
+#define WIFI_MGMR_P2P_DEV_TYPE_STR_LEN  32
+#define WIFI_MGMR_P2P_PEER_RAW_LEN      1024
+#define WIFI_MGMR_P2P_PEER_INFO_LEN     WIFI_MGMR_P2P_PEER_RAW_LEN
+#define WIFI_MGMR_P2P_FHOST_VIF_IDX     1
+#define WIFI_MGMR_P2P_DEFAULT_IFACE     "wl2"
+#define WIFI_MGMR_P2P_EVENT_RAW_LEN     256
+#define WIFI_MGMR_P2P_EVENT_SSID_STR_LEN (MGMR_SSID_LEN * 4 + 1)
+#define WIFI_MGMR_P2P_EVENT_IFNAME_LEN  16
+#define WIFI_MGMR_P2P_EVENT_ROLE_LEN    8
+#define WIFI_MGMR_P2P_EVENT_PIN_LEN     9
+#define WIFI_MGMR_P2P_EVENT_REASON_LEN  32
+#define WIFI_MGMR_P2P_EVENT_METHOD_LEN  16
+#define WIFI_MGMR_P2P_PASSPHRASE_MIN_LEN 8
+#define WIFI_MGMR_P2P_PASSPHRASE_MAX_LEN 63
+#define WIFI_MGMR_P2P_MAX_PERSISTENT_GROUPS 8 /* keep equal to P2P_GROUP_STORE_MAX_GROUPS */
+#define WIFI_MGMR_P2P_PERSISTENT_SSID_STR_LEN (MGMR_SSID_LEN * 4 + 1)
+
+typedef enum
+{
+    WIFI_MGMR_P2P_METHOD_PBC = 0,
+    WIFI_MGMR_P2P_METHOD_PIN = 1,
+    WIFI_MGMR_P2P_METHOD_PIN_DISPLAY = WIFI_MGMR_P2P_METHOD_PIN,
+    WIFI_MGMR_P2P_METHOD_PIN_KEYPAD = 2,
+} wifi_mgmr_p2p_method_t;
+
+/** WPS Device Password ID values carried by a GO Negotiation Request. */
+typedef enum
+{
+    WIFI_MGMR_P2P_DEV_PW_DEFAULT = 0x0000,
+    WIFI_MGMR_P2P_DEV_PW_USER_SPECIFIED = 0x0001,
+    WIFI_MGMR_P2P_DEV_PW_PUSHBUTTON = 0x0004,
+    WIFI_MGMR_P2P_DEV_PW_REGISTRAR_SPECIFIED = 0x0005,
+} wifi_mgmr_p2p_dev_password_id_t;
+
+typedef enum
+{
+    WIFI_MGMR_P2P_ROLE_UNKNOWN = 0,
+    WIFI_MGMR_P2P_ROLE_GO,
+    WIFI_MGMR_P2P_ROLE_CLIENT,
+} wifi_mgmr_p2p_role_t;
+
+/** Stable return values for the fixed-interface P2P API. */
+typedef enum
+{
+    WIFI_MGMR_P2P_OK = 0,
+    WIFI_MGMR_P2P_ERR_INVALID_ARG = -1,
+    WIFI_MGMR_P2P_ERR_NOT_INITIALIZED = -2,
+    WIFI_MGMR_P2P_ERR_VIF_BUSY = -3,
+    WIFI_MGMR_P2P_ERR_INVALID_STATE = -4,
+    WIFI_MGMR_P2P_ERR_NOT_SUPPORTED = -5,
+    WIFI_MGMR_P2P_ERR_NO_MEM = -6,
+    WIFI_MGMR_P2P_ERR_TRANSPORT = -7,
+    WIFI_MGMR_P2P_ERR_SUPPLICANT = -8,
+    WIFI_MGMR_P2P_ERR_TIMEOUT = -9,
+} wifi_mgmr_p2p_error_t;
+
+/** Fixed-interface P2P lifecycle state. */
+typedef enum
+{
+    WIFI_MGMR_P2P_STATE_STOPPED = 0,
+    WIFI_MGMR_P2P_STATE_IDLE,
+    WIFI_MGMR_P2P_STATE_FINDING,
+    WIFI_MGMR_P2P_STATE_LISTENING,
+    WIFI_MGMR_P2P_STATE_NEGOTIATING,
+    WIFI_MGMR_P2P_STATE_GROUP_ACTIVE,
+    WIFI_MGMR_P2P_STATE_STOPPING,
+} wifi_mgmr_p2p_state_t;
+
+typedef struct wifi_mgmr_p2p_find_params
+{
+    uint16_t timeout;                     /* 0 to omit, otherwise timeout in seconds. */
+    uint16_t freq;                        /* 0 to omit, otherwise discovery frequency in MHz. */
+    uint8_t dev_id[WIFI_MGMR_P2P_ADDR_LEN]; /* Target P2P Device Address. */
+    uint8_t dev_id_valid;                 /* 1 to include dev_id, otherwise 0. */
+} wifi_mgmr_p2p_find_params_t;
+
+typedef struct wifi_mgmr_p2p_connect_params
+{
+    uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN]; /* Peer P2P device address. */
+    wifi_mgmr_p2p_method_t method;         /* WPS method. */
+    uint8_t join;                          /* Join an existing GO; mutually exclusive with auto_join and auth. */
+    uint8_t auto_join;                     /* Join a GO or negotiate automatically; mutually exclusive with join and auth. */
+    uint8_t auth;                          /* Authorize a later request without changing lifecycle; mutually exclusive with join and auto_join. */
+    int8_t go_intent;                      /* -1 to omit, otherwise 0..15. */
+    uint16_t freq;                         /* 0 to omit, otherwise operating frequency in MHz. */
+    const char *pin;                       /* PBC: NULL. Display: NULL for auto PIN or 4/8 digits. Keypad: required 4/8 digits. */
+} wifi_mgmr_p2p_connect_params_t;
+
+typedef struct wifi_mgmr_p2p_connect_result
+{
+    uint8_t generated_pin_valid;           /* 1 when supplicant returned an auto-generated display PIN. */
+    char generated_pin[WIFI_MGMR_P2P_EVENT_PIN_LEN]; /* Eight digits plus NUL. */
+} wifi_mgmr_p2p_connect_result_t;
+
+typedef struct wifi_mgmr_p2p_group_add_params
+{
+    uint8_t persistent;                    /* 1 to create persistent GO; mutually exclusive with persistent_id_valid. */
+    uint8_t persistent_id_valid;           /* 1 to reinvoke by id; mutually exclusive with persistent. */
+    int persistent_id;                     /* Persistent network id. Valid when persistent_id_valid is 1. */
+    uint16_t freq;                         /* 0 to omit, otherwise operating frequency in MHz. */
+    uint16_t max_oper_chwidth;              /* 0 to omit, otherwise 20, 40, or 80 MHz. */
+    uint8_t ht40;                          /* 1 to request HT40. */
+    uint8_t vht;                           /* 1 to request VHT. */
+    uint8_t he;                            /* 1 to request HE. */
+    const char *passphrase;                /* NULL for random, otherwise 8..63 bytes without control characters. */
+} wifi_mgmr_p2p_group_add_params_t;
+
+typedef struct wifi_mgmr_p2p_persistent_group
+{
+    int id;                                 /* Network ID used by persistent=<id>. */
+    uint8_t go_dev_addr[WIFI_MGMR_P2P_ADDR_LEN]; /* Stored GO P2P Device Address. */
+    char ssid[WIFI_MGMR_P2P_PERSISTENT_SSID_STR_LEN]; /* Supplicant printable SSID. */
+} wifi_mgmr_p2p_persistent_group_t;
+
+typedef struct wifi_mgmr_p2p_persistent_groups
+{
+    uint8_t group_count;                    /* Number of entries stored in group. */
+    uint8_t group_count_total;              /* Total persistent groups reported. */
+    wifi_mgmr_p2p_persistent_group_t
+        group[WIFI_MGMR_P2P_MAX_PERSISTENT_GROUPS];
+} wifi_mgmr_p2p_persistent_groups_t;
+
+typedef struct wifi_mgmr_p2p_prov_disc_params
+{
+    uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN]; /* Peer P2P device address. */
+    wifi_mgmr_p2p_method_t method;         /* Provisioning config method. */
+    uint8_t join;                          /* Join an existing GO; mutually exclusive with auto_join. */
+    uint8_t auto_join;                     /* Find peer first; mutually exclusive with join. */
+} wifi_mgmr_p2p_prov_disc_params_t;
+
+typedef struct wifi_mgmr_p2p_invite_params
+{
+    uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN]; /* Valid when peer_addr_valid is 1. */
+    uint8_t go_dev_addr[WIFI_MGMR_P2P_ADDR_LEN]; /* Valid when go_dev_addr_valid is 1. */
+    uint8_t peer_addr_valid;               /* Required for active invite and persistent GO reinvoke; optional for persistent client. */
+    uint8_t go_dev_addr_valid;             /* Optional for active invite; invalid for persistent invite. */
+    uint8_t persistent;                    /* 0 to invite to current group, 1 to reinvoke persistent group. */
+    int persistent_id;                     /* Persistent network id. Valid when persistent is 1. */
+    uint16_t freq;                         /* 0 to omit, otherwise force operating frequency in MHz for persistent. */
+    uint16_t pref_freq;                    /* 0 to omit, otherwise preferred frequency in MHz for persistent. */
+    uint16_t max_oper_chwidth;              /* 0 to omit, otherwise 20, 40, or 80 MHz for persistent. */
+    uint8_t ht40;                          /* 1 to request HT40 for persistent reinvocation. */
+    uint8_t vht;                           /* 1 to request VHT for persistent reinvocation. */
+    uint8_t he;                            /* 1 to request HE for persistent reinvocation. */
+} wifi_mgmr_p2p_invite_params_t;
+
+typedef struct wifi_mgmr_p2p_peers
+{
+    uint8_t peer_count;                    /* Number of addresses stored in peer_addr. */
+    uint8_t peer_count_total;              /* Total addresses reported by supplicant. */
+    uint8_t peer_addr[WIFI_MGMR_P2P_MAX_PEERS][WIFI_MGMR_P2P_ADDR_LEN];
+} wifi_mgmr_p2p_peers_t;
+
+typedef struct wifi_mgmr_p2p_peer_info
+{
+    uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN];
+    char pri_dev_type[WIFI_MGMR_P2P_DEV_TYPE_STR_LEN];
+    char device_name[WIFI_MGMR_P2P_NAME_STR_LEN];
+    char manufacturer[WIFI_MGMR_P2P_NAME_STR_LEN];
+    char model_name[WIFI_MGMR_P2P_NAME_STR_LEN];
+    char model_number[WIFI_MGMR_P2P_NAME_STR_LEN];
+    char serial_number[WIFI_MGMR_P2P_NAME_STR_LEN];
+    uint16_t config_methods;
+    uint8_t dev_capab;
+    uint8_t group_capab;
+    int8_t level;
+    int oper_freq;                         /* GO operating frequency in MHz, 0 if unknown. */
+} wifi_mgmr_p2p_peer_info_t;
+
+typedef struct wifi_mgmr_p2p_status
+{
+    wifi_mgmr_p2p_role_t role;
+    uint8_t completed;
+    uint16_t freq;
+    char bssid[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char ssid[WIFI_MGMR_P2P_SSID_STR_LEN];
+    char mode[WIFI_MGMR_P2P_MODE_STR_LEN];
+    char wpa_state[WIFI_MGMR_P2P_STATE_STR_LEN];
+    char p2p_device_addr[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char address[WIFI_MGMR_P2P_ADDR_STR_LEN];
+} wifi_mgmr_p2p_status_t;
+
+typedef struct wifi_mgmr_async_event
+{
+    void *entry;
+    uintptr_t type;
+    void (*finish)(void *);
+    uint16_t size;
+    uint16_t code;
+    unsigned long value;
+} wifi_mgmr_async_event_t;
+
+typedef struct wifi_mgmr_p2p_event
+{
+    wifi_mgmr_async_event_t event;        /* Same layout as struct async_input_event. */
+    uint8_t vif_idx;                      /* fhost vif index, duplicated from event.value. */
+    wifi_mgmr_p2p_role_t role;
+    uint16_t freq;
+    int status;
+    int persistent_id;
+    uint16_t config_methods;
+    uint8_t dev_capab;
+    uint8_t group_capab;
+    int8_t level;
+    uint8_t go_intent;
+    uint16_t dev_passwd_id;                /* wifi_mgmr_p2p_dev_password_id_t when recognized. */
+    uint8_t persistent;                    /* 1 when GROUP_STARTED represents a persistent group. */
+    uint8_t has_freq;
+    uint8_t has_status;
+    uint8_t has_persistent_id;
+    uint8_t has_persistent;
+    uint8_t has_config_methods;
+    uint8_t has_dev_capab;
+    uint8_t has_group_capab;
+    uint8_t has_level;
+    uint8_t has_go_intent;
+    uint8_t has_dev_passwd_id;
+    uint8_t raw_truncated;                /* Reserved; structured events set this to 0. */
+    char raw[WIFI_MGMR_P2P_EVENT_RAW_LEN]; /* Reserved; structured events leave this empty. */
+    char peer_addr[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char peer_iface_addr[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char go_dev_addr[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char bssid[WIFI_MGMR_P2P_ADDR_STR_LEN];
+    char ifname[WIFI_MGMR_P2P_EVENT_IFNAME_LEN];
+    char role_name[WIFI_MGMR_P2P_EVENT_ROLE_LEN];
+    char ssid[WIFI_MGMR_P2P_EVENT_SSID_STR_LEN]; /* Supplicant printf-encoded text. */
+    char device_name[WIFI_MGMR_P2P_NAME_STR_LEN];
+    char pin[WIFI_MGMR_P2P_EVENT_PIN_LEN];
+    char reason[WIFI_MGMR_P2P_EVENT_REASON_LEN];
+    char wps_method[WIFI_MGMR_P2P_EVENT_METHOD_LEN];
+} wifi_mgmr_p2p_event_t;
+#endif /* CONFIG_WIFI_P2P */
+
 #define WIFI_EVENT_BEACON_IND_AUTH_OPEN            0
 #define WIFI_EVENT_BEACON_IND_AUTH_WEP             1
 #define WIFI_EVENT_BEACON_IND_AUTH_WPA_PSK         2
@@ -75,6 +339,17 @@ typedef struct wifi_mgmr_sta_reconnect_policy
 #define WIFI_EVENT_BEACON_IND_AUTH_WPA3_SAE        6
 #define WIFI_EVENT_BEACON_IND_AUTH_WPA2_PSK_WPA3_SAE 7
 #define WIFI_EVENT_BEACON_IND_AUTH_UNKNOWN      0xff
+
+typedef enum {
+    WIFI_AP_STA_AUTH_FAIL_PSK_MISMATCH = 1,
+    WIFI_AP_STA_AUTH_FAIL_SAE_CONFIRM_MISMATCH = 5,
+} wifi_ap_sta_auth_fail_reason_t;
+
+typedef struct {
+    uint8_t sta_mac[6];
+    uint8_t auth_mode;
+    uint8_t reason;
+} wifi_ap_sta_auth_fail_info_t;
 
 #define WIFI_EVENT_BEACON_IND_CIPHER_NONE           0
 #define WIFI_EVENT_BEACON_IND_CIPHER_WEP            1
@@ -114,6 +389,16 @@ typedef enum
     DENY_UNLESS_ACCEPTED
 } ap_acl_perm;
 
+/* AP-advertised operating bandwidth, independent of local PHY capabilities. */
+typedef enum {
+    WIFI_MGMR_SCAN_BW_UNKNOWN = 0,
+    WIFI_MGMR_SCAN_BW_20,
+    WIFI_MGMR_SCAN_BW_40,
+    WIFI_MGMR_SCAN_BW_80,
+    WIFI_MGMR_SCAN_BW_160,
+    WIFI_MGMR_SCAN_BW_80P80,
+} wifi_mgmr_scan_bw_t;
+
 typedef struct wifi_mgmr_scan_item {
     uint32_t mode;
     uint32_t timestamp_lastseen;
@@ -123,14 +408,27 @@ typedef struct wifi_mgmr_scan_item {
     char ssid[32];
     char ssid_tail[1];//always put ssid_tail after ssid
     uint8_t bssid[6];
-    int8_t ppm_abs;
-    int8_t ppm_rel;
+    int8_t ppm_abs; /* unused on wifi6, kept for layout parity with wifi4 */
+    int8_t ppm_rel; /* unused on wifi6, kept for layout parity with wifi4 */
     uint8_t auth;
     uint8_t cipher;
     uint8_t is_used;
     uint8_t wps;
     uint8_t best_antenna;
+    uint8_t bandwidth; /* wifi_mgmr_scan_bw_t */
+    int8_t pmf; /* 0 disabled, 1 capable, 2 required, -1 unavailable */
 } wifi_mgmr_scan_item_t;
+
+/**
+ * @brief Channel utilization measured during a scan.
+ *
+ * One entry is generated for each scanned channel, including channels where
+ * no AP was found. Results remain valid until the next scan starts.
+ */
+typedef struct wifi_mgmr_channel_survey {
+    uint8_t channel;       /**< IEEE 802.11 channel number. */
+    uint8_t utilization;   /**< Channel utilization from 0 to 100 percent. */
+} wifi_mgmr_channel_survey_t;
 
 typedef struct wifi_mgmr_sniffer_item {
     /// interface index
@@ -202,7 +500,36 @@ typedef struct wifi_mgmr_sta_connect_params {
     uint8_t eapol_1_timeout;
     // Remaining EAPOL session timeout, in sec. 0, use default value
     uint8_t eapol_rem_timeout;
+    /// Borrowed until the connection completes.
+    const uint8_t *extra_ies;
+    // Total length of extra_ies in bytes; maximum 64 bytes.
+    uint16_t extra_ies_len;
 } wifi_mgmr_sta_connect_params_t;
+
+/**
+ * Raw management frame received during a scan.
+ *
+ * The frame data is owned by fhost and is valid only for the duration of the
+ * scan frame callback. A callback that needs the frame after returning must
+ * make its own copy.
+ */
+typedef struct wifi_mgmr_scan_frame {
+    const uint8_t *data;
+    uint16_t length;
+    uint16_t frequency;
+    int16_t rssi;
+} wifi_mgmr_scan_frame_t;
+
+/**
+ * Process a Beacon or Probe Response received during a scan.
+ *
+ * Called synchronously in the WiFi task context. The callback is responsible
+ * for filtering the frame and, if accepted, copying it into @p frame_queue.
+ * It must be limited to fast filtering and non-blocking queue submission. It
+ * must not wait, perform time-consuming work, or retain pointers from
+ * @p frame, because doing so blocks fhost processing in the WiFi task.
+ */
+typedef void (*wifi_mgmr_scan_frame_cb_t)(void *arg, void *frame_queue, const wifi_mgmr_scan_frame_t *frame);
 
 /// scan params
 typedef struct wifi_mgmr_scan_params {
@@ -216,6 +543,19 @@ typedef struct wifi_mgmr_scan_params {
     uint32_t duration;
     /// 0: active scan; 1: Passive scan request
     bool passive;
+    /// Borrowed until the scan completes.
+    const uint8_t *extra_ies;
+    // Total length of extra_ies in bytes; maximum 64 bytes.
+    uint16_t extra_ies_len;
+    /// Optional raw Beacon/Probe Response callback; defaults to NULL.
+    wifi_mgmr_scan_frame_cb_t frame_cb;
+    /// Caller context passed to frame_cb; defaults to NULL.
+    void *frame_cb_arg;
+    /**
+     * Caller-owned queue passed unchanged to frame_cb. It must be created
+     * before wifi_mgmr_sta_scan() and remain valid until scan completion.
+     */
+    void *frame_queue;
 } wifi_mgmr_scan_params_t;
 
 typedef struct wifi_mgmr_raw_send_params {
@@ -271,9 +611,11 @@ typedef struct wifi_mgmr_ap_params {
     int start;
     /// DHCP server pool limit.
     int limit;
-    /// AP IP address.
+    /// AP IP address. The AP IPv4 subnet should not overlap the active STA
+    /// IPv4 subnet. If overlap is unavoidable, bind application sockets to
+    /// the intended netif to avoid ambiguous routing.
     uint32_t ap_ipaddr;
-    /// AP subnet mask.
+    /// AP subnet mask. See ap_ipaddr for the AP/STA overlap restriction.
     uint32_t ap_mask;
     /// STA max inactivity while connected.
     uint32_t ap_max_inactivity;
@@ -529,29 +871,17 @@ int wifi_mgmr_sta_connect(const wifi_mgmr_sta_connect_params_t *config);
 int wifi_sta_disconnect(void);
 
 /**
- * wifi_mgmr_sta_disconnect
- * Disconnect from the AP (name kept from the previous SDK: this is the
- * symbol libwl80211_plat exports and the esp32-compat layer calls)
- * return:
- *  0 : Success
- *  -1 : Failed
- *  Others is Failed
- */
-int wifi_mgmr_sta_disconnect(void);
-
-/**
  * Set IPv4 address of STA interface
+ *
+ * param:
+ *  ip   : IPv4 address in network byte order
+ *  mask : IPv4 subnet mask in network byte order
+ *  gw   : IPv4 gateway address in network byte order
+ *  dns  : IPv4 DNS server address in network byte order
  *
  * return 0 on success or -1 on error
  */
 int wifi_mgmr_sta_ip_set(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns);
-
-/**
- * Get IPv4 address of STA interface
- *
- * return 0 on success or -1 on error
- */
-int wifi_mgmr_sta_ip_get(uint32_t *addr, uint32_t *mask, uint32_t *gw, uint32_t *dns);
 
 /**
  * Get IPv4 address of STA interface
@@ -582,6 +912,19 @@ int wifi_sta_dhcp_client_start(uint32_t to_ms);
  *  Others is Failed
  */
 int wifi_mgmr_sniffer_enable(wifi_mgmr_sniffer_item_t sniffer_item);
+
+/**
+ * Change the channel of an enabled sniffer interface.
+ *
+ * The interface must already be in monitor mode. The call completes after the
+ * channel configuration has been acknowledged by the WiFi firmware; it does
+ * not disable monitor mode or recreate the interface.
+ *
+ * @param sniffer_item Sniffer configuration containing the interface, channel
+ *                     and receive callback.
+ * @return 0 on success, -1 on failure.
+ */
+int wifi_mgmr_sniffer_set_channel(wifi_mgmr_sniffer_item_t sniffer_item);
 
 /**
  * wifi_mgmr_sniffer_disable
@@ -629,6 +972,472 @@ int wifi_mgmr_sta_rssi_get(int *rssi);
  *  Others is Failed
  */
 int wifi_mgmr_sta_channel_get(uint8_t *channel);
+
+#ifdef CONFIG_WIFI_P2P
+/**
+ * @brief Fixed-interface Wi-Fi Direct (P2P) API.
+ *
+ * All APIs in this section operate on @ref WIFI_MGMR_P2P_DEFAULT_IFACE
+ * (fhost VIF @ref WIFI_MGMR_P2P_FHOST_VIF_IDX). The VIF is shared with SoftAP,
+ * so initialization can fail with @ref WIFI_MGMR_P2P_ERR_VIF_BUSY.
+ *
+ * Commands that start discovery, negotiation, group formation, provision
+ * discovery, or invitation are synchronous only until the supplicant accepts
+ * the request. A @ref WIFI_MGMR_P2P_OK return does not mean that the radio
+ * protocol has completed; applications must consume the corresponding P2P
+ * asynchronous events for the final result. Query APIs return a synchronous
+ * snapshot of the supplicant state.
+ */
+
+/**
+ * @brief Initialize the fixed P2P interface and its supplicant configuration.
+ *
+ * This acquires the shared AP/P2P VIF, creates or rebinds it as needed, stops
+ * stale discovery, flushes cached P2P state, enables display/keypad/PBC WPS
+ * methods, and configures the operating, listen, and preferred channel.
+ *
+ * @param[in] channel 2.4 GHz or 5 GHz channel permitted by the active country
+ *                    configuration. Disabled, NO_IR, radar, and channel 14 are
+ *                    rejected because P2P must be allowed to initiate radio
+ *                    transmission.
+ * @param[in] p2p_no_group_iface Must be 1. Dynamic group-interface mode (0) is
+ *                               not supported by the fixed-VIF API.
+ *
+ * @retval WIFI_MGMR_P2P_OK Initialization completed and the state is IDLE.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG A parameter or channel is invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_SUPPORTED The channel is unavailable or
+ *                                          p2p_no_group_iface is 0.
+ * @retval WIFI_MGMR_P2P_ERR_VIF_BUSY The shared VIF is owned by SoftAP.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, a group, or stop is in
+ *                                          progress.
+ * @return Another wifi_mgmr_p2p_error_t value on transport or supplicant
+ *         failure.
+ */
+int wifi_mgmr_p2p_init(uint8_t channel, uint8_t p2p_no_group_iface);
+
+/**
+ * @brief Set the device name advertised by P2P/WPS.
+ *
+ * @param[in] name Non-empty NUL-terminated name of at most
+ *                 WIFI_MGMR_P2P_DEVICE_NAME_MAX_LEN bytes. CR and LF are not
+ *                 allowed.
+ *
+ * @retval WIFI_MGMR_P2P_OK The supplicant accepted the new name.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED Call wifi_mgmr_p2p_init() first.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on invalid input or command
+ *         failure.
+ */
+int wifi_mgmr_p2p_set_device_name(const char *name);
+
+/**
+ * @brief Set the operating, listen, and preferred P2P channel.
+ *
+ * The channel is converted internally to frequency and operating class; a
+ * separate frequency-setting API is not required.
+ *
+ * @param[in] channel Valid 2.4 GHz or 5 GHz channel allowed for initiating
+ *                    radiation by the active country configuration.
+ *
+ * @retval WIFI_MGMR_P2P_OK All channel settings were accepted.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED Call wifi_mgmr_p2p_init() first.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is in progress.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG The channel number is invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_SUPPORTED The channel is disabled, NO_IR,
+ *                                          radar-restricted, or outside the
+ *                                          active country configuration.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_set_channel(uint8_t channel);
+
+/**
+ * @brief Park listen and operating channels on the GO channel for join.
+ *
+ * Call only after the peer GO is known. Discovery should still start on
+ * social channels. This is a single-radio workaround so PD/WPS stay on the
+ * GO operating channel instead of returning to 1/6/11.
+ */
+int wifi_mgmr_p2p_set_channel_for_join(uint8_t channel);
+
+/**
+ * @brief Reconfigure fixed-interface mode and the P2P channel.
+ *
+ * Unlike wifi_mgmr_p2p_init(), this function does not create a VIF, clear peer
+ * state, or configure WPS methods. The fixed P2P VIF must already be
+ * initialized and must not be negotiating or hosting/joining an active group.
+ *
+ * @param[in] channel See wifi_mgmr_p2p_set_channel().
+ * @param[in] p2p_no_group_iface Must be 1; dynamic group interfaces are not
+ *                               supported.
+ *
+ * @retval WIFI_MGMR_P2P_OK Configuration was accepted.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_SUPPORTED Dynamic interface mode or the
+ *                                          selected channel is unsupported.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE The current lifecycle state does not
+ *                                          allow reconfiguration.
+ * @return Another wifi_mgmr_p2p_error_t value on invalid input or command
+ *         failure.
+ */
+int wifi_mgmr_p2p_config(uint8_t channel, uint8_t p2p_no_group_iface);
+
+/**
+ * @brief Start P2P device discovery.
+ *
+ * @param[in] config Optional discovery parameters. NULL or a zero-filled
+ *                   structure starts an unbounded, unfiltered search.
+ *                   timeout is in seconds, freq is in MHz, and dev_id is a
+ *                   P2P Device Address rather than an interface address.
+ *
+ * @retval WIFI_MGMR_P2P_OK The supplicant accepted the request and the local
+ *                           lifecycle state changed to FINDING.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on invalid input or command
+ *         failure.
+ *
+ * @note Discovery completion and discovered devices are reported by P2P
+ *       asynchronous events.
+ */
+int wifi_mgmr_p2p_find(const wifi_mgmr_p2p_find_params_t *config);
+
+/**
+ * @brief Stop a current find or listen operation.
+ *
+ * The initialized VIF and peer cache are preserved. Use wifi_mgmr_p2p_flush()
+ * to clear discovery/provisioning state or wifi_mgmr_p2p_stop() for complete
+ * teardown.
+ *
+ * @retval WIFI_MGMR_P2P_OK The stop request was accepted.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_stop_find(void);
+
+/**
+ * @brief Enter P2P listen state for a requested duration.
+ *
+ * @param[in] seconds Listen duration passed to the supplicant, in seconds.
+ * @param[in] channel 0 keeps the current channel configuration. A nonzero
+ *                    value first persistently updates the operating, listen,
+ *                    and preferred channels using the same validation as
+ *                    wifi_mgmr_p2p_set_channel().
+ *
+ * @retval WIFI_MGMR_P2P_OK The request was accepted and local state changed to
+ *                           LISTENING.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on invalid input or command
+ *         failure.
+ *
+ * @note Listen expiration is asynchronous.
+ */
+int wifi_mgmr_p2p_listen(uint16_t seconds, uint8_t channel);
+
+/**
+ * @brief Return cached P2P Device Addresses.
+ *
+ * @param[in] discovered_only 0 returns all cached entries; 1 excludes entries
+ *                            learned only from Probe Requests.
+ * @param[out] peers Receives up to WIFI_MGMR_P2P_MAX_PEERS addresses. Compare
+ *                   peer_count with peer_count_total to detect truncation.
+ *
+ * @retval WIFI_MGMR_P2P_OK The synchronous snapshot was returned.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG discovered_only is not 0/1 or peers is
+ *                                        NULL.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on query or parse failure.
+ */
+int wifi_mgmr_p2p_peers(uint8_t discovered_only,
+                        wifi_mgmr_p2p_peers_t *peers);
+
+/**
+ * @brief Flush P2P discovery and provision-discovery state.
+ *
+ * This stops current discovery and clears cached peers and provisioning state,
+ * but preserves the initialized VIF and any active group. It is intentionally
+ * narrower than wifi_mgmr_p2p_stop().
+ *
+ * @retval WIFI_MGMR_P2P_OK The supplicant accepted the flush request.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_flush(void);
+
+/**
+ * @brief Query parsed information for one cached P2P peer.
+ *
+ * @param[in] peer_addr Six-byte P2P Device Address.
+ * @param[out] peer Receives the synchronous structured peer snapshot.
+ *
+ * @retval WIFI_MGMR_P2P_OK Peer data was returned and parsed.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG An output pointer or address is invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value when the peer is unknown or the
+ *         query/response fails.
+ */
+int wifi_mgmr_p2p_peer(const uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN],
+                       wifi_mgmr_p2p_peer_info_t *peer);
+
+/**
+ * @brief Query the raw supplicant P2P_PEER response for one peer.
+ *
+ * @param[in] peer_addr Six-byte P2P Device Address.
+ * @param[out] raw Destination for a NUL-terminated response.
+ * @param[in] raw_len Size of raw, including space for the NUL terminator; must
+ *                    be greater than zero.
+ * @param[out] copied_len Optional number of response bytes copied, excluding
+ *                        the NUL terminator. Set to 0 before a failed query.
+ * @param[out] truncated Optional flag set to 1 when the response did not fit in
+ *                       raw. Set to 0 before a failed query.
+ *
+ * @retval WIFI_MGMR_P2P_OK Raw data was returned; check truncated separately.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG An address/buffer argument is invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on query failure.
+ */
+int wifi_mgmr_p2p_peer_raw(
+    const uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN], char *raw,
+    uint16_t raw_len, uint16_t *copied_len, uint8_t *truncated);
+
+/**
+ * @brief Start P2P negotiation, authorization, or join.
+ *
+ * @param[in] config Peer, WPS method, role options, GO intent, and optional
+ *                   frequency. join, auto_join, and auth are mutually
+ *                   exclusive. auto_join selects join when the peer is a GO,
+ *                   otherwise it falls back to GO Negotiation. For
+ *                   automatic display PIN, set method to
+ *                   WIFI_MGMR_P2P_METHOD_PIN_DISPLAY and pin to NULL.
+ * @param[out] result Required for automatic display PIN and receives the
+ *                    generated PIN. Optional and cleared when supplied for
+ *                    other methods.
+ *
+ * @retval WIFI_MGMR_P2P_OK The request was accepted. A negotiation/join request
+ *                           changes local state to NEGOTIATING. An auth-only
+ *                           request preserves the current state until a later
+ *                           protocol event. In automatic PIN mode, result
+ *                           already contains the generated PIN.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG The parameter combination is invalid or
+ *                                        automatic PIN has no result buffer.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is already in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ *
+ * @note Group negotiation and formation complete asynchronously; wait for the
+ *       group-started or failure events. A GO_NEG_REQUEST event is a policy
+ *       notification and does not change the local lifecycle state. An
+ *       application that accepts it can copy event.peer_addr, select the WPS
+ *       method from event.dev_passwd_id, set config.auth to 1, and call this
+ *       function to authorize the peer for a subsequent request. Authorization
+ *       itself preserves the lifecycle state; a later GO negotiation event
+ *       advances it.
+ */
+int wifi_mgmr_p2p_connect(
+    const wifi_mgmr_p2p_connect_params_t *config,
+    wifi_mgmr_p2p_connect_result_t *result);
+
+/**
+ * @brief Cancel in-progress P2P formation, join, or invitation work.
+ *
+ * This maps directly to the standard P2P_CANCEL command. It preserves the VIF,
+ * peer cache, and active group. It is not an alias for
+ * wifi_mgmr_p2p_stop_find().
+ *
+ * @retval WIFI_MGMR_P2P_OK A cancellable operation was accepted for cancel.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_SUPPLICANT No cancellable operation exists or the
+ *                                       supplicant rejected the command.
+ * @return Another wifi_mgmr_p2p_error_t value on transport failure.
+ */
+int wifi_mgmr_p2p_cancel(void);
+
+/**
+ * @brief Create an autonomous GO or reinvoke/create a persistent group.
+ *
+ * @param[in] config Optional group parameters. NULL creates an autonomous GO
+ *                   with supplicant defaults. persistent and
+ *                   persistent_id_valid are mutually exclusive. passphrase is
+ *                   an 8..63-byte printable value and cannot replace the saved
+ *                   passphrase of persistent_id_valid.
+ *
+ * @retval WIFI_MGMR_P2P_OK The request was accepted and local state changed to
+ *                           NEGOTIATING.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG A parameter combination, persistent ID,
+ *                                        or passphrase is invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE Negotiation, an active group, or
+ *                                          stop is already in progress.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ *
+ * @note Group creation completes asynchronously.
+ */
+int wifi_mgmr_p2p_group_add(const wifi_mgmr_p2p_group_add_params_t *config);
+
+/**
+ * @brief List saved P2P persistent-group profiles.
+ *
+ * This maps to the standard LIST_NETWORKS command and returns only entries
+ * marked P2P-PERSISTENT. Profiles restored from the PSM partition are visible
+ * after wifi_mgmr_p2p_init().
+ *
+ * @param[out] groups Receives up to WIFI_MGMR_P2P_MAX_PERSISTENT_GROUPS
+ *                    profiles and the total count reported by supplicant.
+ *
+ * @retval WIFI_MGMR_P2P_OK The list was read successfully.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG groups is NULL or the response is
+ *                                        malformed.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_persistent_list(
+    wifi_mgmr_p2p_persistent_groups_t *groups);
+
+/**
+ * @brief Delete one saved P2P persistent-group profile.
+ *
+ * This maps to the standard REMOVE_NETWORK command. On success, the updated
+ * persistent-group list is written to the PSM partition immediately.
+ *
+ * @param[in] persistent_id Non-negative network ID returned by
+ *                          wifi_mgmr_p2p_persistent_list().
+ *
+ * @retval WIFI_MGMR_P2P_OK The profile was removed and persisted.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG persistent_id is negative.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_SUPPLICANT The profile does not exist or cannot be
+ *                                       removed.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_persistent_remove(int persistent_id);
+
+/**
+ * @brief Remove the active group on WIFI_MGMR_P2P_DEFAULT_IFACE.
+ *
+ * The fixed P2P VIF remains initialized and returns to IDLE after the command
+ * is accepted.
+ *
+ * @retval WIFI_MGMR_P2P_OK The remove request was accepted.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE No active group exists.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_group_remove(void);
+
+/**
+ * @brief Start WPS PBC on the active local P2P GO.
+ *
+ * @param[in] peer_addr Optional six-byte P2P Device Address used to restrict
+ *                      enrollment to one peer. Pass NULL to accept any peer.
+ *
+ * @retval WIFI_MGMR_P2P_OK WPS PBC was started.
+ * @retval WIFI_MGMR_P2P_ERR_VIF_BUSY VIF 1 is owned by SoftAP.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE No P2P group is active.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ */
+int wifi_mgmr_p2p_wps_pbc(
+    const uint8_t peer_addr[WIFI_MGMR_P2P_ADDR_LEN]);
+
+/**
+ * @brief Start P2P Provision Discovery with a cached peer.
+ *
+ * @param[in] config Peer address, PBC/display/keypad method, and optional join
+ *                   or auto-join behavior. join and auto_join are mutually
+ *                   exclusive.
+ *
+ * @retval WIFI_MGMR_P2P_OK The request was accepted.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG The configuration is NULL or invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ *
+ * @note The peer response or failure is delivered asynchronously.
+ */
+int wifi_mgmr_p2p_prov_disc(const wifi_mgmr_p2p_prov_disc_params_t *config);
+
+/**
+ * @brief Invite a peer to an active group or reinvoke a persistent group.
+ *
+ * @param[in] config Invitation parameters. An active-group invitation requires
+ *                   peer_addr_valid and GROUP_ACTIVE state; go_dev_addr is
+ *                   optional. A persistent invitation requires a non-negative
+ *                   persistent_id and does not accept go_dev_addr. peer is
+ *                   required when the saved local role is GO and may be
+ *                   omitted when the saved peer is the GO. A specified peer
+ *                   must already be present in the supplicant peer cache.
+ *                   freq, pref_freq, max_oper_chwidth, ht40, vht, and he apply
+ *                   only to persistent reinvocation. Unsupported channel
+ *                   capabilities are rejected by supplicant.
+ *
+ * @retval WIFI_MGMR_P2P_OK The invitation was accepted. Persistent reinvoke
+ *                           changes local state to NEGOTIATING.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG The configuration is NULL or invalid.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_STATE The active/persistent invitation is
+ *                                          not allowed in the current state.
+ * @return Another wifi_mgmr_p2p_error_t value on command failure.
+ *
+ * @note Invitation acceptance and result are asynchronous events.
+ */
+int wifi_mgmr_p2p_invite(const wifi_mgmr_p2p_invite_params_t *config);
+
+/**
+ * @brief Fully stop fixed-interface P2P and release its VIF.
+ *
+ * This attempts to stop discovery, remove all groups, flush cached P2P state,
+ * remove the supplicant VIF, and release shared AP/P2P ownership. Use
+ * wifi_mgmr_p2p_group_remove() or wifi_mgmr_p2p_flush() when the initialized
+ * VIF must be preserved.
+ *
+ * @retval WIFI_MGMR_P2P_OK Teardown completed.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED The fixed VIF is not owned by P2P.
+ * @return Another wifi_mgmr_p2p_error_t value when a teardown step fails.
+ */
+int wifi_mgmr_p2p_stop(void);
+
+/**
+ * @brief Return a synchronous status snapshot from the fixed P2P VIF.
+ *
+ * @param[out] status Receives role, completion flag, frequency, BSSID, SSID,
+ *                    interface mode/state, P2P Device Address, and local
+ *                    interface address. Fields unavailable in the supplicant
+ *                    response remain zero/empty.
+ *
+ * @retval WIFI_MGMR_P2P_OK Status was returned and parsed.
+ * @retval WIFI_MGMR_P2P_ERR_INVALID_ARG status is NULL.
+ * @retval WIFI_MGMR_P2P_ERR_NOT_INITIALIZED P2P is not initialized.
+ * @return Another wifi_mgmr_p2p_error_t value on query or parse failure.
+ */
+int wifi_mgmr_p2p_status(wifi_mgmr_p2p_status_t *status);
+
+/**
+ * @brief Read the local fixed-interface P2P lifecycle state.
+ *
+ * This lock-protected local state is updated by accepted commands and parsed
+ * P2P events. It is useful for admission/error reporting but does not replace
+ * protocol event handling or wifi_mgmr_p2p_status().
+ *
+ * @return Current wifi_mgmr_p2p_state_t value.
+ */
+wifi_mgmr_p2p_state_t wifi_mgmr_p2p_state_get(void);
+
+/**
+ * @brief Convert a P2P API return value to a stable diagnostic string.
+ *
+ * @param[in] error A wifi_mgmr_p2p_error_t value or another integer.
+ *
+ * @return Static NUL-terminated text. Unknown values map to "unknown error";
+ *         the returned pointer must not be freed or modified.
+ */
+const char *wifi_mgmr_p2p_error_string(int error);
+#endif /* CONFIG_WIFI_P2P */
 
 /**
  * wifi_mgmr_sta_ssid_set
@@ -743,15 +1552,57 @@ int wifi_mgmr_sta_scanlist(void);
 uint32_t wifi_mgmr_sta_scanlist_nums_get(void);
 
 /**
- * wifi_mgmr_sta_scanlist_dump
- * Get the scan results
- * param:
- *  param1 : addr for store scan results
- *  param2 : max number of items can be used for storing the scan results
- * return:
- *  Number of scan results
+ * @brief Copy AP results from the scan cache.
+ *
+ * Call after receiving the EV_WIFI/CODE_WIFI_ON_SCAN_DONE event. For example:
+ * @code
+ * uint32_t num = wifi_mgmr_sta_scanlist_nums_get();
+ * if (num > 0) {
+ *     wifi_mgmr_scan_item_t results[num];
+ *     num = wifi_mgmr_sta_scanlist_dump(results, num);
+ * }
+ * @endcode
+ * The caller provides the result array.
+ *
+ * @param results    Destination array of wifi_mgmr_scan_item_t entries.
+ * @param resultNums Number of entries available in @p results.
+ *
+ * @return Number of entries copied.
  */
 uint32_t wifi_mgmr_sta_scanlist_dump(void * results, uint32_t resultNums);
+
+/**
+ * @brief Get the number of channel survey results from the latest scan.
+ *
+ * Call this after receiving the EV_WIFI/CODE_WIFI_ON_SCAN_DONE event to size
+ * the buffer passed to
+ * wifi_mgmr_scan_channel_survey_dump().
+ *
+ * @return Number of valid channel survey results.
+ */
+uint32_t wifi_mgmr_scan_channel_survey_nums_get(void);
+
+/**
+ * @brief Copy channel survey results from the latest scan.
+ *
+ * Call after receiving the EV_WIFI/CODE_WIFI_ON_SCAN_DONE event. For example:
+ * @code
+ * uint32_t num = wifi_mgmr_scan_channel_survey_nums_get();
+ * if (num > 0) {
+ *     wifi_mgmr_channel_survey_t results[num];
+ *     num = wifi_mgmr_scan_channel_survey_dump(results, num);
+ * }
+ * @endcode
+ * Each returned entry contains a channel number and its utilization percentage.
+ * The caller provides the result array.
+ *
+ * @param results     Destination array of wifi_mgmr_channel_survey_t entries.
+ * @param result_nums Number of entries available in @p results.
+ *
+ * @return Number of entries copied. Returns 0 for an invalid or empty buffer.
+ */
+uint32_t wifi_mgmr_scan_channel_survey_dump(wifi_mgmr_channel_survey_t *results,
+                                            uint32_t result_nums);
 
 /**
  * wifi_mgmr_scan_filter_hidden_ssid
@@ -788,6 +1639,18 @@ int wifi_mgmr_scan_ap_all(void *env, void *arg, scan_item_cb_t cb);
 int wifi_mgmr_ap_start(const wifi_mgmr_ap_params_t *config);
 
 /**
+ * Get the oldest pending SoftAP station credential mismatch record.
+ *
+ * Drain pending records on CODE_WIFI_ON_AP_STA_AUTH_FAIL. Reports
+ * PSK_MISMATCH or SAE_CONFIRM_MISMATCH. auth_mode uses
+ * WIFI_EVENT_BEACON_IND_AUTH_*.
+ *
+ * @return 0 on success, -1 if WiFi is not ready, the queue is empty,
+ *         or input is invalid.
+ */
+int wifi_mgmr_ap_sta_auth_fail_get(wifi_ap_sta_auth_fail_info_t *info);
+
+/**
  * wifi_mgmr_ap_stop
  * Stop AP mode
  * return:
@@ -796,6 +1659,25 @@ int wifi_mgmr_ap_start(const wifi_mgmr_ap_params_t *config);
  *  Others is Failed
  */
 int wifi_mgmr_ap_stop(void);
+
+/**
+ * Set IPv4 address of AP interface
+ *
+ * This API can be used to update the AP static IPv4 configuration after AP mode
+ * has been started.
+ *
+ * The Wi-Fi manager and AP must be started, and the AP DHCP server must be
+ * disabled before calling this API.
+ *
+ * param:
+ *  ip   : IPv4 address in network byte order
+ *  mask : IPv4 subnet mask in network byte order
+ *  gw   : IPv4 gateway address in network byte order
+ *  dns  : IPv4 DNS server address in network byte order
+ *
+ * return 0 on success or -1 on error
+ */
+int wifi_mgmr_ap_ip_set(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns);
 
 /**
  * wifi_mgmr_ap_acl_enable
@@ -1014,12 +1896,17 @@ int wifi_mgmr_sta_reconnect_policy_get(wifi_mgmr_sta_reconnect_policy_t *cfg);
  *  2: WIFI_EVENT_BEACON_IND_AUTH_WPA_PSK
  *  3: WIFI_EVENT_BEACON_IND_AUTH_WPA2_PSK
  *  4: WIFI_EVENT_BEACON_IND_AUTH_WPA_WPA2_PSK
+ *  bssid: Target AP BSSID, or NULL for any AP advertising an active PBC session.
+ *  channel: Target channel number, or 0 to scan all channels.
  * return:
  *  0 : Success
  *  -1 : Failed
  *  Others is Failed
  */
-int wifi_mgmr_sta_wps_pbc(uint8_t auth);
+int wifi_mgmr_sta_wps_pbc(uint8_t auth, const uint8_t *bssid, uint8_t channel);
+
+/** Cancel the active STA WPS PBC session. */
+int wifi_mgmr_sta_wps_pbc_cancel(void);
 
 /**
  * wifi_mgmr_sta_non_pref_chan_set - Set the non-preferred channel list for Wi-Fi management
@@ -1071,7 +1958,7 @@ int wifi_mgmr_sta_ps_exit(void);
  * wifi_mgmr_sta_ps_active_time
  * set ps active time  
  * param:
- *      ms: time for active time ,unit: ms 
+ *      ms: active time in milliseconds, valid range 10-90
  * return:
  *  0 : Success
  *  -1 : Failed
@@ -1079,80 +1966,6 @@ int wifi_mgmr_sta_ps_exit(void);
  */
 
 int wifi_mgmr_sta_ps_active_time(uint32_t ms);
-
-/** Public fixed coexistence configurations. Keep values aligned with MACSW. */
-typedef enum {
-    WIFI_COEX_CONFIG_COMBO = 0,
-    WIFI_COEX_CONFIG_STANDALONE_DUAL_ANT = 1,
-    WIFI_COEX_CONFIG_STANDALONE_SPDT = 2,
-} wifi_coex_config_t;
-
-/**
- * @brief Enable WiFi/BLE coexistence mode
- *
- * WiFi must be connected before calling this function. BL616/BL616CL enable
- * combo PS_PTA. BL618DG on 5 GHz applies the standalone dual-antenna hardware
- * recipe without enabling PS_PTA.
- *
- * @return 0 on success, negative error code on failure
- *         -1: WiFi not ready
- *         -2: WiFi not connected
- *         -3: Command failed
- */
-int wifi_mgmr_sta_coex_enable(void);
-
-/**
- * @brief Apply coexistence configuration for an enabled SoftAP.
- *
- * The current public AP flow supports the BL618DG 5 GHz standalone
- * dual-antenna hardware recipe only. It does not enable PS_PTA.
- *
- * @return 0 on success, -1 on failure.
- */
-int wifi_mgmr_ap_coex_enable(void);
-
-/**
- * @brief Enable BL618DG 2.4 GHz coexistence with an explicit configuration.
- *
- * @param config COEX combo or standalone SPDT configuration.
- * @param ps_pta_enable Enable the software TBTT/PS_PTA runtime.
- * @return 0 on success, -1 on failure.
- */
-int wifi_mgmr_sta_coex_enable_2g(wifi_coex_config_t config,
-                                 bool ps_pta_enable);
-
-/**
- * @brief Disable WiFi/BLE coexistence mode
- *
- * This function disables coexistence mode and restores normal WiFi operation.
- *
- * @return 0 on success, negative error code on failure
- */
-int wifi_mgmr_sta_coex_disable(void);
-
-/**
- * @brief Set WiFi active duty cycle for coexistence mode
- *
- * This function configures the WiFi active time per TBTT period.
- *
- * @param active_ms  WiFi active time in milliseconds (valid range: 10-90)
- * @return 0 on success, -1 on invalid parameter
- */
-int wifi_mgmr_sta_coex_duty_set(uint8_t active_ms);
-
-/**
- * @brief Get WiFi/BLE coexistence mode status
- *
- * @return true if coex mode is enabled, false otherwise
- */
-bool wifi_mgmr_sta_coex_status_get(void);
-
-/**
- * @brief Get current WiFi active duty cycle
- *
- * @return WiFi active time in milliseconds
- */
-uint32_t wifi_mgmr_sta_coex_duty_get(void);
 
 /**
  * @brief Set up WiFi Manager STA TWT (Target Wake Time) functionality
@@ -1651,12 +2464,6 @@ int wifi_mgmr_adhoc_start(const wifi_mgmr_adhoc_start_params_t *config);
 int wifi_mgmr_adhoc_stop(void);
 
 /**
- * wifi_mgmr_coex_enable
- * Enable or disable wifi coex
- */
-void wifi_mgmr_coex_enable(bool en);
-
-/**
  * wifi_sta_ipv6_enable
  * Enable or disable ipv6
  *
@@ -1708,21 +2515,15 @@ int wifi_mgmr_get_mode(uint8_t ap_or_sta);
 */
 uint8_t wifi_mgmr_get_channelnum_24G(void);
 
-/*
-*accordingheck if a WiFi channel is valid based on regulatory domain restrictions
-*
-* This function validates whether a given channel number is allowed for use
-* in the current regulatory domain (country code). It checks:
-* - 2.4GHz band channels (1-14 typically)
-* - 5GHz band channels (conditionally for BL618DG platform)
-*
-* @param channel The WiFi channel number to validate
-* @return int
-*   - 0: Channel is valid for current regulatory domain
-*   - -1: Channel is invalid or not allowed
-*
-* @note For 5GHz channels (BL618DG), country-specific validation is not yet implemented (TODO)
-*/
+/**
+ * @brief Check whether a Wi-Fi channel is allowed by the active country code.
+ *
+ * The configured 2.4 GHz channel range is checked on every target. BL618DG
+ * also checks the configured 5 GHz channel list.
+ *
+ * @param channel Wi-Fi channel number to validate.
+ * @return 0 if the channel is allowed, otherwise -1.
+ */
 int wifi_mgmr_channel_valid_check(uint16_t channel);
 
 /**

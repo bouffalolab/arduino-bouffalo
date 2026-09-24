@@ -599,9 +599,11 @@ typedef enum {
     ((void (*)(struct bflb_device_s *dev)) \
     ROM_APITABLE[BFLB_LHAL_ROMAPI_INDEX_bflb_rtc_disable])
 
+#if 0
 #define romapi_bflb_rtc_set_time \
     ((void (*)(struct bflb_device_s *dev, uint64_t time)) \
     ROM_APITABLE[BFLB_LHAL_ROMAPI_INDEX_bflb_rtc_set_time])
+#endif
 
 #define romapi_bflb_uart_init \
     ((void (*)(struct bflb_device_s *dev, const struct bflb_uart_config_s *config)) \

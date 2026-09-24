@@ -1,5 +1,8 @@
 # Arduino BL616CL platform — stage 1
 
+BLE UART HCI 的独立 SDK、软件 HCI 及 Arduino bridge `AT+HCI` 实机广播验证见
+[2026-09-24 里程碑](docs/BLE-UARTHCI-MILESTONE-2026-09-24.md)。
+
 This local development platform implements FQBN
 `bouffalo:bl616cl:unor4_bl616cl` for the stage-1 M0/M1 milestone. Linux
 post-processing tools are supplied by the generator and the checked-in macOS

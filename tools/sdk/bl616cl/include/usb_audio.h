@@ -6,6 +6,10 @@
 #ifndef USB_AUDIO_H
 #define USB_AUDIO_H
 
+#ifndef CONFIG_USBHOST_AUDIO_MAX_SAMPLE_RATES
+#define CONFIG_USBHOST_AUDIO_MAX_SAMPLE_RATES 8
+#endif
+
 /** Audio Interface Subclass Codes
  * Refer to Table A-2 from audio10.pdf
  */
@@ -696,7 +700,7 @@ struct audio_cs_if_as_format_type_descriptor {
     uint8_t bSubframeSize;
     uint8_t bBitResolution;
     uint8_t bSamFreqType;
-    uint8_t tSamFreq[3];
+    uint8_t tSamFreq[3 * CONFIG_USBHOST_AUDIO_MAX_SAMPLE_RATES];
 } __PACKED;
 
 #define AUDIO_SIZEOF_FORMAT_TYPE_DESC(bSamFreqType) (8 + 3 * (bSamFreqType))

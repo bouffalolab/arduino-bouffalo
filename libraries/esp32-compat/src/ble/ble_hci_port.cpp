@@ -369,6 +369,13 @@ void btble_uart_finish_transfers(void)
 {
 }
 
+/* The AT+BLECTR diagnostic reads the SRAM bring-up counters that the
+ * 2026-09-18 instrumented controller build exported.  The stock 1.6.200+
+ * controller library has no instrumentation, so provide a zeroed array to
+ * keep the command linking (it simply reports no activity). */
+extern "C" volatile uint32_t btble_bringup_ctr[16];
+volatile uint32_t btble_bringup_ctr[16];
+
 void btble_uart_read(uint8_t *bufptr, uint32_t size,
                      void (*callback)(void *, uint8_t), void *dummy)
 {
