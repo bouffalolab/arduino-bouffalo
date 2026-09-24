@@ -19,6 +19,12 @@ extern "C" {
 #include "timers.h"
 }
 
+// Current wl80211 names these helpers without the mgmr prefix; keep the
+// Arduino compatibility layer source-compatible with the older bundle API.
+#define wifi_mgmr_sta_disconnect wifi_sta_disconnect
+extern "C" int wifi_mgmr_sta_ip_get(uint32_t *addr, uint32_t *mask,
+                                      uint32_t *gw, uint32_t *dns);
+
 extern "C" void wl80211_init(void);
 extern "C" void wifi_task_create(void);
 extern "C" void ensure_rfparam(void);

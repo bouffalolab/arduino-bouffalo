@@ -243,20 +243,36 @@ enum cfgmacsw_msg_index {
     /// Requset to send null packet
     CFGMACSW_NULL_DATA_SEND_CMD,
     CFGMACSW_NULL_DATA_SEND_RESP,
-    /// Request to enable WiFi/BLE coexistence (param: @ref cfgmacsw_coex_enable)
-    CFGMACSW_COEX_ENABLE_CMD,
-    /// Response to CFGMACSW_COEX_ENABLE_CMD (param: @ref cfgmacsw_resp)
-    CFGMACSW_COEX_ENABLE_RESP,
-    /// Request to disable WiFi/BLE coexistence (param: @ref cfgmacsw_coex_disable)
-    CFGMACSW_COEX_DISABLE_CMD,
-    /// Response to CFGMACSW_COEX_DISABLE_CMD (param: @ref cfgmacsw_resp)
-    CFGMACSW_COEX_DISABLE_RESP,
+    /// Start WiFi/BLE coexistence using a product runtime policy
+    CFGMACSW_COEX_START_CMD = 102,
+    /// Response to CFGMACSW_COEX_START_CMD
+    CFGMACSW_COEX_START_RESP = 103,
+    /// Stop the current WiFi/BLE coexistence activation
+    CFGMACSW_COEX_STOP_CMD = 104,
+    /// Response to CFGMACSW_COEX_STOP_CMD
+    CFGMACSW_COEX_STOP_RESP = 105,
     /// Request to set coexistence duty cycle (param: @ref cfgmacsw_coex_duty_set)
-    CFGMACSW_COEX_DUTY_SET_CMD,
+    CFGMACSW_COEX_DUTY_SET_CMD = 106,
     /// Response to CFGMACSW_COEX_DUTY_SET_CMD (param: @ref cfgmacsw_resp)
-    CFGMACSW_COEX_DUTY_SET_RESP,
+    CFGMACSW_COEX_DUTY_SET_RESP = 107,
     /// Event sent when AP CSA completes (param: @ref cfgmacsw_csa_finish_event)
-    CFGMACSW_CSA_FINISH_EVENT,
+    CFGMACSW_CSA_FINISH_EVENT = 108,
+    /// Query the current WiFi/BLE coexistence activation
+    CFGMACSW_COEX_STATUS_GET_CMD = 109,
+    /// Response to CFGMACSW_COEX_STATUS_GET_CMD
+    CFGMACSW_COEX_STATUS_GET_RESP = 110,
+    /// Enable or disable connection protection independently of activation
+    CFGMACSW_COEX_PROTECTION_SET_CMD = 111,
+    /// Response to CFGMACSW_COEX_PROTECTION_SET_CMD
+    CFGMACSW_COEX_PROTECTION_SET_RESP = 112,
+    /// Notify application of an AP STA credential mismatch
+    CFGMACSW_AP_STA_AUTH_FAIL_CMD = 113,
+    /// Structured P2P event from supplicant (param: @ref cfgmacsw_p2p_event)
+    CFGMACSW_P2P_EVENT = 114,
+    /// Request cancellation of an active scan (param: @ref cfgmacsw_abort_scan)
+    CFGMACSW_ABORT_SCAN_CMD = 115,
+    /// Response to CFGMACSW_ABORT_SCAN_CMD (param: @ref cfgmacsw_resp)
+    CFGMACSW_ABORT_SCAN_RESP = 116,
 };
 
 /// CFGMACSW status
@@ -439,16 +455,137 @@ struct cfgmacsw_rc_result {
 };
 
 /// structure for CFGMACSW_STATUS_CODE_PRINT_CMD
+#define CFGMACSW_STATUS_CODE_MSG_LEN 256
 struct cfgmacsw_status_code_print {
     /// header
     struct cfgmacsw_msg_hdr hdr;
     /// Vif idx
     int fhost_vif_idx;
-    const char *msg;
+    char msg[CFGMACSW_STATUS_CODE_MSG_LEN];
 
+};
+
+enum cfgmacsw_p2p_event_type {
+    CFGMACSW_P2P_DEVICE_FOUND = 1,
+    CFGMACSW_P2P_DEVICE_LOST,
+    CFGMACSW_P2P_FIND_STOPPED,
+    CFGMACSW_P2P_GO_NEG_REQUEST,
+    CFGMACSW_P2P_GO_NEG_FAILURE,
+    CFGMACSW_P2P_GO_NEG_SUCCESS,
+    CFGMACSW_P2P_GROUP_FORMATION_FAILURE,
+    CFGMACSW_P2P_GROUP_STARTED,
+    CFGMACSW_P2P_GROUP_REMOVED,
+    CFGMACSW_P2P_INVITATION_RECEIVED,
+    CFGMACSW_P2P_INVITATION_RESULT,
+    CFGMACSW_P2P_GROUP_FORMATION_SUCCESS,
+    CFGMACSW_P2P_PROV_DISC_SHOW_PIN,
+    CFGMACSW_P2P_PROV_DISC_ENTER_PIN,
+    CFGMACSW_P2P_PROV_DISC_PBC_REQ,
+    CFGMACSW_P2P_PROV_DISC_PBC_RESP,
+    CFGMACSW_P2P_PROV_DISC_FAILURE,
+    CFGMACSW_P2P_INVITATION_ACCEPTED,
+    /* Internal lifecycle notification; intentionally has no public event code. */
+    CFGMACSW_P2P_LISTEN_STOPPED,
+};
+
+enum cfgmacsw_p2p_role {
+    CFGMACSW_P2P_ROLE_UNKNOWN = 0,
+    CFGMACSW_P2P_ROLE_GO,
+    CFGMACSW_P2P_ROLE_CLIENT,
+};
+
+enum cfgmacsw_p2p_wps_method {
+    CFGMACSW_P2P_WPS_METHOD_UNKNOWN = 0,
+    CFGMACSW_P2P_WPS_METHOD_PIN_DISPLAY,
+    CFGMACSW_P2P_WPS_METHOD_PIN_KEYPAD,
+    CFGMACSW_P2P_WPS_METHOD_PBC,
+    CFGMACSW_P2P_WPS_METHOD_NFC,
+    CFGMACSW_P2P_WPS_METHOD_P2PS,
+};
+
+enum cfgmacsw_p2p_valid_field {
+    CFGMACSW_P2P_VALID_PEER_ADDR       = 1U << 0,
+    CFGMACSW_P2P_VALID_PEER_IFACE_ADDR = 1U << 1,
+    CFGMACSW_P2P_VALID_GO_DEV_ADDR     = 1U << 2,
+    CFGMACSW_P2P_VALID_BSSID           = 1U << 3,
+    CFGMACSW_P2P_VALID_ROLE            = 1U << 4,
+    CFGMACSW_P2P_VALID_FREQ            = 1U << 5,
+    CFGMACSW_P2P_VALID_STATUS          = 1U << 6,
+    CFGMACSW_P2P_VALID_PERSISTENT_ID   = 1U << 7,
+    CFGMACSW_P2P_VALID_CONFIG_METHODS  = 1U << 8,
+    CFGMACSW_P2P_VALID_DEV_CAPAB       = 1U << 9,
+    CFGMACSW_P2P_VALID_GROUP_CAPAB     = 1U << 10,
+    CFGMACSW_P2P_VALID_LEVEL           = 1U << 11,
+    CFGMACSW_P2P_VALID_GO_INTENT       = 1U << 12,
+    CFGMACSW_P2P_VALID_DEV_PASSWD_ID   = 1U << 13,
+    CFGMACSW_P2P_VALID_WPS_METHOD      = 1U << 14,
+    CFGMACSW_P2P_VALID_PERSISTENT      = 1U << 15,
+};
+
+#define CFGMACSW_P2P_ADDR_LEN        6
+#define CFGMACSW_P2P_SSID_LEN        32
+#define CFGMACSW_P2P_IFNAME_LEN      16
+#define CFGMACSW_P2P_DEVICE_NAME_LEN 33
+#define CFGMACSW_P2P_PIN_LEN         9
+#define CFGMACSW_P2P_REASON_LEN      32
+
+/// Fixed-size, pointer-free P2P event passed from supplicant to fhost.
+struct cfgmacsw_p2p_event {
+    struct cfgmacsw_msg_hdr hdr;
+    int fhost_vif_idx;
+    uint32_t valid_fields;
+    int32_t status;
+    int32_t persistent_id;
+    uint16_t freq;
+    uint16_t config_methods;
+    uint16_t dev_passwd_id;
+    uint8_t type;
+    uint8_t role;
+    uint8_t dev_capab;
+    uint8_t group_capab;
+    int8_t level;
+    uint8_t go_intent;
+    uint8_t wps_method;
+    uint8_t ssid_len;
+    uint8_t persistent;
+    uint8_t peer_addr[CFGMACSW_P2P_ADDR_LEN];
+    uint8_t peer_iface_addr[CFGMACSW_P2P_ADDR_LEN];
+    uint8_t go_dev_addr[CFGMACSW_P2P_ADDR_LEN];
+    uint8_t bssid[CFGMACSW_P2P_ADDR_LEN];
+    uint8_t ssid[CFGMACSW_P2P_SSID_LEN];
+    char ifname[CFGMACSW_P2P_IFNAME_LEN];
+    char device_name[CFGMACSW_P2P_DEVICE_NAME_LEN];
+    char pin[CFGMACSW_P2P_PIN_LEN];
+    char reason[CFGMACSW_P2P_REASON_LEN];
 };
 typedef void (*cfgmacsw_raw_send_done)(void* env);
 typedef void (*cfgmacsw_adhoc_tx_cfm)(void* env, uint32_t status);
+enum cfgmacsw_ap_sta_auth_mode {
+    CFGMACSW_AP_STA_AUTH_WPA2_PSK = 1,
+    CFGMACSW_AP_STA_AUTH_WPA3_SAE,
+    CFGMACSW_AP_STA_AUTH_WPA_PSK,
+};
+
+enum cfgmacsw_ap_sta_auth_fail_reason {
+    CFGMACSW_AP_STA_AUTH_FAIL_PSK_MISMATCH = 1,
+    CFGMACSW_AP_STA_AUTH_FAIL_SAE_CONFIRM_MISMATCH,
+};
+
+/// Structure for CFGMACSW_AP_STA_AUTH_FAIL_CMD.
+/// Ownership is transferred to the FHOST control handler after enqueue.
+struct cfgmacsw_ap_sta_auth_fail {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+    /// Vif idx
+    int fhost_vif_idx;
+    /// Station MAC address copied from the hostapd control event
+    uint8_t sta_mac[6];
+    /// Authentication mode used by this attempt
+    uint8_t auth_mode;
+    /// Credential mismatch reason
+    uint8_t reason;
+};
+
 struct cfgmacsw_raw_send {
     /// header
     struct cfgmacsw_msg_hdr hdr;
@@ -542,6 +679,14 @@ struct cfgmacsw_scan_completed {
     uint32_t status;
     /// Nb result available with CFGMACSW_SCAN_RESULTS_CMD
     uint32_t result_cnt;
+};
+
+/// Structure for CFGMACSW_ABORT_SCAN_CMD.
+struct cfgmacsw_abort_scan {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+    /// Vif idx
+    uint16_t fhost_vif_idx;
 };
 
 /// structure for CFGMACSW_SCAN_RESULT_EVENT
@@ -988,36 +1133,71 @@ struct cfgmacsw_set_ps_mode {
     uint8_t ps_mode;
 };
 
-/// structure for CFGMACSW_COEX_ENABLE_CMD
-struct cfgmacsw_coex_enable {
+/// structure for CFGMACSW_COEX_START_CMD
+struct cfgmacsw_coex_start {
     /// header
     struct cfgmacsw_msg_hdr hdr;
-    /// Vif idx
-    uint16_t fhost_vif_idx;
-    /// Whether config_id was explicitly supplied by the application
-    bool config_present;
-    /// Fixed configuration ID carried as a stable wire value
-    uint8_t config_id;
-    /// Request software TBTT/PS_PTA runtime
-    bool ps_pta_enable;
+    /// Must be PS_PTA_REQUIRED (2); old hardware-only requests are rejected.
+    uint8_t policy;
 };
 
-/// structure for CFGMACSW_COEX_DISABLE_CMD
-struct cfgmacsw_coex_disable {
+/// structure for CFGMACSW_COEX_STOP_CMD
+struct cfgmacsw_coex_stop {
     /// header
     struct cfgmacsw_msg_hdr hdr;
-    /// Vif idx
-    uint16_t fhost_vif_idx;
+};
+
+/// structure for CFGMACSW_COEX_STATUS_GET_CMD
+struct cfgmacsw_coex_status_get {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+};
+
+/// structure for CFGMACSW_COEX_STATUS_GET_RESP
+struct cfgmacsw_coex_status_resp {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+    /// One of enum wifi_mgmr_coex_error values
+    int32_t result;
+    bool hardware_configured;
+    /// A product activation is committed
+    bool active;
+    /// PS-PTA runtime is currently running
+    bool ps_pta_running;
+    /// Resolved runtime policy
+    uint8_t effective_runtime;
+    /// Stable Wi-Fi band, or PHY_BAND_MAX while inactive
+    uint8_t band;
+    /// Configured Wi-Fi active window in milliseconds
+    uint8_t duty_active_ms;
 };
 
 /// structure for CFGMACSW_COEX_DUTY_SET_CMD
 struct cfgmacsw_coex_duty_set {
     /// header
     struct cfgmacsw_msg_hdr hdr;
-    /// Vif idx
-    uint16_t fhost_vif_idx;
     /// WiFi active time in ms (10-90)
     uint8_t active_ms;
+};
+
+/// structure for CFGMACSW_COEX_PROTECTION_SET_CMD
+struct cfgmacsw_coex_protection_set {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+    /// true to enable connection protection
+    bool enable;
+    /// enum coexm_hw_topology value captured from Board Config
+    uint8_t topology;
+    /// enum coex_rf_path value reported by the selected backend
+    uint8_t rf_path;
+};
+
+/// structured result for coexistence control commands
+struct cfgmacsw_coex_resp {
+    /// header
+    struct cfgmacsw_msg_hdr hdr;
+    /// One of enum wifi_mgmr_coex_error values
+    int32_t result;
 };
 
 /// structure for CFGMACSW_TWT_SETUP_CMD
@@ -1344,6 +1524,27 @@ int fhost_cntrl_cfgmacsw_event_send(struct cfgmacsw_msg_hdr *msg_hdr);
  */
 int fhost_cntrl_cfgmacsw_cmd_send(struct cfgmacsw_msg_hdr *cmd,
                                  struct cfgmacsw_msg_hdr *resp);
+
+/**
+ ****************************************************************************************
+ * @brief Send an AP STA authentication failure notification without waiting.
+ *
+ * Parameters are copied into an owned command and queued without waiting.
+ * Allocation failure returns an error without queuing a partial message.
+ * On successful enqueue, the Control TASK owns and releases the command.
+ *
+ * @param[in] fhost_vif_idx FHOST VIF index of the AP.
+ * @param[in] sta_mac       Station MAC address.
+ * @param[in] auth_mode     Authentication mode used by this attempt.
+ * @param[in] reason        Credential mismatch reason.
+ *
+ * @return 0 on successful enqueue and != 0 if the notification was dropped.
+ ****************************************************************************************
+ */
+int fhost_cntrl_cfgmacsw_ap_sta_auth_fail_send(int fhost_vif_idx,
+                                            const uint8_t sta_mac[6],
+                                            uint8_t auth_mode,
+                                            uint8_t reason);
 
 /**
  ****************************************************************************************

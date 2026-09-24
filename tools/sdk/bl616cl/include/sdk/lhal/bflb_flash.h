@@ -88,6 +88,13 @@ int bflb_flash_init(void);
 uint32_t bflb_flash_get_jedec_id(void);
 
 /**
+ * @brief Check whether flash initialization fell back to two-line DO/DIO mode.
+ *
+ * @return One if fallback was used, otherwise zero
+ */
+uint8_t bflb_flash_is_2line_fallback(void);
+
+/**
  * @brief get flash size
  *
  * @return flash size

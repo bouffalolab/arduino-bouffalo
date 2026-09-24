@@ -676,6 +676,27 @@ def main() -> int:
             copy_file(btble_lib, sdk_staging / "lib" / btble_lib.name)
             print(f"Note: copied btblecontroller: {btble_lib.name}")
 
+    # Chip-specific archives are built in their component directories rather
+    # than build_out, but platform.txt links them by these exact names.
+    extra_archives = {
+        "libpka_bl616cl.a": sdk / "drivers" / "lhal" / "src" / "pka" /
+        "libpka_bl616cl.a",
+        "libwl80211_bl616cl.a": build_dir / "build_wl80211" / "src" /
+        "libwl80211_bl616cl.a",
+        "libmacsw_bl616cl.a": build_dir / "build_macsw" /
+        "libmacsw_bl616cl.a",
+        "libmacsw_config_bl616cl_default.a": build_dir / "build_macsw" /
+        "libmacsw_config_bl616cl_default.a",
+    }
+    for name, source in extra_archives.items():
+        if source.is_file():
+            copy_file(source, sdk_staging / "lib" / name)
+    # The Arduino BLE host compatibility layer still links this legacy host
+    # archive; preserve an existing copy until it is rebuilt for this SDK.
+    legacy_blestack = sdk_runtime / "lib" / "libblestack.a"
+    if legacy_blestack.is_file():
+        copy_file(legacy_blestack, sdk_staging / "lib" / legacy_blestack.name)
+
     # phyrf — precompiled RF calibration library (required by BLE/WiFi)
     phyrf_dir = sdk / "drivers" / "soc" / chip / "phyrf"
     if phyrf_dir.is_dir():
@@ -687,10 +708,18 @@ def main() -> int:
     copy_file(archives[EXPECTED_BOARD_ARCHIVE],
               sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
     # autoconf.h and linker script
-    copy_file(require_file(generated / "autoconf.h", "autoconf.h"),
+    generated_autoconf = generated / "autoconf.h"
+    if not generated_autoconf.is_file():
+        generated_autoconf = generated / "autoconfig.h"
+    copy_file(require_file(generated_autoconf, "autoconf.h"),
               sdk_staging / "include" / "autoconf.h")
     copy_file(require_file(generated / "linker.ld",
                            f"{chip} linker script"), sdk_staging / "ld")
+    # The linker script includes the MACSW cache-affinity fragment by name.
+    # Keep that fragment beside the generated script in the Arduino bundle.
+    macsw_affinity = sdk / "components" / "wireless" / "macsw" / "macsw_cache_affinity.ld.in"
+    if macsw_affinity.is_file():
+        copy_file(macsw_affinity, sdk_staging / macsw_affinity.name)
     # defconfig and FreeRTOSConfig.h from this directory
     copy_file(script_dir / "defconfig", sdk_staging / "defconfig")
     copy_file(script_dir / "FreeRTOSConfig.h",
@@ -768,7 +797,8 @@ def main() -> int:
     autoconf = None
     for candidate in (build_out / "include" / "autoconf.h",
                       build_dir / "generated" / "include" / "autoconf.h",
-                      build_dir / "generated" / "autoconf.h"):
+                      build_dir / "generated" / "autoconf.h",
+                      build_dir / "generated" / "autoconfig.h"):
         if candidate.is_file():
             autoconf = candidate
             break

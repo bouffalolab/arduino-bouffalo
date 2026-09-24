@@ -168,6 +168,7 @@ uint32_t pm_pds_get_all_wakeup_src(void);
 BL_Sts_Type pm_pds_get_wakeup_src(uint32_t WakeupType);
 BL_Err_Type pm_set_gpio_pu_pd_ie(int pin, int pu, int pd, int ie);
 int pm_lowpower_gpio_cfg(lp_gpio_cfg_type *gpio_cfg);
+uint8_t pm_get_sf_pin_select(void);
 void pm_pds_mask_all_wakeup_src(void);
 BL_Err_Type pm_set_gpio_int_mask(int pin, int int_mask);
 BL_Err_Type pm_set_gpio_trig_mode_int_mask(int pin, int trig_mode, int int_mask);

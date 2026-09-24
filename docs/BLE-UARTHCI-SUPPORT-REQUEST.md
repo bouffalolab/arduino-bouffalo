@@ -1,5 +1,13 @@
 # BL616CL uarthci（external-host）BLE 不发射 —— 背景说明与协助请求
 
+> **2026-09-24 更新**：本协助请求记录的是 2026-09-18 的历史现象。
+> 用户指定的另一棵 SDK 工作树中的 `btblecontroller_test`，已在同一块
+> BL616CL 板上通过 UART HCI 发出 `BL616CL-HCI` 广播，并被本机蓝牙
+> 适配器扫到。下文关于“官方 uarthci 例程也不发射”和“flavor 自身
+> 必然有问题”的推断不再成立；后续 Arduino bridge `AT+HCI` 路径也已
+> 在同板完成空口广播验证。详见
+> [2026-09-24 里程碑](BLE-UARTHCI-MILESTONE-2026-09-24.md)。
+
 **日期**：2026-09-18
 **提交方**：UNO R4 WiFi / BL616CL 适配项目（bridge + Arduino core）
 **对象**：BLE controller（btblecontroller）团队

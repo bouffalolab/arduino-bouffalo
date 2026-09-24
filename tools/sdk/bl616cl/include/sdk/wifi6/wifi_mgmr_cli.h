@@ -4,9 +4,6 @@ void cmd_phy(int argc, char *argv[]);
 #ifdef CMD_TXL_CNTRL_PUSH_AC_ENABLE
 void cmd_ac_set(int argc, char *argv[]);
 #endif
-#ifdef CFG_FOR_COEXISTENCE_TEST_STOPAP_PATCH
-void cmd_ap_stop(int argc, char *argv[]);
-#endif
 void wifi_scan_cmd(int argc, char *argv[]);
 void wifi_connect_cmd(int argc, char *argv[]);
 void wifi_disconnect_cmd(int argc, char *argv[]);
@@ -28,17 +25,21 @@ void wifi_country_code_set_cmd(int argc, char **argv);
 void wifi_sta_ps_on_cmd(int argc, char *argv[]);
 void wifi_sta_ps_off_cmd(int argc, char *argv[]);
 void wifi_sta_ps_set_cmd(int argc, char **argv);
-void wifi_coex_enable_cmd(int argc, char *argv[]);
-void wifi_ap_coex_enable_cmd(int argc, char *argv[]);
-void wifi_coex_disable_cmd(int argc, char *argv[]);
+void wifi_coex_init_cmd(int argc, char **argv);
+void wifi_coex_board_config_cmd(int argc, char **argv);
+void wifi_coex_start_cmd(int argc, char *argv[]);
+void wifi_coex_stop_cmd(int argc, char *argv[]);
 void wifi_coex_duty_set_cmd(int argc, char **argv);
 void wifi_coex_status_cmd(int argc, char **argv);
-#ifdef BL618DG
-void wifi_coex_bt_spdt_cmd(int argc, char **argv);
-void wifi_coex_bt_adj_pwr_cmd(int argc, char **argv);
-void wifi_coex_bt_adj_pwr_off_cmd(int argc, char **argv);
-void wifi_coex_bt_overlay_cmd(int argc, char **argv);
-void wifi_coex_bt_overlay_off_cmd(int argc, char **argv);
+void wifi_coex_protection_cmd(int argc, char **argv);
+#if defined(CONFIG_WIFI_COEX_DEBUG_CLI)
+void wifi_coex_debug_status_cmd(int argc, char **argv);
+void wifi_coex_debug_spdt_bt_cmd(int argc, char **argv);
+void wifi_coex_debug_spdt_2g_cmd(int argc, char **argv);
+void wifi_coex_debug_spdt_pta_cmd(int argc, char **argv);
+void wifi_coex_debug_bt_spdt_cmd(int argc, char **argv);
+void wifi_coex_debug_bt_overlay_cmd(int argc, char **argv);
+void wifi_coex_debug_bt_adj_pwr_cmd(int argc, char **argv);
 #endif
 void wifi_sta_info_cmd(int argc, char *argv[]);
 void wifi_ap_sta_list_get_cmd(int argc, char *argv[]);

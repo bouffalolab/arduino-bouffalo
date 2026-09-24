@@ -1,7 +1,15 @@
 # BL616CL + uarthci flavor 广播静默问题排查报告
 
+> **2026-09-24 结论更新**：在用户指定的另一棵 SDK 工作树上，同一块板的
+> `btblecontroller_test` 已通过 UART HCI 配置广播，并由本机 `hci0` 空口
+> 扫描到 `BL616CL-HCI`（约 -40 dBm）。因此下文“官方 uarthci 例程同板
+> 空口 0 包”和“uarthci flavor 固有限制”只代表 2026-09-18 的历史测试，
+> 不能作为当前通用结论。复测镜像、命令和适用范围见
+> [2026-09-24 里程碑](BLE-UARTHCI-MILESTONE-2026-09-24.md)。后续 Arduino
+> bridge `AT+HCI` 路径也已在同板发出广播；下文保留历史排查过程。
+
 **日期**：2026-09-18
-**状态**：未解决，收敛到 flavor 固有限制，待 controller 团队修复
+**状态**：历史排查记录；SDK 例程和 Arduino bridge 的空口静默结论均已被后续实测推翻
 **影响**：UNO R4 WiFi bridge 固件（Arduino 侧）无法通过 uarthci 驱动 BLE 广播
 
 ---

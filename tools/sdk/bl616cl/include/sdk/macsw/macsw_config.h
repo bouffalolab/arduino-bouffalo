@@ -115,24 +115,6 @@
 #endif
 /* hacks end */
 
-/* coex */
-#ifndef CONFIG_COEX_BT_MODE
-#define CONFIG_COEX_BT_MODE 0
-#endif
-
-#ifndef CONFIG_COEX_WIFI_MODE
-#define CONFIG_COEX_WIFI_MODE 0
-#endif
-
-#ifndef CONFIG_COEX_THREAD_MOD
-#define CONFIG_COEX_THREAD_MOD 0
-#endif
-
-#ifndef CONFIG_COEX_TDMA_NONE
-#define CONFIG_COEX_TDMA_NONE 0
-#endif
-/* coex end */
-
 /* linkage feature control */
 #define MACSW_LINKSTAGE_CONF(f) \
   (&__macsw_conf_ ## f)
