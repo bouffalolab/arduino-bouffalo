@@ -676,6 +676,27 @@ def main() -> int:
             copy_file(btble_lib, sdk_staging / "lib" / btble_lib.name)
             print(f"Note: copied btblecontroller: {btble_lib.name}")
 
+    # Chip-specific archives are built in their component directories rather
+    # than build_out, but platform.txt links them by these exact names.
+    extra_archives = {
+        "libpka_bl616cl.a": sdk / "drivers" / "lhal" / "src" / "pka" /
+        "libpka_bl616cl.a",
+        "libwl80211_bl616cl.a": build_dir / "build_wl80211" / "src" /
+        "libwl80211_bl616cl.a",
+        "libmacsw_bl616cl.a": build_dir / "build_macsw" /
+        "libmacsw_bl616cl.a",
+        "libmacsw_config_bl616cl_default.a": build_dir / "build_macsw" /
+        "libmacsw_config_bl616cl_default.a",
+    }
+    for name, source in extra_archives.items():
+        if source.is_file():
+            copy_file(source, sdk_staging / "lib" / name)
+    # The Arduino BLE host compatibility layer still links this legacy host
+    # archive; preserve an existing copy until it is rebuilt for this SDK.
+    legacy_blestack = sdk_runtime / "lib" / "libblestack.a"
+    if legacy_blestack.is_file():
+        copy_file(legacy_blestack, sdk_staging / "lib" / legacy_blestack.name)
+
     # phyrf — precompiled RF calibration library (required by BLE/WiFi)
     phyrf_dir = sdk / "drivers" / "soc" / chip / "phyrf"
     if phyrf_dir.is_dir():
@@ -687,10 +708,18 @@ def main() -> int:
     copy_file(archives[EXPECTED_BOARD_ARCHIVE],
               sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
     # autoconf.h and linker script
-    copy_file(require_file(generated / "autoconf.h", "autoconf.h"),
+    generated_autoconf = generated / "autoconf.h"
+    if not generated_autoconf.is_file():
+        generated_autoconf = generated / "autoconfig.h"
+    copy_file(require_file(generated_autoconf, "autoconf.h"),
               sdk_staging / "include" / "autoconf.h")
     copy_file(require_file(generated / "linker.ld",
                            f"{chip} linker script"), sdk_staging / "ld")
+    # The linker script includes the MACSW cache-affinity fragment by name.
+    # Keep that fragment beside the generated script in the Arduino bundle.
+    macsw_affinity = sdk / "components" / "wireless" / "macsw" / "macsw_cache_affinity.ld.in"
+    if macsw_affinity.is_file():
+        copy_file(macsw_affinity, sdk_staging / macsw_affinity.name)
     # defconfig and FreeRTOSConfig.h from this directory
     copy_file(script_dir / "defconfig", sdk_staging / "defconfig")
     copy_file(script_dir / "FreeRTOSConfig.h",
@@ -712,6 +741,39 @@ def main() -> int:
          Path("freertos")),
         (sdk / "components" / "os" / "freertos" / "portable" /
          "GCC" / "RISC-V" / "common", Path("freertos/portable")),
+        # Wireless / net stack headers referenced by the platform.txt -I
+        # flags (<lwip/...>, <mbedtls/...>, fhost, supplicant, macsw,
+        # phyrf, rfparam).  Without these the Arduino compile breaks on
+        # lwip/inet.h and friends.
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include",
+         Path("sdk/lwip")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include" /
+         "compat" / "posix", Path("sdk/lwip-posix")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+         Path("sdk/lwip-port")),
+        (sdk / "components" / "wireless" / "wifi6" / "fhost" / "include",
+         Path("sdk/wifi6")),
+        (sdk / "components" / "wireless" / "bl_wpa_supplicant" / "include",
+         Path("sdk/supplicant")),
+        (sdk / "components" / "wireless" / "macsw" / "inc",
+         Path("sdk/macsw")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" / "include",
+         Path("sdk/mbedtls")),
+        # mbedtls hardware-acceleration port headers (ecp_alt.h & friends are
+        # included by name from the public mbedtls/*.h headers)
+        (sdk / "components" / "crypto" / "mbedtls" / "port" / "hw_acc",
+         Path("sdk/mbedtls")),
+        (sdk / "components" / "crypto" / "mbedtls" / "port",
+         Path("sdk/mbedtls/port")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+         "3rdparty" / "everest" / "include",
+         Path("sdk/mbedtls")),
+        (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+         Path("sdk/phyrf")),
+        (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+        # headers included by bare name via the existing -Iinclude/sdk/utils
+        (sdk / "components" / "utils" / "async_event", Path("sdk/utils")),
+        (sdk / "components" / "utils" / "partition", Path("sdk/utils")),
     ]
     # chip-specific FreeRTOS extension
     freertos_ext = chip_cfg.get("freertos_extension")
@@ -726,6 +788,24 @@ def main() -> int:
 
     copy_headers(sdk_include_roots, sdk_staging / "include")
     copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
+    # mbedtls config headers picked up via MBEDTLS_CONFIG_FILE
+    for cfg_name in ("config-tls-generic.h", "config-psa.h"):
+        copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
+                               cfg_name, cfg_name),
+                  sdk_staging / "include" / "sdk" / "mbedtls" / cfg_name)
+    # generated Kconfig autoconf (platform recipe does -include autoconf.h)
+    autoconf = None
+    for candidate in (build_out / "include" / "autoconf.h",
+                      build_dir / "generated" / "include" / "autoconf.h",
+                      build_dir / "generated" / "autoconf.h",
+                      build_dir / "generated" / "autoconfig.h"):
+        if candidate.is_file():
+            autoconf = candidate
+            break
+    if autoconf is not None:
+        copy_file(autoconf, sdk_staging / "include" / "autoconf.h")
+    else:
+        raise RuntimeError("generated autoconf.h not found in build output")
     # board headers → sdk/include/board
     copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
     # ring_buffer and other utils

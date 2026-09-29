@@ -22,11 +22,25 @@ extern "C" {
 #include "lwip/netdb.h"
 #include "lwip/ip_addr.h"
 #include "lwip/err.h"
+#include "rfparam_adapter.h"
+#include "bflb_gpio.h"
+#include "bflb_uart.h"
 }
 
 Arduino_DebugUtils Debug;
 UpdateClass Update;
 HCIVirtualTransportClass HCIVirtualTransport;
+
+/* Wireless platform init now lives in the Arduino core (cores/bl616cl/
+ * bl_wireless.cpp, run from init() before the scheduler starts): RF
+ * parameters, EM window and PHY RF bring-up.  Keep this as a lazy-path
+ * wrapper for the WiFi and BLE callers; the core function is idempotent. */
+extern "C" void bl_wireless_init(void);
+
+extern "C" void ensure_rfparam(void)
+{
+    bl_wireless_init();
+}
 
 int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
 {
@@ -46,6 +60,62 @@ int WiFiGenericClass::hostByName(const char *hostname, IPAddress &address)
 extern "C" void usb_persist_restart(int mode)
 {
     (void)mode;
+}
+
+extern "C" void bflb_uart_set_console(struct bflb_device_s *dev);
+
+/* The USB device init chain clobbers the console UART binding.  Restore it
+ * after USB.begin() so post-setup printf output remains visible on the
+ * standard console (UART0, GPIO34/35 on bl616cldk). */
+extern "C" void compat_console_restore(void)
+{
+    struct bflb_device_s *gpio = bflb_device_get_by_name("gpio");
+    struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
+    struct bflb_uart_config_s cfg;
+    if (gpio == NULL || uart0 == NULL) {
+        return;
+    }
+    bflb_gpio_uart_init(gpio, GPIO_PIN_34, GPIO_UART_FUNC_UART0_TX);
+    bflb_gpio_uart_init(gpio, GPIO_PIN_35, GPIO_UART_FUNC_UART0_RX);
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.baudrate = 2000000;
+    cfg.data_bits = UART_DATA_BITS_8;
+    cfg.stop_bits = UART_STOP_BITS_1;
+    cfg.parity = UART_PARITY_NONE;
+    cfg.flow_ctrl = 0;
+    cfg.tx_fifo_threshold = 7;
+    cfg.rx_fifo_threshold = 7;
+    cfg.bit_order = UART_LSB_FIRST;
+    bflb_uart_init(uart0, &cfg);
+    bflb_uart_set_console(uart0);
+}
+
+/* Raw multi-byte write to the UART0 console for debug sinks that must not
+ * touch the USB CDC (no CRLF mangling, no stdout involvement). */
+extern "C" void compat_uart0_write(const char *s, size_t len)
+{
+    struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
+    if (uart0 == NULL || s == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < len; i++) {
+        bflb_uart_putchar(uart0, s[i]);
+    }
+}
+
+/* Probe: write straight to the UART0 peripheral, bypassing the stdout
+ * redirect, to test the console path from the sketch. */
+extern "C" void compat_uart0_raw_write(const char *s)
+{
+    struct bflb_device_s *uart0 = bflb_device_get_by_name("uart0");
+    if (uart0 == NULL || s == NULL) {
+        return;
+    }
+    while (*s) {
+        bflb_uart_putchar(uart0, *s++);
+    }
+    bflb_uart_putchar(uart0, '\r');
+    bflb_uart_putchar(uart0, '\n');
 }
 
 /* Do NOT define a freeaddrinfo() stub here.  lwip/netdb.h maps the POSIX

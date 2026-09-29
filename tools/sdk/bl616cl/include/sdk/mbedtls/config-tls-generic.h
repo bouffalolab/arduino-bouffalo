@@ -17,6 +17,11 @@
 #define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
 #define MBEDTLS_PLATFORM_STD_MEM_HDR "mbedtls_port_bouffalo_sdk.h"
 
+#if !defined(CONFIG_MBEDTLS_PLATFORM_NO_SYSTEM_ALLOCATOR)
+#define MBEDTLS_PLATFORM_CALLOC_MACRO calloc
+#define MBEDTLS_PLATFORM_FREE_MACRO   free
+#endif
+
 #define MBEDTLS_NO_PLATFORM_ENTROPY
 
 // Hash HW
@@ -309,50 +314,6 @@
 
 #if defined(CONFIG_MBEDTLS_ECP_DP_SECP521R1_ENABLED)
 #define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-#endif
-
-/* Map enabled curves to the MBEDTLS_ECP_HAVE_* names consumed by the X.509
- * OID tables.  The default mbedtls_config.h gets this from
- * config_adjust_legacy_crypto.h, but this standalone Kconfig-style header
- * does not include that file. */
-#if defined(MBEDTLS_ECP_DP_SECP192R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP192R1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP224R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP224R1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP256R1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP384R1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP521R1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP192K1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP224K1
-#endif
-#if defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
-#define MBEDTLS_ECP_HAVE_SECP256K1
-#endif
-#if defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_BP256R1
-#endif
-#if defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_BP384R1
-#endif
-#if defined(MBEDTLS_ECP_DP_BP512R1_ENABLED)
-#define MBEDTLS_ECP_HAVE_BP512R1
-#endif
-#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
-#define MBEDTLS_ECP_HAVE_CURVE25519
-#endif
-#if defined(MBEDTLS_ECP_DP_CURVE448_ENABLED)
-#define MBEDTLS_ECP_HAVE_CURVE448
 #endif
 
 #if defined(CONFIG_MBEDTLS_ECP_DP_SECP192K1_ENABLED)

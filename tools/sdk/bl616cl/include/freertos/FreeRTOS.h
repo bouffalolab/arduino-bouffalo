@@ -1302,6 +1302,10 @@ typedef struct xSTATIC_TCB
     #if ( configUSE_TRACE_FACILITY == 1 )
         UBaseType_t uxDummy10[ 2 ];
     #endif
+    #ifdef CONFIG_PENDING_TICKS_THRESHOLD
+        TickType_t xDummyReadyPendingTick;
+        uint8_t ucDummyReadyPending[ 2 ];
+    #endif
     #if ( configUSE_MUTEXES == 1 )
         UBaseType_t uxDummy12[ 2 ];
     #endif

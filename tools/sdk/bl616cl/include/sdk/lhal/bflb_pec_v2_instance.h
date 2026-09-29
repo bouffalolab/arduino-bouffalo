@@ -150,6 +150,85 @@ void bflb_pec_ir_rc5_send(struct bflb_device_s *dev, uint32_t *data, uint32_t bi
 int bflb_pec_ir_rc5_is_busy(struct bflb_device_s *dev);
 
 /******************************************************************
+IR_RX
+******************************************************************/
+#define PEC_IR_RX_IDLE_LEVEL_LOW  (0) /*!< ir rx gpio idle level is low */
+#define PEC_IR_RX_IDLE_LEVEL_HIGH (1) /*!< ir rx gpio idle level is high */
+
+/**
+ * @brief IR RX configuration.
+ *
+ * div = 0: each timing value directly represents the pulse width in us.
+ * div != 0: timing value = pulse width (us) * PEC clock (MHz) / (2 * (div + 1)).
+ */
+struct bflb_pec_ir_rx_s {
+    uint32_t mem;           /*!< memory address of first instruction */
+    uint16_t div;           /*!< PEC clock divider; 0: automatic timing mode, !0: manual timing mode */
+    uint8_t pin;            /*!< pin of ir rx */
+    uint8_t idle_level;     /*!< ir rx gpio idle level, PEC_IR_RX_IDLE_LEVEL_LOW or PEC_IR_RX_IDLE_LEVEL_HIGH */
+    uint8_t fifo_threshold; /*!< ir rx fifo threshold */
+    uint8_t dma_enable;     /*!< enable or disable dma with ir rx */
+};
+
+/**
+ * @brief NEC RX timing configuration.
+ *
+ * tolerance_percent <= 100, carrier/idle + carrier/idle * tolerance_percent / 100 < 65536.
+ * Start/repeat idle tolerance ranges must not overlap.
+ * bit0/bit1 idle tolerance ranges must not overlap.
+ * frame_timeout > idle tolerance maximums. 
+ */
+struct bflb_pec_ir_nec_rx_timing_s {
+    uint16_t start_carrier;     /*!< start carrier pulse width */
+    uint16_t start_idle;        /*!< start idle pulse width */
+    uint16_t repeat_idle;       /*!< repeat frame idle pulse width */
+    uint16_t bit_carrier;       /*!< bit carrier pulse width */
+    uint16_t bit0_idle;         /*!< bit 0 idle pulse width */
+    uint16_t bit1_idle;         /*!< bit 1 idle pulse width */
+    uint16_t frame_timeout;     /*!< timeout and frame completion threshold */
+    uint8_t tolerance_percent;  /*!< acceptable pulse width error percent */
+};
+
+/**
+ * @brief RC5 RX timing configuration.
+ *
+ * tolerance_percent <= 100, carrier/idle + carrier/idle * tolerance_percent / 100 < 65536.
+ * bit1 carrier tolerance max < bit1 carrier tolerance min + bit0 carrier tolerance min.
+ * bit0 idle tolerance max < bit0 idle tolerance min + bit1 idle tolerance min.
+ * frame_timeout > bit1 carrier/idle tolerance max + bit0 carrier/idle tolerance max.
+ */
+struct bflb_pec_ir_rc5_rx_timing_s {
+    uint16_t bit0_carrier;      /*!< bit 0 carrier pulse width */
+    uint16_t bit0_idle;         /*!< bit 0 idle pulse width */
+    uint16_t bit1_carrier;      /*!< bit 1 carrier pulse width */
+    uint16_t bit1_idle;         /*!< bit 1 idle pulse width */
+    uint16_t frame_timeout;     /*!< timeout and frame completion threshold */
+    uint8_t start_bit;          /*!< start bit used only for synchronization, 0 or 1 */
+    uint8_t tolerance_percent;  /*!< acceptable pulse width error percent */
+};
+
+int bflb_pec_ir_nec_rx_init(struct bflb_device_s *dev, struct bflb_pec_ir_rx_s *ir, struct bflb_pec_ir_nec_rx_timing_s *timing);
+void bflb_pec_ir_nec_rx_start(struct bflb_device_s *dev);
+void bflb_pec_ir_nec_rx_stop(struct bflb_device_s *dev);
+void bflb_pec_ir_nec_repeat_int_mask(struct bflb_device_s *dev, bool mask);
+void bflb_pec_ir_nec_err_int_mask(struct bflb_device_s *dev, bool mask);
+void bflb_pec_ir_nec_frame_done_int_mask(struct bflb_device_s *dev, bool mask);
+uint8_t bflb_pec_ir_nec_rx_repeat_get(struct bflb_device_s *dev); /*!< get and clear nec repeat status */
+uint8_t bflb_pec_ir_nec_rx_get_err(struct bflb_device_s *dev);
+void bflb_pec_ir_nec_rx_clear_err(struct bflb_device_s *dev);
+uint16_t bflb_pec_ir_nec_rx_get_frame_bits(struct bflb_device_s *dev);
+void bflb_pec_ir_nec_rx_clear_frame(struct bflb_device_s *dev);
+int bflb_pec_ir_rc5_rx_init(struct bflb_device_s *dev, struct bflb_pec_ir_rx_s *ir, struct bflb_pec_ir_rc5_rx_timing_s *timing);
+void bflb_pec_ir_rc5_rx_start(struct bflb_device_s *dev);
+void bflb_pec_ir_rc5_rx_stop(struct bflb_device_s *dev);
+void bflb_pec_ir_rc5_err_int_mask(struct bflb_device_s *dev, bool mask);
+void bflb_pec_ir_rc5_frame_done_int_mask(struct bflb_device_s *dev, bool mask);
+uint8_t bflb_pec_ir_rc5_rx_get_err(struct bflb_device_s *dev);
+void bflb_pec_ir_rc5_rx_clear_err(struct bflb_device_s *dev);
+uint16_t bflb_pec_ir_rc5_rx_get_frame_bits(struct bflb_device_s *dev);
+void bflb_pec_ir_rc5_rx_clear_frame(struct bflb_device_s *dev);
+
+/******************************************************************
 SPI
 ******************************************************************/
 struct bflb_pec_spi_s {

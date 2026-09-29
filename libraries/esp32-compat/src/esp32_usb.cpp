@@ -133,6 +133,7 @@ static volatile bool cdc_out_rearm_pending = false;
 #ifdef BL616CL_USB_DEBUG_LOG
 static void usb_log(const char *message)
 {
+    // Standard console is UART0 (GPIO34/35) on bl616cldk.
     struct bflb_device_s *uart = bflb_device_get_by_name("uart0");
     if (uart == NULL) {
         return;

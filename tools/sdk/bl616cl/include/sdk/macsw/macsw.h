@@ -11,6 +11,12 @@
 
 #include "macsw_config.h"
 
+#if defined(CFG_P2P_DEBUG) && CFG_P2P_DEBUG
+#define MACSW_P2P_DEBUG(...) bl_fw_printf(__VA_ARGS__)
+#else
+#define MACSW_P2P_DEBUG(...) do { if (0) bl_fw_printf(__VA_ARGS__); } while (0)
+#endif
+
 #define MACSW_VERSION_STR      "v6.10.0.0"
 // Version has the form Major.minor.release.patch
 // The version string is "vMM.mm.rr.pp"
@@ -302,15 +308,13 @@
  * @name TWT Configuration
  *******************************************************************************
  */
-#if MACSW_UMAC_PRESENT && MACSW_HE && CFG_TWT
-    /// TWT support
+#if MACSW_UMAC_PRESENT && MACSW_HE
     #define MACSW_TWT              1
-    /// Maximum Number of Flows
-    #define MACSW_TWT_FLOW_NB      CFG_TWT
+    #define MACSW_TWT_FLOW_NB_MAX  8  /* max/default; actual value from MACSW_CONFIG() */
 #else
     #define MACSW_TWT              0
-    #define MACSW_TWT_FLOW_NB      0
-#endif //MACSW_UMAC_PRESENT && MACSW_HE && defined CFG_TWT
+    #define MACSW_TWT_FLOW_NB_MAX  0
+#endif //MACSW_UMAC_PRESENT && MACSW_HE
 
 /** @} TWT */
 
@@ -380,14 +384,6 @@
   #define MACSW_TX_PAYLOAD_MAX 1
 #endif
 
-/// Maximum size of A-MSDU supported in reception
-#ifdef CFG_AMSDU_4K
-  #define MACSW_MAX_AMSDU_RX    4096
-#elif defined CFG_AMSDU_8K
-  #define MACSW_MAX_AMSDU_RX    8192
-#elif defined CFG_AMSDU_12K
-  #define MACSW_MAX_AMSDU_RX    12288
-#endif
 /** @} A-MSDU */
 
 /**
@@ -398,32 +394,16 @@
 #ifdef CFG_AGG
   /// A-MPDU TX support
   #define MACSW_AMPDU_TX 1
-  #if MACSW_UMAC_PRESENT
-    /// Maximum number of TX Block Ack
-    #define MACSW_MAX_BA_TX CFG_BATX
-    #if (MACSW_MAX_BA_TX == 0)
-      #error "At least one BA TX agreement shall be allowed"
-    #endif
-  #else  // !MACSW_UMAC_PRESENT
-    #define MACSW_MAX_BA_TX 0
-  #endif // MACSW_UMAC_PRESENT
 #else  // !CFG_AGG
   #define MACSW_AMPDU_TX  0
-  #define MACSW_MAX_BA_TX 0
   #undef CFG_BWLEN
   #undef CFG_MU_CNT
   #define CFG_MU_CNT          1
 #endif // CFG_AGG
 
 #if MACSW_UMAC_PRESENT
-  /// Maximum number of RX Block Ack
-  #define MACSW_MAX_BA_RX CFG_BARX
-  #define MACSW_AMPDU_RX CFG_BARX
-  /// RX Packet Reordering Buffer Size
-  #define MACSW_AMPDU_RX_BUF_SIZE CFG_REORD_BUF
-  #if (MACSW_AMPDU_RX && ((MACSW_AMPDU_RX_BUF_SIZE < 4) || (MACSW_AMPDU_RX_BUF_SIZE > 64)))
-     #error "Incorrect reordering buffer size"
-  #endif
+  /// A-MPDU RX support (feature flag: always enabled when UMAC present)
+  #define MACSW_AMPDU_RX  1
   /// A-MSDU de-aggregation support
   #ifdef CFG_DEAGG
     #define MACSW_AMSDU_DEAGG 1
@@ -488,7 +468,7 @@
   #define MACSW_P2P_VIF_MAX     CFG_P2P
 
   /// P2P GO Support
-  #ifdef CFG_P2P_GO
+  #if CFG_P2P_GO
     // Beaconing modes shall be supported
     #if !MACSW_BEACONING
       #error 'Beaconing (BCN) must be enabled'
@@ -496,7 +476,7 @@
     #define MACSW_P2P_GO 1
   #else
     #define MACSW_P2P_GO 0
-  #endif //(GFG_P2P_GO)
+  #endif //(CFG_P2P_GO)
 #else
   #define MACSW_P2P         0
   #define MACSW_P2P_VIF_MAX 0
@@ -547,26 +527,6 @@
 #define MACSW_TXQ_CNT          (AC_MAX)
 #endif
 
-/// Number of TX descriptors available in the system (BK)
-#define MACSW_TXDESC_CNT0       CFG_TXDESC0
-/// Number of TX descriptors available in the system (BE)
-#define MACSW_TXDESC_CNT1       CFG_TXDESC1
-/// Number of TX descriptors available in the system (VI)
-#define MACSW_TXDESC_CNT2       CFG_TXDESC2
-/// Number of TX descriptors available in the system (VO)
-#define MACSW_TXDESC_CNT3       CFG_TXDESC3
-#if MACSW_AC_BCN_USED
-  /// Number of TX descriptors available in the system (BCN)
-  #define MACSW_TXDESC_CNT4       CFG_TXDESC4
-#else
-  #define MACSW_TXDESC_CNT4 0
-#endif
-
-/// Total number of TX descriptors
-#define MACSW_TXDESC_CNT ((MACSW_USER_MAX * (MACSW_TXDESC_CNT0 + MACSW_TXDESC_CNT1 + \
-                                       MACSW_TXDESC_CNT2 + MACSW_TXDESC_CNT3)) \
-                       + MACSW_TXDESC_CNT4)
-
 /// Number of TX frame descriptors and buffers available for frames generated internally
 #define MACSW_TXFRAME_CNT (MACSW_VIRT_DEV_MAX + MACSW_BFR_TXFRAME_CNT)
 #if MACSW_TXFRAME_CNT < 4
@@ -606,13 +566,6 @@
 #else
   #define MACSW_RX_LONG_MPDU_CNT  2
 #endif
-
-/// Number of RX payload descriptors - defined to be n times the maximum A-MSDU size
-/// plus one extra one used for HW flow control
-#define MACSW_RX_PAYLOAD_DESC_CNT ((MACSW_MAX_AMSDU_RX / MACSW_RX_PAYLOAD_LEN) * MACSW_RX_LONG_MPDU_CNT + 1)
-
-/// Number of RX descriptors (SW and Header descriptors)
-#define MACSW_RXDESC_CNT MACSW_RX_PAYLOAD_DESC_CNT
 
 #if MACSW_AMSDU_DEAGG
 /// Maximum number MSDUs supported in one received A-MSDU
@@ -1321,9 +1274,10 @@ struct me_ldpc_config_param
 /// Structure containing the parameters of the @ref ME_PARAM_REQ message
 struct me_param_req
 {
-    /// Indicates the param ID
-    enum ME_PARAM_ID_E id;
-    enum ME_PARAM_CMD_E cmd;//GET or SET.
+    /// Indicates the param ID (ref @ enum ME_PARAM_ID_E)
+    uint8_t id;
+    /// GET or SET command (ref @ enum ME_PARAM_CMD_E)
+    uint8_t cmd;
     /// payload of the param. Max is 32 Bytes
     uint8_t value[50];//GET or SET through value
 };
@@ -1492,6 +1446,20 @@ struct scanu_start_cfm
     uint8_t status;
     /// Number of scan results available
     uint8_t result_cnt;
+};
+
+/// Scan completion status for @ref scanu_start_cfm::status.
+enum scanu_status
+{
+    SCANU_DONE = CO_OK,
+    SCANU_ABORTED,
+};
+
+/// Structure containing the parameters of the @ref SCANU_ABORT_REQ message.
+struct scanu_abort_req
+{
+    /// Index of the VIF that was scanning.
+    uint8_t vif_idx;
 };
 
 /// Structure containing the parameters of the @ref SM_CONNECT_IND message.
@@ -1739,6 +1707,19 @@ struct mm_csa_finish_ind
     uint8_t status;
     /// New channel ctx index
     uint8_t chan_idx;
+};
+
+/// Structure containing the parameters of the @ref MM_CHANNEL_SURVEY_IND message
+struct mm_channel_survey_ind
+{
+    /// Frequency of the channel
+    uint16_t freq;
+    /// Noise in dbm
+    int8_t noise_dbm;
+    /// Amount of time spent on the channel (in ms)
+    uint32_t chan_time_ms;
+    /// Amount of time the primary channel was sensed busy (in ms)
+    uint32_t chan_time_busy_ms;
 };
 
 /// Structure containing the parameters of the @ref MM_ADD_IF_REQ message.
@@ -2158,12 +2139,21 @@ struct apm_probe_client_cfm
 };
 
 /// Structure containing the parameters of the @ref ME_RC_SET_RATE_REQ message.
+#define ME_RC_SET_RATE_FIXED_RATE_BIT      CO_BIT(0)
+#define ME_RC_SET_RATE_RETRY_MIN_RATE_BIT  CO_BIT(1)
+#define ME_RC_SET_RATE_RETRY_MAX_RATE_BIT  CO_BIT(2)
 struct me_rc_set_rate_req
 {
     /// Index of the station for which the fixed rate is requested
     uint8_t sta_idx;
+    /// Bitmap of fields to update
+    uint8_t update_flags;
     /// Fixed rate configuration
     uint16_t fixed_rate_cfg;
+    /// Minimum rate configuration for retry chain - 0xFFFF if disabled
+    uint16_t retry_min_rate_cfg;
+    /// Maximum rate configuration for retry chain - 0xFFFF if disabled
+    uint16_t retry_max_rate_cfg;
 };
 
 struct me_get_edca_req
@@ -2304,8 +2294,8 @@ struct me_config_req
     bool ant_div_on;
     /// Boolean indicating if Dynamic PS mode shall be used or not
     bool dpsm;
-    /// Indicates whether AMSDU shall be forced or not
-    enum amsdu_tx amsdu_tx;
+    /// Indicates whether AMSDU shall be forced or not (ref @ enum amsdu_tx)
+    uint8_t amsdu_tx;
     #ifdef CFG_LPM
     /// Chip version
     uint8_t chip_version;
@@ -2323,8 +2313,6 @@ struct mm_start_req
     uint16_t lp_clk_accuracy;
     /// Array of TX timeout values (in ms, one per TX queue) - 0 sets default value
     uint16_t tx_timeout[AC_MAX];
-    /// coex_mode for MAC_SW, 0 is default and no coex
-    uint8_t coex_mode;
 };
 
 struct mm_bcn_control_req
@@ -2434,7 +2422,7 @@ struct twt_statusget_cfm
     /// AP DTIM
     uint8_t dtim;
     /// TWT flow configurations
-    struct twt_status_info conf[MACSW_TWT_FLOW_NB];
+    struct twt_status_info conf[MACSW_TWT_FLOW_NB_MAX];
 };
 
 ///////////////////////////////////////////////////////
@@ -2771,6 +2759,9 @@ __INLINE uint16_t co_read16p(uint32_t addr)
         /* uint16_t val __PACKED16 */
         uint16_t val __attribute__ ((__packed__));
     } *ptr = (struct co_read16_struct*)addr;
+    if (ptr == NULL) {
+        return 0;
+    }
     return ptr->val;
     #endif
 }
@@ -3118,6 +3109,10 @@ enum
     SCANU_GET_SCAN_RESULT_CFM,
     /// Indicate country code to fhost
     SCANU_COUNTRY_CODE_IND,
+    /// Abort current scan request
+    SCANU_ABORT_REQ,
+    /// Abort current scan confirmation
+    SCANU_ABORT_CFM,
 };
 
 enum mm_msg_tag
@@ -3227,10 +3222,10 @@ enum mm_msg_tag
     MM_SET_PS_MODE_REQ,
     /// Set Power Save mode confirmation
     MM_SET_PS_MODE_CFM,
-    /// Set Coexistence mode
-    MM_SET_COEX_MODE_REQ,
-    /// Set Coexistence mode confirmation
-    MM_SET_COEX_MODE_CFM,
+    /// Reserved legacy coexistence request slot
+    MM_RESERVED_LEGACY_COEX_MODE_REQ,
+    /// Reserved legacy coexistence confirmation slot
+    MM_RESERVED_LEGACY_COEX_MODE_CFM,
     /// Request to add a channel context
     MM_CHAN_CTXT_ADD_REQ,
     /// Confirmation of the channel context addition
@@ -3582,6 +3577,7 @@ enum scan_msg_tag
      * Section of internal SCAN messages. No SCAN API messages should be defined below this point
      */
     SCAN_PROBE_TIMER,
+    SCAN_CANCEL_TIMER,
 
     /// MAX number of messages
     SCAN_MAX,
@@ -3704,6 +3700,28 @@ struct rxu_stat_desc
     struct rxu_stat_val val;
 };
 
+///// lmac/rxl_hwdesc
+#define RXL_RXDESC_SIZE STRUCT_SIZE_RXDESC
+
+//// umac/rxu_cntrl
+#if (MACSW_AMPDU_RX)
+/// Maximum time we can wait for an SN (in us)
+#define RX_CNTRL_REORD_MAX_WAIT         (50000)
+
+/// Structure describing an element of the RX reordering table
+struct rxu_cntrl_reord_elt
+{
+    /// Packet number of the received packet (used for replay check)
+    uint64_t pn;
+    /// Host Buffer Address
+    uint32_t host_id;
+    /// flag indicating if the PN must be verified
+    bool pn_check;
+};
+
+
+#endif //(MACSW_AMPDU_RX)
+
 struct rx_vector_1_pad {
   uint32_t pad[4];
 };
@@ -3791,6 +3809,159 @@ struct rx_info {
 /// Re-use SN passed by host instead of computing a new one
 #define TXU_CNTRL_REUSE_SN      CO_BIT(15)
 /// @}
+
+/// @name TX upper protocol flags classified before UMAC/LMAC handling
+/// @{
+/// Low bits used for the reused 802.11 SN in hostdesc::sn_for_retry.
+#define TXU_CNTRL_SN_FOR_RETRY_MSK 0x0FFF
+/// The frame carries DHCP/BOOTP.
+#define TXU_CNTRL_PROTO_DHCP    CO_BIT(12)
+/// The frame carries EAPOL.
+#define TXU_CNTRL_PROTO_EAPOL   CO_BIT(13)
+/// The frame carries ARP.
+#define TXU_CNTRL_PROTO_ARP     CO_BIT(14)
+/// Mask of upper protocol flags stored in hostdesc::sn_for_retry.
+#define TXU_CNTRL_PROTO_MSK     (TXU_CNTRL_PROTO_DHCP | TXU_CNTRL_PROTO_EAPOL | \
+                                 TXU_CNTRL_PROTO_ARP)
+/// @}
+
+/// TX metadata derived from an Ethernet scatter-gather frame.
+struct macsw_tx_meta
+{
+    /// Upper protocol flags using TXU_CNTRL_PROTO_* values.
+    uint16_t proto_flags;
+    /// User priority derived from the IPv4 DS field.
+    uint8_t tid;
+};
+
+#define MACSW_TX_IPV4_MIN_HDR_LEN        20
+#define MACSW_TX_IPV4_MAX_HDR_LEN        60
+#define MACSW_TX_IP_PROTOCOL_UDP         17
+#define MACSW_TX_IP_FRAG_MF              0x2000
+#define MACSW_TX_IP_FRAG_OFFSET          0x1FFF
+#define MACSW_TX_UDP_HDR_LEN             8
+#define MACSW_TX_UDP_PORTS_LEN           4
+#define MACSW_TX_BOOTP_SERVER_PORT       67
+#define MACSW_TX_BOOTP_CLIENT_PORT       68
+
+enum macsw_tx_classify_result
+{
+    MACSW_TX_CLASSIFY_DONE,
+    MACSW_TX_CLASSIFY_NEED_SEGMENTS,
+};
+
+static inline __attribute__((always_inline))
+uint16_t macsw_tx_read_be16(const uint8_t *data)
+{
+    return ((uint16_t)data[0] << 8) | data[1];
+}
+
+static inline __attribute__((always_inline))
+bool macsw_tx_is_dhcp(uint16_t src_port, uint16_t dst_port)
+{
+    return ((src_port == MACSW_TX_BOOTP_CLIENT_PORT) &&
+            (dst_port == MACSW_TX_BOOTP_SERVER_PORT)) ||
+           ((src_port == MACSW_TX_BOOTP_SERVER_PORT) &&
+            (dst_port == MACSW_TX_BOOTP_CLIENT_PORT));
+}
+
+/**
+ ****************************************************************************************
+ * @brief Classify a frame whose protocol headers are contiguous in the first segment.
+ *
+ * The common TX path is parsed in place. Only frames whose layout needs data
+ * from another segment use the SG classifier below.
+ *
+ * @return MACSW_TX_CLASSIFY_DONE when classification is complete, including
+ *         non-critical traffic, or MACSW_TX_CLASSIFY_NEED_SEGMENTS when more
+ *         segments must be inspected.
+ ****************************************************************************************
+ */
+static inline __attribute__((always_inline))
+enum macsw_tx_classify_result macsw_tx_classify_contiguous(
+    const void *frame, uint16_t frame_len, struct macsw_tx_meta *meta)
+{
+    const uint8_t *data = (const uint8_t *)frame;
+    const uint8_t *ipv4;
+    const uint8_t *udp;
+    uint16_t ethertype;
+    uint16_t ip_total_len;
+    uint8_t ip_hdr_len;
+    size_t udp_offset;
+
+    meta->tid = 0;
+    meta->proto_flags = 0;
+
+    if (!data || (frame_len < LLC_ETHER_HDR_LEN))
+        return MACSW_TX_CLASSIFY_NEED_SEGMENTS;
+
+    ethertype = macsw_tx_read_be16(data + LLC_ETHERTYPE_LEN_OFT);
+    switch (ethertype)
+    {
+    case LLC_ETHERTYPE_EAP_T:
+        meta->proto_flags = TXU_CNTRL_PROTO_EAPOL;
+        return MACSW_TX_CLASSIFY_DONE;
+    case LLC_ETHERTYPE_ARP:
+        meta->proto_flags = TXU_CNTRL_PROTO_ARP;
+        return MACSW_TX_CLASSIFY_DONE;
+    case LLC_ETHERTYPE_IP:
+        break;
+    default:
+        return MACSW_TX_CLASSIFY_DONE;
+    }
+
+    if (frame_len < LLC_ETHER_HDR_LEN + MACSW_TX_IPV4_MIN_HDR_LEN)
+        return MACSW_TX_CLASSIFY_NEED_SEGMENTS;
+
+    ipv4 = data + LLC_ETHER_HDR_LEN;
+    if ((ipv4[0] >> 4) != 4)
+        return MACSW_TX_CLASSIFY_DONE;
+
+    meta->tid = (ipv4[1] & 0xFC) >> 5;
+    ip_hdr_len = (ipv4[0] & 0x0F) << 2;
+    if ((ip_hdr_len < MACSW_TX_IPV4_MIN_HDR_LEN) ||
+        (ip_hdr_len > MACSW_TX_IPV4_MAX_HDR_LEN))
+        return MACSW_TX_CLASSIFY_DONE;
+
+    if (ipv4[9] != MACSW_TX_IP_PROTOCOL_UDP)
+        return MACSW_TX_CLASSIFY_DONE;
+
+    if (macsw_tx_read_be16(ipv4 + 6) &
+        (MACSW_TX_IP_FRAG_MF | MACSW_TX_IP_FRAG_OFFSET))
+        return MACSW_TX_CLASSIFY_DONE;
+
+    ip_total_len = macsw_tx_read_be16(ipv4 + 2);
+    if (ip_total_len < ip_hdr_len + MACSW_TX_UDP_HDR_LEN)
+        return MACSW_TX_CLASSIFY_DONE;
+
+    udp_offset = LLC_ETHER_HDR_LEN + ip_hdr_len;
+    if (frame_len < udp_offset + MACSW_TX_UDP_PORTS_LEN)
+        return MACSW_TX_CLASSIFY_NEED_SEGMENTS;
+
+    udp = data + udp_offset;
+    if (macsw_tx_is_dhcp(macsw_tx_read_be16(udp),
+                         macsw_tx_read_be16(udp + 2)))
+        meta->proto_flags = TXU_CNTRL_PROTO_DHCP;
+
+    return MACSW_TX_CLASSIFY_DONE;
+}
+
+/**
+ ****************************************************************************************
+ * @brief Classify an Ethernet frame without depending on its network stack.
+ *
+ * The common case is parsed directly from the first segment. If the protocol
+ * headers cross a segment boundary, the bounded header is gathered once.
+ *
+ * @param[in]  seg_addr  Segment addresses, starting at the Ethernet header
+ * @param[in]  seg_len   Segment lengths
+ * @param[in]  seg_cnt   Number of segments
+ * @param[out] meta      Classified TID and critical protocol flags
+ ****************************************************************************************
+ */
+void macsw_tx_classify_segments(const uint32_t *seg_addr,
+                                const uint16_t *seg_len, int seg_cnt,
+                                struct macsw_tx_meta *meta);
 
 /** Number of Payload Buffer Descriptors attached to a packet.
     A packet passed by the TCP/IP stack may be split across TX_PBD_CNT buffers.         */
@@ -3984,7 +4155,8 @@ struct hostdesc
     uint16_t ethertype;
     /// TX flags
     uint16_t flags;
-    /// SN to use for the transmission (only valid if flag TXU_CNTRL_REUSE_SN is set)
+    /// Retry SN in low 12 bits; TXU_CNTRL_PROTO_* metadata in upper bits.
+    /// Every producer must initialize this field before first submission.
     uint16_t sn_for_retry;
     #else
     /// Padding between the buffer control structure and the MPDU in host memory
@@ -4008,6 +4180,24 @@ struct hostdesc
     #endif
 };
 
+#if MACSW_UMAC_PRESENT
+__INLINE uint16_t txu_cntrl_host_retry_sn_get(struct hostdesc const *host)
+{
+    return (host->sn_for_retry & TXU_CNTRL_SN_FOR_RETRY_MSK);
+}
+
+__INLINE uint16_t txu_cntrl_host_proto_flags_get(struct hostdesc const *host)
+{
+    return (host->sn_for_retry & TXU_CNTRL_PROTO_MSK);
+}
+
+__INLINE bool txu_cntrl_host_use_bss_min_rate(struct hostdesc const *host)
+{
+    return (!(host->flags & TXU_CNTRL_MGMT) &&
+            (txu_cntrl_host_proto_flags_get(host) != 0));
+}
+#endif
+
 /* size of internal structs */
 #if RC_EZ23Q4 /* TODO remove this ugly define */
 #define STRUCT_SIZE_UMACDESC 48
@@ -4018,6 +4208,11 @@ struct hostdesc
 #endif
 #define STRUCT_SIZE_TX_HW_DESC 68
 #define STRUCT_SIZE_TXL_BUFFER_TAG 240
+#define STRUCT_SIZE_RXDESC 156
+
+struct tx_hw_desc_public {
+    uint32_t pad[STRUCT_SIZE_TX_HW_DESC / 4];
+};
 
 struct txdesc;
 /// LMAC Tx Descriptor
@@ -4047,6 +4242,72 @@ typedef struct bcn_param {
     int8_t beacon_rssi;
 } bcn_param_t;
 
+
+//// lmac/txl_agg
+/// Number of A-MPDU descriptor queues
+#define TX_AMPDU_DESC_QUEUE_CNT (MACSW_TXQ_CNT + MACSW_MAC_HE)
+/// Minimum of A-MPDU descriptors per queue
+#define TX_MIN_AMPDU_NB_PER_AC  (3 * MACSW_USER_MAX)
+/// Number of TX descriptors for 1 AGG descriptor
+#define TX_AGG_DIVIDER          (8 / MACSW_USER_MAX)
+
+#if MACSW_MAC_HE
+/// Number of A-MPDU descriptors for HE TB queue
+#define TX_MAX_AMPDU_NB_FOR_HE_TB 3 // FIXME check if 3 is appropriate
+/// Index of the HE TB A-MPDU descriptor queue
+#define TX_HE_TB_AMPDU_QUEUE_IDX (TX_AMPDU_DESC_QUEUE_CNT - 1)
+/// Approximate time needed to finish a A-MPDU (in us)
+#define TX_AGG_FINISH_DUR 5
+#endif
+
+/// Aggregation descriptor, containing AMPDU THD, BAR descriptor, BAR payload and Policy Table
+#define STRUCT_SIZE_TX_AGG_DESC 348
+struct tx_agg_desc_pub {
+    uint32_t pad[STRUCT_SIZE_TX_AGG_DESC/4];
+};
+
+#define MACSW_CONFIG(name) \
+        g_macsw_config_##name
+#define MACSW_CONFIG_VAL_DEF(type, x) \
+    const type g_macsw_config_##x##size = sizeof(x)
+#define MACSW_CONFIG_DEF(type, x) \
+    const type g_macsw_config_##x = (x)
+#define MACSW_CONFIG_DECL(type, x) \
+    extern const type g_macsw_config_##x
+
+MACSW_CONFIG_DECL(uint16_t, MACSW_AMPDU_RX_BUF_SIZE);
+MACSW_CONFIG_DECL(uint16_t, RX_STAT_DESC_CNT);
+MACSW_CONFIG_DECL(uint16_t, RX_CNTRL_REORD_WIN_SIZE);
+MACSW_CONFIG_DECL(uint16_t, MACSW_MAX_AMSDU_RX);
+MACSW_CONFIG_DECL(uint16_t, MACSW_TXDESC_CNT);
+MACSW_CONFIG_DECL(uint16_t, rxl_hw_buffer1size);
+MACSW_CONFIG_DECL(uint16_t, rxl_hw_buffer2size);
+MACSW_CONFIG_DECL(uint16_t, MACSW_MAX_BA_TX);
+MACSW_CONFIG_DECL(uint16_t, MACSW_MAX_BA_RX);
+MACSW_CONFIG_DECL(uint16_t, MACSW_TWT_FLOW_NB);
+
+/// Array of aggregation descriptors for the BK queue
+extern struct tx_agg_desc_pub tx_agg_desc_array0[];
+/// Array of aggregation descriptors for the BE queue
+extern struct tx_agg_desc_pub tx_agg_desc_array1[];
+/// Array of aggregation descriptors for the VI queue
+extern struct tx_agg_desc_pub tx_agg_desc_array2[];
+/// Array of aggregation descriptors for the VO queue
+extern struct tx_agg_desc_pub tx_agg_desc_array3[];
+#if MACSW_AC_BCN_USED
+/// Array of aggregation descriptors for the BCN queue
+extern struct tx_agg_desc_pub tx_agg_desc_array4[];
+#endif
+#if MACSW_MAC_HE
+/// Array of aggregation descriptors for the BCN queue
+extern struct tx_agg_desc_pub tx_agg_desc_array5[];
+#endif
+extern uint32_t rxl_hw_buffer1[];
+extern uint32_t rxl_hw_buffer2[];
+#if !MACSW_FULLY_HOSTED
+extern struct tx_hw_desc_public tx_hw_desc[];
+#endif
+extern struct txdesc_public txdesc_array[];
 
 uint32_t mac_ie_multi_bssid_find(uint32_t buffer, uint16_t buflen);
 uint32_t mac_ie_sub_non_txed_bssid_find(uint32_t buffer, uint16_t buflen);
@@ -4095,6 +4356,15 @@ __INLINE uint16_t mac_ie_len(uint32_t addr)
 #define WLAN_FW_AUTH_OR_ASSOC_RESPONSE_CFM_FAILURE               24
 #define WLAN_FW_REASSOCIATE_STARING                              25
 #define WLAN_FW_CONNECT_PARAMS_ERROR                             26
+#define WLAN_FW_DEAUTH_IN_4WAY                                   27
+#define WLAN_FW_AP_STA_ENCRYPTION_TYPE_MISMATCH                  28
+#define WLAN_FW_SAE_CONFIRM_FAIL                                 29
+#define WLAN_FW_SAE_COMMIT_FAIL                                  30
+#define WLAN_FW_4WAY_HANDSHAKE_NO_EAPOL1                         31
+#define WLAN_FW_4WAY_HANDSHAKE_EAPOL2_SEND_FAILED                32
+#define WLAN_FW_4WAY_HANDSHAKE_EAPOL3_TIMEOUT                    33
+#define WLAN_FW_4WAY_HANDSHAKE_EAPOL4_SEND_FAILED                34
+
 
 /*--------------------------------------------------------------------*/
 /* AP Mode Status Codes - these codes are used in bouffalolab fw actions      */
@@ -4123,13 +4393,11 @@ void bl_tpc_power_table_get(int8_t *power_table);
  */
 void bl_sta_set_keepalive_period(uint8_t time_seconds);
 int bl_wifi_sta_ps_active_ms(uint16_t active_ms);
-/**
- * @brief Check if WiFi/BLE coexistence mode is enabled
- * @return true if coex mode enabled, false otherwise
- */
-bool ps_is_coex_mode(void);
-void pm_coex_force_wifi_role(void);
-void pm_coex_force_ble_and_thread(void);
+/** Return true when the PS-PTA runtime is enabled for the current activation. */
+bool coex_ps_pta_is_enabled(void);
+
+/** Return true when the PS-PTA coordinator is currently running. */
+bool coex_ps_pta_is_running(void);
 
 /**
  * @brief Get current WiFi active time (duty) in milliseconds
@@ -4152,7 +4420,7 @@ void *sta_getp_mac_addr(void *p);
 void *vif_info_get_vif(int index);
 uint8_t vif_mgmt_get_staid(const void *mac_vif, const struct mac_addr *sta_addr);
 
-enum mac_vif_type mac_vif_get_type(void *macif);
+uint8_t mac_vif_get_type(void *macif); // ref @ enum mac_vif_type
 uint8_t mac_vif_get_index(void *macif);
 uint8_t mac_vif_get_sta_ap_id(void *macif);
 uint16_t mac_vif_get_bcn_int(void *macif);
@@ -4161,9 +4429,16 @@ struct key_info_tag *mac_vif_get_key(void *macif, int key_idx);
 bool mac_vif_get_active(void *macif);
 struct co_list *mac_vif_get_sta_list(void *macif);
 void mac_vif_get_channel(void *macif, struct mac_chan_op* chan);
+int mac_vif_get_chan_ctxt_index(void *macif);
 void mac_vif_get_sta_status(void *macif, struct mac_addr *bssid, uint16_t *aid, int8_t *rssi);
 void mac_vif_get_mac_addr(void *macif, struct mac_addr *mac_addr);
 void mac_vif_get_txq_params(void *macif, uint32_t *txq_params);
+
+uint8_t mm_channel_pre_switch_ind_get_chan_index(void *param);
+uint8_t mm_channel_switch_ind_get_chan_index(void *param);
+uint8_t mm_channel_switch_ind_get_vif_index(void *param);
+bool mm_channel_switch_ind_get_roc(void *param);
+bool mm_channel_switch_ind_get_roc_tdls(void *param);
 
 void macif_rx_buf_ind(void);
 void macif_tx_data_ind(int queue_idx);
@@ -4232,5 +4507,8 @@ void tx_desc_init_for_fhost(void *buf, void *desc, int seg_cnt,
 
 void txdesc_set_lmac_hwdesc(struct txdesc_public *txdesc, void *hw_desc);
 void txdesc_set_lmac_buffer(struct txdesc_public *txdesc, int idx, void *buffer);
+
+void macsw_ac1_timeout_rec_set(bool enable);
+bool macsw_ac1_timeout_rec_get(void);
 
 #endif

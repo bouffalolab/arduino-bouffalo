@@ -161,6 +161,7 @@ typedef struct
   * @}
   */
 
+int32_t bflb_get_anti_rollback_enable(uint8_t *enabled);
 int32_t bflb_get_app_version_from_efuse(uint8_t *version);
 int32_t bflb_set_app_version_to_efuse(uint8_t version);
 int32_t bflb_get_boot2_version_from_efuse(uint8_t *version);

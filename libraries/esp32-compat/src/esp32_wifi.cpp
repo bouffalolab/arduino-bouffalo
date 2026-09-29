@@ -19,8 +19,15 @@ extern "C" {
 #include "timers.h"
 }
 
+// Current wl80211 names these helpers without the mgmr prefix; keep the
+// Arduino compatibility layer source-compatible with the older bundle API.
+#define wifi_mgmr_sta_disconnect wifi_sta_disconnect
+extern "C" int wifi_mgmr_sta_ip_get(uint32_t *addr, uint32_t *mask,
+                                      uint32_t *gw, uint32_t *dns);
+
 extern "C" void wl80211_init(void);
 extern "C" void wifi_task_create(void);
+extern "C" void ensure_rfparam(void);
 
 #define SCAN_LIST_CAPACITY 16
 
@@ -144,6 +151,16 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
     }
 }
 
+/* Event-type skew between the bundle header and the linked library.
+ * sdk/wifi6/wifi_mgmr_ext.h still carries the fhost flavor's EV_WIFI
+ * (0x0002), but the WiFi stack this platform links is wl80211, which
+ * registers and posts its events under EV_WIFI = (uintptr_t)wifi_mgmr_init
+ * (SDK components/wireless/wl80211/include/wifi_mgmr.h).  Filtering on the
+ * wrong value silently drops every WiFi event, so the scan/GOT_IP state
+ * machines never advance.  Register under the library's own value. */
+#undef EV_WIFI
+#define EV_WIFI ((uintptr_t)wifi_mgmr_init)
+
 static void ensure_wifi_started(void)
 {
     if (g_init_started) {
@@ -151,7 +168,7 @@ static void ensure_wifi_started(void)
     }
     g_init_started = true;
 
-    rfparam_init(0, NULL, 0);
+    ensure_rfparam();
     async_event_init(wifi_async_event_loop_wake);
     async_register_event_filter(EV_WIFI, wifi_event_handler, NULL);
     wifi_task_create();

@@ -74,24 +74,10 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
 void HardwareSerial::begin(unsigned long baud, uint8_t config,
                            int8_t rxPin, int8_t txPin)
 {
-#ifdef BL616CL_STAGE1
-    // UNO R4 bridge uses pin-coded ESP32 calls for its two hardware UARTs:
-    //   Serial.begin(..., 44, 43) -> RA4M1 bridge UART1 (GPIO24/25)
-    //   Serial1.begin(..., 6, 5)  -> AT command UART2 (GPIO10/11)
-    // This keeps SDK UART0 (GPIO34/35) untouched for the debug console.
-    if (rxPin == 44 && txPin == 43) {
-        index_ = 1;
-        rx_pin_ = PIN_SERIAL1_RX;
-        tx_pin_ = PIN_SERIAL1_TX;
-    } else if (rxPin == 6 && txPin == 5) {
-        // TODO(bl616cl): route AT to UART2 after enabling its peripheral
-        // clock. Until then keep Serial1 on UART1 so the debug console on
-        // UART0 remains untouched.
-    }
-#else
+    // Pins are fixed by the variant (pins_arduino.h); pin arguments are
+    // accepted for API compatibility but ignored.
     (void)rxPin;
     (void)txPin;
-#endif
     begin(baud, config);
 }
 

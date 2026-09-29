@@ -1,6 +1,3 @@
-CONFIG_NEWLIB               =n
-CONFIG_NEWLIB_STANDARD      =n
-
 CONFIG_VSNPRINTF_NANO       =n
 CONFIG_VSNPRINTF_FLOAT      =n
 CONFIG_VSNPRINTF_FLOAT_EX   =n
@@ -15,9 +12,8 @@ CONFIG_COREDUMP              =n
 CONFIG_PSRAM                =n
 CONFIG_RF                   =y
 CONFIG_SHELL                =y
-CONFIG_BTBLE_ENABLE         =y
 CONFIG_BLUETOOTH            =y
-CONFIG_BTBLECONTROLLER_LIB  =m2s1
+CONFIG_BTBLECONTROLLER_LIB  =uarthci
 CONFIG_BLE_USE_MAC2         =n
 CONFIG_CHERRYUSB            =y
 CONFIG_CHERRYUSB_OSAL       =freertos
@@ -32,3 +28,23 @@ CONFIG_DEBUG                =y
 CONFIG_ROMAPI               =y
 CONFIG_LOG_LEVEL            =3
 CONFIG_CONSOLE_UART_BAUDRATE=2000000
+CONFIG_STRICT               =n
+
+# WiFi6 / IP stack (mirrors the SDK wifi example configuration)
+CONFIG_POSIX                =y
+CONFIG_LWIP                 =y
+CONFIG_MBEDTLS              =y
+CONFIG_DHCPD                =y
+CONFIG_PING                 =y
+CONFIG_WIFI6                =y
+CONFIG_MACSW_SELECT         =default
+CONFIG_WL80211              =y
+CONFIG_BL_WPA_SUPPLICANT    =y
+CONFIG_VSNPRINTF_FLOAT      =y
+CONFIG_VSNPRINTF_FLOAT_EX   =y
+CONFIG_MBEDTLS_AES_USE_HW   =y
+CONFIG_MBEDTLS_BIGNUM_USE_HW=y
+CONFIG_MBEDTLS_ECC_USE_HW   =y
+CONFIG_MBEDTLS_SHA1_USE_HW  =y
+CONFIG_MBEDTLS_SHA256_USE_HW=y
+CONFIG_MBEDTLS_SHA512_USE_HW=y

@@ -1,13 +1,25 @@
 #ifndef _BOARD_GPIO_H_
 #define _BOARD_GPIO_H_
 
-#if __has_include("board_gpio_overlay.h")
-#include "board_gpio_overlay.h"
-#else
-
 #include <stdint.h>
 
 #include "bflb_gpio.h"
+
+/** @brief Board-specific low-power GPIO wakeup configuration. */
+struct board_lp_gpio_wakeup_config_s {
+    uint64_t io_ie;                          /*!< GPIO input-enable mask */
+    uint64_t io_pu;                          /*!< GPIO pull-up mask */
+    uint64_t io_pd;                          /*!< GPIO pull-down mask */
+    uint8_t io_0_36_trig_mode[GPIO_PIN_MAX]; /*!< Per-GPIO trigger mode */
+    uint64_t io_wakeup_unmask;               /*!< GPIO wakeup-enable mask */
+};
+
+/** @brief Return the board-specific low-power GPIO wakeup configuration. */
+const struct board_lp_gpio_wakeup_config_s *board_lp_gpio_wakeup_config_get(void);
+
+#if __has_include("board_gpio_overlay.h")
+#include "board_gpio_overlay.h"
+#else
 
 void board_uartx_gpio_init(void);
 void board_i2c0_gpio_init(void);
@@ -34,8 +46,11 @@ void board_usb_gpio_init(void);
 #define PEC_I2C_SDA_PIN  GPIO_PIN_9
 void board_pec_i2c_gpio_init(void);
 
-#define PEC_IR_PIN       GPIO_PIN_10
+#define PEC_IR_PIN       GPIO_PIN_9
 void board_pec_ir_gpio_init(void);
+
+#define PEC_IR_RX_PIN    GPIO_PIN_10
+void board_pec_ir_rx_gpio_init(void);
 
 #define PEC_PWM_CH0_PIN  GPIO_PIN_8
 #define PEC_PWM_CH1_PIN  GPIO_PIN_9

@@ -2,8 +2,15 @@
 
 #include "bflb_mtimer.h"
 
+extern "C" void bl_wireless_init(void);
+
 extern "C" void init(void)
 {
+    /* Wireless platform bring-up (RF parameters, EM window): runs before
+     * the scheduler starts, matching the SDK examples' main() (see
+     * examples/wifi/sta/smartconfig_ble/main.c calling rfparam_init()).
+     * The WiFi/BLE stacks themselves still start lazily from their users. */
+    bl_wireless_init();
 }
 
 extern "C" unsigned long millis(void)

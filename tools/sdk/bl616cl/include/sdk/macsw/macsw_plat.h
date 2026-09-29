@@ -6,6 +6,7 @@
  ****************************************************************************************
  */
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 //#include "FreeRTOS.h"
@@ -35,7 +36,7 @@
         }                                                                             \
     } while (0);
 
-#if MACSW_WFA
+#ifdef CONFIG_HIGH_ISR_STACK
 extern volatile int GLOBAL_INT_DISABLE_has_lock;
 extern volatile uint32_t critical_nesting_level;
 //extern volatile void *GLOBAL_INT_task_handle;
@@ -58,7 +59,7 @@ extern int32_t TrapNetCounter; /* Someone actually called 'GLOBAL_INT_DISABLE' i
 #define GLOBAL_INT_DISABLE() GLOBAL_INT_DISABLE_LONG_TIME()
 #endif
 
-#if MACSW_WFA
+#ifdef CONFIG_HIGH_ISR_STACK
 #define GLOBAL_INT_RESTORE()                                                        \
         if(!TrapNetCounter) {                                                       \
         critical_nesting_level--;                                                   \
@@ -113,6 +114,10 @@ void wifi_task_resume(bool isr);
  */
 uint32_t wifi_sys_now_ms(bool isr);
 
+#if MACSW_TWT && defined(CFG_WIFI_TWT_PDS15_ENABLE)
+int macsw_platform_get_time_us(uint64_t *time_us);
+#endif
+
 
 /**
  ****************************************************************************************
@@ -122,7 +127,12 @@ uint32_t wifi_sys_now_ms(bool isr);
  * @param[in] fmt Format string
  ****************************************************************************************
  */
-void __attribute__((used)) __attribute__((__format__(__printf__, 2, 3)))
-wifi_syslog(int priority, const char *fmt, ...);
+#ifdef CONFIG_LOG_DISABLE
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    #define wifi_syslog(...) ((void)0)
+#else
+    void __attribute__((used)) __attribute__((__format__(__printf__, 2, 3)))
+    wifi_syslog(int priority, const char *fmt, ...);
+#endif
 
 #endif // RTOS_H_
