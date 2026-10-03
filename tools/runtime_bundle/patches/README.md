@@ -107,8 +107,8 @@ The BL616CL runtime bundle uses the wl80211 host stack instead of fhost
 wl80211 plus its macsw firmware and lwIP fits the board's RAM budget where the
 fhost fullmac host stack did not.
 
-Component revisions recorded by the legacy checked-in bundle (the
-compile-time runtime always uses the submodule revision):
+Component revisions recorded by the former checked-in bundle, removed on
+2026-10-03 (the compile-time runtime always uses the submodule revision):
 
 - `components/wireless/wl80211` host API/libs: `3c19c8d1`
 - `components/wireless/macsw` firmware: `78718af`
@@ -167,13 +167,14 @@ pulls in `macsw.h`) from any C++ translation unit fails with
 `invalid conversion from 'const void*' to 'const uint8_t*'`.  Add the explicit
 cast used by the Arduino chip bundle.
 
-## libapp.a and CONFIG_WIFI6 (legacy bundles)
+## libapp.a and CONFIG_WIFI6 (former legacy bundles)
 
 `bsp/board/{board}/board.c` attaches the WiFi MAC IRQ
 (`bflb_irq_attach(WIFI_IRQn, interrupt0_handler, NULL)`) only under
 `CONFIG_WIFI6`.  In the compile-time runtime, `libapp.a` and the WiFi archives
-come from the same build, so they cannot drift.  The checked-in legacy
+come from the same build, so they cannot drift.  The former checked-in
 `tools/sdk/{chip}/lib_board/libapp.a` did have to be copied from the same
 generation run: a stale `libapp.a` (built before `CONFIG_WIFI6`) omits the IRQ
 attach, the macsw task never receives the MAC idle interrupt, and the first
-STA VIF add blocks forever in `MM_GOING_TO_IDLE`.
+STA VIF add blocks forever in `MM_GOING_TO_IDLE`.  That directory was removed
+on 2026-10-03.

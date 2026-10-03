@@ -42,10 +42,11 @@ the vendor archives, so editing any of them rebuilds the runtime.
 `--force` rebuilds, `--keep-work` retains the SDK build tree under
 `<cache>/work/`, `--no-patches` skips the platform patch set.
 
-`generate_runtime_bundle.py` now only provides the shared helpers plus the
-legacy standalone bundle generator (output `tools/sdk/{chip}`) and the host
-toolchain/tool installer (`--tools-only`); the compile-time path above is the
-supported flow.
+`generate_runtime_bundle.py` now only provides the shared helpers plus a
+standalone bundle generator writing to an explicit `--out` path (used in the
+past for the removed checked-in bundles) and the host toolchain/tool
+installer (`--tools-only`); the compile-time path above is the supported
+flow.
 
 ## Supported chips
 
@@ -88,10 +89,11 @@ vendor archive hashes are part of the runtime cache key.
 
 ## Legacy checked-in bundles
 
-`tools/sdk/{chip}/` bundles predate the submodule flow.  `platform.txt` no
-longer reads them (the bridge build links only the source-built runtime), but
-the directory is kept until downstream users have moved over; delete it
-together with its `manifest.json` once they have.
+The `tools/sdk/{chip}/` bundles that predated the submodule flow were removed
+on 2026-10-03; `tools/sdk/` now contains only the `bouffalo_sdk` submodule.
+`platform.txt` had already stopped reading them.  The BL616CL `uarthci`
+controller archive remains under `tools/vendor/bouffalo_ble/` for now because
+the public SDK release does not ship that variant.
 
 ## Build hygiene
 

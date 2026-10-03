@@ -100,8 +100,8 @@
       boot2/DTS 在 Arduino 编译期由 `platform.txt` 的 prebuild hook
       （`tools/runtime_bundle/build_sdk_runtime.py`）从子模块现编，产物缓存在
       `~/.cache/arduino-bouffalo/sdk-runtime/<key>` 并 symlink 进
-      `{build.path}/sdk_runtime/{mcu}`；不再读取 `tools/sdk/bl616cl`
-      （保留为 legacy，待下游迁移后删除）。
+      `{build.path}/sdk_runtime/{mcu}`；不再读取 checked-in bundle
+      （legacy `tools/sdk/bl616cl/` 已于 2026-10-03 删除）。
 - [x] 8 个 SDK 补丁构建期 apply、结束 revert（`patches/patches.json`）；
       `wl80211-connect-ssid-filter.patch` 在上游 v2.3.35 改为预编译库后标记
       obsolete（该库已含修复）。
@@ -128,8 +128,11 @@
       `bluetoothctl` 空口扫到 `B4:E8:42:3C:A7:DD BL616CL-HCI`。
       注：本机 AX201 的 `hcitool`/`btmgmt` 原始 HCI 扫描路径当日返回
       EIO，MGMT 路径（bluetoothctl）正常，与目标板无关。
-- [ ] 删除 legacy `tools/sdk/bl616cl/`（manifest.json、lib/、include/…）
-      并清理引用它的历史文档
+- [x] 删除 legacy `tools/sdk/bl616cl/`（2026-10-03，755 个文件 / 67 MB）：
+      过时的头文件与静态库全部移除，`tools/sdk/` 下只剩 `bouffalo_sdk`
+      子模块；BL616CL `uarthci` 控制器归档保留在
+      `tools/vendor/bouffalo_ble/`（同一二进制，sha256 `d2b948e1…`），
+      历史文档中的记录保留为背景
 
 - [ ] 在 GNU Make 4+ 环境重新运行 `generate_runtime_bundle.py`，验证 CherryUSB 配置可复现
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
@@ -452,6 +455,7 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
          btble_trace 由 bridge 直写 UART0；btble_cli 加 ble2dump/blewide/
          emdump 命令。重编方法：btblecontroller_test/build_btblecontroller
          目录 make（PATH 加 Xuantie bin），cp 到 tools/sdk/bl616cl/lib/
+         （历史方法；该 legacy 目录已于 2026-10-03 删除，现由子模块现编）
       1) **最关键实测结论：MAC 侧从未发射**——广播序列全通后：
          FIFOISR×79 + ENDISR×79（MAC 在跑事件循环、ET 索引 11..14 前进），
          但 **TXISR/RXISR/BLEISR 全部为 0**；actfifostat 原始值

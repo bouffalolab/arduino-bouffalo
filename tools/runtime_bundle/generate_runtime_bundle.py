@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Build Bouffalo Arduino SDK/variant bundles from a BouffaloSDK checkout.
 
-Generates the checked-in runtime bundles used by the Arduino platform:
-  tools/sdk/{chip}/          chip-level headers, archives, linker script
+The Arduino platform no longer consumes a checked-in bundle: the supported
+flow is the compile-time runtime built by build_sdk_runtime.py, which imports
+the shared helpers from this file.  This CLI still generates a full bundle
+into an explicit --out path (used in the past for the removed checked-in
+bundles) and installs the host toolchain subset with --tools-only:
+  <out>/                     chip-level headers, archives, linker script, ...
   variants/{board}/           board BSP archive, boot2, partition, eFuse assets
   tools/{toolchain_dirname}/  minimal toolchain subset
 

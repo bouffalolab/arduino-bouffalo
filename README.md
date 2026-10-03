@@ -19,7 +19,6 @@ plus the gitignored host-tool directories below).  Its layout is:
     ├── tools/sdk/bouffalo_sdk/         Bouffalo SDK git submodule (pinned)
     │                                    (runtime headers/archives/boot2/DTS
     │                                     are built from it at compile time)
-    ├── tools/sdk/bl616cl/              legacy checked-in bundle (unused)
     ├── tools/vendor/bouffalo_ble/      controller archives not published by
     │                                    the public SDK release
     ├── tools/partitions/               partition TOML (compile-time → bin)
