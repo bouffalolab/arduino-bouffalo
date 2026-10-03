@@ -1,5 +1,25 @@
 # BL616CL UNO R4 Bridge TODO
 
+## 代码核查状态（2026-09-29）
+
+下面的状态以当前 `arduino-bouffalo` 源码、bridge 命令处理器和已有实机
+冒烟记录为准。`[x]` 表示该功能在代码中有真实后端且已有验证；只提供头文件
+或返回固定失败值的兼容接口不计为已支持。
+
+| bridge 依赖 | 状态 | 结论 |
+| --- | --- | --- |
+| USB CDC ACM + CMSIS-DAP HID | 已支持 | CherryUSB 后端已实现；DK 上枚举、CDC 收发和 DAP 命令往返已验证。SWD 时序、最终载板接线仍待验证。 |
+| WiFi STA / 扫描 / DHCP / 静态 IPv4 / DNS / ping | 已支持 | `esp32_wifi.cpp` 使用 wl80211/`wifi_mgmr`，对应 AT 冒烟已通过；SoftAP/APSTA、IPv6、自动连接和持久化设置仍未实现。 |
+| TCP client/server、UDP | 已支持 | `WiFiClient`、`WiFiServer`、`WiFiUDP` 使用 lwIP socket，AT echo 已通过。 |
+| TLS client | 已支持 | `WiFiClientSecure` 使用 mbedTLS v3；CA 装载、TLS 1.2 和 HTTPS GET 已通过。 |
+| SPIFFS/FS、Preferences | 代码已支持，镜像布局阻塞 bridge | LittleFS/EasyFlash 后端和 `StorageTest` 已通过；bridge 完整镜像仍会与 0xE000/0xF000 分区表槽位重叠，修复布局和上传流程前不能宣称部署可用。 |
+| BLE HCI 透传 | 已支持（范围有限） | AT HCI 队列、H4 解析和 controller 初始化已实现；2026-09-24 已实机验证 Reset/LE 广播序列并在空口发现 bridge 广播。其他 HCI/ACL/连接命令和长期稳定性仍未测。 |
+| SoftAP / APSTA | 不支持 | `WiFi.softAP*()` 和 AP 事件仍是固定失败/空返回。 |
+| RA4M1 OTA / BOSSA | 不支持 | `Update.h`、`Arduino_ESP32_OTA.h`、`BossaArduino.h` 是失败桩；`BossaUnoR4WiFi::program()` 无法完成 SAM-BA 刷写。 |
+
+桥接工程当前可以完整编译链接，但 AT 命令表中调用未实现 API 的命令仍会失败；
+因此“能编译”与“完整 UNO R4 bridge 可用”必须分开记录。
+
 ## 新板重调试（2026-08-29 起）
 
 - [x] 控制台重映射（UART0→UART1 GPIO8/9）全部作废：SDK 副本
@@ -20,12 +40,35 @@
 - [x] 第一阶段：ESP32 Arduino API 兼容骨架
 - [x] 第二阶段：BL616CL CherryUSB CDC ACM + HID 后端
 - [x] 第二阶段硬件验证（USB 部分）
-- [ ] 第三阶段：WiFi6 / TCP / TLS
-- [ ] 第四阶段：存储与 OTA
+- [x] 第三阶段：WiFi STA / TCP / UDP / TLS（SoftAP 仍未实现）
+- [ ] 第四阶段：OTA 与 bridge 镜像布局（SPIFFS/Preferences 后端已完成）
 - [ ] 第五阶段：完整 UNO R4 板级适配
 
 ## 第二阶段收尾
 
+- [x] 核查 arduino-bouffalo PR #10（2026-09-29，head `e6c3179`）：
+      该 PR 引入独立 bridge runtime profile、临时载板 variant 和 UART/runtime
+      改动，未包含 SWD 时序实现或校准结果；PR 自身仍将下面的时序校准项
+      标为未完成。已获取到本地 `upstream/pr-10`，尚未合入当前分支；合并
+      预检查发现 `platform.txt` 和 runtime bundle 生成脚本有内容冲突。
+      当前 bridge `dap_config.h` 仍使用 ESP32 引脚 SWCLK=7 / SWDIO=8
+      与延时常数 7700 / fast clock 2400000 Hz，尚未按载板 GPIO12/13 适配。
+- [x] 单独移植 PR #10 的 `HardwareSerial` 中断接收、4096 字节环形缓冲、
+      接收/溢出计数、`clearRx()`、原位切换波特率和底层句柄接口；保留当前
+      variant 引脚映射。Xuantie 交叉编译、Serial 示例和完整 bridge
+      编译链接通过；当前 Linux 工具链缺少 `lto-wrapper`，链接时须临时
+      加 `-fno-use-linker-plugin`（保留原 `__LD_CONFIG_EM_SIZE=32`）。
+- [x] 2026-09-30 BL616CL 上板回归：FT232 `BG02CSA6` 接 UART0/ISP
+      （GPIO34/35）、`BG03YFET` 接 HCI 物理 UART1（GPIO27 TX / GPIO28 RX），
+      两端均以 2 Mbaud 收到 READY 和回显；重复 end/begin 后回显仍正常；
+      UART1 原位 `updateBaudRate(2000000)` 后回显正常，512 字节连续回显通过。
+      暂停前台读取后发送 6000 字节，接收计数 6526、溢出 1905、回显
+      4095 字节，符合环形缓冲可用容量；`clearRx()` 后统计归零。
+      测试固件已移除并刷回 bridge，USB 重新枚举为 2341:1002，CDC
+      `AT` 返回 `OK`。此次使用临时 `HardwareSerial(1, 28, 27)`，不代表
+      默认 `Serial1` 的 GPIO24/25 或 BLE 控制器共用 UART1 已验证。
+- [ ] 测试非 2 Mbaud 的原位波特率切换；首次 115200 测试的主机脚本
+      存在帧读取过量问题，结果不能用于判断固件是否支持切换。
 - [x] 确认调试日志串口与 Bouffalo SDK 默认板级配置一致：
       UART0 = GPIO34 TX / GPIO35 RX @ 2 Mbit/s，UART1 = GPIO24 TX / GPIO25 RX
 - [x] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
@@ -49,6 +92,44 @@
       需再按一次 RTS 复位才恢复；`usb:event_configured` 已打印但系统无节点）
 
 ## Runtime Bundle 维护
+
+### 2026-10-02 子模块现编（替代 checked-in bundle）
+
+- [x] `tools/sdk/bouffalo_sdk` 作为 git 子模块固定到 `v2.3.35`
+      (`63784aa0d14a4d67b081f91a4fa7ed18331c7470`)；runtime 头文件/库/
+      boot2/DTS 在 Arduino 编译期由 `platform.txt` 的 prebuild hook
+      （`tools/runtime_bundle/build_sdk_runtime.py`）从子模块现编，产物缓存在
+      `~/.cache/arduino-bouffalo/sdk-runtime/<key>` 并 symlink 进
+      `{build.path}/sdk_runtime/{mcu}`；不再读取 `tools/sdk/bl616cl`
+      （保留为 legacy，待下游迁移后删除）。
+- [x] 8 个 SDK 补丁构建期 apply、结束 revert（`patches/patches.json`）；
+      `wl80211-connect-ssid-filter.patch` 在上游 v2.3.35 改为预编译库后标记
+      obsolete（该库已含修复）。
+- [x] 公共 SDK 未发布的 BL616CL `uarthci` 控制器库移入
+      `tools/vendor/bouffalo_ble/`（1.6.208，sha256 `d2b948e1…`），构建期临时
+      stage 进 SDK 树；其余库全部现编。
+- [x] 移除 `-lblestack`：uarthci 预设强制 `CONFIG_BLE_HOST_DISABLE=y`，bridge
+      经 AT 虚拟 HCI 传输直接驱动控制器，`USE_M2S1_CONTROLLER` 未启用，
+      链接器验证无任何 blestack 符号引用。
+- [x] 全流程实机复验（2026-10-02）：清空 runtime 缓存 + sketch 构建目录后
+      `arduino-cli compile` 现编并链接成功（951492 B / 45%，RAM 64308 B /
+      19%）；烧录后 `AT+HCIBEGIN` → Reset/AdvParams/AdvData/AdvEnable 全部
+      `status=0x00`，空口扫描到 `B4:E8:42:3C:A7:DD BL616CL-HCI`。
+- [x] 构建卫生（2026-10-03）：patch 加 `--no-backup-if-mismatch`（消除
+      `.orig` 残留），SDK Python 子进程加 `PYTHONDONTWRITEBYTECODE=1`
+      （SDK 仓库 track 的 `__pycache__/*.pyc` 不再被改写），回退后检查
+      patch 触及文件是否仍脏并告警。验证：从纯净子模块（`git status`
+      为空）执行 `arduino-cli compile`，8 个 patch apply→build→revert 后
+      子模块仍零残留；新缓存键 `4f08c39952e0c51e`，warm 编译 12.9 s。
+- [x] 实机复验（2026-10-03）：烧录新构建产物（host/device SHA256 均为
+      `8220496072…`，设备端校验通过）；启动日志
+      `component_version_sdk: 1.1.1 63784aa0+`（= 子模块 v2.3.35 现编）；
+      `AT+HCIBEGIN` 后四条命令 Command Complete `status=0x00`；
+      `bluetoothctl` 空口扫到 `B4:E8:42:3C:A7:DD BL616CL-HCI`。
+      注：本机 AX201 的 `hcitool`/`btmgmt` 原始 HCI 扫描路径当日返回
+      EIO，MGMT 路径（bluetoothctl）正常，与目标板无关。
+- [ ] 删除 legacy `tools/sdk/bl616cl/`（manifest.json、lib/、include/…）
+      并清理引用它的历史文档
 
 - [ ] 在 GNU Make 4+ 环境重新运行 `generate_runtime_bundle.py`，验证 CherryUSB 配置可复现
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
@@ -180,10 +261,14 @@
 - [ ] 更新 variant 的 USB、UART、BOOT/RESET、DAP 引脚映射
 - [ ] 验证 RA4M1 与 BL616CL 的串口透传
 - [ ] 验证通过 USB CMSIS-DAP 对 RA4M1 进行编程
-- [ ] 验证 BLE HCI 透传
+- [x] 验证 BLE HCI 透传（2026-09-24 已完成 Reset/LE 广播序列和空口验证；ACL/连接及长期稳定性仍待测）
 - [ ] 执行端到端 bridge 回归和更新包打包
 
 ## 第六阶段：BLE HCI 透传（RA4M1 AT → BL616CL 蓝牙广播）
+
+本节包含历史 bring-up 记录；9 月 24 日里程碑已确认 Arduino bridge 的
+`AT+HCI` 广播可以上空口，早期“uarthci 不发射”的结论不再适用于当前
+runtime bundle。未覆盖的 HCI/ACL/连接功能仍保持待验证。
 
 架构：RA4M1 上跑 ArduinoBLE host，通过 bridge 的 AT+HCI_* 命令把 HCI 透传给
 BL616CL；BL616CL 只跑 BLE controller（external-host / HCI 透传模式），广播
@@ -224,7 +309,7 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
 - [x] HCI host→controller 通路打通：H4TL 的 RX 走 djob 延迟处理，该链在
       无 UART ISR 的传输上不工作（RW 任务有消息、队列清空、prevent_sleep=0
       但 djob 从不执行）。改由 HCIVirtualTransport 自己解析 HCI 组帧，
-      直接调 `hci_tl_cmd_received(HCI_TL_H4=0, opcode, len, payload)` /
+      直接调 `hci_tl_cmd_received(HCI_TL_H4=1, opcode, len, payload)` /
       `hci_tl_acl_tx_data_*`，不再喂 H4TL 的 armed read
 - [x] HCI 首条事件回传验证：AT+HCIWRITE(HCI_Reset) → Command Complete
       （04 0F 04 ...）经 h4tl_write→eif write→AT+HCIREAD 回读成功
@@ -551,11 +636,9 @@ AT+HCIBEGIN/HCIWRITE/HCIREAD/HCIAVAILABLE/HCIWAIT 命令。
       （AT+HCI 冒烟）、`at_cmd_termios.py`（单条 AT 命令+超时）、
       `console_while_at.py`（发 AT 期间同步抓 UART0 控制台）、
       `reset_board.py`（RTS 脉冲复位、DTR 保持 BOOT 低）
-- [ ] 桥接固件 BLE 架构选型（待定）：
-      a) 维持 uarthci + RA4M1 host（现状，空口不发射，等 controller 团队）；
-      b) 改 m2s1 完整栈 + BL616CL 自广播（已验证可行），RA4M1 侧
-         协议需从 HCI 透传改为高层 AT 命令；
-      c) 双模并存需评估 RF/EM 资源。
+- [x] 桥接固件 BLE 架构收敛为 uarthci + RA4M1 host：2026-09-24 在当前
+      runtime bundle 上完成 `AT+HCI` Reset/LE 广播序列和空口验证；后续只需
+      扩展未覆盖的 HCI/ACL/连接命令并做长期稳定性测试。
 
 ## 第八阶段：BLE 团队 EM 假说复核 + 配置对齐实验（2026-09-21）
 
