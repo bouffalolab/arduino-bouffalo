@@ -23,15 +23,16 @@ derived from it (see "Added a new chip?" below).
    `CMakeLists.txt`, `defconfig`, `FreeRTOSConfig.h`, `usb_config.h`) into a
    work directory, applies the platform patch set to the SDK tree, and builds
    the probe with the SDK's Make/CMake flow using the platform toolchain.
-   Vendor archives the public SDK does not publish are staged into the SDK
-   tree for the link only.  The patch set is reverted and the vendor archives
-   removed in a `finally` block.
+   A controller archive supplied through `BOUFFALO_BLE_CONTROLLER_LIB`
+   (only needed when the SDK does not publish the requested controller
+   flavor) is staged into the SDK tree for the link only.  The patch set is
+   reverted and any staged archive removed in a `finally` block.
 3. The staged runtime is published atomically as the cache entry and linked
    into the sketch build directory.
 
 The cache key covers the SDK commit **and dirty state**, the patch set, the
 probe `defconfig`/`FreeRTOSConfig.h`, the toolchain version and the SHA-256 of
-the vendor archives, so editing any of them rebuilds the runtime.
+any extra controller archive, so editing any of them rebuilds the runtime.
 
 ## Standalone use
 
@@ -68,7 +69,8 @@ The runtime is generated per chip, so nothing needs to be copied by hand for a
 new chip or board: `--chip`/`--board` select the SDK board (`bsp/board/<board>`)
 and the toolchain (`tools/{toolchain_dirname}`), and the same probe `defconfig`
 drives the build.  A board whose controller variant is not published by the
-public SDK additionally needs a vendor archive (see below).
+public SDK can be brought up with `BOUFFALO_BLE_CONTROLLER_LIB=<archive>`
+(see below).
 
 ## Patches
 
@@ -78,22 +80,25 @@ them to the submodule for the duration of a build and reverts them afterwards.
 patches that became obsolete upstream.  See `patches/README.md` for the list
 and the rationale of each fix.
 
-## Vendor archives
+## Controller archives the SDK does not ship
 
-Some prebuilt controller variants are not part of the public SDK release
-(BL616CL `uarthci` is one; the v2.3.35 release only ships `m0b1`/`m2s1`).  The
-builder accepts such archives from `tools/vendor/bouffalo_ble/<chip>/` and
-copies them into the SDK tree for the link only.  Each vendor directory
-carries a README and a manifest with the archive version and SHA-256, and the
-vendor archive hashes are part of the runtime cache key.
+The pinned SDK (v2.3.36) publishes every BL616CL controller flavor the
+platform links, including `uarthci`
+(`components/wireless/bluetooth/btblecontroller/lib/`), so a stock build needs
+no external binaries.  If a chip or controller flavor is missing from the SDK
+release, point `BOUFFALO_BLE_CONTROLLER_LIB` at a prebuilt
+`libbtblecontroller_<chip>_<variant>.a`: the builder stages it into the SDK
+tree for the link only and removes it afterwards.  The archive SHA-256 is part
+of the runtime cache key.
 
 ## Legacy checked-in bundles
 
 The `tools/sdk/{chip}/` bundles that predated the submodule flow were removed
 on 2026-10-03; `tools/sdk/` now contains only the `bouffalo_sdk` submodule.
 `platform.txt` had already stopped reading them.  The BL616CL `uarthci`
-controller archive remains under `tools/vendor/bouffalo_ble/` for now because
-the public SDK release does not ship that variant.
+controller archive that used to be carried under `tools/vendor/bouffalo_ble/`
+is gone as well: SDK v2.3.36 ships it (1.6.210) and the runtime links the
+archive straight out of the submodule.
 
 ## Build hygiene
 
@@ -101,8 +106,8 @@ The builder leaves the submodule worktree pristine.  Patches are applied with
 `--no-backup-if-mismatch` (GNU patch would otherwise drop `*.orig` files next
 to SDK sources whenever a hunk applies with an offset), and the SDK's Python
 helpers run with `PYTHONDONTWRITEBYTECODE=1` (the upstream repository tracks
-some `__pycache__/*.pyc` files that a build would otherwise rewrite).  The
-vendor controller archive is staged into the SDK tree for the link and
-removed in a `finally` block.  After reverting the patch set the builder
-reports any patch-touched file that is still modified, so drift cannot go
-unnoticed.
+some `__pycache__/*.pyc` files that a build would otherwise rewrite).  An
+externally provided controller archive is staged into the SDK tree for the
+link and removed in a `finally` block.  After reverting the patch set the
+builder reports any patch-touched file that is still modified, so drift
+cannot go unnoticed.

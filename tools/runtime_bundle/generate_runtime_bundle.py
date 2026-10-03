@@ -781,12 +781,29 @@ def stage_sdk_runtime(*, sdk: Path, chip: str, chip_cfg: dict[str, object],
             continue
         copy_file(archives[name], destination / "lib" / name)
 
-    # btblecontroller — separately built precompiled lib (BLE controller)
-    btble_dir = build_dir / "build_btblecontroller"
-    if btble_dir.is_dir():
-        for btble_lib in sorted(btble_dir.glob("libbtblecontroller_*.a")):
-            copy_file(btble_lib, destination / "lib" / btble_lib.name)
-            print(f"Note: copied btblecontroller: {btble_lib.name}")
+    # btblecontroller — precompiled BLE controller archive.  Development
+    # checkouts build it from source under build_btblecontroller/; release
+    # snapshots ship it under components/wireless/bluetooth/btblecontroller/
+    # lib/.  Flavors the SDK does not ship (the uarthci archive before SDK
+    # v2.3.36) arrive through extra_libs.  platform.txt links it by name.
+    controller_name: str | None = None
+    controller_variant = defconfig_value(template_dir / "defconfig",
+                                         "CONFIG_BTBLECONTROLLER_LIB")
+    if controller_variant:
+        controller_name = f"libbtblecontroller_{chip}_{controller_variant}.a"
+        controller_source = first_existing(
+            build_dir / "build_btblecontroller" / controller_name,
+            sdk / "components" / "wireless" / "bluetooth" /
+            "btblecontroller" / "lib" / controller_name,
+        )
+        if controller_source is None:
+            controller_source = extra_libs.get(controller_name)
+        if controller_source is not None:
+            copy_file(controller_source, destination / "lib" / controller_name)
+            print(f"Note: copied btblecontroller: {controller_name}")
+        else:
+            print(f"WARNING: BLE controller archive not found, "
+                  f"skipping: {controller_name}", file=sys.stderr)
 
     # Chip-specific archives live in component directories rather than
     # build_out.  Development checkouts build them from source under
@@ -824,7 +841,8 @@ def stage_sdk_runtime(*, sdk: Path, chip: str, chip_cfg: dict[str, object],
 
     # Platform-provided archives that the SDK checkout does not ship.
     for name, source in sorted(extra_libs.items()):
-        if name in extra_archives or name in archives:
+        if (name in extra_archives or name in archives or
+                name == controller_name):
             continue
         copy_file(source, destination / "lib" / name)
 
@@ -1049,8 +1067,9 @@ def main() -> int:
         shutil.rmtree(build_dir)
 
     # Archives the SDK checkout does not ship for this target are carried over
-    # from the existing bundle during release-time regeneration.  The runtime
-    # builder (build_sdk_runtime.py) feeds these from tools/vendor instead.
+    # from the existing runtime during release-time regeneration.  The
+    # compile-time builder (build_sdk_runtime.py) takes them from the SDK tree
+    # and the optional BOUFFALO_BLE_CONTROLLER_LIB override instead.
     extra_libs: dict[str, Path] = {}
     for carried_name in ("libbtblecontroller_bl616cl_uarthci.a",
                          "libblestack.a"):

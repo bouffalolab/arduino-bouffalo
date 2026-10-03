@@ -19,8 +19,6 @@ plus the gitignored host-tool directories below).  Its layout is:
     ├── tools/sdk/bouffalo_sdk/         Bouffalo SDK git submodule (pinned)
     │                                    (runtime headers/archives/boot2/DTS
     │                                     are built from it at compile time)
-    ├── tools/vendor/bouffalo_ble/      controller archives not published by
-    │                                    the public SDK release
     ├── tools/partitions/               partition TOML (compile-time → bin)
     ├── tools/runtime_bundle/           compile-time runtime builder, patches
     └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
@@ -76,13 +74,13 @@ Make sure `arduino-cli` is in PATH or set `ARDUINO_CLI=/path/to/arduino-cli`.
 
 The runtime is rebuilt automatically whenever its inputs change (SDK commit
 or dirty state, patch set, `defconfig`/`FreeRTOSConfig.h`, toolchain version,
-vendor archives).  Cached entries live under
+extra controller archives).  Cached entries live under
 `~/.cache/arduino-bouffalo/sdk-runtime/` (override with
 `BOUFFALO_SDK_CACHE`).  Pin a new SDK release by checking out the tag in the
 submodule and staging the submodule pointer:
 
     git -C hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk fetch --tags
-    git -C hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk checkout v2.3.35
+    git -C hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk checkout v2.3.36
     git add hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk
 
 Force a rebuild or keep the SDK build tree for inspection:

@@ -96,7 +96,8 @@
 ### 2026-10-02 子模块现编（替代 checked-in bundle）
 
 - [x] `tools/sdk/bouffalo_sdk` 作为 git 子模块固定到 `v2.3.35`
-      (`63784aa0d14a4d67b081f91a4fa7ed18331c7470`)；runtime 头文件/库/
+      (`63784aa0d14a4d67b081f91a4fa7ed18331c7470`，2026-10-03 更新到
+      `v2.3.36`，见下节)；runtime 头文件/库/
       boot2/DTS 在 Arduino 编译期由 `platform.txt` 的 prebuild hook
       （`tools/runtime_bundle/build_sdk_runtime.py`）从子模块现编，产物缓存在
       `~/.cache/arduino-bouffalo/sdk-runtime/<key>` 并 symlink 进
@@ -108,6 +109,7 @@
 - [x] 公共 SDK 未发布的 BL616CL `uarthci` 控制器库移入
       `tools/vendor/bouffalo_ble/`（1.6.208，sha256 `d2b948e1…`），构建期临时
       stage 进 SDK 树；其余库全部现编。
+      （2026-10-03 作废：SDK v2.3.36 已自带 uarthci 1.6.210，vendor 目录删除）
 - [x] 移除 `-lblestack`：uarthci 预设强制 `CONFIG_BLE_HOST_DISABLE=y`，bridge
       经 AT 虚拟 HCI 传输直接驱动控制器，`USE_M2S1_CONTROLLER` 未启用，
       链接器验证无任何 blestack 符号引用。
@@ -130,9 +132,9 @@
       EIO，MGMT 路径（bluetoothctl）正常，与目标板无关。
 - [x] 删除 legacy `tools/sdk/bl616cl/`（2026-10-03，755 个文件 / 67 MB）：
       过时的头文件与静态库全部移除，`tools/sdk/` 下只剩 `bouffalo_sdk`
-      子模块；BL616CL `uarthci` 控制器归档保留在
-      `tools/vendor/bouffalo_ble/`（同一二进制，sha256 `d2b948e1…`），
-      历史文档中的记录保留为背景
+      子模块；BL616CL `uarthci` 控制器归档当时移入
+      `tools/vendor/bouffalo_ble/`（sha256 `d2b948e1…`，该目录已于
+      2026-10-03 随 SDK v2.3.36 发布而删除），历史文档中的记录保留为背景
 
 - [ ] 在 GNU Make 4+ 环境重新运行 `generate_runtime_bundle.py`，验证 CherryUSB 配置可复现
 - [ ] 补充 macOS 下直接 CMake 构建说明或增加 CMake 回退路径
@@ -148,6 +150,27 @@
       `lwip_getaddrinfo()` 从唯一的 MEMP_NETDB 池取元素后永不归还，
       第二次解析起全部失败（表象为 EAI_MEMORY）；已删除桩函数
 - [ ] 确认 `libcherryusb.a`、`liblhal.a`、`autoconf.h` 与 SDK commit 对应关系
+
+### 2026-10-03 SDK v2.3.36：uarthci 由公共 SDK 提供，vendor 清理
+
+- [x] 子模块更新到 `v2.3.36`
+      (`8a3df34cb73f459ac71deb1bdf0b33fa016ab6fb`)：公共 SDK 首次发布
+      BL616CL `uarthci` 控制器归档
+      （`components/wireless/bluetooth/btblecontroller/lib/`，1.6.210，
+      sha256 `621ba45b…`），不再依赖 BLE 团队的私有构建。
+- [x] 修复 runtime staging：发布版 SDK 的预编译控制器归档此前只从
+      `build_btblecontroller/`（源码构建目录）取，导致 Arduino 链接
+      `-lbtblecontroller_bl616cl_uarthci` 失败；现在按 `defconfig` 的
+      `CONFIG_BTBLECONTROLLER_LIB` 从 SDK `btblecontroller/lib/` 拷贝，
+      未发布的 flavor 可用 `BOUFFALO_BLE_CONTROLLER_LIB=<archive>` 兜底。
+- [x] 删除 `tools/vendor/`（1.6.208，sha256 `d2b948e1…`）及代码/文档引用；
+      runtime manifest 的 `vendor_libs` 字段改名 `extra_libs`（正常为空），
+      链接归档与 SDK 树逐字节一致（sha256 `621ba45b…`）。
+- [x] 实机复验（2026-10-03）：清缓存重编（新键 `a3127c382c6e2375`，
+      956688 B / 45%）；启动日志 `component_version_sdk: 1.1.1 8a3df34c+`、
+      `lib_version_btblecontroller_1.6.210`；AT+HCI Reset / AdvParams /
+      AdvData(36B) / AdvEnable 四条 Command Complete `status=0x00`；
+      空口扫描到 `B4:E8:42:3C:A7:DD BL616CL-HCI`。
 
 ## 第三阶段：WiFi6 / TCP / TLS
 

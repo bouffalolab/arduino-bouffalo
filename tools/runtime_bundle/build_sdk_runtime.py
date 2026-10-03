@@ -7,7 +7,7 @@ compile links headers and archives that were built from
 ``tools/sdk/bouffalo_sdk`` in this tree.  There is no checked-in binary
 bundle: the SDK sources are the single source of truth and the runtime is
 re-derived whenever the SDK revision, the probe configuration, the platform
-patch set, the toolchain or the vendor archives change.
+patch set or the toolchain change.
 
 The heavy SDK build is cached under the user cache directory (override with
 ``BOUFFALO_SDK_CACHE``).  A cache hit only re-materialises the staged runtime
@@ -44,9 +44,6 @@ PROBE_FILES = (
     "FreeRTOSConfig.h",
     "usb_config.h",
 )
-
-VENDOR_DIR = Path("tools") / "vendor" / "bouffalo_ble"
-
 
 # ---------------------------------------------------------------------------
 # Small helpers
@@ -320,41 +317,39 @@ def prune_cache(cache_root: Path, keep: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Probe / vendor inputs
+# Probe / controller archive inputs
 # ---------------------------------------------------------------------------
 
 
 def resolve_extra_libs(*, platform_root: Path, sdk: Path, chip: str) -> dict[str, Path]:
     """Archives the SDK checkout does not ship for this target.
 
-    BL616CL uarthci is a vendor-provided controller build: the public SDK
-    release only ships m0b1/m2s1.  It lives under tools/vendor/bouffalo_ble.
+    SDK v2.3.36 and newer publish the BL616CL ``uarthci`` controller archive,
+    so the normal result is empty and everything links out of the SDK tree.
+    A controller flavor the SDK does not ship can still be brought up with
+    ``BOUFFALO_BLE_CONTROLLER_LIB=<archive>``; the builder stages it into the
+    SDK tree for the link and removes it again.
     """
-    libs: dict[str, Path] = {}
     variant = gen.defconfig_value(
         platform_root / "tools" / "runtime_bundle" / "defconfig",
         "CONFIG_BTBLECONTROLLER_LIB")
     if not variant:
-        return libs
+        return {}
     name = f"libbtblecontroller_{chip}_{variant}.a"
     sdk_copy = (sdk / "components" / "wireless" / "bluetooth" /
                 "btblecontroller" / "lib" / name)
     if sdk_copy.is_file():
-        return libs
-    candidates = [
-        platform_root / VENDOR_DIR / chip / name,
-        Path(os.environ["BOUFFALO_BLE_CONTROLLER_LIB"]) if
-        os.environ.get("BOUFFALO_BLE_CONTROLLER_LIB") else None,
-    ]
-    for candidate in candidates:
-        if candidate is not None and candidate.is_file():
-            libs[name] = candidate
-            break
-    else:
+        return {}
+    override = os.environ.get("BOUFFALO_BLE_CONTROLLER_LIB")
+    if override:
+        path = Path(override)
+        if path.is_file():
+            return {name: path}
         raise RuntimeError(
-            f"{name} is not shipped by the SDK and no vendor copy was found "
-            f"under {platform_root / VENDOR_DIR / chip}")
-    return libs
+            f"BOUFFALO_BLE_CONTROLLER_LIB does not point at a file: {path}")
+    raise RuntimeError(
+        f"{name} is not shipped by {sdk}; update the SDK submodule or set "
+        f"BOUFFALO_BLE_CONTROLLER_LIB to a prebuilt archive")
 
 
 def write_probe_dir(platform_root: Path, probe_dir: Path) -> None:
@@ -471,8 +466,8 @@ def main() -> int:
             manifest_extra={
                 "cache_key": key,
                 "patches": patch_hashes,
-                "vendor_libs": {name: sha256_file(path)
-                                for name, path in sorted(extra_libs.items())},
+                "extra_libs": {name: sha256_file(path)
+                               for name, path in sorted(extra_libs.items())},
             },
         )
         if entry.exists():
