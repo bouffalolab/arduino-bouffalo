@@ -1,0 +1,3 @@
+[submodule "tools/sdk/bouffalo_sdk"]
+	path = tools/sdk/bouffalo_sdk
+	url = git@github.com:bouffalolab/bouffalo_sdk.git
