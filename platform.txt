@@ -22,11 +22,21 @@ compiler.cpp.flags={compiler.common.flags} -std=gnu++17 -fno-exceptions -fno-rtt
 compiler.S.flags={compiler.common.flags} -x assembler-with-cpp
 compiler.ar.flags=rcs
 compiler.c.elf.flags=-march=rv32imafc_xtheade -mabi=ilp32f -mtune=e907 -Wl,--cref -Wl,--gc-sections -nostartfiles -fms-extensions -ffunction-sections -fdata-sections --specs=nano.specs -ufw_header -Wl,-wrap,snprintf -Wl,-wrap,sprintf
-compiler.sdk.path={runtime.platform.path}/tools/sdk/{build.mcu}
+# The SDK runtime (headers, archives, linker script, boot2, DTS) is built at
+# Arduino compile time from the tools/sdk/bouffalo_sdk git submodule by the
+# recipe.hooks.prebuild hook below.  Nothing generated is checked in under
+# tools/sdk/; the only checked-in entry is the bouffalo_sdk submodule itself.
+compiler.sdk.path={build.path}/sdk_runtime/{build.mcu}
 compiler.sdk.includes="-I{compiler.sdk.path}/include" "-I{compiler.sdk.path}/include/freertos" "-I{compiler.sdk.path}/include/freertos/portable" "-I{compiler.sdk.path}/include/freertos/chip_specific" "-I{compiler.sdk.path}/include/board" "-I{compiler.sdk.path}/include/sdk/mm" "-I{compiler.sdk.path}/include/sdk/mm/tlsf" "-I{compiler.sdk.path}/include/sdk/sysinit" "-I{compiler.sdk.path}/include/sdk/libc" "-I{compiler.sdk.path}/include/sdk/utils" "-I{compiler.sdk.path}/include/sdk/utils/log" "-I{compiler.sdk.path}/include/sdk/utils/ring_buffer" "-I{compiler.sdk.path}/include/sdk/utils/bflb_block_pool" "-I{compiler.sdk.path}/include/sdk/utils/bflb_timestamp" "-I{compiler.sdk.path}/include/sdk/utils/getopt" "-I{compiler.sdk.path}/include/sdk/utils/coredump" "-I{compiler.sdk.path}/include/sdk/utils/cjson" "-I{compiler.sdk.path}/include/sdk/utils/math/include" "-I{compiler.sdk.path}/include/sdk/utils/list" "-I{compiler.sdk.path}/include/sdk/lhal" "-I{compiler.sdk.path}/include/sdk/lhal/arch" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head/Core/Include" "-I{compiler.sdk.path}/include/sdk/lhal-config" "-I{compiler.sdk.path}/include/sdk/flash" "-I{compiler.sdk.path}/include/sdk/soc" "-I{compiler.sdk.path}/include/sdk/soc/hardware" "-I{compiler.sdk.path}/include/sdk/sys" "-I{compiler.sdk.path}/include/sdk/sys/bl616cl" "-I{compiler.sdk.path}/include/sdk/phyrf" "-I{compiler.sdk.path}/include/sdk/rfparam" "-I{compiler.sdk.path}/include/sdk/lwip" "-I{compiler.sdk.path}/include/sdk/lwip-port" "-I{compiler.sdk.path}/include/sdk/lwip-port/config" "-I{compiler.sdk.path}/include/sdk/lwip-posix" "-I{compiler.sdk.path}/include/sdk/wifi6" "-I{compiler.sdk.path}/include/sdk/supplicant" "-I{compiler.sdk.path}/include/sdk/macsw" "-I{compiler.sdk.path}/include/sdk/mbedtls"
 compiler.cpreprocessor.flags=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_BL616CL -DBL616CL -DARCH_RISCV -DBFLB_USE_HAL_DRIVER -DBFLB_USE_ROM_DRIVER -DCONFIG_BOUFFALO_SDK -DCONFIG_LHAL_ROMAPI -DCONFIG_FREERTOS -DCONFIG_IRQ_NUM=83 -DCONFIG_LIBC_FLOAT=0 -DCONFIG_LIBC_LONG_LONG=1 -DCONFIG_LOG_LEVEL=3 -DconfigMTIME_BASE_ADDRESS=0xE000BFF8UL -DconfigMTIMECMP_BASE_ADDRESS=0xE0004000UL -DportasmHANDLE_INTERRUPT=interrupt_entry -Ddefault_interrupt_handler=freertos_risc_v_trap_handler -DMBEDTLS_CONFIG_FILE="config-tls-generic.h" -DMBEDTLS_ALLOW_PRIVATE_ACCESS -DCONFIG_MBEDTLS_TLS_VERSION_1_2 -DCONFIG_MBEDTLS_CTR_DRBG_ENABLED -DCONFIG_MBEDTLS_ENTROPY_C -DCONFIG_MBEDTLS_ENTROPY_POLL -DCONFIG_MBEDTLS_ECP_C -DCONFIG_MBEDTLS_ECP_DP_SECP256R1_ENABLED -DCONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED -DCONFIG_MBEDTLS_ECP_NIST_OPTIM -DCONFIG_MBEDTLS_ECDH_C -DCONFIG_MBEDTLS_ECDSA_C -DCONFIG_MBEDTLS_DHM_C -DCONFIG_MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_PSK_ENABLED -DCONFIG_MBEDTLS_KEY_EXCHANGE_RSA_ENABLED -DCONFIG_MBEDTLS_CIPHER -DCONFIG_MBEDTLS_CIPHER_AES_ENABLED -DCONFIG_MBEDTLS_CIPHER_DES_ENABLED -DCONFIG_MBEDTLS_CIPHER_GCM_ENABLED -DCONFIG_MBEDTLS_CIPHER_MODE_CBC_ENABLED -DCONFIG_MBEDTLS_CIPHER_MODE_CTR_ENABLED -DCONFIG_MBEDTLS_AES_FEWER_TABLES -DCONFIG_MBEDTLS_AES_ROM_TABLES -DCONFIG_MBEDTLS_MD -DCONFIG_MBEDTLS_MD5 -DCONFIG_MBEDTLS_SHA1 -DCONFIG_MBEDTLS_SHA224 -DCONFIG_MBEDTLS_SHA256 -DCONFIG_MBEDTLS_SHA256_SMALLER -DCONFIG_MBEDTLS_SHA384 -DCONFIG_MBEDTLS_SHA512 -DCONFIG_MBEDTLS_PEM_CERTIFICATE_FORMAT -DCONFIG_MBEDTLS_PKCS5_C -DCONFIG_MBEDTLS_PK_WRITE_C -DCONFIG_MBEDTLS_GENPRIME_ENABLED -DCONFIG_MBEDTLS_SERVER_NAME_INDICATION -DCONFIG_MBEDTLS_SSL_ALPN -DCONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN=16384 -DCONFIG_MBEDTLS_SOME_AEAD_CIPHER_ENABLED -DCONFIG_MBEDTLS_SOME_CIPHER_ENABLED -DCONFIG_MBEDTLS_PSK_MAX_LEN=32 -DMBEDTLS_NET_C -include "{compiler.sdk.path}/include/autoconf.h" {compiler.sdk.includes}
 compiler.sdk.libs=-lfreertos -llhal -llibc -lmm -lstd -lsys -lsysinit -lutils -lcherryusb -llwip -Wl,--whole-archive -lmbedtls -Wl,--no-whole-archive -lpka_bl616cl -lwl80211_bl616cl -lwl80211_plat -lbl_wpa_supplicant -lmacsw_plat -lping -lmacsw_bl616cl -lmacsw_config_bl616cl_default
-compiler.ble.libs=-lbtblecontroller_bl616cl_uarthci -lblestack -lrfparam -lbl616cl_phyrf -lshell
+# No -lblestack: the SDK uarthci controller preset forces
+# CONFIG_BLE_HOST_DISABLE=y (components/wireless/bluetooth/ble_common_readonly.cmake),
+# so the SDK does not build the BLE host stack at all, and the bridge drives the
+# controller directly through the AT HCI virtual transport.  The only consumer
+# of libblestack would be hci_driver_init() under USE_M2S1_CONTROLLER, which is
+# not enabled for this build.
+compiler.ble.libs=-lbtblecontroller_bl616cl_uarthci -lrfparam -lbl616cl_phyrf -lshell
 compiler.system.libs=-lstdc++ -lsupc++ -lc -lm -lgcc
 
 compiler.c.extra_flags=
@@ -35,6 +45,12 @@ compiler.S.extra_flags=
 compiler.c.elf.extra_flags=-Wl,--defsym,__LD_CONFIG_EM_SIZE=32
 compiler.ar.extra_flags=
 compiler.objcopy.extra_flags=
+
+# Build the SDK runtime from the tools/sdk/bouffalo_sdk submodule before the
+# core/libraries/sketch compile.  build_sdk_runtime.py caches the heavy SDK
+# build (keyed by SDK revision, patch set, probe configuration and toolchain)
+# and materialises the staged runtime under compiler.sdk.path.
+recipe.hooks.prebuild.1.pattern=python3 "{runtime.platform.path}/tools/runtime_bundle/build_sdk_runtime.py" --platform-root "{runtime.platform.path}" --chip "{build.mcu}" --board "{build.variant}" --out "{compiler.sdk.path}"
 
 recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.cpreprocessor.flags} {compiler.c.flags} {compiler.warning_flags} {build.extra_flags} {compiler.c.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
 recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} {compiler.warning_flags} {build.extra_flags} {compiler.cpp.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"

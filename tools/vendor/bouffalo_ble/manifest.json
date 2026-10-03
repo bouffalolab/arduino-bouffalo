@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "archives": {
+    "bl616cl/libbtblecontroller_bl616cl_uarthci.a": {
+      "size": 11243864,
+      "sha256": "d2b948e13209a78faad86f43ec14b3e65cfd7fc5664580e3118b05144661ffec",
+      "version": "lib_version_btblecontroller_1.6.208",
+      "source": "Bouffalo BLE team private build (bluetooth component uarthci flavor)",
+      "reason": "The public bouffalo_sdk v2.3.35 ships only m0b1/m2s1 controller archives for BL616CL; the Arduino HCI bridge links uarthci."
+    }
+  }
+}
