@@ -38,7 +38,7 @@
       "file": "wl80211-connect-ssid-filter.patch",
       "root": "components/wireless/wl80211",
       "obsolete": true,
-      "reason": "The v2.3.35 release ships wl80211 as a prebuilt library (no src/ directory), and that library already contains the SSID filter fix."
+      "reason": "The v2.3.35 and v2.3.36 releases ship wl80211 as a prebuilt library (no src/ directory), and that library already contains the SSID filter fix."
     }
   ]
 }
