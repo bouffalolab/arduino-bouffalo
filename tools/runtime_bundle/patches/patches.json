@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "comment": "Platform patch set applied to tools/sdk/bouffalo_sdk by the runtime builder. 'root' is relative to the SDK root; patches are applied with -p1 from that directory. Entries marked obsolete are kept for history and skipped.",
+  "patches": [
+    {
+      "file": "bflb_usb_v2-ep0-control-transfer-fixes.patch",
+      "root": "drivers/lhal"
+    },
+    {
+      "file": "wifi6-lwipopts-runtime-config-fixes.patch",
+      "root": "components/wireless/wifi6"
+    },
+    {
+      "file": "lwip-wl80211-include-and-pbuf-fixes.patch",
+      "root": "components/net/lwip/lwip"
+    },
+    {
+      "file": "lwip-default-raw-recvmbox-size.patch",
+      "root": "components/net/lwip/lwip"
+    },
+    {
+      "file": "mbedtls-config-tls-ecp-have-curves.patch",
+      "root": "components/crypto/mbedtls"
+    },
+    {
+      "file": "libc-sys-types-cplusplus-pthread.patch",
+      "root": "components/libc"
+    },
+    {
+      "file": "macsw-inc-header-cplusplus-cast.patch",
+      "root": "components/wireless/macsw"
+    },
+    {
+      "file": "wl80211-ip-got-cb-core-lock-deadlock-fix.patch",
+      "root": "components/wireless/wl80211"
+    },
+    {
+      "file": "wl80211-connect-ssid-filter.patch",
+      "root": "components/wireless/wl80211",
+      "obsolete": true,
+      "reason": "The v2.3.35 and v2.3.36 releases ship wl80211 as a prebuilt library (no src/ directory), and that library already contains the SSID filter fix."
+    }
+  ]
+}

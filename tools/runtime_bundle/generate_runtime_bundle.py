@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Build Bouffalo Arduino SDK/variant bundles from a BouffaloSDK checkout.
 
-Generates the checked-in runtime bundles used by the Arduino platform:
-  tools/sdk/{chip}/          chip-level headers, archives, linker script
+The Arduino platform no longer consumes a checked-in bundle: the supported
+flow is the compile-time runtime built by build_sdk_runtime.py, which imports
+the shared helpers from this file.  This CLI still generates a full bundle
+into an explicit --out path (used in the past for the removed checked-in
+bundles) and installs the host toolchain subset with --tools-only:
+  <out>/                     chip-level headers, archives, linker script, ...
   variants/{board}/           board BSP archive, boot2, partition, eFuse assets
   tools/{toolchain_dirname}/  minimal toolchain subset
 
@@ -177,13 +181,68 @@ def copy_file(source: Path, destination: Path, *,
         destination.chmod(destination.stat().st_mode | 0o111)
 
 
+def git_head(repository: Path) -> str | None:
+    """Return HEAD of *repository* when it is a usable git worktree root.
+
+    Release SDK snapshots may ship dangling ``.git`` gitdir files that point
+    at a missing ``.git/modules`` directory (the submodule metadata is not part
+    of the release tarball).  Such directories are not usable repositories;
+    return None instead of aborting the bundle build.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repository), "rev-parse",
+             "--show-toplevel", "HEAD"],
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    parts = result.stdout.split()
+    if len(parts) != 2:
+        return None
+    toplevel, commit = parts
+    try:
+        if Path(toplevel).resolve() != repository.resolve():
+            return None
+    except OSError:
+        return None
+    return commit
+
+
 def tracked_source_is_dirty(repository: Path) -> bool:
-    status = subprocess.run(
-        ["git", "-C", str(repository),
-         "status", "--porcelain=v1", "--untracked-files=no"],
-        check=True, text=True, stdout=subprocess.PIPE,
-    ).stdout
-    return bool(status.strip())
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repository),
+             "status", "--porcelain=v1", "--untracked-files=no"],
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return False
+    if result.returncode != 0:
+        return False
+    return bool(result.stdout.strip())
+
+
+def first_existing(*candidates: Path) -> Path | None:
+    """Return the first candidate that exists as a file, else None."""
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def defconfig_value(path: Path, key: str) -> str | None:
+    """Return the value assigned to *key* in a defconfig/.config file."""
+    if not path.is_file():
+        return None
+    pattern = re.compile(rf"^{re.escape(key)}\s*=\s*(\S+)\s*$")
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = pattern.match(line)
+        if match:
+            return match.group(1)
+    return None
 
 
 def copy_headers(source_roots: list[tuple[Path, Path]],
@@ -369,6 +428,8 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1",
         f"libexec/gcc/{prefix}/{gcc_ver}/cc1plus",
         f"libexec/gcc/{prefix}/{gcc_ver}/collect2",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto-wrapper",
+        f"libexec/gcc/{prefix}/{gcc_ver}/lto1",
         f"libexec/gcc/{prefix}/{gcc_ver}/liblto_plugin.so.0.0.0",
         f"lib/gcc/{prefix}/{gcc_ver}/libgcc.a",
         f"lib/gcc/{prefix}/{gcc_ver}/crtbegin.o",
@@ -411,8 +472,15 @@ def copy_minimal_toolchain(toolchain_root: Path, destination: Path,
 
 
 def record_source_versions(sdk: Path) -> dict[str, str]:
-    """Record actual commits of SDK and its sub-repos.  Warn if dirty."""
-    commit = run(["git", "-C", str(sdk), "rev-parse", "HEAD"], capture=True)
+    """Record actual commits of SDK and its sub-repos.  Warn if dirty.
+
+    Sub-repositories are recorded only when they are real git worktrees.
+    Release snapshots may ship dangling ``.git`` gitdir files (see
+    :func:`git_head`); those are skipped rather than aborting the build.
+    """
+    commit = git_head(sdk)
+    if commit is None:
+        raise RuntimeError(f"{sdk} is not a usable git worktree")
     source_commits = {"bouffalo_sdk": commit}
     sub_repos = [
         "drivers/lhal",
@@ -422,22 +490,19 @@ def record_source_versions(sdk: Path) -> dict[str, str]:
     for relative in sub_repos:
         repo = sdk / relative
         if repo.is_dir():
-            source_commits[relative] = run(
-                ["git", "-C", str(repo), "rev-parse", "HEAD"], capture=True
-            )
+            sub_commit = git_head(repo)
+            if sub_commit is not None:
+                source_commits[relative] = sub_commit
 
     # Also record soc/{chip}/std if it is a git repo
     soc_std = sdk / "drivers" / "soc"
-    for child in soc_std.iterdir() if soc_std.is_dir() else []:
-        child_git = child / "std" / ".git"
-        if child_git.exists() or (child / "std").is_dir():
-            try:
-                source_commits[f"drivers/soc/{child.name}/std"] = run(
-                    ["git", "-C", str(child / "std"),
-                     "rev-parse", "HEAD"], capture=True
-                )
-            except subprocess.CalledProcessError:
-                pass
+    if soc_std.is_dir():
+        for child in sorted(soc_std.iterdir()):
+            if not child.is_dir():
+                continue
+            sub_commit = git_head(child / "std")
+            if sub_commit is not None:
+                source_commits[f"drivers/soc/{child.name}/std"] = sub_commit
 
     repos_to_check = [sdk] + [sdk / r for r in sub_repos]
     dirty = any(tracked_source_is_dirty(repo)
@@ -500,6 +565,411 @@ def _update_manifest_toolchain(sdk_runtime: Path, toolchain_version: str,
         json.dumps(data, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+# ---------------------------------------------------------------------------
+# Shared probe build and runtime staging
+# ---------------------------------------------------------------------------
+
+
+def sdk_include_roots(sdk: Path, chip: str, chip_cfg: dict[str, object],
+                      lhal_config_dir: Path) -> list[tuple[Path, Path]]:
+    """Return the (source directory, staged relative path) include map.
+
+    The Arduino recipes consume a flat runtime layout rooted at
+    ``compiler.sdk.path``.  Keeping the map here means a new chip only needs a
+    CHIP_CONFIG entry: its headers are re-derived from the SDK sources instead
+    of being copied into the platform tree by hand.
+    """
+    roots: list[tuple[Path, Path]] = [
+        (sdk / "components" / "mm", Path("sdk/mm")),
+        (sdk / "components" / "sysinit", Path("sdk/sysinit")),
+        (sdk / "components" / "libc", Path("sdk/libc")),
+        (sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
+        (sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
+        (lhal_config_dir, Path("sdk/lhal-config")),
+        (sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
+        (sdk / "drivers" / "soc" / chip / "std" / "include",
+         Path("sdk/soc")),
+        (sdk / "drivers" / "sys", Path("sdk/sys")),
+        (sdk / "components" / "os" / "freertos" / "include",
+         Path("freertos")),
+        (sdk / "components" / "os" / "freertos" / "portable" /
+         "GCC" / "RISC-V" / "common", Path("freertos/portable")),
+        # Wireless / net stack headers referenced by the platform.txt -I
+        # flags (<lwip/...>, <mbedtls/...>, fhost, supplicant, macsw,
+        # phyrf, rfparam).  Without these the Arduino compile breaks on
+        # lwip/inet.h and friends.
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include",
+         Path("sdk/lwip")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include" /
+         "compat" / "posix", Path("sdk/lwip-posix")),
+        (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
+         Path("sdk/lwip-port")),
+        (sdk / "components" / "wireless" / "wifi6" / "fhost" / "include",
+         Path("sdk/wifi6")),
+        (sdk / "components" / "wireless" / "bl_wpa_supplicant" / "include",
+         Path("sdk/supplicant")),
+        (sdk / "components" / "wireless" / "macsw" / "inc",
+         Path("sdk/macsw")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" / "include",
+         Path("sdk/mbedtls")),
+        # mbedtls hardware-acceleration port headers (ecp_alt.h & friends are
+        # included by name from the public mbedtls/*.h headers)
+        (sdk / "components" / "crypto" / "mbedtls" / "port" / "hw_acc",
+         Path("sdk/mbedtls")),
+        (sdk / "components" / "crypto" / "mbedtls" / "port",
+         Path("sdk/mbedtls/port")),
+        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
+         "3rdparty" / "everest" / "include",
+         Path("sdk/mbedtls")),
+        (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
+         Path("sdk/phyrf")),
+        (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
+        # headers included by bare name via the existing -Iinclude/sdk/utils
+        (sdk / "components" / "utils" / "async_event", Path("sdk/utils")),
+        (sdk / "components" / "utils" / "partition", Path("sdk/utils")),
+    ]
+    freertos_ext = chip_cfg.get("freertos_extension")
+    if freertos_ext:
+        ext_dir = (sdk / "components" / "os" / "freertos" /
+                   "portable" / "GCC" / "RISC-V" / "common" /
+                   "chip_specific_extensions" / str(freertos_ext))
+        if ext_dir.is_dir():
+            roots.append((ext_dir, Path("freertos/chip_specific")))
+    return roots
+
+
+def build_sdk_probe(*, sdk: Path, chip: str, board: str,
+                    chip_cfg: dict[str, object], work_dir: Path,
+                    toolchain_root: Path, prefix: str,
+                    extra_libs: dict[str, Path] | None = None) -> dict[str, object]:
+    """Compile the SDK probe application inside *work_dir*.
+
+    *work_dir* must contain the probe template files (Makefile, main.c,
+    CMakeLists.txt, defconfig, FreeRTOSConfig.h).  Archives named in
+    *extra_libs* that the SDK does not ship are staged into the SDK tree for
+    the duration of the link and removed afterwards.
+    """
+    extra_libs = dict(extra_libs or {})
+    build_dir = work_dir / "build"
+
+    env = os.environ.copy()
+    env["BL_SDK_BASE"] = str(sdk)
+    # The SDK's Kconfig/CMake helpers import Python modules whose bytecode
+    # caches are tracked in the submodule; do not rewrite them during a build.
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PATH"] = str(toolchain_root / "bin") + os.pathsep + \
+                  env.get("PATH", "")
+
+    make_args = [
+        "make",
+        f"CHIP={chip}",
+        f"BOARD={board}",
+        "CONFIG_PEC_V2=n",
+        "CONFIG_MULTIMEDIA_VIDEO=n",
+        f"BL_SDK_BASE={sdk}",
+    ]
+
+    # The SDK Kconfig registers
+    # btblecontroller/lib/libbtblecontroller_{chip}_{variant}.a unconditionally
+    # in the link, but some released variants (BL616CL uarthci) are not
+    # published in the SDK tree.  Stage the platform-provided archive into the
+    # SDK for the duration of the link and remove it afterwards so the SDK
+    # checkout is left untouched.
+    controller_variant = defconfig_value(work_dir / "defconfig",
+                                         "CONFIG_BTBLECONTROLLER_LIB")
+    staged_controller: Path | None = None
+    if controller_variant:
+        controller_name = f"libbtblecontroller_{chip}_{controller_variant}.a"
+        controller_path = (sdk / "components" / "wireless" / "bluetooth" /
+                           "btblecontroller" / "lib" / controller_name)
+        if not controller_path.is_file() and controller_name in extra_libs:
+            controller_path.parent.mkdir(parents=True, exist_ok=True)
+            copy_file(extra_libs[controller_name], controller_path)
+            staged_controller = controller_path
+            print("Note: staged controller archive for link: "
+                  f"{controller_name}")
+    try:
+        run(make_args, cwd=work_dir, env=env)
+    finally:
+        if staged_controller is not None and staged_controller.is_file():
+            staged_controller.unlink()
+
+    build_out = build_dir / "build_out"
+    generated = build_dir / "generated"
+
+    # ——— validate archives —————————————————————————————————————
+    archives = {p.name: p for p in (build_out / "lib").glob("*.a")}
+    required = CORE_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
+    missing = required - archives.keys()
+    if missing:
+        raise RuntimeError(
+            f"build did not produce required archives: {sorted(missing)}"
+        )
+    extras = archives.keys() - required
+    if extras:
+        print(f"Note: additional SDK archives (ok): {sorted(extras)}")
+
+    # ——— ELF sanity check ——————————————————————————————————————
+    probe_elf_name = f"arduino_bl616cl_runtime_{chip}.elf"
+    source_elf = require_file(build_out / probe_elf_name, "probe ELF")
+    readelf = toolchain_root / "bin" / f"{prefix}-readelf"
+    elf_header = run([str(readelf), "-h", str(source_elf)], capture=True)
+    if "RISC-V" not in elf_header or \
+       "Class:                             ELF32" not in elf_header:
+        raise RuntimeError("probe ELF is not a 32-bit RISC-V image")
+
+    # ——— validate side-car binaries —————————————————————————————
+    side_cars = {p.name: p for p in build_out.glob("*.bin")}
+    missing_cars = EXPECTED_SIDE_CARS - side_cars.keys()
+    if missing_cars:
+        raise RuntimeError(
+            f"post processor did not produce: {sorted(missing_cars)}"
+        )
+    # boot2 naming varies: match any boot2*.bin
+    boot2_bins = sorted(build_out.glob("boot2*.bin"))
+    if not boot2_bins:
+        raise RuntimeError("no boot2 binary found in build output")
+    side_cars[boot2_bins[0].name] = boot2_bins[0]
+
+    return {
+        "build_dir": build_dir,
+        "build_out": build_out,
+        "generated": generated,
+        "archives": archives,
+        "boot2_bins": boot2_bins,
+    }
+
+
+def stage_sdk_runtime(*, sdk: Path, chip: str, chip_cfg: dict[str, object],
+                      board: str, template_dir: Path, destination: Path,
+                      probe: dict[str, object],
+                      extra_libs: dict[str, Path] | None = None,
+                      preserve_from: Path | None = None,
+                      preserve_libs: tuple[str, ...] = (),
+                      version: str, source_commits: dict[str, str],
+                      toolchain_version: str,
+                      manifest_scope: str = "chip-runtime",
+                      manifest_extra: dict[str, object] | None = None,
+                      ) -> dict[str, object]:
+    """Lay out a buildable Arduino runtime under *destination*.
+
+    ``destination`` must exist and be empty; the caller performs the atomic
+    swap/rename once this returns.
+    """
+    extra_libs = dict(extra_libs or {})
+    probe = dict(probe)
+    build_dir = Path(probe["build_dir"])
+    build_out = Path(probe["build_out"])
+    generated = Path(probe["generated"])
+    archives: dict[str, Path] = probe["archives"]  # type: ignore[assignment]
+    boot2_bins: list[Path] = probe["boot2_bins"]  # type: ignore[assignment]
+
+    board_dir = sdk / "bsp" / "board" / board
+
+    (destination / "lib").mkdir(parents=True)
+    (destination / "lib_board").mkdir(parents=True)
+    (destination / "include").mkdir(parents=True)
+    (destination / "include" / "board").mkdir(parents=True)
+    (destination / "boot2").mkdir(parents=True)
+    (destination / "dts").mkdir(parents=True)
+
+    # SDK archives — copy ALL .a files (core + optional like BLE/WiFi)
+    for name in sorted(archives):
+        if name == EXPECTED_BOARD_ARCHIVE:
+            continue
+        copy_file(archives[name], destination / "lib" / name)
+
+    # btblecontroller — precompiled BLE controller archive.  Development
+    # checkouts build it from source under build_btblecontroller/; release
+    # snapshots ship it under components/wireless/bluetooth/btblecontroller/
+    # lib/.  Flavors the SDK does not ship (the uarthci archive before SDK
+    # v2.3.36) arrive through extra_libs.  platform.txt links it by name.
+    controller_name: str | None = None
+    controller_variant = defconfig_value(template_dir / "defconfig",
+                                         "CONFIG_BTBLECONTROLLER_LIB")
+    if controller_variant:
+        controller_name = f"libbtblecontroller_{chip}_{controller_variant}.a"
+        controller_source = first_existing(
+            build_dir / "build_btblecontroller" / controller_name,
+            sdk / "components" / "wireless" / "bluetooth" /
+            "btblecontroller" / "lib" / controller_name,
+        )
+        if controller_source is None:
+            controller_source = extra_libs.get(controller_name)
+        if controller_source is not None:
+            copy_file(controller_source, destination / "lib" / controller_name)
+            print(f"Note: copied btblecontroller: {controller_name}")
+        else:
+            print(f"WARNING: BLE controller archive not found, "
+                  f"skipping: {controller_name}", file=sys.stderr)
+
+    # Chip-specific archives live in component directories rather than
+    # build_out.  Development checkouts build them from source under
+    # build_wl80211/ or build_macsw/; release snapshots ship the same archives
+    # precompiled under components/wireless/*/lib/.  platform.txt links them by
+    # these exact names, so accept either layout.
+    wireless_root = sdk / "components" / "wireless"
+    macsw_flavor = (defconfig_value(template_dir / "defconfig",
+                                    "CONFIG_MACSW_SELECT") or "default")
+    extra_archives: dict[str, Path | None] = {
+        f"libpka_{chip}.a": first_existing(
+            sdk / "drivers" / "lhal" / "src" / "pka" / f"libpka_{chip}.a",
+        ),
+        f"libwl80211_{chip}.a": first_existing(
+            build_dir / "build_wl80211" / "src" / f"libwl80211_{chip}.a",
+            wireless_root / "wl80211" / "lib" / f"libwl80211_{chip}.a",
+        ),
+        f"libmacsw_{chip}.a": first_existing(
+            build_dir / "build_macsw" / f"libmacsw_{chip}.a",
+            wireless_root / "macsw" / "lib" / f"libmacsw_{chip}.a",
+        ),
+        f"libmacsw_config_{chip}_{macsw_flavor}.a": first_existing(
+            build_dir / "build_macsw" /
+            f"libmacsw_config_{chip}_{macsw_flavor}.a",
+            wireless_root / "macsw" / "lib" /
+            f"libmacsw_config_{chip}_{macsw_flavor}.a",
+        ),
+    }
+    for name, source in extra_archives.items():
+        if source is not None:
+            copy_file(source, destination / "lib" / name)
+        else:
+            print(f"WARNING: chip archive not found, skipping: {name}",
+                  file=sys.stderr)
+
+    # Platform-provided archives that the SDK checkout does not ship.
+    for name, source in sorted(extra_libs.items()):
+        if (name in extra_archives or name in archives or
+                name == controller_name):
+            continue
+        copy_file(source, destination / "lib" / name)
+
+    # Legacy carry-over path (release bundle regeneration keeps archives that
+    # are not reproducible from the SDK sources).
+    if preserve_from is not None:
+        for preserved in preserve_libs:
+            existing = preserve_from / "lib" / preserved
+            if existing.is_file():
+                copy_file(existing, destination / "lib" / preserved)
+
+    # phyrf — precompiled RF calibration library (required by BLE/WiFi)
+    phyrf_dir = sdk / "drivers" / "soc" / chip / "phyrf"
+    if phyrf_dir.is_dir():
+        for phyrf_candidate in sorted(phyrf_dir.glob("lib-*/lib*_phyrf.a")):
+            copy_file(phyrf_candidate, destination / "lib" / phyrf_candidate.name)
+            print(f"Note: copied phyrf: {phyrf_candidate.name}")
+
+    # board BSP archive → chip-level SDK (not variant)
+    copy_file(archives[EXPECTED_BOARD_ARCHIVE],
+              destination / "lib_board" / EXPECTED_BOARD_ARCHIVE)
+    # autoconf.h and linker script
+    generated_autoconf = generated / "autoconf.h"
+    if not generated_autoconf.is_file():
+        generated_autoconf = generated / "autoconfig.h"
+    copy_file(require_file(generated_autoconf, "autoconf.h"),
+              destination / "include" / "autoconf.h")
+    copy_file(require_file(generated / "linker.ld",
+                           f"{chip} linker script"), destination / "ld")
+    # The linker script includes the MACSW cache-affinity fragment by name.
+    # Keep that fragment beside the generated script in the runtime.
+    macsw_affinity = (sdk / "components" / "wireless" / "macsw" /
+                      "macsw_cache_affinity.ld.in")
+    if macsw_affinity.is_file():
+        copy_file(macsw_affinity, destination / macsw_affinity.name)
+    # defconfig and FreeRTOSConfig.h from the probe template directory
+    copy_file(template_dir / "defconfig", destination / "defconfig")
+    copy_file(template_dir / "FreeRTOSConfig.h",
+              destination / "include" / "freertos" / "FreeRTOSConfig.h")
+
+    # ——— SDK include roots ——————————————————————————————————————
+    lhal_config_dir = sdk / "drivers" / "lhal" / "config" / chip
+    include_roots = sdk_include_roots(sdk, chip, chip_cfg, lhal_config_dir)
+
+    copy_headers(include_roots, destination / "include")
+    copy_cherryusb_headers(sdk, destination / "include", template_dir)
+    # mbedtls config headers picked up via MBEDTLS_CONFIG_FILE
+    for cfg_name in ("config-tls-generic.h", "config-psa.h"):
+        copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
+                               cfg_name, cfg_name),
+                  destination / "include" / "sdk" / "mbedtls" / cfg_name)
+    # generated Kconfig autoconf (platform recipe does -include autoconf.h)
+    autoconf = None
+    for candidate in (build_out / "include" / "autoconf.h",
+                      build_dir / "generated" / "include" / "autoconf.h",
+                      build_dir / "generated" / "autoconf.h",
+                      build_dir / "generated" / "autoconfig.h"):
+        if candidate.is_file():
+            autoconf = candidate
+            break
+    if autoconf is None:
+        raise RuntimeError("generated autoconf.h not found in build output")
+    copy_file(autoconf, destination / "include" / "autoconf.h")
+    # board headers → sdk/include/board
+    copy_headers([(board_dir, Path("board"))], destination / "include")
+    # ring_buffer and other utils
+    copy_headers(
+        [(sdk / "components" / "utils" / "ring_buffer",
+          Path("sdk/utils/ring_buffer")),
+         (sdk / "components" / "utils" / "bflb_block_pool",
+          Path("sdk/utils/bflb_block_pool")),
+         (sdk / "components" / "utils" / "bflb_timestamp",
+          Path("sdk/utils/bflb_timestamp")),
+         (sdk / "components" / "utils" / "getopt",
+          Path("sdk/utils/getopt")),
+         (sdk / "components" / "utils" / "coredump",
+          Path("sdk/utils/coredump")),
+         (sdk / "components" / "utils" / "cjson",
+          Path("sdk/utils/cjson")),
+         (sdk / "components" / "utils" / "math" / "include",
+          Path("sdk/utils/math/include")),
+         (sdk / "components" / "utils" / "list",
+          Path("sdk/utils/list")),
+         ],
+        destination / "include",
+    )
+
+    # ——— board config → sdk (DTS only) —————————————————————————
+    board_cfg_dir = board_dir / "config"
+    if board_cfg_dir.is_dir():
+        for source in sorted(board_cfg_dir.iterdir()):
+            if not source.is_file():
+                continue
+            if source.name.startswith("boot2") or \
+               source.name.startswith("partition"):
+                continue
+            copy_file(source, destination / "dts" / source.name)
+
+    # ——— side-car binaries ——————————————————————————————————————
+    for boot2 in boot2_bins:
+        copy_file(boot2, destination / "boot2" / boot2.name)
+
+    # ——— manifest ————————————————————————————————————————————
+    files: dict[str, dict[str, object]] = {}
+    for path in sorted(destination.rglob("*")):
+        if path.is_file():
+            files[str(path.relative_to(destination))] = {
+                "sha256": sha256(path),
+                "size": path.stat().st_size,
+            }
+    manifest: dict[str, object] = {
+        "schema": 2,
+        "scope": manifest_scope,
+        "chip": chip,
+        "board": board,
+        "sdk_version": version,
+        "source_commits": source_commits,
+        "toolchain": toolchain_version,
+    }
+    if manifest_extra:
+        manifest.update(manifest_extra)
+    manifest["files"] = files
+    (destination / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return manifest
 
 
 def main() -> int:
@@ -596,271 +1066,23 @@ def main() -> int:
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    env = os.environ.copy()
-    env["BL_SDK_BASE"] = str(sdk)
-    env["PATH"] = str(toolchain_root / "bin") + os.pathsep + \
-                  env.get("PATH", "")
+    # Archives the SDK checkout does not ship for this target are carried over
+    # from the existing runtime during release-time regeneration.  The
+    # compile-time builder (build_sdk_runtime.py) takes them from the SDK tree
+    # and the optional BOUFFALO_BLE_CONTROLLER_LIB override instead.
+    extra_libs: dict[str, Path] = {}
+    for carried_name in ("libbtblecontroller_bl616cl_uarthci.a",
+                         "libblestack.a"):
+        carried = sdk_runtime / "lib" / carried_name
+        if carried.is_file():
+            extra_libs[carried_name] = carried
 
-    make_args = [
-        "make",
-        f"CHIP={chip}",
-        f"BOARD={board}",
-        "CONFIG_PEC_V2=n",
-        "CONFIG_MULTIMEDIA_VIDEO=n",
-        f"BL_SDK_BASE={sdk}",
-    ]
-    run(make_args, cwd=script_dir, env=env)
-
-    build_out = build_dir / "build_out"
-    generated = build_dir / "generated"
-
-    # ——— validate archives —————————————————————————————————————
-    archives = {p.name: p for p in (build_out / "lib").glob("*.a")}
-    required = CORE_SDK_ARCHIVES | {EXPECTED_BOARD_ARCHIVE}
-    missing = required - archives.keys()
-    if missing:
-        raise RuntimeError(
-            f"build did not produce required archives: {sorted(missing)}"
-        )
-    extras = archives.keys() - required
-    if extras:
-        print(f"Note: additional SDK archives (ok): {sorted(extras)}")
-
-    # ——— ELF sanity check ——————————————————————————————————————
-    probe_elf_name = f"arduino_bl616cl_runtime_{chip}.elf"
-    source_elf = require_file(build_out / probe_elf_name, "probe ELF")
-    readelf = toolchain_root / "bin" / f"{prefix}-readelf"
-    elf_header = run([str(readelf), "-h", str(source_elf)], capture=True)
-    if "RISC-V" not in elf_header or \
-       "Class:                             ELF32" not in elf_header:
-        raise RuntimeError("probe ELF is not a 32-bit RISC-V image")
-
-    # ——— validate side-car binaries —————————————————————————————
-    side_cars = {p.name: p for p in build_out.glob("*.bin")}
-    missing_cars = EXPECTED_SIDE_CARS - side_cars.keys()
-    if missing_cars:
-        raise RuntimeError(
-            f"post processor did not produce: {sorted(missing_cars)}"
-        )
-    # boot2 naming varies: match any boot2*.bin
-    boot2_bins = sorted(build_out.glob("boot2*.bin"))
-    if not boot2_bins:
-        raise RuntimeError("no boot2 binary found in build output")
-    side_cars[boot2_bins[0].name] = boot2_bins[0]
-
-    # ——— stage outputs atomically ———————————————————————————————
-    partitions_root = platform_root / "tools" / "partitions"
-    partitions_root.mkdir(parents=True, exist_ok=True)
-
-    sdk_staging = sdk_runtime.with_name(f"{chip}.new")
-    if sdk_staging.exists():
-        shutil.rmtree(sdk_staging)
-
-    (sdk_staging / "lib").mkdir(parents=True)
-    (sdk_staging / "lib_board").mkdir(parents=True)
-    (sdk_staging / "include").mkdir(parents=True)
-    (sdk_staging / "include" / "board").mkdir(parents=True)
-    (sdk_staging / "boot2").mkdir(parents=True)
-    (sdk_staging / "dts").mkdir(parents=True)
-
-    # SDK archives — copy ALL .a files (core + optional like BLE/WiFi)
-    for name in sorted(archives):
-        if name == EXPECTED_BOARD_ARCHIVE:
-            continue
-        copy_file(archives[name], sdk_staging / "lib" / name)
-
-    # btblecontroller — separately built precompiled lib (BLE controller)
-    btble_dir = build_dir / "build_btblecontroller"
-    if btble_dir.is_dir():
-        for btble_lib in sorted(btble_dir.glob("libbtblecontroller_*.a")):
-            copy_file(btble_lib, sdk_staging / "lib" / btble_lib.name)
-            print(f"Note: copied btblecontroller: {btble_lib.name}")
-
-    # Chip-specific archives are built in their component directories rather
-    # than build_out, but platform.txt links them by these exact names.
-    extra_archives = {
-        "libpka_bl616cl.a": sdk / "drivers" / "lhal" / "src" / "pka" /
-        "libpka_bl616cl.a",
-        "libwl80211_bl616cl.a": build_dir / "build_wl80211" / "src" /
-        "libwl80211_bl616cl.a",
-        "libmacsw_bl616cl.a": build_dir / "build_macsw" /
-        "libmacsw_bl616cl.a",
-        "libmacsw_config_bl616cl_default.a": build_dir / "build_macsw" /
-        "libmacsw_config_bl616cl_default.a",
-    }
-    for name, source in extra_archives.items():
-        if source.is_file():
-            copy_file(source, sdk_staging / "lib" / name)
-    # The Arduino BLE host compatibility layer still links this legacy host
-    # archive; preserve an existing copy until it is rebuilt for this SDK.
-    legacy_blestack = sdk_runtime / "lib" / "libblestack.a"
-    if legacy_blestack.is_file():
-        copy_file(legacy_blestack, sdk_staging / "lib" / legacy_blestack.name)
-
-    # phyrf — precompiled RF calibration library (required by BLE/WiFi)
-    phyrf_dir = sdk / "drivers" / "soc" / chip / "phyrf"
-    if phyrf_dir.is_dir():
-        for phyrf_candidate in sorted(phyrf_dir.glob("lib-*/lib*_phyrf.a")):
-            copy_file(phyrf_candidate, sdk_staging / "lib" / phyrf_candidate.name)
-            print(f"Note: copied phyrf: {phyrf_candidate.name}")
-
-    # board BSP archive → chip-level SDK (not variant)
-    copy_file(archives[EXPECTED_BOARD_ARCHIVE],
-              sdk_staging / "lib_board" / EXPECTED_BOARD_ARCHIVE)
-    # autoconf.h and linker script
-    generated_autoconf = generated / "autoconf.h"
-    if not generated_autoconf.is_file():
-        generated_autoconf = generated / "autoconfig.h"
-    copy_file(require_file(generated_autoconf, "autoconf.h"),
-              sdk_staging / "include" / "autoconf.h")
-    copy_file(require_file(generated / "linker.ld",
-                           f"{chip} linker script"), sdk_staging / "ld")
-    # The linker script includes the MACSW cache-affinity fragment by name.
-    # Keep that fragment beside the generated script in the Arduino bundle.
-    macsw_affinity = sdk / "components" / "wireless" / "macsw" / "macsw_cache_affinity.ld.in"
-    if macsw_affinity.is_file():
-        copy_file(macsw_affinity, sdk_staging / macsw_affinity.name)
-    # defconfig and FreeRTOSConfig.h from this directory
-    copy_file(script_dir / "defconfig", sdk_staging / "defconfig")
-    copy_file(script_dir / "FreeRTOSConfig.h",
-              sdk_staging / "include" / "freertos" / "FreeRTOSConfig.h")
-
-    # ——— SDK include roots ——————————————————————————————————————
-    sdk_include_roots: list[tuple[Path, Path]] = [
-        (sdk / "components" / "mm", Path("sdk/mm")),
-        (sdk / "components" / "sysinit", Path("sdk/sysinit")),
-        (sdk / "components" / "libc", Path("sdk/libc")),
-        (sdk / "components" / "utils" / "log", Path("sdk/utils/log")),
-        (sdk / "drivers" / "lhal" / "include", Path("sdk/lhal")),
-        (lhal_config_dir, Path("sdk/lhal-config")),
-        (sdk / "drivers" / "lhal" / "src" / "flash", Path("sdk/flash")),
-        (sdk / "drivers" / "soc" / chip / "std" / "include",
-         Path("sdk/soc")),
-        (sdk / "drivers" / "sys", Path("sdk/sys")),
-        (sdk / "components" / "os" / "freertos" / "include",
-         Path("freertos")),
-        (sdk / "components" / "os" / "freertos" / "portable" /
-         "GCC" / "RISC-V" / "common", Path("freertos/portable")),
-        # Wireless / net stack headers referenced by the platform.txt -I
-        # flags (<lwip/...>, <mbedtls/...>, fhost, supplicant, macsw,
-        # phyrf, rfparam).  Without these the Arduino compile breaks on
-        # lwip/inet.h and friends.
-        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include",
-         Path("sdk/lwip")),
-        (sdk / "components" / "net" / "lwip" / "lwip" / "src" / "include" /
-         "compat" / "posix", Path("sdk/lwip-posix")),
-        (sdk / "components" / "net" / "lwip" / "lwip" / "lwip-port",
-         Path("sdk/lwip-port")),
-        (sdk / "components" / "wireless" / "wifi6" / "fhost" / "include",
-         Path("sdk/wifi6")),
-        (sdk / "components" / "wireless" / "bl_wpa_supplicant" / "include",
-         Path("sdk/supplicant")),
-        (sdk / "components" / "wireless" / "macsw" / "inc",
-         Path("sdk/macsw")),
-        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" / "include",
-         Path("sdk/mbedtls")),
-        # mbedtls hardware-acceleration port headers (ecp_alt.h & friends are
-        # included by name from the public mbedtls/*.h headers)
-        (sdk / "components" / "crypto" / "mbedtls" / "port" / "hw_acc",
-         Path("sdk/mbedtls")),
-        (sdk / "components" / "crypto" / "mbedtls" / "port",
-         Path("sdk/mbedtls/port")),
-        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
-         "3rdparty" / "everest" / "include",
-         Path("sdk/mbedtls")),
-        (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
-         Path("sdk/phyrf")),
-        (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
-        # headers included by bare name via the existing -Iinclude/sdk/utils
-        (sdk / "components" / "utils" / "async_event", Path("sdk/utils")),
-        (sdk / "components" / "utils" / "partition", Path("sdk/utils")),
-    ]
-    # chip-specific FreeRTOS extension
-    freertos_ext = chip_cfg.get("freertos_extension")
-    if freertos_ext:
-        ext_dir = (sdk / "components" / "os" / "freertos" /
-                   "portable" / "GCC" / "RISC-V" / "common" /
-                   "chip_specific_extensions" / str(freertos_ext))
-        if ext_dir.is_dir():
-            sdk_include_roots.append(
-                (ext_dir, Path("freertos/chip_specific"))
-            )
-
-    copy_headers(sdk_include_roots, sdk_staging / "include")
-    copy_cherryusb_headers(sdk, sdk_staging / "include", script_dir)
-    # mbedtls config headers picked up via MBEDTLS_CONFIG_FILE
-    for cfg_name in ("config-tls-generic.h", "config-psa.h"):
-        copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
-                               cfg_name, cfg_name),
-                  sdk_staging / "include" / "sdk" / "mbedtls" / cfg_name)
-    # generated Kconfig autoconf (platform recipe does -include autoconf.h)
-    autoconf = None
-    for candidate in (build_out / "include" / "autoconf.h",
-                      build_dir / "generated" / "include" / "autoconf.h",
-                      build_dir / "generated" / "autoconf.h",
-                      build_dir / "generated" / "autoconfig.h"):
-        if candidate.is_file():
-            autoconf = candidate
-            break
-    if autoconf is not None:
-        copy_file(autoconf, sdk_staging / "include" / "autoconf.h")
-    else:
-        raise RuntimeError("generated autoconf.h not found in build output")
-    # board headers → sdk/include/board
-    copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
-    # ring_buffer and other utils
-    copy_headers(
-        [(sdk / "components" / "utils" / "ring_buffer",
-          Path("sdk/utils/ring_buffer")),
-         (sdk / "components" / "utils" / "bflb_block_pool",
-          Path("sdk/utils/bflb_block_pool")),
-         (sdk / "components" / "utils" / "bflb_timestamp",
-          Path("sdk/utils/bflb_timestamp")),
-         (sdk / "components" / "utils" / "getopt",
-          Path("sdk/utils/getopt")),
-         (sdk / "components" / "utils" / "coredump",
-          Path("sdk/utils/coredump")),
-         (sdk / "components" / "utils" / "cjson",
-          Path("sdk/utils/cjson")),
-         (sdk / "components" / "utils" / "math" / "include",
-          Path("sdk/utils/math/include")),
-         (sdk / "components" / "utils" / "list",
-          Path("sdk/utils/list")),
-         ],
-        sdk_staging / "include",
+    probe = build_sdk_probe(
+        sdk=sdk, chip=chip, board=board, chip_cfg=chip_cfg,
+        work_dir=script_dir, toolchain_root=toolchain_root, prefix=prefix,
+        extra_libs=extra_libs,
     )
-
-    # ——— board headers → sdk ——————————————————————————————————
-    copy_headers([(board_dir, Path("board"))], sdk_staging / "include")
-
-    # ——— board config → sdk (DTS only) —————————————————————————
-    board_cfg_dir = board_dir / "config"
-    if board_cfg_dir.is_dir():
-        for source in sorted(board_cfg_dir.iterdir()):
-            if not source.is_file():
-                continue
-            if source.name.startswith("boot2") or source.name.startswith("partition"):
-                continue
-            # DTS → sdk_staging / dts
-            copy_file(source, sdk_staging / "dts" / source.name)
-
-    # ——— side-car binaries ——————————————————————————————————————
-    # boot2 → chip-level sdk directory
-    for b2 in boot2_bins:
-        copy_file(b2, sdk_staging / "boot2" / b2.name)
-
-    # efusedata side cars are compile-time outputs of bflb_fw_post_proc,
-    # not checked-in assets.  The generator validates they are produced
-    # but does not store them.
-
-    # partition TOML → tools/partitions/ (platform-level)
-    for source in sorted(board_cfg_dir.glob("partition*.toml")):
-        copy_file(source, partitions_root / source.name)
-
-    # variant pins_arduino.h is hand-maintained and NOT overwritten here.
-
-    # ——— host tools —————————————————————————————————————————————
-    _install_host_tools(platform_root, sdk, chip)
+    build_dir = Path(probe["build_dir"])
 
     # ——— toolchain ——————————————————————————————————————————————
     tc_dest = tools_root / toolchain_dirname
@@ -868,7 +1090,16 @@ def main() -> int:
         toolchain_root, tc_dest, prefix, arch
     )
 
-    # ——— manifests ——————————————————————————————————————————————
+    # ——— partitions ————————————————————————————————————————————
+    partitions_root = platform_root / "tools" / "partitions"
+    partitions_root.mkdir(parents=True, exist_ok=True)
+    board_cfg_dir = sdk / "bsp" / "board" / board / "config"
+    if board_cfg_dir.is_dir():
+        for source in sorted(board_cfg_dir.glob("partition*.toml")):
+            copy_file(source, partitions_root / source.name)
+
+    # ——— host tools —————————————————————————————————————————————
+    _install_host_tools(platform_root, sdk, chip)
     host_tool_paths = {
         "bflb_fw_post_proc": tools_root / "bflb_fw_post_proc" /
                              "bflb_fw_post_proc-ubuntu",
@@ -881,22 +1112,19 @@ def main() -> int:
         for name, path in host_tool_paths.items()
     }
 
-    def manifest_for(root: Path, scope: str) -> dict[str, object]:
-        files = {}
-        for path in sorted(root.rglob("*")):
-            if path.is_file():
-                files[str(path.relative_to(root))] = {
-                    "sha256": sha256(path),
-                    "size": path.stat().st_size,
-                }
-        return {
-            "schema": 2,
-            "scope": scope,
-            "chip": chip,
-            "board": board,
-            "sdk_version": version,
-            "source_commits": source_commits,
-            "toolchain": toolchain_version,
+    # ——— stage outputs atomically ———————————————————————————————
+    sdk_staging = sdk_runtime.with_name(f"{chip}.new")
+    if sdk_staging.exists():
+        shutil.rmtree(sdk_staging)
+    sdk_staging.mkdir(parents=True)
+
+    stage_sdk_runtime(
+        sdk=sdk, chip=chip, chip_cfg=chip_cfg, board=board,
+        template_dir=script_dir, destination=sdk_staging, probe=probe,
+        extra_libs=extra_libs,
+        version=version, source_commits=source_commits,
+        toolchain_version=toolchain_version,
+        manifest_extra={
             "host_tools": host_tools,
             "abi": {
                 "march": arch["march"],
@@ -908,13 +1136,7 @@ def main() -> int:
                 "exceptions": False,
                 "rtti": False,
             },
-            "files": files,
-        }
-
-    (sdk_staging / "manifest.json").write_text(
-        json.dumps(manifest_for(sdk_staging, "chip-runtime"),
-                   indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        },
     )
 
     # ——— atomic swap ————————————————————————————————————————————

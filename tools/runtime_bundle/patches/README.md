@@ -1,20 +1,21 @@
 # SDK patches
 
-The runtime bundles checked in under `tools/sdk/{chip}/` are built from the
-Bouffalo SDK sources at `bouffalo_sdk_full/bouffalo_sdk`.  Some SDK sources are
-locally patched to fix chip bring-up issues.  Every such change is kept here so
-that a fresh SDK checkout can be reproduced.
+The compile-time runtime build (see `../README.md`) applies these unified
+diffs to the Bouffalo SDK submodule at `tools/sdk/bouffalo_sdk` for the
+duration of each build and reverts them afterwards.  `patches.json` records
+the SDK subdirectory (`-p1` root) for every diff, and the builder refuses to
+run when a file touched by a patch already carries local modifications.
 
 Apply a patch from this directory against the matching upstream project:
 
 ```sh
-patch -p1 -d /path/to/bouffalo_sdk/drivers/lhal \
+patch -p1 -d tools/sdk/bouffalo_sdk/drivers/lhal \
       < bflb_usb_v2-ep0-control-transfer-fixes.patch
+# revert with: patch -p1 -R -d <root> < <patch>
 ```
 
-After applying, rebuild the runtime bundle and copy the regenerated archives
-into `tools/sdk/{chip}/` (see `../README.md`), then re-run the manifest
-generator so the recorded SDK state reflects the patched sources.
+Entries marked `obsolete` in `patches.json` are kept for history and skipped
+by the builder; they document fixes that were folded into a newer SDK release.
 
 ## bflb_usb_v2-ep0-control-transfer-fixes.patch
 
@@ -79,7 +80,12 @@ processed and the IP assigned, but `CODE_WIFI_ON_GOT_IP` was never posted,
 the 15 s mgmr DHCP watchdog then disconnected WiFi, and `netifapi_dhcp_stop`
 could not complete.  Use the core-locked `netif_set_default()` instead.
 
-## wl80211-connect-ssid-filter.patch
+## wl80211-connect-ssid-filter.patch (obsolete - kept for history)
+
+The v2.3.35 and v2.3.36 releases ship `wl80211` as a prebuilt library
+without the `src/macsw/connect.c` source this diff targets, and that
+library already contains the SSID filter fix.  The builder skips this
+entry.
 
 Target project: `bouffalo/components/wireless/wl80211`, file
 `src/macsw/connect.c`.
@@ -102,7 +108,8 @@ The BL616CL runtime bundle uses the wl80211 host stack instead of fhost
 wl80211 plus its macsw firmware and lwIP fits the board's RAM budget where the
 fhost fullmac host stack did not.
 
-Pinned component revisions used for the checked-in bundle:
+Component revisions recorded by the former checked-in bundle, removed on
+2026-10-03 (the compile-time runtime always uses the submodule revision):
 
 - `components/wireless/wl80211` host API/libs: `3c19c8d1`
 - `components/wireless/macsw` firmware: `78718af`
@@ -128,20 +135,47 @@ applying.
 
 The sketch side uses the same `config-tls-generic.h` plus the same
 `CONFIG_MBEDTLS_*` defines as the library build, wired through `platform.txt`
-(mbedTLS v3 headers are staged under `tools/sdk/bl616cl/include/sdk/mbedtls`,
-with the SDK's `port/hw_acc` alt headers and `mbedtls_port_bouffalo_sdk.h`).
+(mbedTLS v3 headers are staged into the per-build runtime under
+`{compiler.sdk.path}/include/sdk/mbedtls`, with the SDK's `port/hw_acc` alt
+headers and `mbedtls_port_bouffalo_sdk.h`).
 
 `components/crypto/mbedtls/CMakeLists.txt` also needs
 `CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED` in addition to SECP256R1: public
 websites commonly serve chains mixing P-256 and P-384 certificates, and the
 X.509 OID table / ECP group loader must know both.
 
-## Regenerate libapp.a after changing CONFIG_WIFI6
+## libc-sys-types-cplusplus-pthread.patch
+
+Target project: `bouffalo/components/libc`, file `sys/types.h`.
+
+The SDK's `sys/types.h` includes `sys/_pthreadtypes.h` (which defines
+`pthread_mutexattr_t` and friends) only when `CONFIG_POSIX` is undefined.  The
+Arduino chip bundle is built with `CONFIG_POSIX=y`, and its `sdk/libc` include
+directory shadows newlib's `sys/types.h`.  libstdc++'s `gthr-default.h` still
+unconditionally includes `<pthread.h>`, so any C++ translation unit that pulls
+in `<string>` (the whole Arduino `String`/`Print`/`Stream` core) fails with
+`'pthread_mutexattr_t' was not declared`.  Include `sys/_pthreadtypes.h` for
+C++ regardless of `CONFIG_POSIX`; C builds keep the previous behaviour.
+
+## macsw-inc-header-cplusplus-cast.patch
+
+Target project: `bouffalo/components/wireless/macsw`, file `inc/macsw.h`.
+
+`macsw_tx_classify_contiguous()` is a `static inline` helper in a public
+header that assigns a `const void *` to `const uint8_t *`.  C permits the
+implicit conversion, but C++ does not, so including `wifi_mgmr_ext.h` (which
+pulls in `macsw.h`) from any C++ translation unit fails with
+`invalid conversion from 'const void*' to 'const uint8_t*'`.  Add the explicit
+cast used by the Arduino chip bundle.
+
+## libapp.a and CONFIG_WIFI6 (former legacy bundles)
 
 `bsp/board/{board}/board.c` attaches the WiFi MAC IRQ
 (`bflb_irq_attach(WIFI_IRQn, interrupt0_handler, NULL)`) only under
-`CONFIG_WIFI6`.  The checked-in `tools/sdk/{chip}/lib_board/libapp.a` must be
-copied from the same runtime-bundle build that generated `libmacsw_*.a` and
-the WiFi archives.  A stale `libapp.a` (built before `CONFIG_WIFI6`) omits the
-IRQ attach, the macsw task never receives the MAC idle interrupt, and the
-first STA VIF add blocks forever in `MM_GOING_TO_IDLE`.
+`CONFIG_WIFI6`.  In the compile-time runtime, `libapp.a` and the WiFi archives
+come from the same build, so they cannot drift.  The former checked-in
+`tools/sdk/{chip}/lib_board/libapp.a` did have to be copied from the same
+generation run: a stale `libapp.a` (built before `CONFIG_WIFI6`) omits the IRQ
+attach, the macsw task never receives the MAC idle interrupt, and the first
+STA VIF add blocks forever in `MM_GOING_TO_IDLE`.  That directory was removed
+on 2026-10-03.
