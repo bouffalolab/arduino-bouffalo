@@ -1,7 +1,7 @@
 # Arduino BL616CL platform — UNO R4 bridge status
 
-BLE UART HCI 的独立 SDK、软件 HCI 及 Arduino bridge `AT+HCI` 实机广播验证见
-[2026-09-24 里程碑](docs/BLE-UARTHCI-MILESTONE-2026-09-24.md)。
+BLE UART HCI（AT+HCI）的状态、复现步骤与历史结论见
+[docs/BLE-UARTHCI.md](docs/BLE-UARTHCI.md)。
 
 This local development platform implements FQBN
 `bouffalo:bl616cl:unor4_bl616cl` for BL616CL DK bring-up and the UNO R4 bridge.
@@ -61,7 +61,10 @@ workspace and check out the SDK submodule:
 
 The repo excludes host tools (toolchain, `bflb_fw_post_proc`,
 `BLFlashCommand`) via `.gitignore`.  Install them once with the legacy
-generator (`--tools-only` uses an existing `tools/sdk/<chip>` directory):
+generator — it writes a `tools/sdk/<chip>` bundle that the current flow no
+longer consumes (every compile rebuilds the runtime from the submodule via
+`build_sdk_runtime.py`); only the host tools it installs are needed.
+`--tools-only` refreshes them from an existing `tools/sdk/<chip>` directory:
 
     python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
       --sdk /path/to/bouffalo_sdk \
@@ -126,7 +129,7 @@ The current support boundary is:
 | TCP client/server and UDP | Implemented and hardware-tested | lwIP socket backend; AT TCP/UDP echo tests pass. |
 | TLS client | Implemented and hardware-tested | mbedTLS v3 backend; CA loading and HTTPS GET pass. |
 | SPIFFS/FS and Preferences | Implemented in the compatibility layer | LittleFS on the `media` partition and EasyFlash on PSM pass `StorageTest`; the bridge image still has a partition-table/app overlap that must be fixed before relying on storage in a deployed bridge image. |
-| BLE AT/HCI transport | Implemented and hardware-tested (2026-09-24) | `AT+HCIBEGIN/HCIWRITE/HCIREAD` and the Reset/LE advertising sequence were verified on air. Other HCI/ACL/connection commands and long-term stability remain untested. |
+| BLE AT/HCI transport | Implemented and hardware-tested (2026-10-03) | Links the SDK-shipped `libbtblecontroller_bl616cl_uarthci.a` (1.6.210); `AT+HCIBEGIN/HCIWRITE/HCIREAD` and the Reset/LE advertising sequence were verified on air. Other HCI/ACL/connection commands and long-term stability remain untested. |
 | RA4M1 OTA download/update | Not implemented | `Update.h`, `Arduino_ESP32_OTA.h`, and `BossaArduino.h` contain fail-safe stubs; `BossaUnoR4WiFi::program()` therefore cannot flash the RA4M1. |
 
 PR [#10](https://github.com/bouffalolab/arduino-bouffalo/pull/10) was inspected

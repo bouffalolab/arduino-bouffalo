@@ -13,10 +13,12 @@
 - SDK 检出目录：`bouffalo_sdk_full/bouffalo_sdk`，不是 git 仓库；
 - 所有本地改动以补丁形式保留在 `arduino-bouffalo/tools/runtime_bundle/patches/`，
   重新生成 runtime bundle 时应用；
-- 运行时库产物在 `arduino-bouffalo/tools/sdk/bl616cl/`，`manifest.json` 记录
-  `source_commits`（各组件/子模块 commit）与全部文件的 SHA-256；
-- `sdk_version`：`2.3.30-local-wl80211`（本地定制版本号，标识从 fhost 切换到
-  wl80211 主机栈）。
+- 运行时不再有 checked-in 产物：`arduino-bouffalo/tools/runtime_bundle/`
+  的 prebuild hook 在每次编译时从 `tools/sdk/bouffalo_sdk` 子模块现编，
+  缓存 runtime 的 `manifest.json` 记录 `source_commits` 与文件 SHA-256
+  （2026-10-03 起 legacy `tools/sdk/bl616cl/` 与 `tools/vendor/` 均已删除）；
+- 本文记录的历史 `sdk_version`：`2.3.30-local-wl80211`（从 fhost 切换到
+  wl80211 主机栈时代的本地定制版本号）。
 
 关键 source_commits：
 
@@ -84,7 +86,7 @@
 - 修复：改用 core-locked 的 `netif_set_default()` 直接调用。
 - 验证：实机连接 zrrong 后 DHCP 拿到 192.168.133.40/24，GOT_IP 正常触发。
 
-#### 1.2.6 wl80211-connect-ssid-filter.patch
+#### 1.2.6 wl80211-connect-ssid-filter.patch（已 obsolete）
 
 - 目标：`components/wireless/wl80211` 的 `src/macsw/connect.c`。
 - 问题：`scan_done_cb()` 把 join 扫描到的所有 AP 都收进来，只按 RSSI 选最强，
@@ -96,6 +98,8 @@
     （只回应定向探测）可被发现；
   - 无匹配时返回 `WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL` 失败，不再静默连错。
 - 验证：实机扫描 16 个 AP、WPA2-PSK 连接 zrrong 成功。
+- 状态：v2.3.35+ 起 wl80211 以预编译库发布且已含该修复，补丁标记 obsolete
+  （见 `tools/runtime_bundle/patches/`），仅在历史 SDK 树上需要。
 
 #### 1.2.7 mbedtls-config-tls-ecp-have-curves.patch
 
@@ -125,10 +129,11 @@
 ### 2.1 概览
 
 - 上游：`arduino/uno-r4-wifi-usb-bridge`（origin/main）。
-- 本地分支：`main`，当前领先 origin/main 7 个提交（截至 2026-08-17）。
+- 本地分支：`main`，领先 origin/main 14 个提交（截至 2026-10-04；
+  逐条提交清单以 bridge 仓库 `git log` 为准）。
 - 用途：将原 ESP32-S3 bridge 固件移植到 BL616CL DK 验证 + 维护 AT 冒烟工具。
 
-### 2.2 本地提交
+### 2.2 本地提交（截至 2026-08-17 的记录）
 
 | commit | 内容 |
 |---|---|
@@ -190,7 +195,10 @@
 
 ## 3. 维护约定
 
-- SDK 侧任何新改动：先写补丁到 `patches/`，重建受影响的运行时库，更新
-  `manifest.json` 的 source_commits 与文件哈希，再在本文档记录问题与验证。
+- 2026-08-17 之后的 bridge 提交（BLE AT+HCI、DAP SWDIO、串口回归、README
+  等）不再逐条罗列，见 bridge 仓库 git 历史。
+- SDK 侧任何新改动：写成补丁放进 `tools/runtime_bundle/patches/`（构建期
+  apply/revert），runtime 在下次编译时自动重建（缓存 manifest 记录
+  source_commits 与文件哈希），再在本文档记录问题与验证。
 - 固件侧任何新改动：保持提交粒度（一个修复一个提交），并同步更新本文档与
   `arduino-bouffalo/TODO.md`。
