@@ -40,8 +40,9 @@
       改动，未包含 SWD 时序实现或校准结果；PR 自身仍将下面的时序校准项
       标为未完成。已获取到本地 `upstream/pr-10`，尚未合入当前分支；合并
       预检查发现 `platform.txt` 和 runtime bundle 生成脚本有内容冲突。
-      当前 bridge `dap_config.h` 仍使用 ESP32 引脚 SWCLK=7 / SWDIO=8
-      与延时常数 7700 / fast clock 2400000 Hz，尚未按载板 GPIO12/13 适配。
+      当时 bridge `dap_config.h` 仍使用 ESP32 引脚 SWCLK=7 / SWDIO=8
+      与延时常数 7700 / fast clock 2400000 Hz，尚未按载板引脚适配
+      （2026-10-04 落实为 SWCLK=GPIO8 / SWDIO=GPIO9）。
 - [x] 单独移植 PR #10 的 `HardwareSerial` 中断接收、4096 字节环形缓冲、
       接收/溢出计数、`clearRx()`、原位切换波特率和底层句柄接口；保留当前
       variant 引脚映射。Xuantie 交叉编译、Serial 示例和完整 bridge
@@ -249,7 +250,15 @@
 
 - [ ] 取得最终 UNO R4 载体板原理图和 GPIO 定义
 - [ ] 更新 variant 的 USB、UART、BOOT/RESET、DAP 引脚映射
-- [ ] 验证 RA4M1 与 BL616CL 的串口透传
+- [x] AT 传输默认切到 RA4M1 物理 UART（2026-10-04）：`SERIAL_AT = Serial1`
+      （UART1 GPIO6 TX / GPIO7 RX @115200，RA4M1 侧 SCI1 P501/P502），
+      USB CDC 改为 `SERIAL_USER` 与 UART0（GPIO34/35，接 RA4M1 日志/
+      烧录口）双向透传；DK 无 UART 对端时仍可定义 `AT_ON_USBCDC` 走 CDC
+      （编译验证通过，RA4M1 实机链路待载板接线后验证）
+- [x] carrier 关键信号映射落实（2026-10-04）：BL616CL RESET=GPIO3、
+      MD=GPIO10、SWCLK=GPIO8、SWDIO=GPIO9 已同步到 bridge 的
+      `dap_config.h` / `at_handler.h`；UART0=GPIO34/35、UART1=GPIO6/7
+- [ ] 验证 RA4M1 与 BL616CL 的串口透传（UART1 AT @115200 + UART0 透传）
 - [ ] 验证通过 USB CMSIS-DAP 对 RA4M1 进行编程
 - [x] 验证 BLE HCI 透传（2026-10-03 用公共 SDK v2.3.36 uarthci 完成 Reset/LE 广播序列和空口验证；ACL/连接及长期稳定性仍待测）
 - [ ] 执行端到端 bridge 回归和更新包打包

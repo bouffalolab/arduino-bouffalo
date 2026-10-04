@@ -36,19 +36,20 @@ Implemented:
 - GPIO and `LED_BUILTIN` stage-1 mapping;
 - `millis()`, `micros()`, `delay()`, and `delayMicroseconds()`;
 - console `Serial` on BL616CL DK UART0 (GPIO34 TX / GPIO35 RX, 2 Mbit/s);
-- `Serial1` on GPIO24 TX / GPIO25 RX; `HardwareSerial` uses interrupt-driven
-  reception with a 4096-byte ring buffer, receive/overflow counters, RX clear,
-  and in-place baud-rate changes (PR #10 UART port; 2 Mbaud UART0 and bench
-  UART1 on GPIO27/28 verified on hardware);
+- `Serial1` on GPIO6 TX / GPIO7 RX (RA4M1 AT channel); `HardwareSerial` uses
+  interrupt-driven reception with a 4096-byte ring buffer, receive/overflow
+  counters, RX clear, and in-place baud-rate changes (PR #10 UART port;
+  2 Mbaud UART0 and bench UART1 on GPIO27/28 verified on hardware);
 - CherryUSB device support for a CDC ACM + HID composite endpoint, backed by
   the Arduino-style `USBCDC`/`USBHID` compatibility classes;
 - C++17 with exceptions and RTTI disabled;
 - `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
 - modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
 
-The variant mapping is for compile/bring-up on `bl616cldk`, not the final UNO R4
-carrier. GPIO32/33 remain reserved for USB. Confirm the production schematic
-before connecting RA4M1 signals. The stage-1 4 MiB partition limits the primary
+The `bl616cldk` variant now carries the UNO R4 carrier pin map: RA4M1 AT on
+UART1 GPIO6/7, RA4M1 log/flash on UART0 GPIO34/35, and the SWD/MD/RESET
+control lines in the bridge firmware (GPIO8/9/3/10). GPIO32/33 remain
+reserved for USB. The stage-1 4 MiB partition limits the primary
 firmware slot to 2 MiB; eFuse files are exported for traceability but are not
 burned by the normal Arduino upload action.
 

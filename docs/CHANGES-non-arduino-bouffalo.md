@@ -167,6 +167,8 @@
 
 - `AT_ON_USBCDC` 宏：BL616CL DK 无 UART 对端，AT 服务器挂到 USBSerial，
   同时关闭 loop() 的 CDC 透传避免抢流；UNO R4 载体板上可取消宏回到 Serial1。
+  （2026-10-04 起该宏默认注释掉，carrier 模式——AT 走 Serial1、CDC 与
+  UART0 双向透传——成为默认构建，DK 调试时才显式打开宏。）
 - `CAtHandler` 传输类型从 `HardwareSerial*` 改为 `Stream*`，适配 CDC 的
   bulk read。
 - 验证：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/IPSTA/GETSSID/GETBSSID/

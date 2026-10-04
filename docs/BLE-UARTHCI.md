@@ -47,9 +47,10 @@ bridge 侧实现：`libraries/esp32-compat/src/ble/ble_hci_port.cpp`、
 
 | 用途 | 设备 | 说明 |
 |---|---|---|
-| 控制台 / ISP 烧录 | FT232 `BG02CSA6`（Linux `/dev/ttyUSB1`） | UART0 GPIO34/35 @ 2 Mbaud |
+| 控制台 / ISP 烧录（DK）；carrier 下为 RA4M1 日志/烧录口 | FT232 `BG02CSA6`（Linux `/dev/ttyUSB1`） | UART0 GPIO34/35 @ 2 Mbaud |
 | HCI 物理口（历史实验用） | FT232 `BG03YFET`（Linux `/dev/ttyUSB0`） | UART1 GPIO27 TX / 28 RX @ 2 Mbaud |
-| AT 通道（当前 bridge） | 板载 USB CDC `/dev/ttyACM0` | BL616CL USB 2341:1002 复合设备 |
+| AT 通道（默认 carrier 构建） | UART1 `Serial1` GPIO6 TX / 7 RX @ 115200 | 接 RA4M1 SCI1 AT 口（P501/P502）；DK 无 UART 对端时定义 `AT_ON_USBCDC` 改走 CDC |
+| 主机调试 / 用户串口 | 板载 USB CDC `/dev/ttyACM0`（2341:1002） | carrier 构建下与 UART0 双向透传，不再承载 AT |
 
 设备名随插拔顺序变化，复测前先用 `/dev/serial/by-id/` 核对序列号。
 
