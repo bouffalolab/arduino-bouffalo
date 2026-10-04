@@ -61,6 +61,7 @@
       存在帧读取过量问题，结果不能用于判断固件是否支持切换。
 - [x] 确认调试日志串口与 Bouffalo SDK 默认板级配置一致：
       UART0 = GPIO34 TX / GPIO35 RX @ 2 Mbit/s，UART1 = GPIO24 TX / GPIO25 RX
+      （carrier variant 已把 UART1 改到 GPIO6/7 接 RA4M1 AT 口，见第五阶段）
 - [x] 在 BL616CL DK 上验证 USB 枚举，确认 PID/VID 和字符串描述符
       （Linux 与 macOS 均枚举成功：VID 0x2341 / PID 0x1002，
       CDC ACM + CMSIS-DAP HID 复合设备，HS 480 Mbit/s）
@@ -184,14 +185,18 @@
       IP/网关/掩码/DNS/MAC 查询（WiFi 类均已实机验证）
 - [ ] softAP：`WiFi.softAP()` 仍为桩，AP 事件（LISTENING/STACONNECTED 等）
       待 softAP 落地后补齐
-- [x] 将 `ping.cpp` 从 ESP ping 桩切换到 lwIP ICMP（raw socket 自实现，
-      实机 ping 192.168.133.49 4/4 成功；补 DEFAULT_RAW_RECVMBOX_SIZE=8）
+- [x] 用 lwIP ICMP（raw socket）实现 ESP-IDF 语义的 `esp_ping_*`，
+      实机 ping 192.168.133.49 4/4 成功（补 DEFAULT_RAW_RECVMBOX_SIZE=8）；
+      2026-10-04 起实现移入平台 `libraries/esp32-compat/src/ping/esp_ping.cpp`
+      （后台任务 + 回调），bridge 的 `ping.cpp` 恢复上游调用（见第五阶段）
 - [x] 修复 `WiFi.SSID()/BSSID()/RSSI()` 无参重载：此前默认参数解析成扫描列表
       第 0 项，`AT+GETSSID?` 误报 TP-LINK_3D67；现在返回当前 STA 连接信息，
       实机验证返回 zrrong / 64:64:4A:82:73:74 / 实时 RSSI
-- [x] 修复数字 IP 字符串解析：lwIP 的 `lwip_getaddrinfo()` 只有带
-      `AI_NUMERICHOST` 才解析点分 IP，否则一律走 DNS；新增
-      `lwip_resolve_host()`（先数字、后 DNS）并用于 WiFiClient/WiFiUDP/ping
+- [x] 修复数字 IP 字符串解析：新增平台 helper `lwip_resolve_host()`
+      （先 `AI_NUMERICHOST` 解析、失败再走 DNS）并用于 WiFiClient/WiFiUDP。
+      事后按源码核查：lwIP 的 `dns_gethostbyname_addrtype()` 本身带
+      `ipaddr_aton()` 快速路径（dns.c），因此上游 `ping.cpp` 的普通
+      `getaddrinfo()` 数字/域名都能解析，bridge 侧不再需要该改写
 - [x] 修复 `WiFiClient::available()`：该 lwIP 配置（LWIP_SO_RCVBUF=0、
       LWIP_FIONREAD_LINUXMODE=0）下 FIONREAD 被编译掉，ioctl 恒返回 0，
       TCP 回读拿不到数据；改用 `recv(MSG_PEEK|MSG_DONTWAIT)` 探测
@@ -199,9 +204,11 @@
       按 ESP32 语义返回 0，避免 bridge AT 任务永久卡死
 - [x] bridge AT 命令经 USB CDC 冒烟：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/
       IPSTA/GETSSID/GETBSSID/GETRSSI/MACSTA 全通，连接 zrrong 并 DHCP 成功
-      （AT 与 USB CDC 共用 USBSerial 时由 `AT_ON_USBCDC` 关闭 loop() 透传抢流）
+      （历史：当时 AT 与 USB CDC 共用 USBSerial，用 DK 专用宏关闭 loop() 透传；
+      该宏已随 bridge 最小化收敛移除）
 - [x] `AT+PING` 实机验证：到 PC（192.168.133.49）往返成功并返回整数 RTT
-      （此前 `%f` 在 CONFIG_LIBC_FLOAT=0 下打印异常）；无 IP 时已加保护
+      （`%f` 在 CONFIG_LIBC_FLOAT=0 下不可用，bridge 输出改为 `%d`）；
+      未关联时表现为普通超时（返回 2）
 - [x] 澄清此前“lwIP 堆耗尽/网关不通/DNS 失败”的误判：三者同根——
       `freeaddrinfo` 桩泄漏唯一的 MEMP_NETDB 池元素，后续所有 getaddrinfo
       返回 EAI_MEMORY（解析层即失败，根本未发出数据包）；AP 无隔离、PC 在
@@ -216,8 +223,10 @@
       `tcpip_send_msg_wait_sem` 命中 `LWIP_ASSERT("Invalid mbox")` → ebreak
       崩溃（实机复现 mcause=3、mepc 落在 tcpip.c 该断言）。
       修复：esp32_wifi.cpp 静态构造器提前 `tcpip_init`（调度器启动前），
-      `ensure_wifi_started()` 不再重复初始化；实机验证无 IP ping 优雅返回
-      -2、不崩溃，随后连接+ping 网关/DNS/TCP/UDP 全通（12/12）
+      `ensure_wifi_started()` 不再重复初始化；实机验证无 IP ping 不再崩溃，
+      随后连接+ping 网关/DNS/TCP/UDP 全通（12/12）。
+      （早期加的“无 IP 返回 -4”守卫已随 bridge 收敛移除；tcpip 提前初始化
+      后未关联时走正常超时路径）
 - [x] bridge AT TCP/UDP 数据通路实机验证：CLIENTCONNECT→CLIENTSEND→
       CLIENTRECEIVE 回读 PC TCP echo；UDPBEGIN→BEGINPACKETIP→WRITE→
       ENDPACKET→PARSE→READ 回读 PC UDP echo；CLIENTCLOSE/UDPSTOP 正常
@@ -253,11 +262,23 @@
 - [x] AT 传输默认切到 RA4M1 物理 UART（2026-10-04）：`SERIAL_AT = Serial1`
       （UART1 GPIO6 TX / GPIO7 RX @115200，RA4M1 侧 SCI1 P501/P502），
       USB CDC 改为 `SERIAL_USER` 与 UART0（GPIO34/35，接 RA4M1 日志/
-      烧录口）双向透传；DK 无 UART 对端时仍可定义 `AT_ON_USBCDC` 走 CDC
-      （编译验证通过，RA4M1 实机链路待载板接线后验证）
+      烧录口）双向透传（编译验证通过，RA4M1 实机链路待载板接线后验证）
 - [x] carrier 关键信号映射落实（2026-10-04）：BL616CL RESET=GPIO3、
-      MD=GPIO10、SWCLK=GPIO8、SWDIO=GPIO9 已同步到 bridge 的
-      `dap_config.h` / `at_handler.h`；UART0=GPIO34/35、UART1=GPIO6/7
+      MD=GPIO10、SWCLK=GPIO8、SWDIO=GPIO9；bridge 侧改为 `#ifndef`
+      默认值（保留上游 9/4/8/7），实际值由 `boards.txt` 的
+      `CONFIG_BRIDGE_GPIO_*` build flags 注入；UART0=GPIO34/35、
+      UART1=GPIO6/7
+- [x] bridge 仓库收敛为最小补丁（2026-10-04）：`esp_ping_*` 由平台
+      `libraries/esp32-compat/src/ping/esp_ping.cpp` 实现（lwIP raw ICMP、
+      后台 FreeRTOS 任务、ESP-IDF 回调语义），bridge 的 `ping.cpp`/`ping.h`
+      恢复上游；删除 BLE 取证诊断命令、`+SSLERR`、DK 专用 `AT_ON_USBCDC`、
+      `tools/at_smoke/` 与 README 的 BL616CL 章节；`%.0f` 改 `%d`
+      （`CONFIG_LIBC_FLOAT=0`）；UART `begin()` 在 BL616CL 下走 variant
+      默认引脚。bridge 净 diff 收敛为 6 文件 +75/−3，编译通过
+      （953 616 B / 66 332 B），详见 `docs/UNO-R4-BRIDGE-BL616CL.md`
+- [x] DAP SWDIO 决定保持上游“每次传输切换方向”实现（2026-10-04）：
+      BL616CL 无 open-drain，常开双向（`GPIO_MODE_INPUT_OUTPUT`）在目标
+      驱动 SWDIO 的读阶段会推挽对驱；提速前需先做波形与电流验证
 - [ ] 验证 RA4M1 与 BL616CL 的串口透传（UART1 AT @115200 + UART0 透传）
 - [ ] 验证通过 USB CMSIS-DAP 对 RA4M1 进行编程
 - [x] 验证 BLE HCI 透传（2026-10-03 用公共 SDK v2.3.36 uarthci 完成 Reset/LE 广播序列和空口验证；ACL/连接及长期稳定性仍待测）

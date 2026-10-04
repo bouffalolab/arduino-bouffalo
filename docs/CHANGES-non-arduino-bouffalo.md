@@ -133,7 +133,10 @@
   逐条提交清单以 bridge 仓库 `git log` 为准）。
 - 用途：将原 ESP32-S3 bridge 固件移植到 BL616CL DK 验证 + 维护 AT 冒烟工具。
 
-### 2.2 本地提交（截至 2026-08-17 的记录）
+### 2.2 本地提交（bring-up 历史记录，截至 2026-08-17）
+
+> 下列 2.2.x 记录的是 bring-up 阶段的原始改动；其中大部分已在
+> 2026-10-04 的收敛中回退或迁移到平台仓库，见 2.2.8。
 
 | commit | 内容 |
 |---|---|
@@ -195,10 +198,42 @@
 - 移除误提交的 `tools/at_smoke/__pycache__`，新增 `.gitignore`
   （`__pycache__/`、`*.pyc`）。
 
+#### 2.2.8 2026-10-04 —— bridge 收敛为最小补丁（部分 2.2.x 改动作废）
+
+bring-up 结束后重新审视了 bridge 的全部本地提交：绝大多数改动不属于
+BL616CL 兼容所必需，且其中若干（`ble/ble_hci_port.h`、`started()`）会
+直接破坏上游 ESP32-S3 构建。已按“bridge 只留最小补丁、平台承担 BL616CL
+实现”的原则收敛：
+
+- `ping.cpp`/`ping.h` 重写 → 回退上游；`esp_ping_*` 由平台
+  `libraries/esp32-compat/src/ping/esp_ping.cpp` 实现（lwIP raw ICMP、
+  后台 FreeRTOS 任务、ESP-IDF 的 start/回调/end 语义）；
+- `AT_ON_USBCDC`、`CAtHandler` 的 `Stream*` 传输、`compat_console_restore`
+  DK 路径 → 移除（DK 无 UART 对端调试需要时用独立 bring-up 分支）；
+- `+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/`+WCHECK`/`+EMFULL`/
+  `+RAWDUMP`、`+SSLERR` → 移除（平台 `ble/ble_hci_port.cpp` 的取证函数
+  保留，供平台调试入口使用）；
+- `HCIVirtualTransport.started()` 前置检查 → 移除（平台
+  `HCIVirtualTransport::write()` 已在 controller 未启动时返回 0）；
+- DAP SWDIO 常开双向优化 → 回退上游的按传输切方向实现（BL616CL 无
+  open-drain，常开推挽在目标驱动阶段有对驱风险）；
+- `tools/at_smoke/`、bridge README 的 BL616CL 章节 → 移除/迁移到
+  `docs/UNO-R4-BRIDGE-BL616CL.md`；
+- `SSE.cpp` 的 mbedTLS v3 调用保留，但加 `MBEDTLS_VERSION_MAJOR` 版本
+  分支，mbedTLS 2.x（上游 ESP32-S3）仍按旧 API 编译；
+- 保留的其余改动：UART `begin()` 的 BL616CL 分支（variant 默认引脚 +
+  `USB.begin()` 后重开 UART0）、`CONFIG_BRIDGE_GPIO_*` 的 `#ifndef`
+  默认值（平台 `boards.txt` 注入）、`%.0f` → `%d`
+  （`CONFIG_LIBC_FLOAT=0`）。
+
+bridge 净 diff 从 19 文件 / +1099 −117 收敛到 6 文件 / +75 −3；编译通过
+（953 616 B flash / 66 332 B RAM）。
+
 ## 3. 维护约定
 
-- 2026-08-17 之后的 bridge 提交（BLE AT+HCI、DAP SWDIO、串口回归、README
-  等）不再逐条罗列，见 bridge 仓库 git 历史。
+- bridge 仓库只保留最小移植补丁（2026-10-04 收敛，见 2.2.8 与
+  `docs/UNO-R4-BRIDGE-BL616CL.md`）；BL616CL 专属实现一律放平台仓库，
+  避免引用平台私有符号破坏上游 ESP32-S3 构建。
 - SDK 侧任何新改动：写成补丁放进 `tools/runtime_bundle/patches/`（构建期
   apply/revert），runtime 在下次编译时自动重建（缓存 manifest 记录
   source_commits 与文件哈希），再在本文档记录问题与验证。
