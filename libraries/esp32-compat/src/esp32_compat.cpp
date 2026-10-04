@@ -14,7 +14,6 @@
 #include "mbedtls/asn1write.h"
 #include "mbedtls/sha256.h"
 #include "mbedtls/pem.h"
-#include "ping/ping_sock.h"
 
 #include <string.h>
 
@@ -140,38 +139,6 @@ extern "C" int esp_partition_mmap(const esp_partition_t *partition, uint32_t off
     (void)partition; (void)offset; (void)size; (void)memory;
     (void)out_ptr; (void)out_handle;
     return -1;
-}
-
-extern "C" int esp_ping_new_session(const esp_ping_config_t *config,
-                                    const esp_ping_callbacks_t *callbacks,
-                                    esp_ping_handle_t *out_handle)
-{
-    (void)config; (void)callbacks; (void)out_handle;
-    return ESP_FAIL;
-}
-
-extern "C" int esp_ping_start(esp_ping_handle_t handle)
-{
-    (void)handle;
-    return ESP_FAIL;
-}
-
-extern "C" int esp_ping_stop(esp_ping_handle_t handle)
-{
-    (void)handle;
-    return ESP_FAIL;
-}
-
-extern "C" void esp_ping_delete_session(esp_ping_handle_t handle)
-{
-    (void)handle;
-}
-
-extern "C" int esp_ping_get_profile(esp_ping_handle_t handle, int profile,
-                                    void *data, uint32_t size)
-{
-    (void)handle; (void)profile; (void)data; (void)size;
-    return ESP_FAIL;
 }
 
 /* mbedTLS v2-compat stubs for libraries that still call the old API.

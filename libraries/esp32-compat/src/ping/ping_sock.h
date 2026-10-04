@@ -18,6 +18,7 @@ typedef struct {
     uint8_t ttl;
     uint32_t count;
     uint32_t interval_ms;
+    uint32_t timeout_ms;
 } esp_ping_config_t;
 
 typedef struct {
@@ -37,9 +38,13 @@ static inline esp_ping_config_t ESP_PING_DEFAULT_CONFIG(void)
     cfg.ttl = 64;
     cfg.count = 1;
     cfg.interval_ms = 1000;
+    cfg.timeout_ms = 1000;
     return cfg;
 }
 
+/* ESP-IDF semantics: esp_ping_start() returns immediately and the session
+ * reports through the callbacks from a background task; ping_end() fires
+ * once when the session is done. */
 int esp_ping_new_session(const esp_ping_config_t *config,
                          const esp_ping_callbacks_t *callbacks,
                          esp_ping_handle_t *out_handle);

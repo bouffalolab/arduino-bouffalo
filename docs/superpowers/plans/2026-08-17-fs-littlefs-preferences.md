@@ -1,5 +1,10 @@
 # FS LittleFS + Preferences EasyFlash 实施计划
 
+> **状态（2026-10-04）：已执行完毕。** FS/LittleFS、Preferences/EasyFlash 与
+> newlib `fopen` 均已实现，`StorageTest` 实机全 PASS、复位持久化验证通过；
+> 遗留的 bridge 镜像分区重叠问题见 `TODO.md` 第四阶段。本文正文 checkbox
+> 未随执行进度维护（多数仍为空），以本横幅和 `TODO.md` 为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 esp32-compat 库中落地 FS/File（LittleFS on `media`）、newlib `fopen`（挂载点 `/spiffs`）与 Preferences（EasyFlash on `PSM`），并用 StorageTest 固件在 BL616CL 上验证。
