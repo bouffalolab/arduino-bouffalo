@@ -222,12 +222,26 @@ BL616CL 兼容所必需，且其中若干（`ble/ble_hci_port.h`、`started()`�
 - `SSE.cpp` 的 mbedTLS v3 调用保留，但加 `MBEDTLS_VERSION_MAJOR` 版本
   分支，mbedTLS 2.x（上游 ESP32-S3）仍按旧 API 编译；
 - 保留的其余改动：UART `begin()` 的 BL616CL 分支（variant 默认引脚 +
-  `USB.begin()` 后重开 UART0）、`CONFIG_BRIDGE_GPIO_*` 的 `#ifndef`
-  默认值（平台 `boards.txt` 注入）、`%.0f` → `%d`
-  （`CONFIG_LIBC_FLOAT=0`）。
+  `USB.begin()` 后重开 UART0）、GPIO 映射（2026-10-05 修正，见 2.2.9）、
+  `%.0f` → `%d`（`CONFIG_LIBC_FLOAT=0`）。
 
 bridge 净 diff 从 19 文件 / +1099 −117 收敛到 6 文件 / +75 −3；编译通过
 （953 616 B flash / 66 332 B RAM）。
+
+#### 2.2.9 2026-10-05 —— GPIO 映射改为 bridge 内定义，平台不再注入
+
+- `at_handler.h`（`GPIO_BOOT`/`GPIO_RST`）与 `dap_config.h`
+  （`CONFIG_BRIDGE_GPIO_BOOT`/`RST`/`SWDIO`/`SWCLK`）直接写载板引脚
+  （BOOT=10 / RST=3 / SWDIO=9 / SWCLK=8），撤销 2.2.8 的 `#ifndef`
+  默认值 + `boards.txt` `-D` 注入方案。
+- 理由：引脚映射属于 app 行为，由 arduino-bouffalo 平台注入 build flag
+  等于平台干预应用；RA4M1 载板布线固定，bridge 内定义更直观、可维护。
+- `boards.txt` 的 `unor4_bl616cl.build.extra_flags` 只保留
+  `-DBL616CL_STAGE1=1 -DBL616CL_USB_DEBUG_LOG=1`。
+
+bridge 最终净 diff：6 文件 / +62 −7（`.gitignore`、`SSE.cpp`、
+`UNOR4USBBridge.ino`、`at_handler.h`、`cmds_esp_generic.h`、
+`dap_config.h`）。
 
 ## 3. 维护约定
 

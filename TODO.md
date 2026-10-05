@@ -263,18 +263,17 @@
       （UART1 GPIO6 TX / GPIO7 RX @115200，RA4M1 侧 SCI1 P501/P502），
       USB CDC 改为 `SERIAL_USER` 与 UART0（GPIO34/35，接 RA4M1 日志/
       烧录口）双向透传（编译验证通过，RA4M1 实机链路待载板接线后验证）
-- [x] carrier 关键信号映射落实（2026-10-04）：BL616CL RESET=GPIO3、
-      MD=GPIO10、SWCLK=GPIO8、SWDIO=GPIO9；bridge 侧改为 `#ifndef`
-      默认值（保留上游 9/4/8/7），实际值由 `boards.txt` 的
-      `CONFIG_BRIDGE_GPIO_*` build flags 注入；UART0=GPIO34/35、
-      UART1=GPIO6/7
+- [x] carrier 关键信号映射落实（2026-10-05）：BL616CL RESET=GPIO3、
+      MD=GPIO10、SWCLK=GPIO8、SWDIO=GPIO9；引脚映射属于 app 行为，
+      直接定义在 bridge 的 `at_handler.h` / `dap_config.h`，平台不再用
+      build flag 注入；UART0=GPIO34/35、UART1=GPIO6/7
 - [x] bridge 仓库收敛为最小补丁（2026-10-04）：`esp_ping_*` 由平台
       `libraries/esp32-compat/src/ping/esp_ping.cpp` 实现（lwIP raw ICMP、
       后台 FreeRTOS 任务、ESP-IDF 回调语义），bridge 的 `ping.cpp`/`ping.h`
       恢复上游；删除 BLE 取证诊断命令、`+SSLERR`、DK 专用 `AT_ON_USBCDC`、
       `tools/at_smoke/` 与 README 的 BL616CL 章节；`%.0f` 改 `%d`
       （`CONFIG_LIBC_FLOAT=0`）；UART `begin()` 在 BL616CL 下走 variant
-      默认引脚。bridge 净 diff 收敛为 6 文件 +75/−3，编译通过
+      默认引脚。bridge 净 diff 收敛为 6 文件 +62/−7，编译通过
       （953 616 B / 66 332 B），详见 `docs/UNO-R4-BRIDGE-BL616CL.md`
 - [x] DAP SWDIO 决定保持上游“每次传输切换方向”实现（2026-10-04）：
       BL616CL 无 open-drain，常开双向（`GPIO_MODE_INPUT_OUTPUT`）在目标

@@ -1,6 +1,6 @@
 # UNO R4 WiFi BL616CL 载板：bridge 适配
 
-**状态（2026-10-04）：编译通过（953 616 B flash / 66 332 B RAM），RA4M1
+**状态（2026-10-05）：编译通过（953 616 B flash / 66 332 B RAM），RA4M1
 实机链路待载板接线验证。**
 
 bridge 固件仓库是 `uno-r4-wifi-usb-bridge`（上游
@@ -13,7 +13,7 @@ bridge 固件仓库是 `uno-r4-wifi-usb-bridge`（上游
 | 文件 | 改动 | 原因 |
 |---|---|---|
 | `UNOR4USBBridge.ino` | `ARDUINO_ARCH_BL616CL` 下 UART0/UART1 用不带引脚参数的 `begin()`；`USB.begin()` 后重开 UART0 | 载板 UART 引脚由 variant 决定；USB 初始化会重新绑定 UART0 控制台 |
-| `at_handler.h`、`dap_config.h` | `CONFIG_BRIDGE_GPIO_*` 改为 `#ifndef` + 上游默认值（BOOT=9 / RST=4 / SWDIO=8 / SWCLK=7） | 载板引脚由平台 `boards.txt` 注入，上游 ESP32-S3 构建行为不变 |
+| `at_handler.h`、`dap_config.h` | GPIO 映射直接改为载板值（BOOT=10 / RST=3 / SWDIO=9 / SWCLK=8） | 引脚映射属于 app 行为，保留在 bridge 内；平台不注入任何 `-D` 覆盖 |
 | `cmds_esp_generic.h` | 平均 RTT 输出 `%.0f` → `%d`（int 截断） | BL616CL libc 以 `CONFIG_LIBC_FLOAT=0` 构建，无 `%f` |
 | — | `ping.cpp` / `ping.h` 保持上游不动 | 平台在 `esp32-compat` 里实现了真正的 `esp_ping_*` |
 
@@ -24,9 +24,6 @@ bring-up 期间的诊断命令（`+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/
 
 ## 平台侧支撑
 
-- `boards.txt`（`unor4_bl616cl`）：`CONFIG_BRIDGE_GPIO_BOOT=10`、
-  `CONFIG_BRIDGE_GPIO_RST=3`、`CONFIG_BRIDGE_GPIO_SWDIO=9`、
-  `CONFIG_BRIDGE_GPIO_SWCLK=8`。
 - `libraries/esp32-compat/src/ping/esp_ping.cpp`：lwIP raw ICMP 上的
   ESP-IDF 语义实现（后台 FreeRTOS 任务、`on_ping_success/timeout/end`
   回调、会话结束自释放）。
@@ -65,6 +62,9 @@ bring-up 期间的诊断命令（`+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/
 
 ## 设计决定
 
+- **引脚映射保留在 bridge/app 内**：RA4M1 的 RESET/MD/SWCLK/SWDIO 属于载板
+  布线，bridge 直接定义；平台只提供芯片级支持（UART 默认引脚等），不用
+  build flag 干预 app 行为。
 - **DAP SWDIO 保持上游的“每次传输切换方向”实现**，不使用常开双向
   （`GPIO_MODE_INPUT_OUTPUT`）优化：BL616CL 没有 open-drain，双向常开在
   目标驱动 SWDIO 的读阶段会形成推挽对驱。若后续要提速，先做波形与电流验证。
