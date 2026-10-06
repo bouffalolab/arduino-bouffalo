@@ -1,7 +1,7 @@
 # UNO R4 WiFi BL616CL 载板：bridge 适配
 
-**状态（2026-10-05）：编译通过（953 616 B flash / 66 332 B RAM），RA4M1
-实机链路待载板接线验证。**
+**状态（2026-10-05）：编译通过（935 232 B flash / 66 404 B RAM，mbedTLS
+2.28.2 runtime），RA4M1 实机链路待载板接线验证。**
 
 bridge 固件仓库是 `uno-r4-wifi-usb-bridge`（上游
 `arduino/uno-r4-wifi-usb-bridge`）。BL616CL 的专属实现（runtime、ESP32 API
@@ -15,6 +15,7 @@ bridge 固件仓库是 `uno-r4-wifi-usb-bridge`（上游
 | `UNOR4USBBridge.ino` | `ARDUINO_ARCH_BL616CL` 下 UART0/UART1 用不带引脚参数的 `begin()`；`USB.begin()` 后重开 UART0 | 载板 UART 引脚由 variant 决定；USB 初始化会重新绑定 UART0 控制台 |
 | `at_handler.h`、`dap_config.h` | GPIO 映射直接改为载板值（BOOT=10 / RST=3 / SWDIO=9 / SWCLK=8） | 引脚映射属于 app 行为，保留在 bridge 内；平台不注入任何 `-D` 覆盖 |
 | `cmds_esp_generic.h` | 平均 RTT 输出 `%.0f` → `%d`（int 截断） | BL616CL libc 以 `CONFIG_LIBC_FLOAT=0` 构建，无 `%f` |
+| `SSE.cpp` | `mbedtls_pk_parse_key`/`pk_sign`/`sha256` 按 `MBEDTLS_VERSION_MAJOR` 分 v2/v3 签名 | 一份源码同时服务上游 ESP-IDF（mbedTLS 2.28）与平台 runtime（当前 SDK 内置 2.28.2，走 v2 分支） |
 | — | `ping.cpp` / `ping.h` 保持上游不动 | 平台在 `esp32-compat` 里实现了真正的 `esp_ping_*` |
 
 bring-up 期间的诊断命令（`+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/
@@ -24,6 +25,9 @@ bring-up 期间的诊断命令（`+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/
 
 ## 平台侧支撑
 
+- `tools/runtime_bundle/`：runtime 用 SDK 内置 mbedTLS 2.28.2
+  （`CONFIG_MBEDTLS_V2=y` + `mbedtls_sample_config.h`），不再依赖 mbedtls_v3；
+  bridge 的 SSE/`WiFiClientSecure` 走 v2 分支。
 - `libraries/esp32-compat/src/ping/esp_ping.cpp`：lwIP raw ICMP 上的
   ESP-IDF 语义实现（后台 FreeRTOS 任务、`on_ping_success/timeout/end`
   回调、会话结束自释放）。
@@ -62,6 +66,10 @@ bring-up 期间的诊断命令（`+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/
 
 ## 设计决定
 
+- **runtime 绑定 SDK 内置 mbedTLS 2.28.2**：v3 不是 SSE 的硬需求（SSE 本身
+  双版本兼容），2.28.2 与 ESP-IDF 上游一致、体积更小；若将来切回 v3，
+  `tools/runtime_bundle/defconfig` 去掉 `CONFIG_MBEDTLS_V2` 即可，SSE 无需
+  改动。
 - **引脚映射保留在 bridge/app 内**：RA4M1 的 RESET/MD/SWCLK/SWDIO 属于载板
   布线，bridge 直接定义；平台只提供芯片级支持（UART 默认引脚等），不用
   build flag 干预 app 行为。

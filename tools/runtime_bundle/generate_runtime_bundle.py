@@ -573,7 +573,8 @@ def _update_manifest_toolchain(sdk_runtime: Path, toolchain_version: str,
 
 
 def sdk_include_roots(sdk: Path, chip: str, chip_cfg: dict[str, object],
-                      lhal_config_dir: Path) -> list[tuple[Path, Path]]:
+                      lhal_config_dir: Path,
+                      mbedtls_v2: bool) -> list[tuple[Path, Path]]:
     """Return the (source directory, staged relative path) include map.
 
     The Arduino recipes consume a flat runtime layout rooted at
@@ -581,6 +582,7 @@ def sdk_include_roots(sdk: Path, chip: str, chip_cfg: dict[str, object],
     CHIP_CONFIG entry: its headers are re-derived from the SDK sources instead
     of being copied into the platform tree by hand.
     """
+    mbedtls_root = sdk / "components" / "crypto" / "mbedtls"
     roots: list[tuple[Path, Path]] = [
         (sdk / "components" / "mm", Path("sdk/mm")),
         (sdk / "components" / "sysinit", Path("sdk/sysinit")),
@@ -612,17 +614,12 @@ def sdk_include_roots(sdk: Path, chip: str, chip_cfg: dict[str, object],
          Path("sdk/supplicant")),
         (sdk / "components" / "wireless" / "macsw" / "inc",
          Path("sdk/macsw")),
-        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" / "include",
-         Path("sdk/mbedtls")),
+        (mbedtls_root / ("mbedtls" if mbedtls_v2 else "mbedtls_v3") /
+         "include", Path("sdk/mbedtls")),
         # mbedtls hardware-acceleration port headers (ecp_alt.h & friends are
         # included by name from the public mbedtls/*.h headers)
-        (sdk / "components" / "crypto" / "mbedtls" / "port" / "hw_acc",
-         Path("sdk/mbedtls")),
-        (sdk / "components" / "crypto" / "mbedtls" / "port",
-         Path("sdk/mbedtls/port")),
-        (sdk / "components" / "crypto" / "mbedtls" / "mbedtls_v3" /
-         "3rdparty" / "everest" / "include",
-         Path("sdk/mbedtls")),
+        (mbedtls_root / "port" / "hw_acc", Path("sdk/mbedtls")),
+        (mbedtls_root / "port", Path("sdk/mbedtls/port")),
         (sdk / "drivers" / "soc" / chip / "phyrf" / "include",
          Path("sdk/phyrf")),
         (sdk / "drivers" / "rfparam" / "Inc", Path("sdk/rfparam")),
@@ -630,6 +627,9 @@ def sdk_include_roots(sdk: Path, chip: str, chip_cfg: dict[str, object],
         (sdk / "components" / "utils" / "async_event", Path("sdk/utils")),
         (sdk / "components" / "utils" / "partition", Path("sdk/utils")),
     ]
+    if not mbedtls_v2:
+        roots.append((mbedtls_root / "mbedtls_v3" / "3rdparty" / "everest" /
+                      "include", Path("sdk/mbedtls")))
     freertos_ext = chip_cfg.get("freertos_extension")
     if freertos_ext:
         ext_dir = (sdk / "components" / "os" / "freertos" /
@@ -885,15 +885,25 @@ def stage_sdk_runtime(*, sdk: Path, chip: str, chip_cfg: dict[str, object],
 
     # ——— SDK include roots ——————————————————————————————————————
     lhal_config_dir = sdk / "drivers" / "lhal" / "config" / chip
-    include_roots = sdk_include_roots(sdk, chip, chip_cfg, lhal_config_dir)
+    include_roots = sdk_include_roots(
+        sdk, chip, chip_cfg, lhal_config_dir,
+        defconfig_value(template_dir / "defconfig",
+                        "CONFIG_MBEDTLS_V2") == "y")
 
     copy_headers(include_roots, destination / "include")
     copy_cherryusb_headers(sdk, destination / "include", template_dir)
-    # mbedtls config headers picked up via MBEDTLS_CONFIG_FILE
-    for cfg_name in ("config-tls-generic.h", "config-psa.h"):
-        copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
-                               cfg_name, cfg_name),
-                  destination / "include" / "sdk" / "mbedtls" / cfg_name)
+    # mbedtls config header picked up via MBEDTLS_CONFIG_FILE
+    if defconfig_value(template_dir / "defconfig",
+                       "CONFIG_MBEDTLS_V2") == "y":
+        copy_file(require_file(template_dir / "mbedtls_sample_config.h",
+                               "mbedTLS v2 sample config"),
+                  destination / "include" / "sdk" / "mbedtls" /
+                  "mbedtls_sample_config.h")
+    else:
+        for cfg_name in ("config-tls-generic.h", "config-psa.h"):
+            copy_file(require_file(sdk / "components" / "crypto" / "mbedtls" /
+                                   cfg_name, cfg_name),
+                      destination / "include" / "sdk" / "mbedtls" / cfg_name)
     # generated Kconfig autoconf (platform recipe does -include autoconf.h)
     autoconf = None
     for candidate in (build_out / "include" / "autoconf.h",

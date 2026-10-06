@@ -1,6 +1,6 @@
 # BL616CL UNO R4 Bridge TODO
 
-## 代码核查状态（2026-10-04）
+## 代码核查状态（2026-10-05）
 
 下面的状态以当前 `arduino-bouffalo` 源码、bridge 命令处理器和已有实机
 冒烟记录为准。`[x]` 表示该功能在代码中有真实后端且已有验证；只提供头文件
@@ -11,7 +11,7 @@
 | USB CDC ACM + CMSIS-DAP HID | 已支持 | CherryUSB 后端已实现；DK 上枚举、CDC 收发和 DAP 命令往返已验证。SWD 时序、最终载板接线仍待验证。 |
 | WiFi STA / 扫描 / DHCP / 静态 IPv4 / DNS / ping | 已支持 | `esp32_wifi.cpp` 使用 wl80211/`wifi_mgmr`，对应 AT 冒烟已通过；SoftAP/APSTA、IPv6、自动连接和持久化设置仍未实现。 |
 | TCP client/server、UDP | 已支持 | `WiFiClient`、`WiFiServer`、`WiFiUDP` 使用 lwIP socket，AT echo 已通过。 |
-| TLS client | 已支持 | `WiFiClientSecure` 使用 mbedTLS v3；CA 装载、TLS 1.2 和 HTTPS GET 已通过。 |
+| TLS client | 已支持 | `WiFiClientSecure` 使用 SDK 内置 mbedTLS 2.28.2（`CONFIG_MBEDTLS_V2`）；CA 装载、TLS 1.2 和 HTTPS GET 已通过。 |
 | SPIFFS/FS、Preferences | 代码已支持，镜像布局阻塞 bridge | LittleFS/EasyFlash 后端和 `StorageTest` 已通过；bridge 完整镜像仍会与 0xE000/0xF000 分区表槽位重叠，修复布局和上传流程前不能宣称部署可用。 |
 | BLE HCI 透传 | 已支持（范围有限） | AT HCI 队列、H4 解析和 controller 初始化已实现；2026-10-03 用公共 SDK v2.3.36 自带的 uarthci 1.6.210 归档实机验证 Reset/LE 广播序列并在空口发现 bridge 广播（详见 `docs/BLE-UARTHCI.md`）。其他 HCI/ACL/连接命令和长期稳定性仍未测。 |
 | SoftAP / APSTA | 不支持 | `WiFi.softAP*()` 和 AP 事件仍是固定失败/空返回。 |
@@ -168,12 +168,19 @@
       （192.168.133.40/24）、DNS 解析 example.com、ping 网关
       （192.168.133.2，4 ms）、ping 对端 Mac（.49）、AT TCP/UDP echo
       全部通过；此前 gateway/DNS 探针不通确为 IP 字节序 bug 所致
-- [x] 实现 `WiFiClientSecure`（mbedTLS v3 后端）：
+- [x] 实现 `WiFiClientSecure`（当时用 mbedTLS v3 后端，2026-10-05 起 runtime
+      切到 SDK 内置 2.28.2，见下条）：
       实机验证 www.bing.com:443 的 TLS 1.2 握手与 HTTPS GET 收发（390 字节响应）
       - 解决 compat 层 v2 桩冲突：v2 桩改 weak + libmbedtls whole-archive，
         SSE.cpp 移植到 v3（pk_sign 新签名、mbedtls_sha256、pk_parse_key）
       - 修复 config-tls-generic.h 缺 MBEDTLS_ECP_HAVE_* 映射导致 X.509 OID
         表不含命名曲线的问题（重建 libmbedtls.a）
+- [x] runtime mbedTLS 切换到 SDK 内置 2.28.2（2026-10-05）：`defconfig` 加
+      `CONFIG_MBEDTLS_V2=y`，新增 `tools/runtime_bundle/mbedtls_sample_config.h`
+      （TLS 1.2 client + X.509 + PK_WRITE + SECP384R1 + HW accel 开关），
+      runtime 生成脚本按版本选 mbedtls/mbedtls_v3 头文件；`WiFiClientSecure`
+      的 `mbedtls_pk_parse_key` 与 SSE 一样按 `MBEDTLS_VERSION_MAJOR` 分支；
+      编译通过，935 232 B flash / 66 404 B RAM（比 v3 少 ~18 KB）
 - [x] 修复 ECDSA 证书链解析：证书链混用 P-256/P-384，补齐
       CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED；实机验证 example.com:443
       TLS 握手 + HTTPS GET 收发（869 字节响应）
@@ -274,7 +281,8 @@
       `tools/at_smoke/` 与 README 的 BL616CL 章节；`%.0f` 改 `%d`
       （`CONFIG_LIBC_FLOAT=0`）；UART `begin()` 在 BL616CL 下走 variant
       默认引脚。bridge 净 diff 收敛为 6 文件 +62/−7，编译通过
-      （953 616 B / 66 332 B），详见 `docs/UNO-R4-BRIDGE-BL616CL.md`
+      （953 616 B / 66 332 B；2026-10-05 切 mbedTLS 2.28.2 后为
+      935 232 B / 66 404 B），详见 `docs/UNO-R4-BRIDGE-BL616CL.md`
 - [x] DAP SWDIO 决定保持上游“每次传输切换方向”实现（2026-10-04）：
       BL616CL 无 open-drain，常开双向（`GPIO_MODE_INPUT_OUTPUT`）在目标
       驱动 SWDIO 的读阶段会推挽对驱；提速前需先做波形与电流验证

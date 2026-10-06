@@ -128,7 +128,7 @@ The current support boundary is:
 | USB CDC ACM + CMSIS-DAP HID | Implemented and hardware-tested | CDC echo and DAP command round trips pass on BL616CL DK. SWD signal timing and final carrier wiring are still open. |
 | WiFi STA, scan, DHCP/static IPv4, DNS, ping | Implemented and hardware-tested | `wifi_mgmr`/wl80211 backend; bridge AT smoke tests pass. SoftAP/APSTA, IPv6, auto-connect and persistent WiFi settings are not implemented. |
 | TCP client/server and UDP | Implemented and hardware-tested | lwIP socket backend; AT TCP/UDP echo tests pass. |
-| TLS client | Implemented and hardware-tested | mbedTLS v3 backend; CA loading and HTTPS GET pass. |
+| TLS client | Implemented and hardware-tested | mbedTLS 2.28 backend (SDK `CONFIG_MBEDTLS_V2`); CA loading and HTTPS GET pass. |
 | SPIFFS/FS and Preferences | Implemented in the compatibility layer | LittleFS on the `media` partition and EasyFlash on PSM pass `StorageTest`; the bridge image still has a partition-table/app overlap that must be fixed before relying on storage in a deployed bridge image. |
 | BLE AT/HCI transport | Implemented and hardware-tested (2026-10-03) | Links the SDK-shipped `libbtblecontroller_bl616cl_uarthci.a` (1.6.210); `AT+HCIBEGIN/HCIWRITE/HCIREAD` and the Reset/LE advertising sequence were verified on air. Other HCI/ACL/connection commands and long-term stability remain untested. |
 | RA4M1 OTA download/update | Not implemented | `Update.h`, `Arduino_ESP32_OTA.h`, and `BossaArduino.h` contain fail-safe stubs; `BossaUnoR4WiFi::program()` therefore cannot flash the RA4M1. |

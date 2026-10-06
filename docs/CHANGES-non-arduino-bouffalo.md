@@ -108,6 +108,8 @@
   `MBEDTLS_ECP_HAVE_*` 名（默认 `mbedtls_config.h` 由
   `config_adjust_legacy_crypto.h` 完成），导致 X.509 OID 表不含命名曲线，
   解析 ECDSA 证书公钥失败（`MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE`）。
+- 状态（2026-10-05）：平台 runtime 已切到 SDK 内置 mbedTLS 2.28.2
+  （`CONFIG_MBEDTLS_V2=y`），该补丁只对 v3 构建生效，暂时保留以备切回。
 - 修复：补映射；另在构建中加入 `CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED`
   （公网站点常混用 P-256/P-384 证书链）。
 - 验证：www.bing.com:443、example.com:443 TLS 1.2 握手与 HTTPS GET 成功。
