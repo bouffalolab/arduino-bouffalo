@@ -13,10 +13,12 @@
 - SDK 检出目录：`bouffalo_sdk_full/bouffalo_sdk`，不是 git 仓库；
 - 所有本地改动以补丁形式保留在 `arduino-bouffalo/tools/runtime_bundle/patches/`，
   重新生成 runtime bundle 时应用；
-- 运行时库产物在 `arduino-bouffalo/tools/sdk/bl616cl/`，`manifest.json` 记录
-  `source_commits`（各组件/子模块 commit）与全部文件的 SHA-256；
-- `sdk_version`：`2.3.30-local-wl80211`（本地定制版本号，标识从 fhost 切换到
-  wl80211 主机栈）。
+- 运行时不再有 checked-in 产物：`arduino-bouffalo/tools/runtime_bundle/`
+  的 prebuild hook 在每次编译时从 `tools/sdk/bouffalo_sdk` 子模块现编，
+  缓存 runtime 的 `manifest.json` 记录 `source_commits` 与文件 SHA-256
+  （2026-10-03 起 legacy `tools/sdk/bl616cl/` 与 `tools/vendor/` 均已删除）；
+- 本文记录的历史 `sdk_version`：`2.3.30-local-wl80211`（从 fhost 切换到
+  wl80211 主机栈时代的本地定制版本号）。
 
 关键 source_commits：
 
@@ -84,7 +86,7 @@
 - 修复：改用 core-locked 的 `netif_set_default()` 直接调用。
 - 验证：实机连接 zrrong 后 DHCP 拿到 192.168.133.40/24，GOT_IP 正常触发。
 
-#### 1.2.6 wl80211-connect-ssid-filter.patch
+#### 1.2.6 wl80211-connect-ssid-filter.patch（已 obsolete）
 
 - 目标：`components/wireless/wl80211` 的 `src/macsw/connect.c`。
 - 问题：`scan_done_cb()` 把 join 扫描到的所有 AP 都收进来，只按 RSSI 选最强，
@@ -96,6 +98,8 @@
     （只回应定向探测）可被发现；
   - 无匹配时返回 `WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL` 失败，不再静默连错。
 - 验证：实机扫描 16 个 AP、WPA2-PSK 连接 zrrong 成功。
+- 状态：v2.3.35+ 起 wl80211 以预编译库发布且已含该修复，补丁标记 obsolete
+  （见 `tools/runtime_bundle/patches/`），仅在历史 SDK 树上需要。
 
 #### 1.2.7 mbedtls-config-tls-ecp-have-curves.patch
 
@@ -104,6 +108,8 @@
   `MBEDTLS_ECP_HAVE_*` 名（默认 `mbedtls_config.h` 由
   `config_adjust_legacy_crypto.h` 完成），导致 X.509 OID 表不含命名曲线，
   解析 ECDSA 证书公钥失败（`MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE`）。
+- 状态（2026-10-05）：平台 runtime 已切到 SDK 内置 mbedTLS 2.28.2
+  （`CONFIG_MBEDTLS_V2=y`），该补丁只对 v3 构建生效，暂时保留以备切回。
 - 修复：补映射；另在构建中加入 `CONFIG_MBEDTLS_ECP_DP_SECP384R1_ENABLED`
   （公网站点常混用 P-256/P-384 证书链）。
 - 验证：www.bing.com:443、example.com:443 TLS 1.2 握手与 HTTPS GET 成功。
@@ -125,10 +131,14 @@
 ### 2.1 概览
 
 - 上游：`arduino/uno-r4-wifi-usb-bridge`（origin/main）。
-- 本地分支：`main`，当前领先 origin/main 7 个提交（截至 2026-08-17）。
+- 本地分支：`main`，领先 origin/main 14 个提交（截至 2026-10-04；
+  逐条提交清单以 bridge 仓库 `git log` 为准）。
 - 用途：将原 ESP32-S3 bridge 固件移植到 BL616CL DK 验证 + 维护 AT 冒烟工具。
 
-### 2.2 本地提交
+### 2.2 本地提交（bring-up 历史记录，截至 2026-08-17）
+
+> 下列 2.2.x 记录的是 bring-up 阶段的原始改动；其中大部分已在
+> 2026-10-04 的收敛中回退或迁移到平台仓库，见 2.2.8。
 
 | commit | 内容 |
 |---|---|
@@ -162,6 +172,8 @@
 
 - `AT_ON_USBCDC` 宏：BL616CL DK 无 UART 对端，AT 服务器挂到 USBSerial，
   同时关闭 loop() 的 CDC 透传避免抢流；UNO R4 载体板上可取消宏回到 Serial1。
+  （2026-10-04 起该宏默认注释掉，carrier 模式——AT 走 Serial1、CDC 与
+  UART0 双向透传——成为默认构建，DK 调试时才显式打开宏。）
 - `CAtHandler` 传输类型从 `HardwareSerial*` 改为 `Stream*`，适配 CDC 的
   bulk read。
 - 验证：AT/GMR/WIFISCAN/BEGINSTA/GETSTATUS/IPSTA/GETSSID/GETBSSID/
@@ -188,9 +200,58 @@
 - 移除误提交的 `tools/at_smoke/__pycache__`，新增 `.gitignore`
   （`__pycache__/`、`*.pyc`）。
 
+#### 2.2.8 2026-10-04 —— bridge 收敛为最小补丁（部分 2.2.x 改动作废）
+
+bring-up 结束后重新审视了 bridge 的全部本地提交：绝大多数改动不属于
+BL616CL 兼容所必需，且其中若干（`ble/ble_hci_port.h`、`started()`）会
+直接破坏上游 ESP32-S3 构建。已按“bridge 只留最小补丁、平台承担 BL616CL
+实现”的原则收敛：
+
+- `ping.cpp`/`ping.h` 重写 → 回退上游；`esp_ping_*` 由平台
+  `libraries/esp32-compat/src/ping/esp_ping.cpp` 实现（lwIP raw ICMP、
+  后台 FreeRTOS 任务、ESP-IDF 的 start/回调/end 语义）；
+- `AT_ON_USBCDC`、`CAtHandler` 的 `Stream*` 传输、`compat_console_restore`
+  DK 路径 → 移除（DK 无 UART 对端调试需要时用独立 bring-up 分支）；
+- `+GETCRASH`/`+GETHEAP`/`+HCISTATE`/`+BLECTR`/`+WCHECK`/`+EMFULL`/
+  `+RAWDUMP`、`+SSLERR` → 移除（平台 `ble/ble_hci_port.cpp` 的取证函数
+  保留，供平台调试入口使用）；
+- `HCIVirtualTransport.started()` 前置检查 → 移除（平台
+  `HCIVirtualTransport::write()` 已在 controller 未启动时返回 0）；
+- DAP SWDIO 常开双向优化 → 回退上游的按传输切方向实现（BL616CL 无
+  open-drain，常开推挽在目标驱动阶段有对驱风险）；
+- `tools/at_smoke/`、bridge README 的 BL616CL 章节 → 移除/迁移到
+  `docs/UNO-R4-BRIDGE-BL616CL.md`；
+- `SSE.cpp` 的 mbedTLS v3 调用保留，但加 `MBEDTLS_VERSION_MAJOR` 版本
+  分支，mbedTLS 2.x（上游 ESP32-S3）仍按旧 API 编译；
+- 保留的其余改动：UART `begin()` 的 BL616CL 分支（variant 默认引脚 +
+  `USB.begin()` 后重开 UART0）、GPIO 映射（2026-10-05 修正，见 2.2.9）、
+  `%.0f` → `%d`（`CONFIG_LIBC_FLOAT=0`）。
+
+bridge 净 diff 从 19 文件 / +1099 −117 收敛到 6 文件 / +75 −3；编译通过
+（953 616 B flash / 66 332 B RAM）。
+
+#### 2.2.9 2026-10-05 —— GPIO 映射改为 bridge 内定义，平台不再注入
+
+- `at_handler.h`（`GPIO_BOOT`/`GPIO_RST`）与 `dap_config.h`
+  （`CONFIG_BRIDGE_GPIO_BOOT`/`RST`/`SWDIO`/`SWCLK`）直接写载板引脚
+  （BOOT=10 / RST=3 / SWDIO=9 / SWCLK=8），撤销 2.2.8 的 `#ifndef`
+  默认值 + `boards.txt` `-D` 注入方案。
+- 理由：引脚映射属于 app 行为，由 arduino-bouffalo 平台注入 build flag
+  等于平台干预应用；RA4M1 载板布线固定，bridge 内定义更直观、可维护。
+- `boards.txt` 的 `unor4_bl616cl.build.extra_flags` 只保留
+  `-DBL616CL_STAGE1=1 -DBL616CL_USB_DEBUG_LOG=1`。
+
+bridge 最终净 diff：6 文件 / +62 −7（`.gitignore`、`SSE.cpp`、
+`UNOR4USBBridge.ino`、`at_handler.h`、`cmds_esp_generic.h`、
+`dap_config.h`）。
+
 ## 3. 维护约定
 
-- SDK 侧任何新改动：先写补丁到 `patches/`，重建受影响的运行时库，更新
-  `manifest.json` 的 source_commits 与文件哈希，再在本文档记录问题与验证。
+- bridge 仓库只保留最小移植补丁（2026-10-04 收敛，见 2.2.8 与
+  `docs/UNO-R4-BRIDGE-BL616CL.md`）；BL616CL 专属实现一律放平台仓库，
+  避免引用平台私有符号破坏上游 ESP32-S3 构建。
+- SDK 侧任何新改动：写成补丁放进 `tools/runtime_bundle/patches/`（构建期
+  apply/revert），runtime 在下次编译时自动重建（缓存 manifest 记录
+  source_commits 与文件哈希），再在本文档记录问题与验证。
 - 固件侧任何新改动：保持提交粒度（一个修复一个提交），并同步更新本文档与
   `arduino-bouffalo/TODO.md`。

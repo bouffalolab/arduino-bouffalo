@@ -42,6 +42,7 @@ PROBE_FILES = (
     "CMakeLists.txt",
     "defconfig",
     "FreeRTOSConfig.h",
+    "mbedtls_sample_config.h",
     "usb_config.h",
 )
 
@@ -280,6 +281,7 @@ def cache_key(*, platform_root: Path, sdk: Path, chip: str, board: str,
         "sdk": sdk_fingerprint(sdk),
         "defconfig": sha256_file(probe_dir / "defconfig"),
         "freertos_config": sha256_file(probe_dir / "FreeRTOSConfig.h"),
+        "mbedtls_config": sha256_file(probe_dir / "mbedtls_sample_config.h"),
         "patches": patch_material,
         "extra_libs": {name: sha256_file(path)
                        for name, path in sorted(extra_libs.items())},

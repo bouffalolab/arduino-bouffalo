@@ -167,9 +167,15 @@ int WiFiClientSecure::do_tls_handshake(const char *hostname)
             crt, reinterpret_cast<const unsigned char *>(cert_pem_),
             strlen(cert_pem_) + 1);
         if (ret == 0) {
+#if defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR >= 3
             ret = mbedtls_pk_parse_key(
                 key, reinterpret_cast<const unsigned char *>(key_pem_),
                 strlen(key_pem_) + 1, nullptr, 0, mbedtls_ctr_drbg_random, drbg);
+#else
+            ret = mbedtls_pk_parse_key(
+                key, reinterpret_cast<const unsigned char *>(key_pem_),
+                strlen(key_pem_) + 1, nullptr, 0);
+#endif
         }
         if (ret != 0) {
             last_error_ = ret;

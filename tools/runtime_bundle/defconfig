@@ -34,6 +34,8 @@ CONFIG_STRICT               =n
 CONFIG_POSIX                =y
 CONFIG_LWIP                 =y
 CONFIG_MBEDTLS              =y
+# Use the SDK's in-tree mbedTLS 2.28 variant (see mbedtls_sample_config.h).
+CONFIG_MBEDTLS_V2           =y
 CONFIG_DHCPD                =y
 CONFIG_PING                 =y
 CONFIG_WIFI6                =y
