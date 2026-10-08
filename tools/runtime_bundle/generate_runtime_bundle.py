@@ -1056,11 +1056,8 @@ def main() -> int:
 
     # ——— tools-only shortcut ——————————————————————————————————
     if args.tools_only:
-        if not sdk_runtime.is_dir() or not (sdk_runtime / "manifest.json").is_file():
-            raise RuntimeError(
-                f"--tools-only requires an existing {sdk_runtime}. "
-                f"Run without --tools-only first."
-            )
+        # Fresh installs need host tools before the Arduino prebuild hook can
+        # build a runtime. An existing legacy manifest is optional.
         _install_host_tools(platform_root, sdk, chip)
         tc_dest = tools_root / toolchain_dirname
         toolchain_version = copy_minimal_toolchain(
