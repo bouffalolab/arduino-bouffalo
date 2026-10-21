@@ -84,8 +84,6 @@ typedef unsigned int word;
 
 void init(void);
 void initVariant(void);
-void setup(void);
-void loop(void);
 void yield(void);
 
 unsigned long millis(void);
@@ -114,6 +112,9 @@ void esp_fill_random(void *buffer, size_t size);
 
 #ifdef __cplusplus
 } // extern "C"
+
+void setup(void);
+void loop(void);
 
 class EspClass {
 public:

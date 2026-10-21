@@ -1,13 +1,16 @@
 #include "Arduino.h"
+#include "bflb_efuse.h"
+#include "bflb_sec_trng.h"
+extern "C" {
+#include "bl616cl_sys.h"
+}
 
 EspClass ESP;
 
 void EspClass::restart()
 {
-    // TODO(bl616cl): switch to a linked BL616CL system reset helper once the
-    // platform runtime exposes one.
-    for (;;) {
-    }
+    bl_sys_reset_system();
+    for (;;) {}
 }
 
 extern "C" BaseType_t xTaskCreatePinnedToCore(TaskFunction_t function,
@@ -36,15 +39,14 @@ extern "C" void configTime(long timezone, long daylightOffset, const char *serve
 
 extern "C" void esp_efuse_mac_get_default(uint8_t *mac)
 {
-    if (mac != nullptr) {
-        for (size_t i = 0; i < 6; ++i) {
-            mac[i] = 0;
-        }
+    if (mac != nullptr && bflb_efuse_read_mac_address(mac, 1) != 0) {
+        abort();
     }
 }
 
 extern "C" void esp_fill_random(void *buffer, size_t size)
 {
-    (void)buffer;
-    (void)size;
+    if (size != 0 && (buffer == nullptr || bflb_trng_readlen(static_cast<uint8_t *>(buffer), size) != 0)) {
+        abort();
+    }
 }
