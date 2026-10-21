@@ -1,20 +1,21 @@
-# Arduino BL616CL
+# BouffaloLab For Arduino
 
-Arduino platform support for the Bouffalo Lab BL616CL RISC-V SoC, including
-BL616CL startup code, an Arduino-compatible runtime, core peripherals, and an
-ESP32-style compatibility library.
+BouffaloLab For Arduino is an Arduino platform project for Bouffalo Lab RISC-V
+SoCs. The current implementation provides a BL616CL port, including startup
+code, an Arduino-compatible runtime, core peripherals, and an ESP32-style
+compatibility library.
 
 > **Project status: Stage 1 - active bring-up.**
 >
-> The platform is usable for development and hardware validation, but APIs,
-> partition layouts, and board integration may still change.
+> The current BL616CL target is usable for development and hardware validation,
+> but APIs, partition layouts, and board integration may still change.
 >
-> **Pinned Bouffalo SDK:** `v2.3.36`
+> **Pinned Bouffalo SDK:** `v2.3.37`
 
 ## Contents
 
 - [Overview](#overview)
-- [Supported target](#supported-target)
+- [Current target](#current-target)
 - [Feature status](#feature-status)
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -30,7 +31,7 @@ ESP32-style compatibility library.
 
 ## Overview
 
-This repository provides an Arduino core for BL616CL together with:
+This repository provides the BouffaloLab For Arduino platform together with:
 
 - standard `.ino` preprocessing and the `setup()` / `loop()` runtime;
 - BL616CL startup, FreeRTOS scheduling, GPIO, timing, and UART support;
@@ -41,12 +42,14 @@ This repository provides an Arduino core for BL616CL together with:
   linker script, boot2 data, and DTS data from the pinned SDK submodule;
 - partitioned firmware generation and `bflb_fw_post_proc` integration.
 
-The platform is installed as a local Arduino hardware package. It is not
-currently distributed through Arduino Boards Manager.
+Bouffalo Lab device support is the project scope; this checkout currently
+exposes BL616CL board definitions. The platform is installed as a local Arduino
+hardware package and is not currently distributed through Arduino Boards
+Manager.
 
-## Supported target
+## Current target
 
-The platform package identifier is `bouffalo:bl616cl`. List the currently
+The current platform package identifier is `bouffalo:bl616cl`. List the
 installed board definitions and their FQBNs with:
 
 ```sh
@@ -68,6 +71,8 @@ arduino-cli board listall bouffalo
 | Upload interface | UART through Bouffalo `BLFlashCommand` |
 
 A BL616CL DK is sufficient for core, networking, USB, and storage bring-up.
+Support for additional Bouffalo Lab SoCs will require their corresponding
+cores, variants, and board definitions.
 
 ## Feature status
 
@@ -118,8 +123,8 @@ Check the Arduino CLI sketchbook location:
 arduino-cli config dump
 ```
 
-Place this repository under `<sketchbook>/hardware/bouffalo/bl616cl`. For the
-default Linux location:
+Place this repository under `<sketchbook>/hardware/bouffalo/bl616cl` so Arduino
+can discover the current architecture. For the default Linux location:
 
 ```sh
 mkdir -p ~/Arduino/hardware/bouffalo
@@ -127,6 +132,9 @@ git clone https://github.com/Virus-V/arduino-bouffalo.git \
   ~/Arduino/hardware/bouffalo/bl616cl
 cd ~/Arduino/hardware/bouffalo/bl616cl
 ```
+
+The final `bl616cl` directory and package identifiers match the current Arduino
+architecture; they do not limit the project to a single Bouffalo Lab SoC.
 
 The SDK submodule URL in `.gitmodules` uses SSH. If SSH access to GitHub is
 not configured, initialize the submodule through HTTPS instead:
@@ -334,7 +342,8 @@ partition details, and current validation gaps.
 
 ## Development notes
 
-- Keep BL616CL-specific behavior in this platform.
+- Keep SoC-specific behavior in the matching core and variant; BL616CL-specific
+  code belongs under `cores/bl616cl` and `variants/bl616cldk`.
 - Put SDK fixes in `tools/runtime_bundle/patches/` and describe their purpose,
   upstream status, and validation in the patch documentation.
 - Do not commit generated runtime bundles, toolchains, flash logs, or build

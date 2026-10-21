@@ -666,7 +666,6 @@ def build_sdk_probe(*, sdk: Path, chip: str, board: str,
         "make",
         f"CHIP={chip}",
         f"BOARD={board}",
-        "CONFIG_PEC_V2=n",
         "CONFIG_MULTIMEDIA_VIDEO=n",
         f"BL_SDK_BASE={sdk}",
     ]

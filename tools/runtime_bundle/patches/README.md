@@ -82,7 +82,7 @@ could not complete.  Use the core-locked `netif_set_default()` instead.
 
 ## wl80211-connect-ssid-filter.patch (obsolete - kept for history)
 
-The v2.3.35 and v2.3.36 releases ship `wl80211` as a prebuilt library
+The v2.3.35 through v2.3.37 releases ship `wl80211` as a prebuilt library
 without the `src/macsw/connect.c` source this diff targets, and that
 library already contains the SSID filter fix.  The builder skips this
 entry.
