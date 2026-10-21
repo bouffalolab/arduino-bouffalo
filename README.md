@@ -1,149 +1,353 @@
-# Arduino BL616CL platform — UNO R4 bridge status
+# Arduino BL616CL
 
-BLE UART HCI（AT+HCI）的状态、复现步骤与历史结论见
-[docs/BLE-UARTHCI.md](docs/BLE-UARTHCI.md)。
+Arduino platform support for the Bouffalo Lab BL616CL RISC-V SoC, including
+BL616CL startup code, an Arduino-compatible runtime, core peripherals, and an
+ESP32-style compatibility library.
 
-This local development platform implements FQBN
-`bouffalo:bl616cl:unor4_bl616cl` for BL616CL DK bring-up and the UNO R4 bridge.
-The checked-in bridge build artifact is produced from the same FQBN. Linux
-post-processing tools are supplied by the generator and the checked-in macOS
-post-processor is used automatically on Apple Silicon hosts.
+> **Project status: Stage 1 - active bring-up.**
+>
+> The platform is usable for development and hardware validation, but APIs,
+> partition layouts, and board integration may still change.
+>
+> **Pinned Bouffalo SDK:** `v2.3.36`
 
-For normal Arduino compilation the platform is self-contained (a git clone
-plus the gitignored host-tool directories below).  Its layout is:
+## Contents
 
-    hardware/bouffalo/bl616cl/
-    ├── cores/bl616cl/                  Arduino Core sources
-    ├── libraries/esp32-compat/         ESP32 Arduino API compatibility stubs
-    ├── variants/bl616cldk/             pin mapping (pins_arduino.h)
-    ├── tools/sdk/bouffalo_sdk/         Bouffalo SDK git submodule (pinned)
-    │                                    (runtime headers/archives/boot2/DTS
-    │                                     are built from it at compile time)
-    ├── tools/partitions/               partition TOML (compile-time → bin)
-    ├── tools/runtime_bundle/           compile-time runtime builder, patches
-    └── tools/{Xuantie-900-gcc,bflb_fw_post_proc,bouffalo_flash_cube}
-        (generated, in .gitignore)
+- [Overview](#overview)
+- [Supported target](#supported-target)
+- [Feature status](#feature-status)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Build and upload](#build-and-upload)
+- [Pin map](#pin-map)
+- [Repository layout](#repository-layout)
+- [Runtime build model](#runtime-build-model)
+- [ESPHome integration](#esphome-integration)
+- [Known limitations](#known-limitations)
+- [Documentation](#documentation)
+- [Development notes](#development-notes)
+- [Third-party components](#third-party-components)
 
-The `recipe.hooks.prebuild` hook in `platform.txt` materialises the per-build
-SDK runtime from the submodule before every sketch compile; see
-`tools/runtime_bundle/README.md`.
+## Overview
 
-Implemented:
+This repository provides an Arduino core for BL616CL together with:
 
-- standard Arduino `.ino` preprocessing and `setup()`/`loop()` runtime;
-- C/C++ global constructors;
-- BL616CL board startup and FreeRTOS scheduler;
-- GPIO and `LED_BUILTIN` stage-1 mapping;
-- `millis()`, `micros()`, `delay()`, and `delayMicroseconds()`;
-- console `Serial` on BL616CL DK UART0 (GPIO34 TX / GPIO35 RX, 2 Mbit/s);
-- `Serial1` on GPIO6 TX / GPIO7 RX (RA4M1 AT channel); `HardwareSerial` uses
-  interrupt-driven reception with a 4096-byte ring buffer, receive/overflow
-  counters, RX clear, and in-place baud-rate changes (PR #10 UART port;
-  2 Mbaud UART0 and bench UART1 on GPIO27/28 verified on hardware);
-- CherryUSB device support for a CDC ACM + HID composite endpoint, backed by
-  the Arduino-style `USBCDC`/`USBHID` compatibility classes;
-- C++17 with exceptions and RTTI disabled;
-- `.elf`, `.map`, post-processed `.bin`, boot2, partition, and eFuse side cars;
-- modern BL616CL `bflb_fw_post_proc` and `BLFlashCommand` integration.
+- standard `.ino` preprocessing and the `setup()` / `loop()` runtime;
+- BL616CL startup, FreeRTOS scheduling, GPIO, timing, and UART support;
+- interrupt-driven `HardwareSerial` instances with configurable pins;
+- CherryUSB device support;
+- an `esp32-compat` library that provides selected ESP32-style Arduino APIs;
+- a compile-time SDK runtime builder that produces SDK headers, archives, a
+  linker script, boot2 data, and DTS data from the pinned SDK submodule;
+- partitioned firmware generation and `bflb_fw_post_proc` integration.
 
-The `bl616cldk` variant now carries the UNO R4 carrier pin map: RA4M1 AT on
-UART1 GPIO6/7, RA4M1 log/flash on UART0 GPIO34/35, and the SWD/MD/RESET
-control lines in the bridge firmware (GPIO8/9/3/10). GPIO32/33 remain
-reserved for USB. The stage-1 4 MiB partition limits the primary
-firmware slot to 2 MiB; eFuse files are exported for traceability but are not
-burned by the normal Arduino upload action.
+The platform is installed as a local Arduino hardware package. It is not
+currently distributed through Arduino Boards Manager.
 
-## First-time setup
+## Supported target
 
-Clone this repo into `hardware/bouffalo/bl616cl/` inside an Arduino CLI
-workspace and check out the SDK submodule:
+The platform package identifier is `bouffalo:bl616cl`. List the currently
+installed board definitions and their FQBNs with:
 
-    git submodule update --init tools/sdk/bouffalo_sdk
+```sh
+arduino-cli board listall bouffalo
+```
 
-The repo excludes host tools (toolchain, `bflb_fw_post_proc`,
-`BLFlashCommand`) via `.gitignore`.  Install them once with the legacy
-generator — it writes a `tools/sdk/<chip>` bundle that the current flow no
-longer consumes (every compile rebuilds the runtime from the submodule via
-`build_sdk_runtime.py`); only the host tools it installs are needed.
-`--tools-only` refreshes them from an existing `tools/sdk/<chip>` directory:
+| Item | Value |
+| --- | --- |
+| SoC | Bouffalo Lab BL616CL |
+| CPU | T-Head E907, `rv32imafc_xtheade`, `ilp32f` |
+| Arduino architecture | `bl616cl` |
+| Variant | `bl616cldk` |
+| Flash profile | 4 MiB |
+| Maximum application slot | 2 MiB |
+| SRAM limit | 320 KiB (384 KiB minus a 64 KiB Wi-Fi reservation) |
+| Console / ISP UART | `Serial`, GPIO34 TX / GPIO35 RX, 2 Mbit/s |
+| Secondary UART | `Serial1`, GPIO6 TX / GPIO7 RX |
+| Built-in LED | GPIO31 |
+| Upload interface | UART through Bouffalo `BLFlashCommand` |
 
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
-      --sdk /path/to/bouffalo_sdk \
-      --chip bl616cl \
-      --toolchain /path/to/Xuantie-900-gcc
+A BL616CL DK is sufficient for core, networking, USB, and storage bring-up.
 
-Make sure `arduino-cli` is in PATH or set `ARDUINO_CLI=/path/to/arduino-cli`.
+## Feature status
 
-## Runtime maintenance
+Status meanings:
 
-The runtime is rebuilt automatically whenever its inputs change (SDK commit
-or dirty state, patch set, `defconfig`/`FreeRTOSConfig.h`, toolchain version,
-extra controller archives).  Cached entries live under
-`~/.cache/arduino-bouffalo/sdk-runtime/` (override with
-`BOUFFALO_SDK_CACHE`).  Pin a new SDK release by checking out the tag in the
-submodule and staging the submodule pointer:
+- **Verified** - implemented and exercised on hardware.
+- **Partial** - implemented, but integration details or broader validation
+  remain.
+- **Not supported** - only a fail-safe stub or no implementation exists.
 
-    git -C hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk fetch --tags
-    git -C hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk checkout v2.3.36
-    git add hardware/bouffalo/bl616cl/tools/sdk/bouffalo_sdk
-
-Force a rebuild or keep the SDK build tree for inspection:
-
-    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/build_sdk_runtime.py \
-      --platform-root hardware/bouffalo/bl616cl \
-      --chip bl616cl --board bl616cldk --out /tmp/rt/bl616cl --force --keep-work
-
-See `tools/runtime_bundle/README.md` for multi-chip support and details.
-
-## Verify M0
-
-    arduino-cli board details \
-      --config-file arduino-cli.yaml \
-      --fqbn=bouffalo:bl616cl:unor4_bl616cl
-
-## Compile M1 smoke sketches
-
-    arduino-cli compile --config-file arduino-cli.yaml \
-      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
-      hardware/bouffalo/bl616cl/examples/Blink
-
-    arduino-cli compile --config-file arduino-cli.yaml \
-      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
-      hardware/bouffalo/bl616cl/examples/Serial
-
-## Compile the UNO R4 bridge
-
-`libraries/esp32-compat` provides the ESP32-style API used by the upstream
-`uno-r4-wifi-usb-bridge` sketch, so the sketch can be built without modifying
-its command handlers:
-
-    arduino-cli compile --config-file arduino-cli.yaml \
-      --fqbn=bouffalo:bl616cl:unor4_bl616cl \
-      /path/to/uno-r4-wifi-usb-bridge/UNOR4USBBridge
-
-The current support boundary is:
-
-| Bridge dependency | Current status | Evidence / limitation |
+| Area | Status | Notes |
 | --- | --- | --- |
-| USB CDC ACM + CMSIS-DAP HID | Implemented and hardware-tested | CDC echo and DAP command round trips pass on BL616CL DK. SWD signal timing and final carrier wiring are still open. |
-| WiFi STA, scan, DHCP/static IPv4, DNS, ping | Implemented and hardware-tested | `wifi_mgmr`/wl80211 backend; bridge AT smoke tests pass. SoftAP/APSTA, IPv6, auto-connect and persistent WiFi settings are not implemented. |
-| TCP client/server and UDP | Implemented and hardware-tested | lwIP socket backend; AT TCP/UDP echo tests pass. |
-| TLS client | Implemented and hardware-tested | mbedTLS 2.28 backend (SDK `CONFIG_MBEDTLS_V2`); CA loading and HTTPS GET pass. |
-| SPIFFS/FS and Preferences | Implemented in the compatibility layer | LittleFS on the `media` partition and EasyFlash on PSM pass `StorageTest`; the bridge image still has a partition-table/app overlap that must be fixed before relying on storage in a deployed bridge image. |
-| BLE AT/HCI transport | Implemented and hardware-tested (2026-10-03) | Links the SDK-shipped `libbtblecontroller_bl616cl_uarthci.a` (1.6.210); `AT+HCIBEGIN/HCIWRITE/HCIREAD` and the Reset/LE advertising sequence were verified on air. Other HCI/ACL/connection commands and long-term stability remain untested. |
-| RA4M1 OTA download/update | Not implemented | `Update.h`, `Arduino_ESP32_OTA.h`, and `BossaArduino.h` contain fail-safe stubs; `BossaUnoR4WiFi::program()` therefore cannot flash the RA4M1. |
+| Arduino runtime | Verified | `.ino` preprocessing, `setup()` / `loop()`, constructors, `millis()`, `micros()`, and delays. |
+| Core peripherals | Verified | GPIO, `LED_BUILTIN`, UART console, and interrupt-driven `HardwareSerial`. |
+| USB device | Verified | CherryUSB enumeration and CDC ACM data transfer. |
+| Wi-Fi STA | Verified | Scan, WPA2 connection, DHCP/static IPv4, DNS, and ICMP ping. |
+| TCP / UDP | Verified | `WiFiClient`, `WiFiServer`, and `WiFiUDP` use the lwIP socket backend. |
+| TLS | Verified | `WiFiClientSecure` uses the SDK's mbedTLS 2.28.2; CA loading and HTTPS GET pass. |
+| SPIFFS / Preferences | Partial | LittleFS and EasyFlash backends pass `StorageTest`; production partition layouts require application-specific validation. |
+| ESPHome | Experimental | API, encrypted control, and network OTA were verified with companion ESPHome changes. |
+| SoftAP / APSTA | Not supported | Wi-Fi currently operates in STA mode only. |
+| General OTA / update API | Not supported | The generic Arduino update and OTA entry points remain fail-safe stubs. |
 
-PR [#10](https://github.com/bouffalolab/arduino-bouffalo/pull/10) was inspected
-at `e6c3179b24bdf1954bb74e3676d0244404bf585a` on 2026-09-29. It adds a
-separate bridge runtime profile, provisional carrier mapping and UART/runtime
-changes, but contains no SWD timing implementation or calibration results;
-its `TODO.md` still lists SWD timing calibration as incomplete. The local
-bridge `dap_config.h` still uses the ESP32 SWD pins (SWCLK 7 / SWDIO 8) and
-delay constants (7700 / 2400000 Hz), rather than the carrier allocation
-(SWCLK 12 / SWDIO 13). This PR alone does not establish BL616CL SWD support.
+## Requirements
 
-The existing bridge ELF/bin artifacts under
-`uno-r4-wifi-usb-bridge/UNOR4USBBridge/build/bouffalo.bl616cl.unor4_bl616cl/`
-confirm that the complete command surface still compiles and links. A green
-build does not imply that every AT command is functional: unsupported paths
-return their compatibility-layer failure values.
+The reference development environment is Linux. The platform also contains
+tool naming and post-processing support for macOS, but the complete flow must be
+validated against the locally installed toolchain.
+
+Prepare:
+
+- `git`;
+- Python 3;
+- GNU Make and CMake;
+- [`arduino-cli`](https://arduino.github.io/arduino-cli/) or Arduino IDE 2.x;
+- a T-Head Xuantie-900 GCC toolchain providing `riscv64-unknown-elf-gcc`;
+- a BL616CL DK or compatible BL616CL target;
+- for UART upload, a USB-UART adapter connected to the BL616CL console and ISP
+  pins.
+
+## Installation
+
+### 1. Install the platform in the Arduino sketchbook
+
+Check the Arduino CLI sketchbook location:
+
+```sh
+arduino-cli config dump
+```
+
+Place this repository under `<sketchbook>/hardware/bouffalo/bl616cl`. For the
+default Linux location:
+
+```sh
+mkdir -p ~/Arduino/hardware/bouffalo
+git clone https://github.com/Virus-V/arduino-bouffalo.git \
+  ~/Arduino/hardware/bouffalo/bl616cl
+cd ~/Arduino/hardware/bouffalo/bl616cl
+```
+
+The SDK submodule URL in `.gitmodules` uses SSH. If SSH access to GitHub is
+not configured, initialize the submodule through HTTPS instead:
+
+```sh
+git config submodule.tools/sdk/bouffalo_sdk.url \
+  https://github.com/bouffalolab/bouffalo_sdk.git
+git submodule update --init --recursive
+```
+
+If `arduino-cli.yaml` uses a non-default sketchbook, install the repository in
+that `directories.user` path instead. Add `--config-file /path/to/arduino-cli.yaml`
+to the commands below when using a custom configuration.
+
+### 2. Install the host tools
+
+The toolchain, post-processor, and flash command are intentionally excluded
+from Git. Install a minimal copy and refresh the host tools with:
+
+```sh
+python3 tools/runtime_bundle/generate_runtime_bundle.py \
+  --sdk tools/sdk/bouffalo_sdk \
+  --chip bl616cl \
+  --board bl616cldk \
+  --toolchain /path/to/Xuantie-900-gcc \
+  --tools-only
+```
+
+`--toolchain` must point to the toolchain root, the parent directory of `bin/`.
+The command writes ignored files under:
+
+```text
+tools/Xuantie-900-gcc/
+tools/bflb_fw_post_proc/
+tools/bouffalo_flash_cube/
+```
+
+The checked-in legacy SDK bundles are not used. The full SDK runtime is built
+from the submodule during the first sketch compilation.
+
+### 3. Verify installation
+
+List the available board definitions:
+
+```sh
+arduino-cli board listall bouffalo
+```
+
+Use the reported FQBN in the build commands below.
+
+## Build and upload
+
+Set `BL616CL_FQBN` to the FQBN reported by `arduino-cli board listall`:
+
+```sh
+export BL616CL_FQBN='bouffalo:bl616cl:<board-id>'
+```
+
+Compile the included smoke tests from the platform root:
+
+```sh
+arduino-cli compile -b "$BL616CL_FQBN" examples/Blink
+arduino-cli compile -b "$BL616CL_FQBN" examples/Serial
+```
+
+Compile and upload Blink:
+
+```sh
+arduino-cli compile --upload \
+  -b "$BL616CL_FQBN" \
+  -p /dev/ttyUSB0 \
+  examples/Blink
+```
+
+Replace `/dev/ttyUSB0` with the BL616CL console and ISP UART on your system.
+The serial device name can change between plug-in cycles, so check
+`/dev/serial/by-id/` on Linux or `/dev/cu.*` on macOS before flashing.
+
+Open the console at the rate used by the sketch:
+
+```sh
+arduino-cli monitor \
+  -b "$BL616CL_FQBN" \
+  -p /dev/ttyUSB0 \
+  -c baudrate=2000000
+```
+
+The normal upload path writes the application image and exports boot2,
+partition, eFuse, `.elf`, and `.map` side files for inspection. It does not
+burn eFuse data.
+
+### Examples
+
+| Example | Purpose |
+| --- | --- |
+| `examples/Blink` | GPIO, timing, and UART console smoke test. |
+| `examples/Serial` | Console output and C++ global constructor check. |
+| `examples/StorageTest` | LittleFS/SPIFFS and EasyFlash-backed Preferences checks. |
+
+## Pin map
+
+The current `bl616cldk` variant provides this Arduino mapping:
+
+| Signal | BL616CL pin | Purpose |
+| --- | --- | --- |
+| `LED_BUILTIN` | GPIO31 | On-board LED. |
+| `Serial` TX / RX | GPIO34 / GPIO35 | UART0 console and ISP. |
+| `Serial1` TX / RX | GPIO6 / GPIO7 | UART1. |
+| `SDA` / `SCL` | GPIO11 / GPIO14 | Variant I2C mapping. |
+
+GPIO32 and GPIO33 are reserved for USB. `Serial2` is not provided by the
+current variant.
+
+## Repository layout
+
+```text
+.
+|-- boards.txt                 Board definitions and upload settings
+|-- platform.txt               Compiler, linker, upload, and prebuild recipes
+|-- cores/bl616cl/             Arduino runtime and BL616CL core
+|-- libraries/esp32-compat/    ESP32-style Arduino compatibility layer
+|-- variants/bl616cldk/        Arduino pin mapping
+|-- examples/                  Blink, Serial, and storage tests
+|-- tools/partitions/          Partition-table TOML files
+|-- tools/runtime_bundle/      Runtime builder and SDK patches
+|-- tools/sdk/bouffalo_sdk/    Pinned Bouffalo SDK submodule
+`-- docs/                      ESPHome and maintenance documentation
+```
+
+The `tools/Xuantie-900-gcc`, `tools/bflb_fw_post_proc`, and
+`tools/bouffalo_flash_cube` directories are generated locally and ignored by
+Git.
+
+## Runtime build model
+
+`platform.txt` runs `tools/runtime_bundle/build_sdk_runtime.py` through a
+prebuild hook before each sketch compile. The builder:
+
+1. fingerprints the SDK commit and dirty state, patches, configuration files,
+   toolchain, and optional controller archive;
+2. reuses a cached runtime under
+   `~/.cache/arduino-bouffalo/sdk-runtime/` when possible;
+3. otherwise applies the platform patch set, builds the SDK probe, restores the
+   submodule, and publishes the runtime atomically;
+4. exposes the runtime to the compiler through
+   `{build.path}/sdk_runtime/{build.mcu}`.
+
+Set `BOUFFALO_SDK_CACHE` to move the cache. See
+[`tools/runtime_bundle/README.md`](tools/runtime_bundle/README.md) for cache
+maintenance, patch behavior, multi-chip settings, and standalone builds.
+
+To force a rebuild and retain the SDK build tree:
+
+```sh
+python3 tools/runtime_bundle/build_sdk_runtime.py \
+  --platform-root . \
+  --chip bl616cl \
+  --board bl616cldk \
+  --out /tmp/bl616cl-runtime \
+  --force \
+  --keep-work
+```
+
+## ESPHome integration
+
+The experimental ESPHome BL616CL integration uses this Arduino checkout with a
+companion ESPHome platform implementation and
+`tools/partitions/partition_cfg_esphome_4M.toml`.
+
+Validated on 2026-10-18:
+
+- Wi-Fi connection to a WPA3-SAE AP with protected management frames;
+- DHCP and encrypted ESPHome Native API;
+- control from Home Assistant;
+- encrypted OTA image validation, commit, and reboot.
+
+Factory images must be written as raw bytes at address `0`. Do not send a
+factory image to network OTA. See
+[`docs/ESPHOME-BL616CL.md`](docs/ESPHOME-BL616CL.md) for branch requirements,
+partition details, and current validation gaps.
+
+## Known limitations
+
+- This is a Stage 1 platform, not a production-ready Arduino core.
+- Only the checked-in board definitions are currently exposed.
+- Wi-Fi supports STA mode only; SoftAP, APSTA, IPv6, persistent Wi-Fi settings,
+  and automatic reconnect are not implemented.
+- The generic Arduino update and OTA APIs remain fail-safe stubs. ESPHome OTA
+  support is an integration-specific path.
+- The current partition profile must be validated for each deployment; a
+  successful small-image storage test does not guarantee that every larger
+  firmware layout is safe.
+- ESPHome mDNS stalls because the current wl80211 lwIP netif lacks the IGMP
+  flag. Sensors and Preferences restore/reset have not been hardware-tested.
+- macOS and Windows are not part of the verified reference flow. UART tooling
+  and upload-device naming differ between hosts.
+
+## Documentation
+
+| Document | Contents |
+| --- | --- |
+| [`docs/ESPHOME-BL616CL.md`](docs/ESPHOME-BL616CL.md) | Experimental ESPHome integration and partition profile. |
+| [`tools/runtime_bundle/README.md`](tools/runtime_bundle/README.md) | Runtime generation, caching, SDK patches, and toolchain layout. |
+| [`docs/CHANGES-non-arduino-bouffalo.md`](docs/CHANGES-non-arduino-bouffalo.md) | Audit trail for SDK patches and related development changes. |
+
+## Development notes
+
+- Keep BL616CL-specific behavior in this platform.
+- Put SDK fixes in `tools/runtime_bundle/patches/` and describe their purpose,
+  upstream status, and validation in the patch documentation.
+- Do not commit generated runtime bundles, toolchains, flash logs, or build
+  output.
+- Record hardware evidence when changing clocks, pins, partitions, USB, RF,
+  or low-level timing behavior.
+- Run the Blink, Serial, and StorageTest builds before submitting integration
+  changes. Hardware validation is preferred for peripheral, network, and
+  power-management changes.
+
+## Third-party components
+
+This repository contains or fetches Bouffalo SDK components, FreeRTOS, lwIP,
+mbedTLS, CherryUSB, and other third-party sources. Those components remain
+subject to their own upstream licenses and notices. The repository currently
+does not declare a separate top-level license.
