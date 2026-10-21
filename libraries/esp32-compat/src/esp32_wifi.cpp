@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "WiFi.h"
+#include <atomic>
 #include "WiFiGeneric.h"
 
 extern "C" {
@@ -13,6 +14,8 @@ extern "C" {
 #include "async_event.h"
 #include "lwip/tcpip.h"
 #include "lwip/netdb.h"
+#include "lwip/dns.h"
+#include "bflb_irq.h"
 #include "lwip/sockets.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -56,23 +59,29 @@ struct TcpipEarlyInit {
 static TcpipEarlyInit g_tcpip_early_init;
 }  // namespace
 
-static bool g_init_started = false;
-static bool g_mgmr_started = false;
-static bool g_scan_pending = false;
-static uint32_t g_scan_count = 0;
+static std::atomic<uint32_t> g_init_started = 0;
+static std::atomic<bool> g_mgmr_started = false;
+static std::atomic<bool> g_scan_pending = false;
+static std::atomic<uint32_t> g_scan_count = 0;
 static wifi_mgmr_scan_item_t g_scan_items[SCAN_LIST_CAPACITY];
-static volatile uint8_t g_sta_connected = 0;
-static volatile uint8_t g_sta_got_ip = 0;
-static uint32_t g_ip = 0;
-static uint32_t g_mask = 0;
-static uint32_t g_gw = 0;
-static uint32_t g_dns = 0;
+static std::atomic<bool> g_sta_connected = false;
+static std::atomic<bool> g_sta_got_ip = false;
+static std::atomic<uint32_t> g_ip = 0;
+static std::atomic<uint32_t> g_mask = 0;
+static std::atomic<uint32_t> g_gw = 0;
+static std::atomic<uint32_t> g_dns = 0;
 static char g_ssid[MGMR_SSID_LEN + 1];
 static uint8_t g_mac[6];
 static wifi_mode_t g_mode = WIFI_MODE_NULL;
 static bool g_auto_reconnect = true;
 static bool g_static_ip = false;
-static String g_hostname;
+static char g_hostname[64];
+static void apply_hostname(void *)
+{
+    if (g_hostname[0] == '\0') return;
+    for (struct netif *interface = netif_list; interface; interface = interface->next)
+        netif_set_hostname(interface, g_hostname);
+}
 static WiFiEventCb g_event_cb = nullptr;
 
 static void wifi_async_event_handler(void *arg1, uint32_t arg2)
@@ -123,6 +132,7 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_SCAN_DONE:
         case CODE_WIFI_ON_SCAN_DONE_ONJOIN:
+            if (!g_scan_pending) break;
             g_scan_count = wifi_mgmr_sta_scanlist_dump(g_scan_items,
                                                        SCAN_LIST_CAPACITY);
             if (g_scan_count > SCAN_LIST_CAPACITY) {
@@ -137,8 +147,13 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
             emit_wifi_event(ARDUINO_EVENT_WIFI_STA_CONNECTED);
             break;
         case CODE_WIFI_ON_GOT_IP:
-            g_sta_got_ip = 1;
-            wifi_mgmr_sta_ip_get(&g_ip, &g_mask, &g_gw, &g_dns);
+            {
+                uint32_t ip, mask, gw, dns;
+                wifi_mgmr_sta_ip_get(&ip, &mask, &gw, &dns);
+                g_ip = ip; g_mask = mask; g_gw = gw; g_dns = dns;
+                g_sta_got_ip = true;
+                tcpip_callback(apply_hostname, nullptr);
+            }
             emit_wifi_event(ARDUINO_EVENT_WIFI_STA_GOT_IP);
             break;
         case CODE_WIFI_ON_DISCONNECT:
@@ -163,10 +178,9 @@ static void wifi_event_handler(async_input_event_t ev, void *priv)
 
 static void ensure_wifi_started(void)
 {
-    if (g_init_started) {
+    if (g_init_started.exchange(1)) {
         return;
     }
-    g_init_started = true;
 
     ensure_rfparam();
     async_event_init(wifi_async_event_loop_wake);
@@ -187,11 +201,27 @@ static bool scan_item_valid(uint8_t networkItem)
     return networkItem < g_scan_count;
 }
 
-int WiFiClass::scanNetworks()
+bool WiFiClass::startAsync()
 {
+    static bool requested = false;
+    if (requested) return true;
+    requested = xTaskCreate([](void *) {
+        ensure_wifi_started();
+        vTaskDelete(nullptr);
+    }, "wifi_start", 2048, nullptr, 2, nullptr) == pdPASS;
+    return requested;
+}
+
+bool WiFiClass::ready() const { return g_mgmr_started.load(); }
+int WiFiClass::scanComplete() const { return g_scan_pending.load() ? -1 : static_cast<int>(g_scan_count); }
+
+int WiFiClass::scanNetworks(bool async)
+{
+    if (async && !ready()) return -2;
+    if (g_scan_pending) return -1;
     ensure_wifi_started();
     if (!g_mgmr_started) {
-        return -1;
+        return -2;
     }
 
     wifi_mgmr_scan_params_t params;
@@ -201,8 +231,10 @@ int WiFiClass::scanNetworks()
     g_scan_pending = true;
     if (wifi_mgmr_sta_scan(&params) < 0) {
         g_scan_pending = false;
-        return -1;
+        return -2;
     }
+
+    if (async) return -1;
 
     for (int i = 0; i < 1500 && g_scan_pending; i++) {
         vTaskDelay(pdMS_TO_TICKS(10));
@@ -296,6 +328,13 @@ uint8_t WiFiClass::encryptionType(uint8_t networkItem)
     return WIFI_AUTH_MAX;
 }
 
+uint8_t WiFiClass::channel()
+{
+    uint8_t channel = 0;
+    if (g_mgmr_started) wifi_mgmr_sta_channel_get(&channel);
+    return channel;
+}
+
 uint8_t WiFiClass::channel(uint8_t networkItem)
 {
     if (!scan_item_valid(networkItem)) {
@@ -324,7 +363,11 @@ bool WiFiClass::config(IPAddress localIP, IPAddress gateway, IPAddress subnet,
                        IPAddress dns1, IPAddress dns2)
 {
     ensure_wifi_started();
-    if (!g_mgmr_started || localIP == IPAddress((uint32_t)0)) {
+    if (localIP == IPAddress((uint32_t)0)) {
+        g_static_ip = false;
+        return g_mgmr_started;
+    }
+    if (!g_mgmr_started) {
         return false;
     }
 
@@ -340,7 +383,22 @@ bool WiFiClass::config(IPAddress localIP, IPAddress gateway, IPAddress subnet,
     g_gw = static_cast<uint32_t>(gateway);
     g_dns = static_cast<uint32_t>(dns1);
     g_static_ip = true;
-    (void)dns2;
+    auto *servers = static_cast<uint32_t *>(malloc(2 * sizeof(uint32_t)));
+    if (servers == nullptr) return false;
+    servers[0] = static_cast<uint32_t>(dns1);
+    servers[1] = static_cast<uint32_t>(dns2);
+    if (tcpip_callback([](void *arg) {
+        auto *values = static_cast<uint32_t *>(arg);
+        for (unsigned i = 0; i < 2 && i < DNS_MAX_SERVERS; i++) {
+            ip_addr_t server;
+            ip_addr_set_ip4_u32_val(server, values[i]);
+            dns_setserver(i, &server);
+        }
+        free(arg);
+    }, servers) != ERR_OK) {
+        free(servers);
+        return false;
+    }
     return true;
 }
 
@@ -371,7 +429,7 @@ bool WiFiClass::getAutoReconnect()
     return g_auto_reconnect;
 }
 
-int WiFiClass::begin(const char *ssid, const char *password)
+int WiFiClass::begin(const char *ssid, const char *password, int channel, const uint8_t *bssid)
 {
     ensure_wifi_started();
     if (!g_mgmr_started || ssid == nullptr || ssid[0] == '\0') {
@@ -390,7 +448,13 @@ int WiFiClass::begin(const char *ssid, const char *password)
         strncpy(params.key, password, MGMR_KEY_LEN);
         params.key[MGMR_KEY_LEN] = '\0';
     }
+    if (bssid != nullptr) {
+        snprintf(params.bssid_str, sizeof(params.bssid_str), "%02X:%02X:%02X:%02X:%02X:%02X",
+                 bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]);
+    }
+    if (channel >= 1 && channel <= 14) params.freq1 = channel == 14 ? 2484 : 2407 + channel * 5;
     params.use_dhcp = g_static_ip ? 0 : 1;
+    /* WPA3-SAE APs require PMF; the BL616CL SAE path needs this set to 1. */
     params.pmf_cfg = 1;
 
     if (wifi_mgmr_sta_connect(&params) < 0) {
@@ -418,11 +482,10 @@ wl_status_t WiFiClass::status()
         return WL_NO_SHIELD;
     }
     int state = wifi_mgmr_sta_state_get();
-    if (g_sta_got_ip || state == BL_WIFI_STATE_CONNECTED_IP_GOT ||
-        state == BL_WIFI_STATE_CONNECTED_IP_GETTING) {
+    if (g_sta_got_ip || state == BL_WIFI_STATE_CONNECTED_IP_GOT) {
         return WL_CONNECTED;
     }
-    if (state == BL_WIFI_STATE_CONNECTING) {
+    if (state == BL_WIFI_STATE_CONNECTING || state == BL_WIFI_STATE_CONNECTED_IP_GETTING) {
         return WL_IDLE_STATUS;
     }
     return WL_DISCONNECTED;
@@ -477,7 +540,8 @@ IPAddress WiFiClass::subnetMask()
 
 IPAddress WiFiClass::dnsIP(uint8_t dnsNo)
 {
-    (void)dnsNo;
+    if (dnsNo >= DNS_MAX_SERVERS) return IPAddress(uint32_t(0));
+    if (dnsNo != 0) return IPAddress(uint32_t(ip4_addr_get_u32(ip_2_ip4(dns_getserver(dnsNo)))));
     if (g_sta_got_ip) {
         return IPAddress(g_dns);
     }
@@ -490,7 +554,11 @@ IPAddress WiFiClass::dnsIP(uint8_t dnsNo)
 
 String WiFiClass::getHostname()
 {
-    return g_hostname;
+    char hostname[sizeof(g_hostname)];
+    uintptr_t state = bflb_irq_save();
+    memcpy(hostname, g_hostname, sizeof(hostname));
+    bflb_irq_restore(state);
+    return String(hostname);
 }
 
 bool WiFiClass::setHostname(const char *hostname)
@@ -498,7 +566,21 @@ bool WiFiClass::setHostname(const char *hostname)
     if (hostname == nullptr) {
         return false;
     }
-    g_hostname = String(hostname);
+    if (strlen(hostname) > 63) return false;
+    char *copy = static_cast<char *>(malloc(sizeof(g_hostname)));
+    if (copy == nullptr) return false;
+    memset(copy, 0, sizeof(g_hostname));
+    strcpy(copy, hostname);
+    if (tcpip_callback([](void *arg) {
+        uintptr_t state = bflb_irq_save();
+        memcpy(g_hostname, arg, sizeof(g_hostname));
+        bflb_irq_restore(state);
+        free(arg);
+        apply_hostname(nullptr);
+    }, copy) != ERR_OK) {
+        free(copy);
+        return false;
+    }
     return true;
 }
 

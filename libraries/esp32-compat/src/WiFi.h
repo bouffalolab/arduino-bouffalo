@@ -14,9 +14,11 @@ class WiFiClass : public WiFiGenericClass {
 public:
     WiFiClass() {}
 
-    int scanNetworks();
-    /* No-argument forms report the current STA connection, matching the
-     * ESP32 Arduino API used by the UNO R4 bridge AT commands. */
+    bool startAsync();
+    bool ready() const;
+    int scanNetworks(bool async = false);
+    int scanComplete() const;
+    /* No-argument forms report the current STA connection. */
     String SSID();
     int32_t RSSI();
     uint8_t *BSSID();
@@ -27,7 +29,8 @@ public:
     uint8_t *BSSID(uint8_t networkItem);
     String BSSIDstr(uint8_t networkItem);
     uint8_t encryptionType(uint8_t networkItem = 0);
-    uint8_t channel(uint8_t networkItem = 0);
+    uint8_t channel();
+    uint8_t channel(uint8_t networkItem);
 
     bool config(IPAddress localIP, IPAddress gateway, IPAddress subnet,
                 IPAddress dns1 = IPAddress((uint32_t)0),
@@ -40,7 +43,8 @@ public:
     bool setAutoReconnect(bool autoReconnect);
     bool getAutoReconnect();
 
-    int begin(const char *ssid, const char *password = nullptr);
+    int begin(const char *ssid, const char *password = nullptr,
+              int channel = 0, const uint8_t *bssid = nullptr);
     bool disconnect(bool wifiOff = false);
     wl_status_t status();
 
