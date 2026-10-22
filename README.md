@@ -10,7 +10,7 @@ compatibility library.
 > The current BL616CL target is usable for development and hardware validation,
 > but APIs, partition layouts, and board integration may still change.
 >
-> **Pinned Bouffalo SDK:** `v2.3.37`
+> **Pinned Bouffalo SDK:** `master` commit `1cd1fd5`
 
 ## Contents
 

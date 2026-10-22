@@ -22,9 +22,7 @@ extern "C" {
 #include "timers.h"
 }
 
-// Current wl80211 names these helpers without the mgmr prefix; keep the
-// Arduino compatibility layer source-compatible with the older bundle API.
-#define wifi_mgmr_sta_disconnect wifi_sta_disconnect
+// Current wl80211 headers expose the generic IP helpers directly.
 extern "C" int wifi_mgmr_sta_ip_get(uint32_t *addr, uint32_t *mask,
                                       uint32_t *gw, uint32_t *dns);
 
@@ -32,7 +30,7 @@ extern "C" void wl80211_init(void);
 extern "C" void wifi_task_create(void);
 extern "C" void ensure_rfparam(void);
 
-#define SCAN_LIST_CAPACITY 16
+#define SCAN_LIST_CAPACITY MAX_AP_SCAN
 
 /* wl80211 exposes these WIFI_STATE_* values only under CONFIG_WL80211_P2P. */
 enum {
@@ -454,8 +452,7 @@ int WiFiClass::begin(const char *ssid, const char *password, int channel, const 
     }
     if (channel >= 1 && channel <= 14) params.freq1 = channel == 14 ? 2484 : 2407 + channel * 5;
     params.use_dhcp = g_static_ip ? 0 : 1;
-    /* WPA3-SAE APs require PMF; the BL616CL SAE path needs this set to 1. */
-    params.pmf_cfg = 1;
+    params.pmf_cfg = 1;  // WL80211_MFP_OPTIONAL, required for WPA2/WPA3 transition APs.
 
     if (wifi_mgmr_sta_connect(&params) < 0) {
         return WL_CONNECT_FAILED;

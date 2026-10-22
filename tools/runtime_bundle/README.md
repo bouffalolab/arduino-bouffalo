@@ -82,7 +82,7 @@ and the rationale of each fix.
 
 ## Controller archives the SDK does not ship
 
-The pinned SDK (v2.3.37) publishes every BL616CL controller flavor the
+The pinned SDK (`master` commit `1cd1fd5`) publishes every BL616CL controller flavor the
 platform links, including `uarthci`
 (`components/wireless/bluetooth/btblecontroller/lib/`), so a stock build needs
 no external binaries.  If a chip or controller flavor is missing from the SDK
@@ -97,9 +97,8 @@ The `tools/sdk/{chip}/` bundles that predated the submodule flow were removed
 on 2026-10-03; `tools/sdk/` now contains only the `bouffalo_sdk` submodule.
 `platform.txt` had already stopped reading them.  The BL616CL `uarthci`
 controller archive that used to be carried under `tools/vendor/bouffalo_ble/`
-is gone as well: SDK v2.3.36 introduced the public archive, the pinned v2.3.37
-release ships version 1.6.212, and the runtime links the archive straight out
-of the submodule.
+is gone as well: SDK v2.3.36 introduced the public archive and the pinned
+`master` commit ships version 1.6.212 with the `wl80211` ABI fix.
 
 ## Build hygiene
 
