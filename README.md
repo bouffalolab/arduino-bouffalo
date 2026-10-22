@@ -70,12 +70,12 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.0） | experimental | Blink、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后启动 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.1） | experimental | Blink、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后启动 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；输入上下拉未测 |
 | `millis`、`micros`（从程序开始计时）、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；经 USB 上传（warm reset）后 SerialEcho 启动约 1.8 s 时 `millis` 为 1837；其余未测 |
-| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；`flush`、`end`、线路状态函数未单独测 |
+| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；主机发设备不支持的控制请求（IN、OUT 各类，各 50 次）被拒后 USB 继续正常响应；`flush`、`end`、线路状态函数未单独测 |
 | `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致；`Serial2`、其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
