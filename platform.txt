@@ -27,15 +27,21 @@ compiler.warning_flags.all=-Wall -Wextra
 
 # 底层包：配置宏、头文件路径、强制包含的 autoconfig.h
 compiler.bl.sdk="@{build.bl_libs}/flags/defines" -iprefix "{build.bl_libs}/include/" "@{build.bl_libs}/flags/includes" -include "{build.bl_libs}/include/build/generated/autoconfig.h"
-compiler.bl.arduino=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags}
+compiler.bl.arduino=-DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags}
 
-compiler.c.flags=-c "@{build.bl_libs}/flags/c_flags" -std=gnu99 -MMD {compiler.warning_flags}
-compiler.cpp.flags=-c "@{build.bl_libs}/flags/c_flags" -std=gnu++17 -fno-rtti -fno-exceptions -MMD {compiler.warning_flags}
+# 底层包的 c_flags 带 -Os -g；放在其后的优化参数覆盖它。IDE 的"为调试优化"或 --optimize-for-debug 选用 debug
+compiler.optimization_flags=-Os
+compiler.optimization_flags.release=-Os
+compiler.optimization_flags.debug=-Og -g3
+
+compiler.c.flags=-c "@{build.bl_libs}/flags/c_flags" {compiler.optimization_flags} -std=gnu99 -MMD {compiler.warning_flags}
+compiler.cpp.flags=-c "@{build.bl_libs}/flags/c_flags" {compiler.optimization_flags} -std=gnu++17 -fno-rtti -fno-exceptions -MMD {compiler.warning_flags}
 compiler.S.flags=-c "@{build.bl_libs}/flags/S_flags" -x assembler-with-cpp -MMD
 compiler.ar.flags=rcs
 compiler.c.extra_flags=
 compiler.cpp.extra_flags=
 compiler.S.extra_flags=
+compiler.ar.extra_flags=
 compiler.c.elf.extra_flags=
 # 由用到的库（library.properties 的 ldflags）填入，例如 WiFi 库带入 flags/ld_libs_wifi
 compiler.libraries.ldflags=
@@ -43,7 +49,7 @@ compiler.libraries.ldflags=
 recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} {compiler.c.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
 recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} {compiler.cpp.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
 recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {compiler.S.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
-recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} "{archive_file_path}" "{object_file}"
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
 
 # 不使用 --whole-archive：ld_libs 已整体链入只靠整库链接才生效的成员（libforce_base.a）
 recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.bl_libs}/ld/linker.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
@@ -63,6 +69,10 @@ recipe.output.save_file={build.project_name}.{build.variant}.bin
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
 recipe.size.regex=^(?:\.fw_header|\.init|\.rftlv\.tool|\.ver|\.init_code|rom_text|rom_rodata|\.last_section|tcm_text|tcm_rodata|tcm_data|ram_data|ram_nocache_data)\s+([0-9]+).*
 recipe.size.regex.data=^(?:tcm_text|tcm_rodata|tcm_data|ram_data|ram_bss|ram_noinit|ram_nocache_data|ram_nocache_noinit)\s+([0-9]+).*
+
+# 端口发现与串口监视：上传与 Serial 都经串口
+pluggable_discovery.required.0=builtin:serial-discovery
+pluggable_monitor.required.serial=builtin:serial-monitor
 
 # 上传：BLFlashCommand 把 boot2、分区表和固件分别写到各自地址。BL616CL 进入下载模式后，
 # ROM 在 USB 上提供串口，仍用 --interface=uart；波特率对 USB 串口无实际作用。

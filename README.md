@@ -31,7 +31,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 
 限制：
 
-- 上传前需手动让 BL616CL 进入下载模式（BL616CL 的 bootstrap 是 GPIO36，上电时为高电平进入 ROM 下载）；具体操作方式与 USB 下载尚未在实板上验证。
+- 上传前需手动让 BL616CL 进入下载模式（复位时 bootstrap 引脚 GPIO36 为高电平进入 ROM 下载）；尚不能从 IDE 自动进入。
 - 烧录工具只有 Linux x86_64 版本；`BLFlashCommand` 每次运行都在自身目录下写 `log/`，工具安装目录必须可写。
 - 镜像不含 SDK 原生流程追加的 DWARF CFI 表，崩溃时 `backtrace` 输出 0 帧。
 - dts 使用 SDK 开发板的工厂参数（晶振、RF），替换模组的参数尚未确认。
@@ -51,6 +51,12 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 
 ```sh
 tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-tools 目录> [要隐藏的路径...]
+```
+
+平台配置另用 Arduino 官方 [arduino-lint](https://arduino.github.io/arduino-lint/) 检查，严格模式应无错误：
+
+```sh
+arduino-lint --project-type platform --compliance strict .
 ```
 
 `tests/hw/` 是实板诊断 sketch，不在编译检查中。`UsbAlive` 直接用底层包中的 CherryUSB 枚举一个 CDC 设备（`ffff:4142`），每秒输出计数、`millis`、`delay(1000)` 实测时长、全局构造次数，并翻转 `LED_BUILTIN` 后报告写入值与读回的引脚电平；在平台提供 SerialUSB 之前，用它确认固件在运行。
