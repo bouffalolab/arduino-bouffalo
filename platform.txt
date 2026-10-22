@@ -50,7 +50,10 @@ recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}
 
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 
-# 镜像后处理（boot2、分区表、bflb_fw_post_proc）与上传尚未实现
+# 镜像后处理：bflb_fw_post_proc 原地改写 .bin 的启动头（长度、CRC、dts 中的参数），并在同一目录
+# 生成 partition.bin 与 boot2 副本，供上传使用。工具包只有 Linux 版本。
+recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.bl-flash-tools.path}/bflb_fw_post_proc/bflb_fw_post_proc-ubuntu" --chipname={build.mcu} "--imgfile={build.path}/{build.project_name}.bin" --appkeys=shared "--boot2file={build.bl_libs}/boot/{build.bl_boot2}" "--ptfile={build.bl_libs}/boot/{build.bl_partition}" "--dtsfile={build.bl_libs}/boot/{build.bl_dts}"
+
 recipe.output.tmp_file={build.project_name}.bin
 recipe.output.save_file={build.project_name}.{build.variant}.bin
 
@@ -58,3 +61,11 @@ recipe.output.save_file={build.project_name}.{build.variant}.bin
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
 recipe.size.regex=^(?:\.fw_header|\.init|\.rftlv\.tool|\.ver|\.init_code|rom_text|rom_rodata|\.last_section|tcm_text|tcm_rodata|tcm_data|ram_data|ram_nocache_data)\s+([0-9]+).*
 recipe.size.regex.data=^(?:tcm_text|tcm_rodata|tcm_data|ram_data|ram_bss|ram_noinit|ram_nocache_data|ram_nocache_noinit)\s+([0-9]+).*
+
+# 上传：BLFlashCommand 经 UART 把 boot2、分区表和固件分别写到各自地址。
+# BLFlashCommand 每次运行都在自身目录下写 log/，工具安装目录必须可写。
+tools.bl_flash.path={runtime.tools.bl-flash-tools.path}/bouffalo_flash_cube
+tools.bl_flash.cmd=BLFlashCommand-ubuntu
+tools.bl_flash.upload.params.verbose=
+tools.bl_flash.upload.params.quiet=
+tools.bl_flash.upload.pattern="{path}/{cmd}" --interface=uart --chipname={build.mcu} "--port={upload.port.address}" --baudrate={upload.speed} write_flash_files 0x0 "{build.path}/{build.bl_boot2}" {upload.bl_partition_address} "{build.path}/partition.bin" {upload.bl_fw_address} "{build.path}/{build.project_name}.bin"

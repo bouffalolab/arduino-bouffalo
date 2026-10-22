@@ -10,6 +10,18 @@ unor4wifi_bl616cl.build.mcu=bl616cl
 unor4wifi_bl616cl.build.extra_flags=
 # 芯片的预编译底层包
 unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
-# FW 分区 2 MB（包内 boot/partition_cfg_4M.toml）；RAM 为链接脚本中的 ram 区域 223 KB
+# 镜像后处理使用的底层包资源（包内 boot/）。dts 是 SDK 开发板的工厂参数，替换模组的晶振与 RF 参数未确认
+unor4wifi_bl616cl.build.bl_boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4wifi_bl616cl.build.bl_partition=partition_cfg_4M.toml
+unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
+# FW 分区 2 MB；RAM 为链接脚本中的 ram 区域 223 KB
 unor4wifi_bl616cl.upload.maximum_size=2097152
 unor4wifi_bl616cl.upload.maximum_data_size=228352
+# 经 J6 的 UART0 烧录；先拉高 GPIO36 再给 BL616CL 重新上电进入 ROM 下载模式
+unor4wifi_bl616cl.upload.tool=bl_flash
+unor4wifi_bl616cl.upload.tool.default=bl_flash
+unor4wifi_bl616cl.upload.protocol=serial
+unor4wifi_bl616cl.upload.speed=2000000
+# 烧录地址取自 partition_cfg_4M.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
+unor4wifi_bl616cl.upload.bl_partition_address=0xE000
+unor4wifi_bl616cl.upload.bl_fw_address=0x10000
