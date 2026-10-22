@@ -17,7 +17,7 @@
 | `cores/bouffalo/` | Core：入口、C++ 运行时、GPIO、时间、Serial |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚与 Serial 实例 |
-| `tests/` | 测试 sketch 与编译检查脚本 |
+| `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
 
 编译和上传依赖三个工具：底层包 `bl616cl-libs`、烧录工具包 `bl-flash-tools`（都由 `arduino-bl-lib-builder` 生成）和 Xuantie GCC V2.6.1。平台通过 `runtime.tools.bl616cl-libs.path`、`runtime.tools.bl-flash-tools.path` 和 `runtime.tools.xuantie-gcc-riscv.path` 引用它们；包索引接入前，本地测试用 `--build-property`（编译）和 `--upload-property`（上传）指定。
 
