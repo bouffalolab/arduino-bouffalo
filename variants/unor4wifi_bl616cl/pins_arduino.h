@@ -4,7 +4,7 @@
  * UNO R4 WiFi，协处理器 ESP32-S3-MINI-1 被 BL616CL 模组按焊盘替换。
  * 这里只描述 BL616CL 一侧；UNO 排针上的 D0–D13、A0–A5 属于 RA4M1，不在本 variant 中。
  *
- * 引脚号即 BL616CL 的 GPIO 号。落点取自模组引脚对照表（docs/reference/uno-r4-wifi.md
+ * 引脚号即 BL616CL 的 GPIO 号，可用的号见 variant.cpp 的引脚表。落点取自模组引脚对照表（docs/reference/uno-r4-wifi.md
  * “板内连接”）：焊盘 39/40（ESP_TXD0/RXD0）接 GPIO34/35，两版模组相同。
  * 连到 RA4M1 的 UART1、RESET、MD、SWD 属于 bridge 应用，不在本 variant 中。
  */

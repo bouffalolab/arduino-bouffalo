@@ -1,9 +1,10 @@
 /*
- * 数字 IO。引脚号即 BL616CL 的 GPIO 号，有效范围由 variant 的 NUM_DIGITAL_PINS 给出；
- * 越界的引脚号被忽略。OUTPUT_OPENDRAIN 尚未实现，pinMode 遇到它时不改动引脚。
+ * 数字 IO。引脚号经 variant 的引脚表换成 GPIO（pin_map.h）；越界或不可用的引脚号被忽略。
+ * OUTPUT_OPENDRAIN 尚未实现，pinMode 遇到它时不改动引脚。
  */
 #include "bflb_gpio.h"
 #include "pin_keep.h"
+#include "pin_map.h"
 
 #include "Arduino.h"
 
@@ -14,25 +15,26 @@ static struct bflb_device_s *gpio_dev(void)
 }
 
 /*
- * digitalWrite 写过的输出电平。bflb_gpio_init 会把输出位清零，pinMode(OUTPUT) 之后按它恢复，
+ * digitalWrite 写过的输出电平，按引脚号记录。bflb_gpio_init 会把输出位清零，pinMode(OUTPUT) 之后按它恢复，
  * 与 AVR 一致：先 digitalWrite(HIGH) 再 pinMode(OUTPUT) 得到高电平（两步之间有短暂低电平）。
  */
 static uint32_t out_high[(NUM_DIGITAL_PINS + 31) / 32];
 
-static void write_level(pin_size_t pin, bool high)
+static void write_level(int gpio, bool high)
 {
     if (high) {
-        bflb_gpio_set(gpio_dev(), pin);
+        bflb_gpio_set(gpio_dev(), gpio);
     } else {
-        bflb_gpio_reset(gpio_dev(), pin);
+        bflb_gpio_reset(gpio_dev(), gpio);
     }
 }
 
 void pinMode(pin_size_t pin, PinMode mode)
 {
     uint32_t cfg;
+    int gpio = pin_to_gpio(pin);
 
-    if (pin >= NUM_DIGITAL_PINS) {
+    if (gpio < 0) {
         return;
     }
     switch (mode) {
@@ -52,16 +54,18 @@ void pinMode(pin_size_t pin, PinMode mode)
         default:
             return;
     }
-    pin_release_keep(pin); /* 与 SDK 配置控制台引脚时相同，先解除低功耗保持 */
-    bflb_gpio_init(gpio_dev(), pin, cfg);
+    pin_release_keep(gpio); /* 与 SDK 配置控制台引脚时相同，先解除低功耗保持 */
+    bflb_gpio_init(gpio_dev(), gpio, cfg);
     if (mode == OUTPUT) {
-        write_level(pin, out_high[pin / 32] & (1u << (pin % 32)));
+        write_level(gpio, out_high[pin / 32] & (1u << (pin % 32)));
     }
 }
 
 void digitalWrite(pin_size_t pin, PinStatus status)
 {
-    if (pin >= NUM_DIGITAL_PINS) {
+    int gpio = pin_to_gpio(pin);
+
+    if (gpio < 0) {
         return;
     }
     uint32_t bit = 1u << (pin % 32);
@@ -70,13 +74,15 @@ void digitalWrite(pin_size_t pin, PinStatus status)
     } else {
         __atomic_fetch_or(&out_high[pin / 32], bit, __ATOMIC_RELAXED);
     }
-    write_level(pin, status != LOW);
+    write_level(gpio, status != LOW);
 }
 
 PinStatus digitalRead(pin_size_t pin)
 {
-    if (pin >= NUM_DIGITAL_PINS) {
+    int gpio = pin_to_gpio(pin);
+
+    if (gpio < 0) {
         return LOW;
     }
-    return bflb_gpio_read(gpio_dev(), pin) ? HIGH : LOW;
+    return bflb_gpio_read(gpio_dev(), gpio) ? HIGH : LOW;
 }

@@ -10,6 +10,7 @@
 #include "bflb_irq.h"
 #include "bflb_uart.h"
 #include "pin_keep.h"
+#include "pin_map.h"
 
 #include "Arduino.h"
 
@@ -55,14 +56,16 @@ static bool to_lhal_config(uint16_t config, struct bflb_uart_config_s *cfg)
     return true;
 }
 
-/* 参数无效（UART 序号、引脚、帧格式、分频器放不下的波特率）时不打开串口，operator bool 为 false。 */
+/* 参数无效（UART 序号、不可用的引脚、帧格式、分频器放不下的波特率）时不打开串口，operator bool 为 false。 */
 void Uart::begin(unsigned long baudrate, uint16_t config)
 {
     struct bflb_uart_config_s cfg = {};
+    int tx_gpio = pin_to_gpio(tx_pin_);
+    int rx_gpio = pin_to_gpio(rx_pin_);
 
     end();
     if (index_ >= sizeof(uart_names) / sizeof(uart_names[0]) || baudrate == 0 ||
-        tx_pin_ >= NUM_DIGITAL_PINS || rx_pin_ >= NUM_DIGITAL_PINS || !to_lhal_config(config, &cfg)) {
+        tx_gpio < 0 || rx_gpio < 0 || !to_lhal_config(config, &cfg)) {
         return;
     }
     struct bflb_device_s *dev = bflb_device_get_by_name(uart_names[index_]);
@@ -85,10 +88,10 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
     rx_head_ = rx_tail_ = 0;
     rx_overflow_ = 0;
 
-    pin_release_keep(tx_pin_);
-    pin_release_keep(rx_pin_);
-    bflb_gpio_uart_init(gpio, tx_pin_, uart_tx_funcs[index_]);
-    bflb_gpio_uart_init(gpio, rx_pin_, uart_rx_funcs[index_]);
+    pin_release_keep(tx_gpio);
+    pin_release_keep(rx_gpio);
+    bflb_gpio_uart_init(gpio, tx_gpio, uart_tx_funcs[index_]);
+    bflb_gpio_uart_init(gpio, rx_gpio, uart_rx_funcs[index_]);
 
     cfg.baudrate = baudrate;
     cfg.flow_ctrl = 0;
