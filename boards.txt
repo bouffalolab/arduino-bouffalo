@@ -1,0 +1,15 @@
+# Arduino BL 平台的板卡
+# 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/#boardstxt
+
+# UNO R4 WiFi，协处理器换成 BL616CL 模组；本板卡编译的固件运行在 BL616CL 上
+unor4wifi_bl616cl.name=UNO R4 WiFi (BL616CL coprocessor)
+unor4wifi_bl616cl.build.core=bouffalo
+unor4wifi_bl616cl.build.variant=unor4wifi_bl616cl
+unor4wifi_bl616cl.build.board=UNOR4WIFI_BL616CL
+unor4wifi_bl616cl.build.mcu=bl616cl
+unor4wifi_bl616cl.build.extra_flags=
+# 芯片的预编译底层包
+unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
+# FW 分区 2 MB（包内 boot/partition_cfg_4M.toml）；RAM 为链接脚本中的 ram 区域 223 KB
+unor4wifi_bl616cl.upload.maximum_size=2097152
+unor4wifi_bl616cl.upload.maximum_data_size=228352

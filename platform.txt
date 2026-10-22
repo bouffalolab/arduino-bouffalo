@@ -1,0 +1,60 @@
+# Arduino BL 平台
+# 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/
+#
+# 编译、链接参数与库全部来自板卡所选的预编译底层包（boards.txt 的 build.bl_libs），
+# 平台不调用 SDK 构建。包内 flags/ 下的文件以 gcc @file 方式传入；头文件路径用
+# -iprefix 加包内相对路径，包可以安装到任意位置。
+
+name=Bouffalo Lab BL boards
+version=0.1.0
+
+# 工具链：Xuantie GCC 10.2.0 V2.6.1
+compiler.path={runtime.tools.xuantie-gcc-riscv.path}/bin/
+compiler.prefix=riscv64-unknown-elf-
+compiler.c.cmd={compiler.prefix}gcc
+compiler.cpp.cmd={compiler.prefix}g++
+compiler.S.cmd={compiler.prefix}gcc
+compiler.ar.cmd={compiler.prefix}ar
+compiler.c.elf.cmd={compiler.prefix}g++
+compiler.objcopy.cmd={compiler.prefix}objcopy
+compiler.size.cmd={compiler.prefix}size
+
+compiler.warning_flags=-w
+compiler.warning_flags.none=-w
+compiler.warning_flags.default=
+compiler.warning_flags.more=-Wall
+compiler.warning_flags.all=-Wall -Wextra
+
+# 底层包：配置宏、头文件路径、强制包含的 autoconfig.h
+compiler.bl.sdk="@{build.bl_libs}/flags/defines" -iprefix "{build.bl_libs}/include/" "@{build.bl_libs}/flags/includes" -include "{build.bl_libs}/include/build/generated/autoconfig.h"
+compiler.bl.arduino=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags}
+
+compiler.c.flags=-c "@{build.bl_libs}/flags/c_flags" -std=gnu99 -MMD {compiler.warning_flags}
+compiler.cpp.flags=-c "@{build.bl_libs}/flags/c_flags" -std=gnu++17 -fno-rtti -fno-exceptions -MMD {compiler.warning_flags}
+compiler.S.flags=-c "@{build.bl_libs}/flags/S_flags" -x assembler-with-cpp -MMD
+compiler.ar.flags=rcs
+compiler.c.extra_flags=
+compiler.cpp.extra_flags=
+compiler.S.extra_flags=
+compiler.c.elf.extra_flags=
+# 由用到的库（library.properties 的 ldflags）填入，例如 WiFi 库带入 flags/ld_libs_wifi
+compiler.libraries.ldflags=
+
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} {compiler.c.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} {compiler.cpp.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {compiler.S.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} "{archive_file_path}" "{object_file}"
+
+# 不使用 --whole-archive：ld_libs 已整体链入只靠整库链接才生效的成员（libforce_base.a）
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.bl_libs}/ld/linker.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
+
+recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+
+# 镜像后处理（boot2、分区表、bflb_fw_post_proc）与上传尚未实现
+recipe.output.tmp_file={build.project_name}.bin
+recipe.output.save_file={build.project_name}.{build.variant}.bin
+
+# 闪存：从 flash 加载的段（含复制到 RAM 的代码与数据的初值）；RAM：ram 区域中的段
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+recipe.size.regex=^(?:\.fw_header|\.init|\.rftlv\.tool|\.ver|\.init_code|rom_text|rom_rodata|\.last_section|tcm_text|tcm_rodata|tcm_data|ram_data|ram_nocache_data)\s+([0-9]+).*
+recipe.size.regex.data=^(?:tcm_text|tcm_rodata|tcm_data|ram_data|ram_bss|ram_noinit|ram_nocache_data|ram_nocache_noinit)\s+([0-9]+).*
