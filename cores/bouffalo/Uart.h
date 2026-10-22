@@ -50,6 +50,13 @@ private:
     volatile uint32_t rx_overflow_ = 0;
 };
 
+/* variant 给出哪组引脚就有哪个实例；Serial 是 UART 还是 USB 由板卡决定，见 USBSerial.h */
 #if defined(PIN_SERIAL_TX)
 extern Uart Serial;
+#endif
+#if defined(PIN_SERIAL1_TX)
+extern Uart Serial1;
+#endif
+#if defined(PIN_SERIAL2_TX)
+extern Uart Serial2;
 #endif

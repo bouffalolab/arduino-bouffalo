@@ -1,5 +1,6 @@
 /*
- * 时间函数。millis/micros 读 64 位 mtimer（微秒），截断为 unsigned long，与 Arduino 一样会回绕。
+ * 时间函数。millis/micros 读 64 位 mtimer（微秒），减去程序开始时的值，截断为 unsigned long，与 Arduino 一样会回绕。
+ * 烧录后 warm reset 启动新固件时 mtimer 不清零，所以起点在 init() 中记录。
  * 调度器运行后 delay 让出 CPU，实际时长大于 ms、不超过 ms 加 1 个 tick（1 ms）；
  * 调度器启动前（如全局构造中）忙等。
  */
@@ -8,6 +9,14 @@
 #include "bflb_mtimer.h"
 
 #include "Arduino.h"
+#include "wiring_time.h"
+
+static uint64_t start_us;
+
+void wiring_time_init(void)
+{
+    start_us = bflb_mtimer_get_time_us();
+}
 
 static bool scheduler_running(void)
 {
@@ -16,12 +25,12 @@ static bool scheduler_running(void)
 
 unsigned long millis(void)
 {
-    return (unsigned long)bflb_mtimer_get_time_ms();
+    return (unsigned long)((bflb_mtimer_get_time_us() - start_us) / 1000);
 }
 
 unsigned long micros(void)
 {
-    return (unsigned long)bflb_mtimer_get_time_us();
+    return (unsigned long)(bflb_mtimer_get_time_us() - start_us);
 }
 
 void delay(unsigned long ms)

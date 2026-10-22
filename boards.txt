@@ -9,7 +9,15 @@ unor4wifi_bl616cl.build.board=UNOR4WIFI_BL616CL
 unor4wifi_bl616cl.build.mcu=bl616cl
 # CPU 主频：底层包的 system_clock_init 选 WIFIPLL 320 MHz
 unor4wifi_bl616cl.build.f_cpu=320000000L
-unor4wifi_bl616cl.build.extra_flags=
+unor4wifi_bl616cl.build.extra_flags={build.usb_flags}
+# Serial（USB CDC）报给主机的设备身份
+unor4wifi_bl616cl.build.vid=0x349B
+unor4wifi_bl616cl.build.pid=0x0011
+unor4wifi_bl616cl.build.usb_manufacturer="Bouffalolab"
+unor4wifi_bl616cl.build.usb_product="Bouffalolab BL616CL Arduino UNO WiFi R4 CMSIS-DAP"
+# 端口发现据此认出本板
+unor4wifi_bl616cl.upload_port.0.vid=0x349B
+unor4wifi_bl616cl.upload_port.0.pid=0x0011
 # 芯片的预编译底层包
 unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
 # 镜像后处理使用的底层包资源（包内 boot/）。dts 是 SDK 开发板的工厂参数，替换模组的晶振与 RF 参数未确认
@@ -19,10 +27,13 @@ unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
 # FW 分区 2 MB；RAM 为链接脚本中的 ram 区域 223 KB
 unor4wifi_bl616cl.upload.maximum_size=2097152
 unor4wifi_bl616cl.upload.maximum_data_size=228352
-# 经板上 USB 口烧录：BL616CL 进入下载模式后，ROM 在 USB 上提供串口，上传选这个串口
+# 经板上 USB 口烧录：选 Serial 的 USB 串口上传，1200 bps touch 让固件复位进入下载模式，
+# 再用 ROM 在同一 USB 口上提供的下载串口烧录；已在下载模式时直接选该串口
 unor4wifi_bl616cl.upload.tool.serial=bl_flash
 unor4wifi_bl616cl.upload.protocol=serial
 unor4wifi_bl616cl.upload.speed=2000000
+unor4wifi_bl616cl.upload.use_1200bps_touch=true
+unor4wifi_bl616cl.upload.wait_for_upload_port=true
 # 烧录地址取自 partition_cfg_4M.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
 unor4wifi_bl616cl.upload.bl_partition_address=0xE000
 unor4wifi_bl616cl.upload.bl_fw_address=0x10000

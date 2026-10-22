@@ -235,15 +235,3 @@ Uart::operator bool()
 {
     return dev_ != nullptr;
 }
-
-/* serialEvent()：sketch 定义时，每次 loop() 之后若 Serial 有数据就调用 */
-void serialEvent(void) __attribute__((weak));
-
-void arduino::serialEventRun(void)
-{
-#if defined(PIN_SERIAL_TX)
-    if (serialEvent && Serial.available()) {
-        serialEvent();
-    }
-#endif
-}

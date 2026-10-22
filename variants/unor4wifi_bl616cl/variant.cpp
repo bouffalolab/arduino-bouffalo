@@ -16,4 +16,5 @@ const uint8_t g_pin_map[] = {
 };
 static_assert(sizeof(g_pin_map) == NUM_DIGITAL_PINS, "g_pin_map must cover pins 0 to NUM_DIGITAL_PINS - 1");
 
-Uart Serial(SERIAL_UART_INDEX, PIN_SERIAL_TX, PIN_SERIAL_RX);
+Uart Serial1(0, PIN_SERIAL1_TX, PIN_SERIAL1_RX);
+Uart Serial2(1, PIN_SERIAL2_TX, PIN_SERIAL2_RX);

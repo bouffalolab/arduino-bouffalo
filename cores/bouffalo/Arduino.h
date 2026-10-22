@@ -14,6 +14,7 @@ using namespace arduino;
 #include "pins_arduino.h"
 
 #if defined(__cplusplus)
+#include "USBSerial.h"
 #include "Uart.h"
 #endif
 

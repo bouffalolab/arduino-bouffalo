@@ -2,7 +2,7 @@
 
 通用 Bouffalo Arduino 平台仓库，从 BL616CL 起步，后续逐步支持多芯片。
 
-当前阶段：最小平台骨架。Core 与第一块板卡可以用 arduino-cli 编译、生成镜像、经 USB 上传，并已在首块板上运行诊断 sketch；Serial 与 GPIO 在这块板上的落点尚未确认。
+当前阶段：最小平台骨架。Core 与第一块板卡可以用 arduino-cli 编译、生成镜像，经板上 USB 口一键上传；`Serial` 是 USB 串口，`Serial1`、`Serial2` 是硬件 UART。
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
@@ -14,25 +14,28 @@
 | --- | --- |
 | `platform.txt` | 编译、链接、镜像后处理、size、上传配方；参数和库全部来自板卡所选的预编译底层包 |
 | `boards.txt` | 板卡：`unor4wifi_bl616cl`（UNO R4 WiFi，协处理器换成 BL616CL） |
-| `cores/bouffalo/` | Core：入口、C++ 运行时、GPIO、时间、Serial |
+| `cores/bouffalo/` | Core：入口、C++ 运行时、GPIO、时间、USB 串口与 UART、软件进入下载模式 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
-| `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 Serial 实例 |
+| `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
 | `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
 
 编译和上传依赖三个工具：底层包 `bl616cl-libs`、烧录工具包 `bl-flash-tools`（都由 `arduino-bl-lib-builder` 生成）和 Xuantie GCC V2.6.1。平台通过 `runtime.tools.bl616cl-libs.path`、`runtime.tools.bl-flash-tools.path` 和 `runtime.tools.xuantie-gcc-riscv.path` 引用它们；包索引接入前，本地测试用 `--build-property`（编译）和 `--upload-property`（上传）指定。
 
 ## 镜像与上传
 
-编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin`。上传用 `BLFlashCommand` 把底层包中的 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址见 `boards.txt`）。UNO R4 WiFi 上的 BL616CL 经板上 USB 口烧录：进入下载模式后，ROM 在 USB 上提供串口，上传选这个串口：
+编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin`。上传用 `BLFlashCommand` 把底层包中的 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址见 `boards.txt`），写后校验 SHA-256，再用 warm reset 启动新固件。UNO R4 WiFi 上的 BL616CL 经板上 USB 口上传，选 sketch 运行时的 USB 串口（`349b:0011`）：
 
 ```sh
 arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <编译目录> <sketch>
 ```
 
+上传按 Arduino 的 1200 bps touch 进行：arduino-cli 以 1200 波特率打开再关闭这个串口，Core 收到后设置“复位后进入下载模式”的请求并上电复位，ROM 在 USB 上提供下载串口（`ffff:ffff`），arduino-cli 等它出现后烧录。新固件启动时 Core 清除这个请求，之后的软件复位正常启动固件。
+
+板上固件不含本平台 Core、已卡死或没有枚举 USB 时，先手动进入下载模式（复位时 bootstrap 引脚 GPIO36 为高电平），再对 ROM 的下载串口执行同样的命令；arduino-cli 等不到新端口，约 10 s 后改用这个串口。
+
 限制：
 
-- 上传前需手动让 BL616CL 进入下载模式（复位时 bootstrap 引脚 GPIO36 为高电平进入 ROM 下载）；尚不能从 IDE 自动进入。
-- 烧录工具只有 Linux x86_64 版本；`BLFlashCommand` 每次运行都在自身目录下写 `log/`，工具安装目录必须可写。
+- 烧录工具只有 Linux x86_64 版本；`BLFlashCommand` 每次运行都在自身目录下写 `log/`、`eflash_loader_cfg.ini` 和 `chips/bl616cl/img_create/`，工具安装目录必须可写。
 - 镜像不含 SDK 原生流程追加的 DWARF CFI 表，崩溃时 `backtrace` 输出 0 帧。
 - dts 使用 SDK 开发板的工厂参数（晶振、RF），替换模组的参数尚未确认。
 
@@ -59,8 +62,6 @@ tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-t
 arduino-lint --project-type platform --compliance strict .
 ```
 
-`tests/hw/` 是实板诊断 sketch，不在编译检查中。`UsbAlive` 直接用底层包中的 CherryUSB 枚举一个 CDC 设备（`ffff:4142`），每秒输出计数、`millis`、`delay(1000)` 实测时长、全局构造次数，并翻转 `LED_BUILTIN` 后报告写入值与读回的引脚电平；在平台提供 SerialUSB 之前，用它确认固件在运行。
-
 脚本把平台复制到临时 sketchbook，在 bubblewrap 中把给出的路径（SDK 检出、SDK 构建目录等）替换为空目录后，编译 `tests/sketches/` 下的每个 sketch，再用 `tests/check_map.py` 检查 map：未链入 Wi-Fi 链接组，`_malloc_r` 来自 SDK libc 移植层，`main` 来自 Core；用 `tests/check_image.py` 检查后处理产物：启动头已写入，`partition.bin` 存在。需要 `arduino-cli`、`bwrap` 和 `python3`；arduino-cli 每次会在临时目录重新下载自带工具（ctags、discovery 等），需要联网。
 
 ## 功能状态
@@ -69,17 +70,18 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.0） | experimental | Blink、SerialEcho 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho 烧录后启动 |
-| `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent` 未测 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.0） | experimental | Blink、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后启动 |
+| `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；输入上下拉未测 |
-| `millis`、`micros`、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；其余未测 |
-| `Serial`（uart0，GPIO34 发、GPIO35 收，接收缓冲 256 字节；校验只支持无、奇、偶） | experimental | 同上 | SerialEcho：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行、每秒 uptime 正常，50 字节与 4 KB 连续数据回显一致；其他波特率、校验、`flush`、`end` 未测 |
+| `millis`、`micros`（从程序开始计时）、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；经 USB 上传（warm reset）后 SerialEcho 启动约 1.8 s 时 `millis` 为 1837；其余未测 |
+| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；`flush`、`end`、线路状态函数未单独测 |
+| `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致；`Serial2`、其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
 | C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 输出被丢弃；读取返回 EOF |
 | Wire、SPI、WiFi 等平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
-| 上传（USB，手动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板经 USB 下载模式烧录成功，读回与 boot2、分区表、固件逐字节一致；每次烧录前需重新复位进入下载模式 |
+| 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
 | 包索引安装 | unimplemented | — | — |
