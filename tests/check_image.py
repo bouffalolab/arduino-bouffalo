@@ -4,7 +4,7 @@
   check_image.py <编译目录> <project_name>
 
 未经后处理的 .bin 启动头保留链接时的占位值（CRC 为 0xDEADBEEF），ROM 不会引导；
-partition.bin 与 boot2 副本由后处理生成，缺少时上传会失败。任一项不满足时退出码为 1。
+partition.bin 由后处理生成，缺少时上传会失败。任一项不满足时退出码为 1。
 """
 
 import struct
@@ -25,7 +25,6 @@ def check(build, project):
                     length == len(img) - HEADER_SIZE and crc != PLACEHOLDER_CRC))
     pt = build / "partition.bin"
     results.append(("partition.bin 魔数 BFPT", pt.is_file() and pt.read_bytes()[:4] == b"BFPT"))
-    results.append(("boot2 副本存在", any(build.glob("boot2_*.bin"))))
     return results
 
 

@@ -17,7 +17,7 @@ unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
 # FW 分区 2 MB；RAM 为链接脚本中的 ram 区域 223 KB
 unor4wifi_bl616cl.upload.maximum_size=2097152
 unor4wifi_bl616cl.upload.maximum_data_size=228352
-# 经 J6 的 UART0 烧录；先拉高 GPIO36 再给 BL616CL 重新上电进入 ROM 下载模式
+# 经板上 USB 口烧录：BL616CL 进入下载模式后，ROM 在 USB 上提供串口，上传选这个串口
 unor4wifi_bl616cl.upload.tool=bl_flash
 unor4wifi_bl616cl.upload.tool.default=bl_flash
 unor4wifi_bl616cl.upload.protocol=serial

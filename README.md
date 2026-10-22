@@ -23,7 +23,7 @@
 
 ## 镜像与上传
 
-编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin` 和 boot2 副本。上传用 `BLFlashCommand` 经 UART 把 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址见 `boards.txt`）：
+编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin`。上传用 `BLFlashCommand` 把底层包中的 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址见 `boards.txt`）。UNO R4 WiFi 上的 BL616CL 经板上 USB 口烧录：进入下载模式后，ROM 在 USB 上提供串口，上传选这个串口：
 
 ```sh
 arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <编译目录> <sketch>
@@ -31,7 +31,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 
 限制：
 
-- 板上没有自动进入下载模式的电路。上传前需拉高 BL616CL 的 GPIO36 并重新上电，烧录后放开 GPIO36 再上电运行。
+- 上传前需手动让 BL616CL 进入下载模式（BL616CL 的 bootstrap 是 GPIO36，上电时为高电平进入 ROM 下载）；具体操作方式与 USB 下载尚未在实板上验证。
 - 烧录工具只有 Linux x86_64 版本；`BLFlashCommand` 每次运行都在自身目录下写 `log/`，工具安装目录必须可写。
 - 镜像不含 SDK 原生流程追加的 DWARF CFI 表，崩溃时 `backtrace` 输出 0 帧。
 - dts 使用 SDK 开发板的工厂参数（晶振、RF），替换模组的参数尚未确认。
@@ -53,7 +53,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-tools 目录> [要隐藏的路径...]
 ```
 
-脚本把平台复制到临时 sketchbook，在 bubblewrap 中把给出的路径（SDK 检出、SDK 构建目录等）替换为空目录后，编译 `tests/sketches/` 下的每个 sketch，再用 `tests/check_map.py` 检查 map：未链入 Wi-Fi 链接组，`_malloc_r` 来自 SDK libc 移植层，`main` 来自 Core；用 `tests/check_image.py` 检查后处理产物：启动头已写入，`partition.bin` 和 boot2 副本存在。需要 `arduino-cli`、`bwrap` 和 `python3`；arduino-cli 每次会在临时目录重新下载自带工具（ctags、discovery 等），需要联网。
+脚本把平台复制到临时 sketchbook，在 bubblewrap 中把给出的路径（SDK 检出、SDK 构建目录等）替换为空目录后，编译 `tests/sketches/` 下的每个 sketch，再用 `tests/check_map.py` 检查 map：未链入 Wi-Fi 链接组，`_malloc_r` 来自 SDK libc 移植层，`main` 来自 Core；用 `tests/check_image.py` 检查后处理产物：启动头已写入，`partition.bin` 存在。需要 `arduino-cli`、`bwrap` 和 `python3`；arduino-cli 每次会在临时目录重新下载自带工具（ctags、discovery 等），需要联网。
 
 ## 功能状态
 
@@ -73,5 +73,5 @@ tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-t
 | C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 输出被丢弃；读取返回 EOF |
 | Wire、SPI、WiFi 等平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 无 |
-| 上传（UART，手动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 无 |
+| 上传（USB，手动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 无 |
 | 包索引安装 | unimplemented | — | — |
