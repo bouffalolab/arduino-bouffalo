@@ -66,7 +66,7 @@ tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-t
 | 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.0） | experimental | Blink、SerialEcho 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive 烧录后启动 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
-| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead` | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED 目测待确认；输入上下拉未测 |
+| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead` | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；输入上下拉未测 |
 | `millis`、`micros`、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；其余未测 |
 | `Serial`（uart0，GPIO34 发、GPIO35 收，接收缓冲 256 字节；校验只支持无、奇、偶） | experimental | 同上 | 无；按对照表 J6.3/J6.5 即 GPIO34/35，尚未接串口观察 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
