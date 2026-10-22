@@ -7,6 +7,9 @@
  * 引脚号即 BL616CL 的 GPIO 号。下列落点只有 UART0（GPIO34 发、GPIO35 收）与 BL616CL
  * 数据手册的固定功能一致；替换模组的焊盘是否真的接到这些 GPIO，仍待模组资料或实测确认。
  * 连到 RA4M1 的 UART1、RESET、MD、SWD 等引脚待确认后再加入。
+ *
+ * 2026-10-22 用户确认：首块板上 J6 的 TX/RX（ESP 焊盘 TXD0/RXD0）与 BL616CL 的 UART 对不上，
+ * 所以下面的 Serial 与 LED_BUILTIN 在这块板上能否从 J6、RX LED 观察到仍未确认。
  */
 
 #define NUM_DIGITAL_PINS  37 /* GPIO0–GPIO36 */
