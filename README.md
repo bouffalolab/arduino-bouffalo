@@ -53,7 +53,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-tools 目录> [要隐藏的路径...]
 ```
 
-`tests/hw/` 是实板诊断 sketch，不在编译检查中。`UsbAlive` 直接用底层包中的 CherryUSB 枚举一个 CDC 设备（`ffff:4142`），每秒输出计数、`millis`、`delay(1000)` 实测时长和全局构造次数；在平台提供 SerialUSB 之前，用它确认固件在运行。
+`tests/hw/` 是实板诊断 sketch，不在编译检查中。`UsbAlive` 直接用底层包中的 CherryUSB 枚举一个 CDC 设备（`ffff:4142`），每秒输出计数、`millis`、`delay(1000)` 实测时长、全局构造次数，并翻转 `LED_BUILTIN` 后报告写入值与读回的引脚电平；在平台提供 SerialUSB 之前，用它确认固件在运行。
 
 脚本把平台复制到临时 sketchbook，在 bubblewrap 中把给出的路径（SDK 检出、SDK 构建目录等）替换为空目录后，编译 `tests/sketches/` 下的每个 sketch，再用 `tests/check_map.py` 检查 map：未链入 Wi-Fi 链接组，`_malloc_r` 来自 SDK libc 移植层，`main` 来自 Core；用 `tests/check_image.py` 检查后处理产物：启动头已写入，`partition.bin` 存在。需要 `arduino-cli`、`bwrap` 和 `python3`；arduino-cli 每次会在临时目录重新下载自带工具（ctags、discovery 等），需要联网。
 
@@ -66,9 +66,9 @@ tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-t
 | 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.0） | experimental | Blink、SerialEcho 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive 烧录后启动 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
-| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead` | experimental | 同上 | 无；Blink 已烧录，LED 落点未确认 |
+| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead` | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED 目测待确认；输入上下拉未测 |
 | `millis`、`micros`、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；其余未测 |
-| `Serial`（uart0，GPIO34 发、GPIO35 收，接收缓冲 256 字节；校验只支持无、奇、偶） | experimental | 同上 | 无；首块板 J6 的 TX/RX 不对应 BL616CL UART，无法观察 |
+| `Serial`（uart0，GPIO34 发、GPIO35 收，接收缓冲 256 字节；校验只支持无、奇、偶） | experimental | 同上 | 无；按对照表 J6.3/J6.5 即 GPIO34/35，尚未接串口观察 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
