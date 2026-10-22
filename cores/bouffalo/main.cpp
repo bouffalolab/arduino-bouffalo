@@ -1,8 +1,9 @@
 /*
  * 固件唯一入口。初始化归属：
- * - 底层包：__start、SystemInit、时钟、flash、中断、堆（board_init()）；不初始化控制台。
+ * - 底层包：__start、SystemInit、时钟、flash、中断、堆（board_init()，由 init() 调用）；不初始化控制台。
  * - Core：C++ 全局构造、setup/loop 任务、FreeRTOS 调度器。
  * - 网络栈由 WiFi 库在首次使用时初始化，不在这里。
+ * 顺序与官方 Core 相同：init()、initVariant()，再 setup()/loop()。
  */
 #include <errno.h>
 #include <reent.h>
@@ -22,6 +23,12 @@
 #endif
 
 extern "C" void __libc_init_array(void);
+
+/* ArduinoCore-API 声明的芯片初始化；全局构造要用堆，所以在构造之前调用 */
+void init(void)
+{
+    board_init();
+}
 
 void initVariant(void) __attribute__((weak));
 void initVariant(void)
@@ -56,7 +63,7 @@ extern "C" _ssize_t _read_r(struct _reent *r, int fd, void *buf, size_t size)
 
 int main(void)
 {
-    board_init();
+    init();
     cxx_runtime_init(); /* 构造函数里的局部静态变量要用 guard 锁 */
     __libc_init_array();
     initVariant();
