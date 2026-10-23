@@ -129,6 +129,25 @@ void setup()
         addr("IP2", WiFi.localIP());
         line("PING2", WiFi.ping(WiFi.gatewayIP(), 128, 3));
     }
+
+    // 连接进行中调用 disconnect()：连接比断开的等待（3 s）更晚完成时，也不能变成已连接；之后能正常再连。
+    // 输出 "DISCMID <15 s 后状态> <期间是否出现过 WL_CONNECTED> <disconnect 耗时ms>"
+    WiFi.disconnect();
+    WiFi.setTimeout(0);
+    WiFi.begin(SECRET_SSID, SECRET_PASS);
+    unsigned long start = millis();
+    WiFi.disconnect();
+    unsigned long took = millis() - start;
+    int seen = 0;
+    while (millis() - start < 15000) {
+        seen |= WiFi.status() == WL_CONNECTED;
+        delay(100);
+    }
+    line("DISCMID", WiFi.status(), seen, took);
+    WiFi.setTimeout(10000);
+    if (connect("BEGIN3", SECRET_SSID, SECRET_PASS) == WL_CONNECTED) {
+        line("PING3", WiFi.ping(WiFi.gatewayIP(), 128, 3));
+    }
     Serial.println("DONE");
 }
 

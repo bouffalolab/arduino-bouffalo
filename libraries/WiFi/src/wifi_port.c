@@ -25,6 +25,7 @@
 #define INIT_TIMEOUT_MS    5000
 #define INIT_TASK_STACK    1024 /* 字 */
 #define INIT_TASK_PRIORITY 10
+#define PENDING_DISCONNECT_TIMEOUT_MS 3000
 
 static int init_result = 1; /* 1 未初始化，0 成功，-1 失败 */
 static volatile bool init_task_done;
@@ -33,6 +34,7 @@ static volatile enum wifi_port_state state = WIFI_PORT_IDLE;
 static volatile bool connecting;
 static volatile bool got_ip;
 static volatile bool user_disconnect;
+static volatile bool pending_disconnect; /* 断开之后连接才完成，要补发断开 */
 static volatile uint16_t last_status;
 static volatile uint16_t last_reason;
 static volatile uint32_t disconnect_events;
@@ -46,7 +48,11 @@ static void wifi_event(async_input_event_t ev, void *priv)
     (void)priv;
     switch (ev->code) {
         case CODE_WIFI_ON_GOT_IP:
-            if (ev->value) {
+            if (ev->value && user_disconnect) {
+                /* 应用断开时连接还没出结果（等待超时），之后连接才完成：不报告已连接，下一次调用接口时补发断开 */
+                pending_disconnect = true;
+                connecting = false;
+            } else if (ev->value) {
                 got_ip = true;
                 connecting = false;
                 state = WIFI_PORT_CONNECTED;
@@ -128,9 +134,30 @@ int wifi_port_init(void)
     return init_result;
 }
 
+/* 发起断开并等断开事件，最多 timeout_ms */
+static void sta_disconnect_wait(uint32_t timeout_ms)
+{
+    uint32_t events = disconnect_events;
+    wifi_mgmr_sta_disconnect();
+    for (uint32_t waited = 0; disconnect_events == events && waited < timeout_ms; waited += 10) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
+/* 事件回调中不能调用会阻塞的接口，补发的断开在这里做（在调用库的任务中） */
+static void finish_pending_disconnect(void)
+{
+    if (pending_disconnect) {
+        pending_disconnect = false;
+        sta_disconnect_wait(PENDING_DISCONNECT_TIMEOUT_MS);
+    }
+}
+
 int wifi_port_connect(const char *ssid, const char *pass)
 {
     wifi_mgmr_sta_connect_params_t p;
+
+    finish_pending_disconnect();
 
     memset(&p, 0, sizeof(p));
     strncpy(p.ssid, ssid, sizeof(p.ssid) - 1);
@@ -162,14 +189,11 @@ static void wait_until(volatile bool *flag, bool value, uint32_t timeout_ms)
 /* wifi_mgmr_sta_disconnect 只对已关联的连接有效，所以先等进行中的连接出结果 */
 void wifi_port_disconnect(uint32_t timeout_ms)
 {
+    finish_pending_disconnect();
     wait_until(&connecting, false, timeout_ms);
     user_disconnect = true;
     if (wifi_mgmr_sta_state_get()) {
-        uint32_t events = disconnect_events;
-        wifi_mgmr_sta_disconnect();
-        for (uint32_t waited = 0; disconnect_events == events && waited < timeout_ms; waited += 10) {
-            vTaskDelay(pdMS_TO_TICKS(10));
-        }
+        sta_disconnect_wait(timeout_ms);
     }
     connecting = false;
     got_ip = false;
@@ -178,6 +202,7 @@ void wifi_port_disconnect(uint32_t timeout_ms)
 
 enum wifi_port_state wifi_port_state(void)
 {
+    finish_pending_disconnect();
     return init_result == -1 ? WIFI_PORT_NO_MODULE : state;
 }
 

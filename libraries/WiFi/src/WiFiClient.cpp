@@ -2,6 +2,7 @@
 #include "WiFiClient.h"
 
 #include "net_port.h"
+#include "wifi_port.h"
 
 #define CONNECT_TIMEOUT_MS 10000
 #define SEND_TIMEOUT_MS    10000 /* 对端长时间不收时 write() 返回已发出的部分 */
@@ -10,9 +11,13 @@ WiFiClient::WiFiClient()
 {
 }
 
+/* 未连上网络时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
 int WiFiClient::connect(IPAddress ip, uint16_t port)
 {
     stop();
+    if (wifi_port_state() != WIFI_PORT_CONNECTED) {
+        return 0;
+    }
     uint32_t addr = (uint32_t)ip; /* IPAddress 按网络字节序保存 */
     sock_ = net_port_tcp_connect(addr, port, connect_timeout_ > 0 ? connect_timeout_ : CONNECT_TIMEOUT_MS);
     return sock_ >= 0 ? 1 : 0;
@@ -22,7 +27,7 @@ int WiFiClient::connect(const char *host, uint16_t port)
 {
     uint32_t addr;
 
-    if (net_port_resolve(host, &addr) != 0) {
+    if (wifi_port_state() != WIFI_PORT_CONNECTED || net_port_resolve(host, &addr) != 0) {
         stop();
         return 0;
     }
