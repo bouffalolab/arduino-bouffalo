@@ -5,7 +5,7 @@
 # 1. 平台复制到临时 sketchbook 的 hardware/bouffalolab/bl，arduino-cli 配置与数据目录都在临时目录；
 # 2. 底层包、工具链与烧录工具包经 --build-property 指定（本地包索引安装在后续步骤验证）；
 # 3. 在 bubblewrap 中把隐藏路径（SDK 检出、SDK 构建目录等）换成空目录后编译；
-# 4. 每个 sketch 用 tests/check_map.py 检查 map，用 tests/check_image.py 检查后处理产物。
+# 4. 每个 sketch 用 tests/check_map.py 检查 map（包含 WiFi.h 的 sketch 允许 Wi-Fi 组），用 tests/check_image.py 检查后处理产物。
 set -euo pipefail
 
 PKG=$(realpath -e "$1")
@@ -46,7 +46,11 @@ for sketch in "$ROOT"/tests/sketches/*/; do
         --build-path "$out" --warnings default "$sketch" >"$TMP/$name.log" 2>&1; then
         echo "PASS $name: 编译"
         grep -E '^(Sketch uses|Global variables)' "$TMP/$name.log" | sed 's/^/  /'
-        python3 -I "$ROOT/tests/check_map.py" "$PKG/manifest.json" "$out/$name.ino.map" >"$TMP/$name.map.txt" || fail=1
+        allow=()
+        if grep -q '^#include <WiFi.h>' "$sketch"/*.ino; then
+            allow=(--allow-group wifi)  # WiFi 库经 library.properties 的 ldflags 链入 Wi-Fi 组
+        fi
+        python3 -I "$ROOT/tests/check_map.py" "$PKG/manifest.json" "$out/$name.ino.map" "${allow[@]}" >"$TMP/$name.map.txt" || fail=1
         sed 's/^/  /' "$TMP/$name.map.txt"
         python3 -I "$ROOT/tests/check_image.py" "$out" "$name.ino" >"$TMP/$name.image.txt" || fail=1
         sed 's/^/  /' "$TMP/$name.image.txt"

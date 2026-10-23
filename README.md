@@ -16,6 +16,7 @@
 | `boards.txt` | 板卡：`unor4wifi_bl616cl`（UNO R4 WiFi，协处理器换成 BL616CL） |
 | `cores/bouffalo/` | Core：入口、C++ 运行时、GPIO、时间、USB 串口与 UART、软件进入下载模式 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
+| `libraries/WiFi/` | 平台 WiFi 库（接口同官方 WiFiS3），经 `library.properties` 的 `ldflags` 链入底层包的 Wi-Fi 组 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
 | `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
 
@@ -70,7 +71,7 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
@@ -85,7 +86,9 @@ arduino-lint --project-type platform --compliance strict .
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
 | C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 输出被丢弃；读取返回 EOF |
-| Wire、SPI、WiFi 等平台库 | unimplemented | — | WiFi 库未实现；底层包 0.3.5 的 Wi-Fi（wl80211）经直接调用 SDK 接口的测试 sketch 实板连接 WPA3-SAE AP、DHCP 取址、ping 网关 20/20 |
+| `WiFi` 库（接口同官方 WiFiS3）：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、DHCP；`begin`、`disconnect`、`status`（`WL_*`）、`reasonCode`（wl80211 状态码）、`localIP`、`subnetMask`、`gatewayIP`、`dnsIP`、`RSSI`、`SSID`、`BSSID`、`macAddress`、`hostByName`、`ping`；`WiFiClient`（TCP 客户端，每个连接 512 字节接收缓冲，连接超时默认 10 s）；只在一个任务中调用 | experimental | WiFiStation 通过 `compile_check.sh` | WiFiStation（AP 为 WPA3-SAE）：5.0 s 连上并取得地址，同一网络再次 `begin` 立即返回；ping 网关 20/20；DNS 解析外网域名；TCP 连网关 80 端口收发 HTTP（收到 310 字节响应）；错误密码 2.1 s 返回 `WL_CONNECT_FAILED`（状态码 2），不存在的 SSID 1.5 s 返回 `WL_NO_SSID_AVAIL`（12）；断开、重连正常。WPA2 AP、长时间连接、断线后的状态、与电脑之间的 TCP 收发未测 |
+| WiFi 的 AP、扫描、静态地址（`config`）、`WiFiServer`、`WiFiUDP`、TLS | unimplemented | — | 库中没有这些接口 |
+| Wire、SPI 等其他平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
 | 包索引安装 | experimental | builder 的 `tools/install_check.sh`：本地包索引安装到空目录、移动数据目录、只读安装、修改 Core 后都能编译，工具包与 manifest 一致 | 公网索引未做；上传要求工具目录可写（见“镜像与上传”的限制） |
