@@ -19,7 +19,7 @@
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
 | `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
 
-编译和上传依赖三个工具：底层包 `bl616cl-libs`、烧录工具包 `bl-flash-tools`（都由 `arduino-bl-lib-builder` 生成）和 Xuantie GCC V2.6.1。平台通过 `runtime.tools.bl616cl-libs.path`、`runtime.tools.bl-flash-tools.path` 和 `runtime.tools.xuantie-gcc-riscv.path` 引用它们；包索引接入前，本地测试用 `--build-property`（编译）和 `--upload-property`（上传）指定。
+编译和上传依赖三个工具：底层包 `bl616cl-libs`、烧录工具包 `bl-flash-tools`（都由 `arduino-bl-lib-builder` 生成）和 Xuantie GCC V2.6.1。平台通过 `runtime.tools.bl616cl-libs.path`、`runtime.tools.bl-flash-tools.path` 和 `runtime.tools.xuantie-gcc-riscv.path` 引用它们；不经包索引安装时，本地测试用 `--build-property`（编译）和 `--upload-property`（上传）指定。
 
 ## 镜像与上传
 
@@ -66,22 +66,24 @@ arduino-lint --project-type platform --compliance strict .
 
 ## 功能状态
 
-只有编译链接证据、没有实机运行证据的功能标为 experimental。
+只有编译链接证据、没有实机运行证据的功能标为 experimental。表中证据针对板卡 `unor4wifi_bl616cl`（UNO R4 WiFi，BL616CL 模组 1V0）与 `bl616cl-libs` 0.3.2，主机为 Linux x86_64；Windows、macOS 未测。
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.1） | experimental | Blink、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后启动 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.2） | experimental | Blink、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
-| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；输入上下拉未测 |
+| `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
+| `F_CPU`（320 MHz） | experimental | 同上 | 实测 CPU 时钟读回 320000000 Hz |
 | `millis`、`micros`（从程序开始计时）、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；经 USB 上传（warm reset）后 SerialEcho 启动约 1.8 s 时 `millis` 为 1837；其余未测 |
-| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；主机发设备不支持的控制请求（IN、OUT 各类，各 50 次）被拒后 USB 继续正常响应；`flush`、`end`、线路状态函数未单独测 |
+| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；主机发设备不支持的控制请求（IN、OUT 各类，各 50 次）被拒后 USB 继续正常响应；Linux 运行时挂起后恢复 30 轮（含挂起时还有待发数据）收发正常；压力测试：复位后枚举 50 次、端口开关 800 次全部正常；双向回显 15 分钟、约 2.3 GiB 逐字节一致（约 2.6 MiB/s），其间夹带约 3.5 万次改波特率、翻转 RTS、读描述符与状态；连续输出时主机停读 30 秒或关闭端口后恢复读取，数据格式与序号正确；`flush`、`end`、线路状态函数未单独测 |
 | `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致；`Serial2`、其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
+| C++ 标准库 `<string>`、`<memory>`、`<iostream>`、`<sstream>`、`<mutex>`、`<thread>`、`<chrono>` 等 | unimplemented | — | 编译失败：底层包的 `pthread.h`、`time.h` 缺少 libstdc++ 需要的类型与声明；`<vector>`、`<functional>`、`<map>`、`<algorithm>` 不受影响 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
 | C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 输出被丢弃；读取返回 EOF |
 | Wire、SPI、WiFi 等平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
-| 包索引安装 | unimplemented | — | — |
+| 包索引安装 | experimental | builder 的 `tools/install_check.sh`：本地包索引安装到空目录、移动数据目录、只读安装、修改 Core 后都能编译，工具包与 manifest 一致 | 公网索引未做；上传要求工具目录可写（见“镜像与上传”的限制） |
