@@ -14,7 +14,7 @@ unor4wifi_bl616cl.build.extra_flags={build.usb_flags}
 unor4wifi_bl616cl.build.vid=0x349B
 unor4wifi_bl616cl.build.pid=0x0011
 unor4wifi_bl616cl.build.usb_manufacturer="Bouffalolab"
-unor4wifi_bl616cl.build.usb_product="Bouffalolab BL616CL Arduino UNO WiFi R4 CMSIS-DAP"
+unor4wifi_bl616cl.build.usb_product="BL616CL Arduino UNO WiFi R4 CMSIS-DAP"
 # 端口发现据此认出本板
 unor4wifi_bl616cl.upload_port.0.vid=0x349B
 unor4wifi_bl616cl.upload_port.0.pid=0x0011
