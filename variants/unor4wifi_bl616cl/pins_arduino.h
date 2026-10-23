@@ -29,6 +29,13 @@
 #define PIN_SERIAL2_TX 6
 #define PIN_SERIAL2_RX 7
 
+/*
+ * 调试日志（板卡菜单 Debug log 打开时）：uart2，经 J6 的 IO41（发）、IO42（收）引出。
+ * 这里是 1V0 模组的 GPIO11、GPIO8；1V1 模组为 GPIO30、GPIO31。打开后这两个引脚归日志使用。
+ */
+#define PIN_DEBUG_LOG_TX 11
+#define PIN_DEBUG_LOG_RX 8
+
 #define SERIAL_PORT_MONITOR     Serial
 #define SERIAL_PORT_USBVIRTUAL  Serial
 #define SERIAL_PORT_HARDWARE    Serial1

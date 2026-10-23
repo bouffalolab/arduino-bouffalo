@@ -1,6 +1,8 @@
 # Arduino BL 平台的板卡
 # 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/#boardstxt
 
+menu.debuglog=Debug log
+
 # UNO R4 WiFi，协处理器换成 BL616CL 模组；本板卡编译的固件运行在 BL616CL 上
 unor4wifi_bl616cl.name=UNO R4 WiFi (BL616CL coprocessor)
 unor4wifi_bl616cl.build.core=bouffalo
@@ -9,7 +11,7 @@ unor4wifi_bl616cl.build.board=UNOR4WIFI_BL616CL
 unor4wifi_bl616cl.build.mcu=bl616cl
 # CPU 主频：底层包的 system_clock_init 选 WIFIPLL 320 MHz
 unor4wifi_bl616cl.build.f_cpu=320000000L
-unor4wifi_bl616cl.build.extra_flags={build.usb_flags}
+unor4wifi_bl616cl.build.extra_flags={build.usb_flags} {build.debug_log_flags}
 # Serial（USB CDC）报给主机的设备身份
 unor4wifi_bl616cl.build.vid=0x349B
 unor4wifi_bl616cl.build.pid=0x0011
@@ -37,3 +39,8 @@ unor4wifi_bl616cl.upload.wait_for_upload_port=true
 # 烧录地址取自 partition_cfg_4M.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
 unor4wifi_bl616cl.upload.bl_partition_address=0xE000
 unor4wifi_bl616cl.upload.bl_fw_address=0x10000
+# 调试日志：默认关，printf 与 SDK 日志被丢弃；打开时从 uart2 输出（引脚见 variant 的 PIN_DEBUG_LOG_TX/RX），发布固件保持关闭
+unor4wifi_bl616cl.menu.debuglog.off=Off
+unor4wifi_bl616cl.menu.debuglog.off.build.debug_log_flags=
+unor4wifi_bl616cl.menu.debuglog.uart2=uart2 (J6 IO41 TX, IO42 RX, 2000000 baud)
+unor4wifi_bl616cl.menu.debuglog.uart2.build.debug_log_flags=-DARDUINO_BL_DEBUG_LOG_BAUD=2000000

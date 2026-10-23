@@ -71,7 +71,7 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
@@ -82,11 +82,12 @@ arduino-lint --project-type platform --compliance strict .
 | `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致。`Serial2`：经 U4 接 RA4M1 SCI1（RA4M1 回显），115200 下收到 RA4M1 每秒心跳，50 B、2 KB、8 KB 回显一致；1 号 Uart 改接 GPIO11/GPIO8 对 USB 串口双向 8 KB 一致。其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
 | `random`、`randomSeed`（C 库 `rand`/`srand`，语义同官方 Core） | experimental | WMath 通过 `compile_check.sh` | WMath：同一种子序列相同，`random(10)`、`random(-5, 5)` 各 1000 次都在范围内，上限 0、下限不小于上限的返回值正确 |
+| 调试日志（板卡菜单 Debug log，默认关）：打开时 `printf` 与 SDK 日志从 uart2 输出（J6 IO41 发、IO42 收，1V0 模组为 GPIO11、GPIO8，2000000 波特率），这两个引脚归日志使用 | experimental | DebugLog 两种菜单值都编译通过 | DebugLog：打开时 uart2 收到连续的 `printf` 行，USB 串口与 uart0 上没有日志；关闭时 uart2 没有输出；WiFiStation 打开日志时 uart2 收到 SDK 的 rfparam、wl80211、wifi_mgmr 日志。1V1 模组的引脚未适配 |
 | C++ 标准库 `<string>`、`<memory>`、`<sstream>`、`<vector>`、`<map>`、`<functional>`、`<algorithm>`、`<ctime>`、`<chrono>` 等（`bl616cl-libs` 0.3.5 起） | experimental | CxxStd 通过 `compile_check.sh` | CxxStd：`std::string`、`std::make_shared`、`std::map` 加 `std::function`、`std::ostringstream` 拼出的行与预期一致，`time()` 每秒递增 |
 | C++ 线程设施 `<mutex>`、`<thread>`、`<condition_variable>`、`<future>` | unimplemented | 能编译 | 按 libstdc++ 源码与反汇编（未上板）：工具链的 libstdc++ 判定线程未启用，`std::mutex` 不加锁，`std::thread`、`std::call_once` 运行时失败；跨任务同步用 FreeRTOS 接口 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
-| C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 输出被丢弃；读取返回 EOF |
+| C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 调试日志关闭时输出被丢弃（打开时见上一行）；读取返回 EOF |
 | `WiFi` 库（接口同官方 WiFiS3）：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、DHCP；`begin`、`disconnect`、`status`（`WL_*`）、`reasonCode`（wl80211 状态码）、`localIP`、`subnetMask`、`gatewayIP`、`dnsIP`、`RSSI`、`SSID`、`BSSID`、`macAddress`、`hostByName`、`ping`；`WiFiClient`（TCP 客户端，每个连接 512 字节接收缓冲，连接超时默认 10 s）；只在一个任务中调用 | experimental | WiFiStation 通过 `compile_check.sh` | WiFiStation（AP 为 WPA3-SAE）：5.0 s 连上并取得地址，同一网络再次 `begin` 立即返回；ping 网关 20/20；DNS 解析外网域名；TCP 连网关 80 端口收发 HTTP（收到 310 字节响应）；错误密码 2.1 s 返回 `WL_CONNECT_FAILED`（状态码 2），不存在的 SSID 1.5 s 返回 `WL_NO_SSID_AVAIL`（12）；断开、重连正常。WPA2 AP、长时间连接、断线后的状态、与电脑之间的 TCP 收发未测 |
 | WiFi 的 AP、扫描、静态地址（`config`）、`WiFiServer`、`WiFiUDP`、TLS | unimplemented | — | 库中没有这些接口 |
 | Wire、SPI 等其他平台库 | unimplemented | — | — |

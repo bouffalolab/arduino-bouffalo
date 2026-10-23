@@ -1,6 +1,7 @@
 /*
  * 固件唯一入口。初始化归属：
  * - 底层包：__start、SystemInit、时钟、flash、中断、堆（board_init()，由 init() 调用）；不初始化控制台。
+ * - Core：板卡菜单打开调试日志时，在 init() 中把 SDK 控制台设到 uart2。
  * - Core：C++ 全局构造、setup/loop 任务、FreeRTOS 调度器；板卡启用 USB 时在 setup() 之前启动 USB 串口。
  * - 网络栈由 WiFi 库在首次使用时初始化，不在这里。
  * 顺序与官方 Core 相同：init()、initVariant()，再 setup()/loop()。
@@ -15,6 +16,7 @@
 #include "Arduino.h"
 #include "cxx_runtime.h"
 #include "isp_boot.h"
+#include "pin_map.h"
 #include "usb_cdc_port.h"
 #include "wiring_time.h"
 
@@ -36,6 +38,9 @@ void init(void)
     board_init();
     isp_boot_clear();
     wiring_time_init();
+#if defined(ARDUINO_BL_DEBUG_LOG_BAUD) && defined(PIN_DEBUG_LOG_TX)
+    board_console_init("uart2", pin_to_gpio(PIN_DEBUG_LOG_TX), pin_to_gpio(PIN_DEBUG_LOG_RX), ARDUINO_BL_DEBUG_LOG_BAUD);
+#endif
 }
 
 void initVariant(void) __attribute__((weak));
@@ -83,7 +88,7 @@ static void loop_task(void *arg)
 }
 
 /*
- * Core 不开 SDK 控制台：printf 的输出被 SDK 丢弃；SDK 的 _read_r（弱定义）会用空的控制台句柄读 UART，
+ * 调试日志关闭时 Core 不开 SDK 控制台，printf 的输出被 SDK 丢弃。SDK 的 _read_r（弱定义）会用控制台句柄读 UART，
  * 所以 stdin 在这里明确失败，getchar/scanf 返回 EOF。放在 main.cpp 以保证随入口一起链入。
  */
 extern "C" _ssize_t _read_r(struct _reent *r, int fd, void *buf, size_t size)
