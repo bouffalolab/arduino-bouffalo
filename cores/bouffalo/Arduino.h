@@ -13,6 +13,15 @@ using namespace arduino;
 
 #include "pins_arduino.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* BL616CL 软件复位进入 ROM 下载模式（UART 与 USB），不等待未发出的串口数据，不返回；实现在 isp_boot.c */
+void resetToBootloader(void) __attribute__((noreturn));
+#ifdef __cplusplus
+}
+#endif
+
 #if defined(__cplusplus)
 #include "USBSerial.h"
 #include "Uart.h"

@@ -34,3 +34,9 @@ void isp_boot_reboot(void)
     for (;;) {
     }
 }
+
+/* Arduino.h 中声明的公开接口 */
+void resetToBootloader(void)
+{
+    isp_boot_reboot();
+}

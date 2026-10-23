@@ -1,4 +1,4 @@
-/* Serial（USB CDC）的 Arduino 接口；USB 设备、缓冲与 1200 bps touch 在 usb_cdc_port.c */
+/* Serial（USB CDC）的 Arduino 接口；USB 设备、缓冲、1200 bps touch 与线路变化回调在 usb_cdc_port.c */
 #include "Arduino.h"
 
 #if defined(USB_VID)
@@ -107,6 +107,16 @@ bool USBSerial::dtr(void)
 bool USBSerial::rts(void)
 {
     return line_state().rts;
+}
+
+void USBSerial::setTouchReset(bool enable)
+{
+    usb_cdc_port_set_touch_reset(enable);
+}
+
+bool USBSerial::onLineChange(void (*callback)(void))
+{
+    return usb_cdc_port_on_line_change(callback);
 }
 
 #endif /* USB_VID */

@@ -2,7 +2,7 @@
 
 /*
  * USB CDC ACM 设备（Serial 的底层）。板卡在 boards.txt 中给出 USB_VID、USB_PID、USB_MANUFACTURER、
- * USB_PRODUCT 时启用；描述符、收发缓冲和 1200 bps touch 都在 usb_cdc_port.c。
+ * USB_PRODUCT 时启用；描述符、收发缓冲、1200 bps touch 和线路变化回调都在 usb_cdc_port.c。
  */
 #include <stdbool.h>
 #include <stddef.h>
@@ -28,6 +28,14 @@ void usb_cdc_port_init(void);
 /* 设备已配置且主机置 DTR（端口已打开） */
 bool usb_cdc_port_connected(void);
 void usb_cdc_port_get_line(struct usb_cdc_port_line *line);
+
+/* 是否响应 1200 bps touch，默认是；关闭时取消已安排、尚未执行的 touch */
+void usb_cdc_port_set_touch_reset(bool enable);
+/*
+ * 每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求之后，在线路任务中调用一次 callback；NULL 取消。
+ * 注册之前的请求不补调。首次注册时创建线路任务，失败返回 false。
+ */
+bool usb_cdc_port_on_line_change(void (*callback)(void));
 
 size_t usb_cdc_port_rx_count(void);
 int usb_cdc_port_peek(void);

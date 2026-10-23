@@ -7,7 +7,9 @@
  * 接收：只在缓冲空余至少一个包时挂接收，否则让主机等待（NAK），读走数据后再挂，不丢数据。
  * 发送：每次传输最多一个包；传输以整包结束且没有后续数据时补零长度包。
  * 1200 bps touch：主机以 1200 波特率打开再关闭端口（DTR 变无效）后，延时让控制请求完成，再复位进下载模式；
- * 延时期间波特率改变或 DTR 重新有效则取消。
+ * 延时期间波特率改变或 DTR 重新有效则取消。应用可以关闭 touch。
+ * 线路变化回调：中断里对每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求通知一次线路任务，由它调用应用的回调，
+ * 回调可以阻塞（如 delay()）；不用定时器任务，因为它优先级最高且 Wi-Fi 协议栈也用它。
  */
 #if defined(USB_VID)
 
@@ -44,6 +46,8 @@
 #define TX_TIMEOUT_MS     100
 #define TOUCH_BAUD        1200
 #define TOUCH_DELAY_MS    100
+#define LINE_TASK_STACK_SIZE 4096 /* 字节 */
+#define LINE_TASK_PRIORITY   2    /* 高于 loop 任务（1），请求到达后尽快调用回调 */
 
 #define USB_CONFIG_SIZE (9 + CDC_ACM_DESCRIPTOR_LEN)
 
@@ -119,6 +123,9 @@ static volatile bool line_dtr;
 static volatile bool line_rts;
 static struct cdc_line_coding line_coding = { 115200, 0, 0, 8 };
 static volatile bool touch_pending;
+static volatile bool touch_enabled = true;
+static TaskHandle_t volatile line_task;
+static void (*volatile line_callback)(void);
 
 static size_t rx_free(void)
 {
@@ -224,7 +231,7 @@ static void touch_reboot(void *arg, uint32_t unused)
 /* 在中断中调用 */
 static void touch_check(void)
 {
-    bool touch = line_coding.dwDTERate == TOUCH_BAUD && !line_dtr;
+    bool touch = touch_enabled && line_coding.dwDTERate == TOUCH_BAUD && !line_dtr;
     if (!touch) {
         touch_pending = false;
         return;
@@ -237,12 +244,25 @@ static void touch_check(void)
     }
 }
 
+/* 在中断中调用，每个线路请求一次 */
+static void line_notify(void)
+{
+    TaskHandle_t task = line_task;
+    if (task == NULL) {
+        return;
+    }
+    BaseType_t woken = pdFALSE;
+    vTaskNotifyGiveFromISR(task, &woken);
+    portYIELD_FROM_ISR(woken);
+}
+
 void usbd_cdc_acm_set_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_coding *coding)
 {
     (void)busid;
     (void)intf;
     memcpy(&line_coding, coding, sizeof(line_coding));
     touch_check();
+    line_notify();
 }
 
 void usbd_cdc_acm_get_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_coding *coding)
@@ -265,6 +285,7 @@ void usbd_cdc_acm_set_rts(uint8_t busid, uint8_t intf, bool rts)
     (void)busid;
     (void)intf;
     line_rts = rts;
+    line_notify(); /* CherryUSB 对每个 SET_CONTROL_LINE_STATE 先调 set_dtr 再调 set_rts，在这里通知一次 */
 }
 
 static struct usbd_endpoint out_ep = { .ep_addr = CDC_OUT_EP, .ep_cb = bulk_out };
@@ -286,6 +307,42 @@ void usb_cdc_port_init(void)
     usbd_add_endpoint(0, &out_ep);
     usbd_add_endpoint(0, &in_ep);
     usbd_initialize(0, 0, event_handler);
+}
+
+void usb_cdc_port_set_touch_reset(bool enable)
+{
+    touch_enabled = enable;
+    if (!enable) {
+        touch_pending = false; /* 取消已安排、尚未执行的 touch */
+    }
+}
+
+static void line_task_main(void *arg)
+{
+    (void)arg;
+    for (;;) {
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY); /* 每次取一个请求 */
+        void (*callback)(void) = line_callback;
+        if (callback != NULL) {
+            callback();
+        }
+    }
+}
+
+bool usb_cdc_port_on_line_change(void (*callback)(void))
+{
+    line_callback = callback;
+    if (callback == NULL || line_task != NULL) {
+        return true;
+    }
+    TaskHandle_t task;
+    if (xTaskCreate(line_task_main, "usb_line", LINE_TASK_STACK_SIZE / sizeof(StackType_t), NULL,
+                    LINE_TASK_PRIORITY, &task) != pdPASS) {
+        line_callback = NULL;
+        return false;
+    }
+    line_task = task;
+    return true;
 }
 
 bool usb_cdc_port_connected(void)

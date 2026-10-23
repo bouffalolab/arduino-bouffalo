@@ -29,7 +29,7 @@
 arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <编译目录> <sketch>
 ```
 
-上传按 Arduino 的 1200 bps touch 进行：arduino-cli 以 1200 波特率打开再关闭这个串口，Core 收到后设置“复位后进入下载模式”的请求并上电复位，ROM 在 USB 上提供下载串口（`ffff:ffff`），arduino-cli 等它出现后烧录。新固件启动时 Core 清除这个请求，之后的软件复位正常启动固件。
+上传按 Arduino 的 1200 bps touch 进行：arduino-cli 以 1200 波特率打开再关闭这个串口，Core 收到后设置“复位后进入下载模式”的请求并上电复位，ROM 在 USB 上提供下载串口（`ffff:ffff`），arduino-cli 等它出现后烧录。新固件启动时 Core 清除这个请求，之后的软件复位正常启动固件。sketch 调用 `Serial.setTouchReset(false)` 后不再响应 touch（应用自己处理 1200 波特率时用，如 bridge），这时由 sketch 调用 `resetToBootloader()` 或按下文手动进入下载模式后上传。
 
 板上固件不含本平台 Core、已卡死或没有枚举 USB 时，先手动进入下载模式（复位时 bootstrap 引脚 GPIO36 为高电平），再对 ROM 的下载串口执行同样的命令；arduino-cli 等不到新端口，约 10 s 后改用这个串口。
 
@@ -70,13 +70,14 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
 | `F_CPU`（320 MHz） | experimental | 同上 | 实测 CPU 时钟读回 320000000 Hz |
 | `millis`、`micros`（从程序开始计时）、`delay`、`delayMicroseconds`、`yield` | experimental | 同上 | UsbAlive：`delay(1000)` 实测 1001 ms，`millis` 连续；经 USB 上传（warm reset）后 SerialEcho 启动约 1.8 s 时 `millis` 为 1837；其余未测 |
-| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；主机发设备不支持的控制请求（IN、OUT 各类，各 50 次）被拒后 USB 继续正常响应；Linux 运行时挂起后恢复 30 轮（含挂起时还有待发数据）收发正常；压力测试：复位后枚举 50 次、端口开关 800 次全部正常；双向回显 15 分钟、约 2.3 GiB 逐字节一致（约 2.6 MiB/s），其间夹带约 3.5 万次改波特率、翻转 RTS、读描述符与状态；连续输出时主机停读 30 秒或关闭端口后恢复读取，数据格式与序号正确；`flush`、`end`、线路状态函数未单独测 |
+| `Serial`（USB CDC，`349b:0011`，序列号为芯片 ID；收发缓冲各 1 KB；主机未打开端口时写入被丢弃；`baud()`、`dtr()`、`rts()` 等读主机设置的线路状态） | experimental | 同上 | SerialEcho：描述符字符串正确；启动行、每秒 uptime 正常，50 字节与 64 KB 连续数据回显一致；以 115200 关闭再打开不复位；主机发设备不支持的控制请求（IN、OUT 各类，各 50 次）被拒后 USB 继续正常响应；Linux 运行时挂起后恢复 30 轮（含挂起时还有待发数据）收发正常；压力测试：复位后枚举 50 次、端口开关 800 次全部正常；双向回显 15 分钟、约 2.3 GiB 逐字节一致（约 2.6 MiB/s），其间夹带约 3.5 万次改波特率、翻转 RTS、读描述符与状态；连续输出时主机停读 30 秒或关闭端口后恢复读取，数据格式与序号正确；`baud()`、`dtr()`、`rts()` 见下一行；`flush`、`end` 未单独测 |
+| `Serial.setTouchReset(bool)`（默认开）、`Serial.onLineChange(回调)`、`resetToBootloader()`（平台自有接口，非官方 API）：主机每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求之后在 Core 的线路任务（栈 4 KB，优先级 2）中调用一次回调，回调可以 `delay()`，回调运行期间到达的请求在它返回后逐个补调、读到最新值，注册前的请求不补调；`resetToBootloader()` 软件复位进 ROM 下载模式 | experimental | UsbLineHook 通过 `compile_check.sh` | UsbLineHook：打开端口、改波特率、单独翻转 RTS 或 DTR 各得 1 次回调且读数与主机设置一致，连续 5 次改波特率得 5 次回调、最后一次读数正确，回调内 `delay(20)` 实测 20–21 ms；关闭 touch 后 1200 bps touch 不复位（设备未重新枚举）；`resetToBootloader()` 与重新打开 touch 后的 1200 bps touch 都进入 ROM 下载口；Linux 枚举时发的 SET_LINE_CODING(9600) 也会触发一次回调 |
 | `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致；`Serial2`、其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
 | C++ 标准库 `<string>`、`<memory>`、`<sstream>`、`<vector>`、`<map>`、`<functional>`、`<algorithm>`、`<ctime>`、`<chrono>` 等（`bl616cl-libs` 0.3.5 起） | experimental | CxxStd 通过 `compile_check.sh` | CxxStd：`std::string`、`std::make_shared`、`std::map` 加 `std::function`、`std::ostringstream` 拼出的行与预期一致，`time()` 每秒递增 |
