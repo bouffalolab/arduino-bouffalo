@@ -71,7 +71,7 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
@@ -81,6 +81,7 @@ arduino-lint --project-type platform --compliance strict .
 | `Serial.setTouchReset(bool)`（默认开）、`Serial.onLineChange(回调)`、`resetToBootloader()`（平台自有接口，非官方 API）：主机每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求之后在 Core 的线路任务（栈 4 KB，优先级 2）中调用一次回调，回调可以 `delay()`，回调运行期间到达的请求在它返回后逐个补调、读到最新值，注册前的请求不补调；`resetToBootloader()` 软件复位进 ROM 下载模式 | experimental | UsbLineHook 通过 `compile_check.sh` | UsbLineHook：打开端口、改波特率、单独翻转 RTS 或 DTR 各得 1 次回调且读数与主机设置一致，连续 5 次改波特率得 5 次回调、最后一次读数正确，回调内 `delay(20)` 实测 20–21 ms；关闭 touch 后 1200 bps touch 不复位（设备未重新枚举）；`resetToBootloader()` 与重新打开 touch 后的 1200 bps touch 都进入 ROM 下载口；Linux 枚举时发的 SET_LINE_CODING(9600) 也会触发一次回调 |
 | `Serial1`（uart0，GPIO34 发、GPIO35 收，J6.3/J6.5）、`Serial2`（uart1，GPIO6 发、GPIO7 收）；接收缓冲 256 字节；校验只支持无、奇、偶 | experimental | 同上 | Serial1Echo：J6.3/J6.5 接 USB 串口，115200 8N1 下启动行正常，50 字节与 4 KB 连续数据回显一致。`Serial2`：经 U4 接 RA4M1 SCI1（RA4M1 回显），115200 下收到 RA4M1 每秒心跳，50 B、2 KB、8 KB 回显一致；1 号 Uart 改接 GPIO11/GPIO8 对 USB 串口双向 8 KB 一致。其他波特率、校验、`flush`、`end` 未测 |
 | `String`、`Print`、`Stream` 等 ArduinoCore-API 通用类 | experimental | 同上 | 无 |
+| `random`、`randomSeed`（C 库 `rand`/`srand`，语义同官方 Core） | experimental | WMath 通过 `compile_check.sh` | WMath：同一种子序列相同，`random(10)`、`random(-5, 5)` 各 1000 次都在范围内，上限 0、下限不小于上限的返回值正确 |
 | C++ 标准库 `<string>`、`<memory>`、`<sstream>`、`<vector>`、`<map>`、`<functional>`、`<algorithm>`、`<ctime>`、`<chrono>` 等（`bl616cl-libs` 0.3.5 起） | experimental | CxxStd 通过 `compile_check.sh` | CxxStd：`std::string`、`std::make_shared`、`std::map` 加 `std::function`、`std::ostringstream` 拼出的行与预期一致，`time()` 每秒递增 |
 | C++ 线程设施 `<mutex>`、`<thread>`、`<condition_variable>`、`<future>` | unimplemented | 能编译 | 按 libstdc++ 源码与反汇编（未上板）：工具链的 libstdc++ 判定线程未启用，`std::mutex` 不加锁，`std::thread`、`std::call_once` 运行时失败；跨任务同步用 FreeRTOS 接口 |
 | `OUTPUT_OPENDRAIN` | unimplemented | — | `pinMode` 不改动引脚 |
