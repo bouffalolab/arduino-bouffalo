@@ -11,6 +11,7 @@
 #include "bflb_uart.h"
 #include "pin_keep.h"
 #include "pin_map.h"
+#include "uart_reset.h"
 
 #include "Arduino.h"
 
@@ -88,6 +89,9 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
     rx_head_ = rx_tail_ = 0;
     rx_overflow_ = 0;
 
+    /* warm reset（如烧录工具结束时）不复位外设：ROM 下载模式期间收着数据时，接收器会停在忙状态
+       （UART_STATUS 的 URX_BUS_BUSY 为 1），bflb_uart_init 不清除它，之后收不到数据。先复位控制器 */
+    uart_reset(index_);
     pin_release_keep(tx_gpio);
     pin_release_keep(rx_gpio);
     bflb_gpio_uart_init(gpio, tx_gpio, uart_tx_funcs[index_]);
