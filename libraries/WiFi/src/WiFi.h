@@ -3,8 +3,8 @@
 /*
  * Wi-Fi station 与 TCP 客户端，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
  * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）、
- * WiFiSSLClient（TLS 1.2）。
- * 未实现：AP、静态地址（config）、UDP 组播。
+ * WiFiSSLClient（TLS 1.2）、静态地址（config、setDNS）。
+ * 未实现：AP、UDP 组播。
  * 所有调用在同一个任务中进行（通常是 setup/loop）。
  */
 #include "Arduino.h"
@@ -86,6 +86,20 @@ public:
     IPAddress subnetMask();
     IPAddress gatewayIP();
     IPAddress dnsIP(int n = 0);
+    /*
+     * 静态地址，取值同 WiFiS3：省略的网关为 local_ip 的 x.y.z.1，掩码为 255.255.255.0，只给地址时 DNS 也用该网关。
+     * 之后每次连接都不启动 DHCP；已连接时立即生效。local_ip 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）
+     */
+    void config(IPAddress local_ip);
+    void config(IPAddress local_ip, IPAddress dns_server);
+    void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway);
+    void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
+    /*
+     * 设 DNS 服务器（0.0.0.0 的不改）。静态地址时更新所用的 DNS；用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3
+     * 经上游固件的结果）；用 DHCP 且未连接时不起作用，DNS 由 DHCP 给出
+     */
+    void setDNS(IPAddress dns_server1);
+    void setDNS(IPAddress dns_server1, IPAddress dns_server2);
     const char *SSID();
     uint8_t *BSSID(uint8_t *bssid);
     int32_t RSSI();

@@ -15,7 +15,7 @@ extern "C" {
 enum wifi_port_state {
     WIFI_PORT_IDLE = 0,          /* 未连接过，或正在连接 */
     WIFI_PORT_NO_SSID = 1,       /* 扫描不到该 SSID */
-    WIFI_PORT_CONNECTED = 3,     /* 已关联且 DHCP 取得地址 */
+    WIFI_PORT_CONNECTED = 3,     /* 已关联且取得地址（DHCP 或静态） */
     WIFI_PORT_FAILED = 4,        /* 连接失败（认证、关联或 DHCP） */
     WIFI_PORT_LOST = 5,          /* 连上后断开 */
     WIFI_PORT_DISCONNECTED = 6,  /* 应用调用了断开 */
@@ -44,7 +44,7 @@ struct wifi_port_ap {
 
 /* 首次调用时初始化 Wi-Fi 与网络栈（顺序同 SDK examples/wifi/macsw_bare）；成功返回 0，之后再调用直接返回 */
 int wifi_port_init(void);
-/* 发起连接（PMF 可选、DHCP），不等待结果；pass 为 NULL 或空串表示开放网络。成功发起返回 0 */
+/* 发起连接（PMF 可选，地址按 wifi_port_ip_config），不等待结果；pass 为 NULL 或空串表示开放网络。成功发起返回 0 */
 int wifi_port_connect(const char *ssid, const char *pass);
 /* 断开并等待断开事件，最多 timeout_ms */
 void wifi_port_disconnect(uint32_t timeout_ms);
@@ -55,6 +55,16 @@ bool wifi_port_connecting(void);
 void wifi_port_last_error(uint16_t *status, uint16_t *reason);
 
 void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw);
+/*
+ * 地址配置，之后每次连接都按它进行，已连接时立即生效。ip 为 0 时用 DHCP（DNS 由 DHCP 给出，dns1、dns2 不用）；
+ * 否则用静态地址、不启动 DHCP，dns1、dns2 为 0 时不改对应的 DNS 服务器
+ */
+void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2);
+/*
+ * 设 DNS 服务器，为 0 的不改。静态地址时更新所用的 DNS；用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3 的
+ * setDNS 经上游固件的结果）；用 DHCP 且未连接时不起作用（DHCP 给出 DNS）
+ */
+void wifi_port_set_dns(uint32_t dns1, uint32_t dns2);
 uint32_t wifi_port_dns(int index);
 /* 未连接时返回 0 */
 int32_t wifi_port_rssi(void);

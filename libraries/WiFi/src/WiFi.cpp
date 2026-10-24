@@ -119,6 +119,37 @@ IPAddress WiFiClass::dnsIP(int n)
     return IPAddress(wifi_port_dns(n));
 }
 
+void WiFiClass::config(IPAddress local_ip)
+{
+    IPAddress gw(local_ip[0], local_ip[1], local_ip[2], 1);
+    config(local_ip, gw, gw);
+}
+
+void WiFiClass::config(IPAddress local_ip, IPAddress dns_server)
+{
+    config(local_ip, dns_server, IPAddress(local_ip[0], local_ip[1], local_ip[2], 1));
+}
+
+void WiFiClass::config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway)
+{
+    config(local_ip, dns_server, gateway, IPAddress(255, 255, 255, 0));
+}
+
+void WiFiClass::config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet)
+{
+    wifi_port_ip_config((uint32_t)local_ip, (uint32_t)subnet, (uint32_t)gateway, (uint32_t)dns_server, 0);
+}
+
+void WiFiClass::setDNS(IPAddress dns_server1)
+{
+    setDNS(dns_server1, IPAddress(0, 0, 0, 0));
+}
+
+void WiFiClass::setDNS(IPAddress dns_server1, IPAddress dns_server2)
+{
+    wifi_port_set_dns((uint32_t)dns_server1, (uint32_t)dns_server2);
+}
+
 const char *WiFiClass::SSID()
 {
     return wifi_port_state() == WIFI_PORT_CONNECTED ? ssid_ : "";
