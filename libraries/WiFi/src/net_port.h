@@ -28,6 +28,13 @@ int net_port_recv(int sock, uint8_t *buf, size_t len, bool peek);
 bool net_port_connected(int sock);
 int net_port_peer(int sock, uint32_t *addr, uint16_t *port);
 void net_port_close(int sock);
+/* sock 这个号被 net_port_close 关闭过的次数。保存的号与当时的计数不同，说明那条连接已关闭（号可能已给了新连接） */
+uint32_t net_port_close_count(int sock);
+
+/* 在本地端口 port 上监听 TCP；成功返回监听 socket，失败返回 -1 */
+int net_port_tcp_listen(uint16_t port);
+/* 不等待地取一个已建立的新连接；返回其 socket（同 net_port_tcp_connect 的 socket），没有时返回 -1 */
+int net_port_tcp_accept(int listen_sock);
 
 /* UDP socket，绑定本地地址 addr（0 为任意地址）与端口 port（0 由协议栈分配）；成功返回 socket，失败返回 -1 */
 int net_port_udp_open(uint32_t addr, uint16_t port);

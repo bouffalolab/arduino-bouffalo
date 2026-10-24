@@ -16,6 +16,7 @@
 #include "net_port.h"
 
 #define RX_CACHE_SIZE 512
+#define LISTEN_BACKLOG 4
 #define PING_ID       0xB1B1
 #define PING_DATA     32
 
@@ -28,6 +29,7 @@ struct rx_cache {
 
 /* lwIP 的 socket 号为 LWIP_SOCKET_OFFSET 起的 MEMP_NUM_NETCONN 个 */
 static struct rx_cache caches[MEMP_NUM_NETCONN];
+static uint32_t close_counts[MEMP_NUM_NETCONN];
 
 static struct rx_cache *cache_of(int sock)
 {
@@ -197,8 +199,15 @@ void net_port_close(int sock)
     if (c != NULL) {
         c->start = c->len = 0;
         c->eof = false;
+        close_counts[c - caches]++;
     }
     lwip_close(sock);
+}
+
+uint32_t net_port_close_count(int sock)
+{
+    struct rx_cache *c = cache_of(sock);
+    return c != NULL ? close_counts[c - caches] : 0;
 }
 
 static void to_sockaddr(struct sockaddr_in *sa, uint32_t addr, uint16_t port)
@@ -208,6 +217,42 @@ static void to_sockaddr(struct sockaddr_in *sa, uint32_t addr, uint16_t port)
     sa->sin_family = AF_INET;
     sa->sin_port = lwip_htons(port);
     sa->sin_addr.s_addr = addr;
+}
+
+int net_port_tcp_listen(uint16_t port)
+{
+    struct sockaddr_in sa;
+    int one = 1;
+    int sock = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    if (sock < 0) {
+        return -1;
+    }
+    lwip_setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* end() 之后能在同一端口马上再 begin */
+    to_sockaddr(&sa, 0, port);
+    if (lwip_bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0 || lwip_listen(sock, LISTEN_BACKLOG) != 0) {
+        lwip_close(sock);
+        return -1;
+    }
+    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) | O_NONBLOCK); /* accept 不等待 */
+    return sock;
+}
+
+int net_port_tcp_accept(int listen_sock)
+{
+    int sock = lwip_accept(listen_sock, NULL, NULL);
+    struct rx_cache *c = cache_of(sock);
+
+    if (sock < 0 || c == NULL) {
+        if (sock >= 0) {
+            lwip_close(sock);
+        }
+        return -1;
+    }
+    c->start = c->len = 0;
+    c->eof = false;
+    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) & ~O_NONBLOCK); /* 同 tcp_connect：阻塞，收发各自带超时 */
+    return sock;
 }
 
 int net_port_udp_open(uint32_t addr, uint16_t port)

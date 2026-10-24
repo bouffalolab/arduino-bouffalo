@@ -32,6 +32,9 @@ public:
     void setConnectionTimeout(int timeout);
 
 private:
+    friend class WiFiServer;
+    explicit WiFiClient(int sock); /* WiFiServer 交出已接入的连接 */
+
     int sock_ = -1;
     int connect_timeout_ = 0;
 };
