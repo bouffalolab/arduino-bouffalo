@@ -31,10 +31,11 @@ public:
     /* 连接超时（毫秒），0 为默认 10 s；同 WiFiS3 */
     void setConnectionTimeout(int timeout);
 
+protected:
+    int sock_ = -1; /* WiFiSSLClient 的 TLS 连接也以 socket 号标识 */
+    int connect_timeout_ = 0;
+
 private:
     friend class WiFiServer;
     explicit WiFiClient(int sock); /* WiFiServer 交出已接入的连接 */
-
-    int sock_ = -1;
-    int connect_timeout_ = 0;
 };

@@ -2,13 +2,15 @@
 
 /*
  * Wi-Fi station 与 TCP 客户端，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
- * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）。
- * 未实现：AP、静态地址（config）、UDP 组播、TLS。
+ * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）、
+ * WiFiSSLClient（TLS 1.2）。
+ * 未实现：AP、静态地址（config）、UDP 组播。
  * 所有调用在同一个任务中进行（通常是 setup/loop）。
  */
 #include "Arduino.h"
 
 #include "WiFiClient.h"
+#include "WiFiSSLClient.h"
 #include "WiFiServer.h"
 #include "WiFiUdp.h"
 
