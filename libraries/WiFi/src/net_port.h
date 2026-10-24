@@ -29,6 +29,13 @@ bool net_port_connected(int sock);
 int net_port_peer(int sock, uint32_t *addr, uint16_t *port);
 void net_port_close(int sock);
 
+/* UDP socket，绑定本地地址 addr（0 为任意地址）与端口 port（0 由协议栈分配）；成功返回 socket，失败返回 -1 */
+int net_port_udp_open(uint32_t addr, uint16_t port);
+/* 发一个数据报；成功返回 0 */
+int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len);
+/* 不等待地取下一个数据报，超出 len 的部分丢弃；返回写入 buf 的字节数，没有数据报（或收到空数据报）返回 0，出错返回 -1 */
+int net_port_udp_recv(int sock, uint8_t *buf, size_t len, uint32_t *addr, uint16_t *port);
+
 /* ICMP echo 一次，最多等 timeout_ms；返回往返毫秒数，超时返回 -2，出错返回 -4（取值同 WL_PING_*） */
 int net_port_ping(uint32_t addr, uint8_t ttl, uint16_t seq, uint32_t timeout_ms);
 

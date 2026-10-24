@@ -201,6 +201,53 @@ void net_port_close(int sock)
     lwip_close(sock);
 }
 
+static void to_sockaddr(struct sockaddr_in *sa, uint32_t addr, uint16_t port)
+{
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_len = sizeof(*sa);
+    sa->sin_family = AF_INET;
+    sa->sin_port = lwip_htons(port);
+    sa->sin_addr.s_addr = addr;
+}
+
+int net_port_udp_open(uint32_t addr, uint16_t port)
+{
+    struct sockaddr_in sa;
+    int sock = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (sock < 0) {
+        return -1;
+    }
+    to_sockaddr(&sa, addr, port);
+    if (lwip_bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
+        lwip_close(sock);
+        return -1;
+    }
+    return sock;
+}
+
+int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len)
+{
+    struct sockaddr_in to;
+
+    to_sockaddr(&to, addr, port);
+    return lwip_sendto(sock, buf, len, 0, (struct sockaddr *)&to, sizeof(to)) == (int)len ? 0 : -1;
+}
+
+int net_port_udp_recv(int sock, uint8_t *buf, size_t len, uint32_t *addr, uint16_t *port)
+{
+    struct sockaddr_in from;
+    socklen_t fromlen = sizeof(from);
+
+    int n = lwip_recvfrom(sock, buf, len, MSG_DONTWAIT, (struct sockaddr *)&from, &fromlen);
+    if (n < 0) {
+        return errno == EWOULDBLOCK || errno == EAGAIN ? 0 : -1;
+    }
+    *addr = from.sin_addr.s_addr;
+    *port = lwip_ntohs(from.sin_port);
+    return n;
+}
+
 int net_port_ping(uint32_t addr, uint8_t ttl, uint16_t seq, uint32_t timeout_ms)
 {
     uint8_t pkt[sizeof(struct icmp_echo_hdr) + PING_DATA];
