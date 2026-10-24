@@ -71,7 +71,7 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
+| 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.3.5） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiScan、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |
 | `pinMode`（`INPUT`、`OUTPUT`、`INPUT_PULLUP`、`INPUT_PULLDOWN`）、`digitalWrite`、`digitalRead`；引脚号即 GPIO 号，GPIO4/5（32 kHz 晶振）、32/33（USB）、36（bootstrap）不可用，调用被忽略 | experimental | 同上 | UsbAlive：`OUTPUT` 下 GPIO34 写 0/1 读回 0/1；RX LED（DL2）每秒亮灭一次（目测）；Blink：经 J6.3 观测 GPIO34 每 1.00 s 拉低一次，连续 10 次；对 USB 引脚 32/33 调用 `pinMode`、`digitalWrite` 后 USB 照常输出；输入上下拉未测 |
@@ -89,7 +89,8 @@ arduino-lint --project-type platform --compliance strict .
 | `analogRead`、`analogWrite`、`analogReference`、`attachInterrupt`、`detachInterrupt`、`tone`、`noTone`、`pulseIn`、`pulseInLong`、`shiftIn`、`shiftOut`、`interrupts`、`noInterrupts` | unimplemented | — | 使用时编译或链接失败 |
 | C 标准输入输出（`printf`、`getchar`、`scanf` 等） | unimplemented | — | 调试日志关闭时输出被丢弃（打开时见上一行）；读取返回 EOF |
 | `WiFi` 库（接口同官方 WiFiS3）：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、DHCP；`begin`、`disconnect`、`status`（`WL_*`）、`reasonCode`（wl80211 状态码）、`localIP`、`subnetMask`、`gatewayIP`、`dnsIP`、`RSSI`、`SSID`、`BSSID`、`macAddress`、`hostByName`、`ping`；`WiFiClient`（TCP 客户端，每个连接 512 字节接收缓冲，`available()` 最多报 512，连接超时默认 10 s；未连上网络时 `connect` 直接失败；对象复制后共享同一连接，用完调用 `stop()`）；只在一个任务中调用 | experimental | WiFiStation 通过 `compile_check.sh` | WiFiStation（AP 为 WPA3-SAE、WPA2 各一次）：4.5–5.0 s 连上并取得地址，同一网络再次 `begin` 立即返回；ping 网关 20/20；DNS 解析外网域名；TCP 连网关 80 端口收发 HTTP；错误密码返回 `WL_CONNECT_FAILED`（状态码 2，WPA3 2.1 s、WPA2 4.8 s），不存在的 SSID 1.5 s 返回 `WL_NO_SSID_AVAIL`（12）；断开、重连正常；连接进行中调用 `disconnect()` 后保持断开、之后能再连（本次连接在断开等待的 3 s 内完成，连接晚于 3 s 完成的分支未实测）。与局域网电脑的 TCP 收发 1 B–4 KB 两端一致（经 bridge 的 AT 通道）。开放网络、长时间连接、AP 断电后的状态、多连接并发未测；Wi-Fi 断开后已有连接的 `connected()` 要等 TCP 重传超时才变 0 |
-| WiFi 的 AP、扫描、静态地址（`config`）、`WiFiServer`、`WiFiUDP`、TLS | unimplemented | — | 库中没有这些接口 |
+| `WiFi.scanNetworks()` 与 `SSID(i)`、`RSSI(i)`、`encryptionType(i)`、`BSSID(i, bssid)`、`channel(i)`：主动扫描全部信道并等待完成，未调用 `begin` 时也可用；按 RSSI 从强到弱保留前 10 个（同 WiFiS3、WiFiNINA），隐藏网络也占位、SSID 为空串；加密方式取 WiFiS3 的 `wl_enc_type`，WPA/WPA2 混合为 `ENC_TYPE_WPA2`、WPA2/WPA3 混合为 `ENC_TYPE_WPA3`；失败返回 -1 | experimental | WiFiScan 通过 `compile_check.sh` | WiFiScan：未连接时连续 3 次各扫到 10 个网络、1.5–1.7 s，字段有效、RSSI 有序，每次都有测试 AP（WPA2）；经 bridge 由 WiFiS3 在未连接与已连接时扫描（见 bridge README），已连接时列出当前 AP，扫描后连接保持、ping 网关成功。底层不区分 WEP 与开放网络（WEP 报告为开放，代码阅读所得，未实测）；扫描与 TCP 收发并发未测 |
+| WiFi 的 AP、静态地址（`config`）、`WiFiServer`、`WiFiUDP`、TLS | unimplemented | — | 库中没有这些接口 |
 | Wire、SPI 等其他平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |

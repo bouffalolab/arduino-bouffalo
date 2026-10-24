@@ -1,10 +1,11 @@
 /*
  * wl80211/wifi_mgmr 封装，接口说明见 wifi_port.h。
  * 状态由 wifi_mgmr 的 EV_WIFI 事件驱动：CONNECTED（4-way 完成）、GOT_IP（DHCP 取得地址，DHCP 15 s 超时由
- * wifi_mgmr 自行断开）、DISCONNECT（连接失败与连上后断开都是它，原因要在事件到达时读状态码）。
+ * wifi_mgmr 自行断开）、DISCONNECT（连接失败与连上后断开都是它，原因要在事件到达时读状态码）；扫描完成是 SCAN_DONE。
  * 状态码 12（WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL）表示扫描不到该 SSID。
  * 本文件不含 lwip/sockets.h：它与 wl80211.h 都定义 struct iovec（socket 在 net_port.c）。
  */
+#include <stdlib.h>
 #include <string.h>
 
 #include "FreeRTOS.h"
@@ -38,6 +39,7 @@ static volatile bool pending_disconnect; /* 断开之后连接才完成，要补
 static volatile uint16_t last_status;
 static volatile uint16_t last_reason;
 static volatile uint32_t disconnect_events;
+static volatile uint32_t scan_done_events;
 
 /*
  * EV_WIFI 回调。async_event_loop 在定时器任务中、调度器挂起时运行（同 macsw_bare），这里只更新状态，
@@ -74,6 +76,9 @@ static void wifi_event(async_input_event_t ev, void *priv)
             connecting = false;
             got_ip = false;
             disconnect_events = disconnect_events + 1;
+            break;
+        case CODE_WIFI_ON_SCAN_DONE:
+            scan_done_events = scan_done_events + 1;
             break;
         default:
             break;
@@ -256,4 +261,59 @@ int wifi_port_bssid(uint8_t bssid[6])
 {
     memset(bssid, 0, 6);
     return state == WIFI_PORT_CONNECTED ? wifi_mgmr_sta_get_bssid(bssid) : -1;
+}
+
+/* WiFiS3 对上游各加密方式的归类：WPA/WPA2 混合算 WPA2，WPA2/WPA3 混合算 WPA3。
+   wifi_mgmr 不看 privacy 位，WEP 网络会归为开放 */
+static uint8_t to_enc(uint8_t auth)
+{
+    switch (auth) {
+        case WIFI_EVENT_BEACON_IND_AUTH_OPEN: return WIFI_PORT_ENC_NONE;
+        case WIFI_EVENT_BEACON_IND_AUTH_WEP: return WIFI_PORT_ENC_WEP;
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA_PSK: return WIFI_PORT_ENC_WPA;
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA2_PSK:
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA_WPA2_PSK: return WIFI_PORT_ENC_WPA2;
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA_ENT: return WIFI_PORT_ENC_WPA2_ENTERPRISE;
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA3_SAE:
+        case WIFI_EVENT_BEACON_IND_AUTH_WPA2_PSK_WPA3_SAE: return WIFI_PORT_ENC_WPA3;
+        default: return WIFI_PORT_ENC_UNKNOWN;
+    }
+}
+
+int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
+{
+    wifi_mgmr_scan_params_t p;
+
+    if (max <= 0) {
+        return -1;
+    }
+    finish_pending_disconnect();
+    wait_until(&connecting, false, timeout_ms);
+    wifi_mgmr_sta_scanlist_free(); /* 结果表跨次累积，同 SDK 的 wifi_scan 命令先清空 */
+    memset(&p, 0, sizeof(p));
+    uint32_t events = scan_done_events;
+    if (wifi_mgmr_sta_scan(&p) != 0) {
+        return -1;
+    }
+    for (uint32_t waited = 0; scan_done_events == events; waited += 10) {
+        if (waited >= timeout_ms) {
+            return -1;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    wifi_mgmr_scan_item_t *items = malloc(max * sizeof(*items));
+    if (items == NULL) {
+        return -1;
+    }
+    int n = (int)wifi_mgmr_sta_scanlist_dump(items, max); /* 按 RSSI 从强到弱 */
+    for (int i = 0; i < n; i++) {
+        memcpy(aps[i].ssid, items[i].ssid, 32);
+        aps[i].ssid[32] = '\0';
+        memcpy(aps[i].bssid, items[i].bssid, 6);
+        aps[i].rssi = items[i].rssi;
+        aps[i].channel = items[i].channel;
+        aps[i].enc = to_enc(items[i].auth);
+    }
+    free(items);
+    return n;
 }

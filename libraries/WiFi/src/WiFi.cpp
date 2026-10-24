@@ -1,4 +1,5 @@
 /* WiFiClass：Wi-Fi 在 wifi_port.c，DNS、ping 在 net_port.c */
+#include <stdlib.h>
 #include <string.h>
 
 #include "Arduino.h"
@@ -10,6 +11,7 @@
 #define DISCONNECT_TIMEOUT_MS 3000
 #define PING_TIMEOUT_MS       1000
 #define PING_INTERVAL_MS      1000
+#define SCAN_TIMEOUT_MS       8000 /* 实测全信道扫描 1.5–1.7 s；bridge 要在 WiFiS3 的 10 s 内应答 */
 
 WiFiClass WiFi;
 
@@ -190,4 +192,54 @@ int WiFiClass::ping(const char *host, uint8_t ttl, uint8_t count)
 void WiFiClass::setTimeout(unsigned long timeout)
 {
     timeout_ = timeout;
+}
+
+int8_t WiFiClass::scanNetworks()
+{
+    ap_count_ = 0;
+    if (wifi_port_init() != 0) {
+        return -1;
+    }
+    if (aps_ == nullptr) {
+        aps_ = static_cast<struct wifi_port_ap *>(malloc(WL_NETWORKS_LIST_MAXNUM * sizeof(*aps_)));
+        if (aps_ == nullptr) {
+            return -1;
+        }
+    }
+    int n = wifi_port_scan(aps_, WL_NETWORKS_LIST_MAXNUM, SCAN_TIMEOUT_MS);
+    if (n < 0) {
+        return -1;
+    }
+    ap_count_ = (uint8_t)n;
+    return (int8_t)n;
+}
+
+const char *WiFiClass::SSID(uint8_t networkItem)
+{
+    return networkItem < ap_count_ ? aps_[networkItem].ssid : "";
+}
+
+int32_t WiFiClass::RSSI(uint8_t networkItem)
+{
+    return networkItem < ap_count_ ? aps_[networkItem].rssi : 0;
+}
+
+uint8_t WiFiClass::encryptionType(uint8_t networkItem)
+{
+    return networkItem < ap_count_ ? aps_[networkItem].enc : 0;
+}
+
+uint8_t *WiFiClass::BSSID(uint8_t networkItem, uint8_t *bssid)
+{
+    if (networkItem < ap_count_) {
+        memcpy(bssid, aps_[networkItem].bssid, WL_MAC_ADDR_LENGTH);
+    } else {
+        memset(bssid, 0, WL_MAC_ADDR_LENGTH);
+    }
+    return bssid;
+}
+
+uint8_t WiFiClass::channel(uint8_t networkItem)
+{
+    return networkItem < ap_count_ ? aps_[networkItem].channel : 0;
 }
