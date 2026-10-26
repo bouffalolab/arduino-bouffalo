@@ -21,12 +21,12 @@ void WiFiServer::begin()
     begin(port_);
 }
 
-/* 未连上网络时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
+/* 未连上网络且 AP 未运行时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
 void WiFiServer::begin(uint16_t port)
 {
     end();
     port_ = port;
-    if (wifi_port_state() == WIFI_PORT_CONNECTED) {
+    if (wifi_port_net_up()) {
         sock_ = net_port_tcp_listen(port);
     }
 }

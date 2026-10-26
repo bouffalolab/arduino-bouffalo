@@ -3,6 +3,7 @@
  * 状态由 wifi_mgmr 的 EV_WIFI 事件驱动：CONNECTED（4-way 完成）、GOT_IP（DHCP 取得地址，DHCP 15 s 超时由
  * wifi_mgmr 自行断开）、DISCONNECT（连接失败与连上后断开都是它，原因要在事件到达时读状态码）；扫描完成是 SCAN_DONE。
  * 状态码 12（WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL）表示扫描不到该 SSID。
+ * AP：AP_STARTED 之后 wifi_mgmr 另起任务设地址、启动 DHCP 服务；AP_STA_ADD、AP_STA_DEL 增减已连上的设备数。
  * 静态地址：连接时不启动 DHCP；wifi_mgmr 在 CONNECTED 事件之后另起任务把 STA 链路 up，之后由调用库的任务设置地址并
  * 置为已连接（地址与上次相同时 lwIP 不报 GOT_IP）。静态地址时 GOT_IP 0 只来自本文件停止 DHCP，不作断开处理。
  * 本文件不含 lwip/sockets.h：它与 wl80211.h 都定义 struct iovec（socket 在 net_port.c）。
@@ -30,10 +31,13 @@
 #define INIT_TASK_STACK    1024 /* 字 */
 #define INIT_TASK_PRIORITY 10
 #define PENDING_DISCONNECT_TIMEOUT_MS 3000
+#define AP_POOL_SIZE       10 /* DHCP 地址池大小，同上游 ESP32 固件 */
 
-/* wl80211 lwip.c 的 netif 表（底层包 libwl80211_plat，SDK 头文件未声明）：静态地址要看 STA 链路并停止、启动 DHCP */
+/* wl80211 lwip.c 的 netif 表（底层包 libwl80211_plat，SDK 头文件未声明）：静态地址要看 STA 链路并停止、启动 DHCP；
+   AP 的地址从它读 */
 extern struct netif vif2netif[WL80211_VIF_MAX];
 #define STA_NETIF (&vif2netif[WL80211_VIF_STA])
+#define AP_NETIF  (&vif2netif[WL80211_VIF_AP])
 
 static int init_result = 1; /* 1 未初始化，0 成功，-1 失败 */
 static volatile bool init_task_done;
@@ -49,6 +53,10 @@ static volatile uint32_t disconnect_events;
 static volatile uint32_t scan_done_events;
 static uint32_t cfg_ip, cfg_mask, cfg_gw, cfg_dns[2]; /* cfg_ip 为 0 时用 DHCP */
 static volatile bool static_pending; /* 已关联，等链路 up 后设置静态地址 */
+static volatile bool ap_up;            /* AP_STARTED 之后、AP_STOPPED 之前 */
+static volatile bool ap_failed;
+static volatile uint8_t ap_stations;
+static volatile uint32_t ap_stopped_events;
 
 /*
  * EV_WIFI 回调。async_event_loop 在定时器任务中、调度器挂起时运行（同 macsw_bare），这里只更新状态，
@@ -97,6 +105,22 @@ static void wifi_event(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_SCAN_DONE:
             scan_done_events = scan_done_events + 1;
+            break;
+        case CODE_WIFI_ON_AP_STARTED:
+            ap_up = true;
+            break;
+        case CODE_WIFI_ON_AP_STOPPED:
+            ap_up = false;
+            ap_stations = 0;
+            ap_stopped_events = ap_stopped_events + 1;
+            break;
+        case CODE_WIFI_ON_AP_STA_ADD:
+            ap_stations = ap_stations + 1;
+            break;
+        case CODE_WIFI_ON_AP_STA_DEL:
+            if (ap_stations > 0) {
+                ap_stations = ap_stations - 1;
+            }
             break;
         default:
             break;
@@ -258,7 +282,19 @@ enum wifi_port_state wifi_port_state(void)
 {
     finish_pending_disconnect();
     finish_static_ip();
-    return init_result == -1 ? WIFI_PORT_NO_MODULE : state;
+    if (init_result == -1) {
+        return WIFI_PORT_NO_MODULE;
+    }
+    if (ap_up) {
+        return ap_stations > 0 ? WIFI_PORT_AP_CONNECTED : WIFI_PORT_AP_LISTENING;
+    }
+    return ap_failed ? WIFI_PORT_AP_FAILED : state;
+}
+
+bool wifi_port_net_up(void)
+{
+    enum wifi_port_state s = wifi_port_state();
+    return s == WIFI_PORT_CONNECTED || s == WIFI_PORT_AP_LISTENING || s == WIFI_PORT_AP_CONNECTED;
 }
 
 bool wifi_port_connecting(void)
@@ -279,7 +315,10 @@ void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
     uint32_t dns;
 
     *ip = *mask = *gw = 0;
-    if (state == WIFI_PORT_CONNECTED) {
+    if (ap_up) {
+        *ip = *gw = ip4_addr_get_u32(netif_ip4_addr(AP_NETIF));
+        *mask = ip4_addr_get_u32(netif_ip4_netmask(AP_NETIF));
+    } else if (state == WIFI_PORT_CONNECTED) {
         wifi_mgmr_sta_ip_get(ip, mask, gw, &dns);
     }
 }
@@ -347,6 +386,10 @@ int32_t wifi_port_rssi(void)
 
 int wifi_port_mac(uint8_t mac[6])
 {
+    if (ap_up) {
+        memcpy(mac, AP_NETIF->hwaddr, 6);
+        return 0;
+    }
     return wifi_mgmr_sta_mac_get(mac);
 }
 
@@ -409,4 +452,65 @@ int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
     }
     free(items);
     return n;
+}
+
+/* 发起停止并等停止事件；AP 尚未报告启动时不等 */
+static void ap_stop_wait(uint32_t timeout_ms)
+{
+    uint32_t events = ap_stopped_events;
+    wifi_mgmr_ap_stop();
+    for (uint32_t waited = 0; ap_up && ap_stopped_events == events && waited < timeout_ms; waited += 10) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    ap_up = false;
+    ap_stations = 0;
+}
+
+int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, uint32_t timeout_ms)
+{
+    wifi_mgmr_ap_params_t p;
+    ip4_addr_t ip, zero;
+
+    if (ap_up) {
+        ap_stop_wait(timeout_ms);
+    }
+    ip4_addr_set_u32(&ip, cfg_ip != 0 ? cfg_ip : PP_HTONL(LWIP_MAKEU32(192, 168, 4, 1)));
+    uint8_t host = ip4_addr4(&ip);
+    memset(&p, 0, sizeof(p));
+    p.ssid = (char *)ssid;
+    p.key = pass != NULL && pass[0] != '\0' ? (char *)pass : NULL; /* 有密码时 wl80211 用 WPA2-PSK */
+    p.channel = channel;
+    p.use_ipcfg = true;
+    p.use_dhcpd = true;
+    /* dhcpd_start 只在给出地址池时保留已设的地址（否则改为 192.168.169.1），池在地址的最后一段前后 */
+    p.start = host <= 254 - AP_POOL_SIZE ? host + 1 : host - AP_POOL_SIZE;
+    p.limit = AP_POOL_SIZE;
+    p.ap_ipaddr = ip4_addr_get_u32(&ip);
+    p.ap_mask = cfg_ip != 0 ? cfg_mask : PP_HTONL(LWIP_MAKEU32(255, 255, 255, 0));
+    ap_failed = false;
+    ap_stations = 0;
+    /* 清掉上次的地址，下面才能按地址判断这次的设置已完成 */
+    ip4_addr_set_zero(&zero);
+    netifapi_netif_set_addr(AP_NETIF, &zero, &zero, &zero);
+    if (wifi_mgmr_ap_start(&p) != 0) {
+        ap_failed = true;
+        return -1;
+    }
+    for (uint32_t waited = 0; waited < timeout_ms; waited += 10) {
+        if (ap_up && netif_is_link_up(AP_NETIF) && ip4_addr_cmp(netif_ip4_addr(AP_NETIF), &ip)) {
+            return 0;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    ap_stop_wait(timeout_ms);
+    ap_failed = true;
+    return -1;
+}
+
+void wifi_port_ap_stop(uint32_t timeout_ms)
+{
+    ap_failed = false;
+    if (ap_up) {
+        ap_stop_wait(timeout_ms);
+    }
 }

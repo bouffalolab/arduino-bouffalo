@@ -15,11 +15,11 @@ WiFiClient::WiFiClient(int sock) : sock_(sock)
 {
 }
 
-/* 未连上网络时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
+/* 未连上网络且 AP 未运行时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
 int WiFiClient::connect(IPAddress ip, uint16_t port)
 {
     stop();
-    if (wifi_port_state() != WIFI_PORT_CONNECTED) {
+    if (!wifi_port_net_up()) {
         return 0;
     }
     uint32_t addr = (uint32_t)ip; /* IPAddress 按网络字节序保存 */

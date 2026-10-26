@@ -12,6 +12,7 @@
 #define PING_TIMEOUT_MS       1000
 #define PING_INTERVAL_MS      1000
 #define SCAN_TIMEOUT_MS       8000 /* 实测全信道扫描 1.5–1.7 s；bridge 要在 WiFiS3 的 10 s 内应答 */
+#define AP_TIMEOUT_MS         3000 /* 启动、停止 AP 各自最多等待；bridge 同样要在 10 s 内应答 */
 
 WiFiClass WiFi;
 
@@ -40,6 +41,7 @@ int WiFiClass::begin(const char *ssid, const char *passphrase)
     if (len == 0 || len > WL_SSID_MAX_LENGTH || !valid_passphrase(passphrase)) {
         return WL_CONNECT_FAILED;
     }
+    wifi_port_ap_stop(AP_TIMEOUT_MS); /* 同一时间只用 STA 或 AP 之一 */
     const char *pass = passphrase != nullptr ? passphrase : "";
     bool same = strcmp(ssid, ssid_) == 0 && strcmp(pass, pass_) == 0;
     /* 同一网络已连上或正在连接时不重新发起，常见写法是循环调用 begin() 直到连上 */
@@ -60,6 +62,36 @@ int WiFiClass::begin(const char *ssid, const char *passphrase)
     return status();
 }
 
+uint8_t WiFiClass::beginAP(const char *ssid)
+{
+    return beginAP(ssid, "", 1);
+}
+
+uint8_t WiFiClass::beginAP(const char *ssid, uint8_t channel)
+{
+    return beginAP(ssid, "", channel);
+}
+
+uint8_t WiFiClass::beginAP(const char *ssid, const char *passphrase)
+{
+    return beginAP(ssid, passphrase, 1);
+}
+
+uint8_t WiFiClass::beginAP(const char *ssid, const char *passphrase, uint8_t channel)
+{
+    size_t len = ssid != nullptr ? strlen(ssid) : 0;
+    size_t pass_len = passphrase != nullptr ? strlen(passphrase) : 0;
+    if (wifi_port_init() != 0 || len == 0 || len > WL_SSID_MAX_LENGTH ||
+        (pass_len != 0 && (pass_len < 8 || pass_len > WL_WPA_KEY_MAX_LENGTH)) || channel < 1 || channel > 13) {
+        return WL_AP_FAILED;
+    }
+    if (wifi_port_state() == WIFI_PORT_CONNECTED || wifi_port_connecting()) {
+        wifi_port_disconnect(DISCONNECT_TIMEOUT_MS);
+    }
+    strcpy(ap_ssid_, ssid);
+    return wifi_port_ap_start(ap_ssid_, passphrase, channel, AP_TIMEOUT_MS) == 0 ? WL_AP_LISTENING : WL_AP_FAILED;
+}
+
 int WiFiClass::disconnect(void)
 {
     if (wifi_port_init() == 0) {
@@ -71,6 +103,7 @@ int WiFiClass::disconnect(void)
 void WiFiClass::end(void)
 {
     disconnect();
+    wifi_port_ap_stop(AP_TIMEOUT_MS);
 }
 
 uint8_t WiFiClass::status()
@@ -150,8 +183,17 @@ void WiFiClass::setDNS(IPAddress dns_server1, IPAddress dns_server2)
     wifi_port_set_dns((uint32_t)dns_server1, (uint32_t)dns_server2);
 }
 
+static bool ap_running()
+{
+    uint8_t st = wifi_port_state();
+    return st == WL_AP_LISTENING || st == WL_AP_CONNECTED;
+}
+
 const char *WiFiClass::SSID()
 {
+    if (ap_running()) {
+        return ap_ssid_;
+    }
     return wifi_port_state() == WIFI_PORT_CONNECTED ? ssid_ : "";
 }
 
@@ -164,6 +206,16 @@ uint8_t *WiFiClass::BSSID(uint8_t *bssid)
 int32_t WiFiClass::RSSI()
 {
     return wifi_port_rssi();
+}
+
+IPAddress WiFiClass::softAPIP()
+{
+    return ap_running() ? localIP() : IPAddress(0, 0, 0, 0);
+}
+
+const char *WiFiClass::softAPSSID()
+{
+    return ap_running() ? ap_ssid_ : "";
 }
 
 int WiFiClass::hostByName(const char *aHostname, IPAddress &aResult)
@@ -184,7 +236,7 @@ int WiFiClass::ping(IPAddress ip, uint8_t ttl, uint8_t count)
     int ok = 0;
     int err = WL_PING_TIMEOUT;
 
-    if (wifi_port_state() != WIFI_PORT_CONNECTED) {
+    if (!wifi_port_net_up()) {
         return WL_PING_ERROR;
     }
     for (uint8_t i = 0; i < count; i++) {

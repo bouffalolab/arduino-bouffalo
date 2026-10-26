@@ -12,11 +12,11 @@ WiFiUDP::~WiFiUDP()
     stop();
 }
 
-/* 未连上网络时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
+/* 未连上网络且 AP 未运行时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
 bool WiFiUDP::open(uint32_t addr, uint16_t port)
 {
     stop();
-    if (wifi_port_state() != WIFI_PORT_CONNECTED) {
+    if (!wifi_port_net_up()) {
         return false;
     }
     rx_ = static_cast<uint8_t *>(malloc(2 * WIFI_UDP_BUFFER_SIZE));

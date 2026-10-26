@@ -1,10 +1,12 @@
 #pragma once
 
 /*
- * Wi-Fi station 与 TCP 客户端，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
+ * Wi-Fi station、AP 与 TCP/UDP/TLS，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
  * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）、
- * WiFiSSLClient（TLS 1.2）、静态地址（config、setDNS）。
- * 未实现：AP、UDP 组播。
+ * WiFiSSLClient（TLS 1.2）、静态地址（config、setDNS）、AP（beginAP：WPA2 或开放网络，带 DHCP 服务）。
+ * 同一时间只用 STA 或 AP 之一。AP 运行时 WiFiServer、WiFiUDP 已在实板上验证（电脑连入后 TCP、UDP 收发）；
+ * WiFiClient::connect、ping(IPAddress) 在 AP 下未在实板上验证。
+ * 未实现：STA 与 AP 同时运行、隐藏 SSID、UDP 组播。
  * 所有调用在同一个任务中进行（通常是 setup/loop）。
  */
 #include "Arduino.h"
@@ -73,14 +75,26 @@ public:
      */
     int begin(const char *ssid);
     int begin(const char *ssid, const char *passphrase);
-    /* 断开；正在连接时先等它出结果。返回 WL_DISCONNECTED */
+    /*
+     * 启动 AP 并等 DHCP 服务启动（最多约 3 s），返回 WL_AP_LISTENING 或 WL_AP_FAILED。STA 已连接或正在连接时先断开。
+     * 省略的信道为 1（同 WiFiS3），可用 1–13；密码 8–63 个字符时为 WPA2，省略或空串为开放网络。
+     * 地址为 config() 给出的地址与掩码（AP 运行时调用 config，下次 beginAP 时生效），未调用时为 192.168.4.1/24；
+     * DHCP 地址池为同一网段中紧邻该地址的 10 个
+     */
+    uint8_t beginAP(const char *ssid);
+    uint8_t beginAP(const char *ssid, uint8_t channel);
+    uint8_t beginAP(const char *ssid, const char *passphrase);
+    uint8_t beginAP(const char *ssid, const char *passphrase, uint8_t channel);
+    /* 断开 STA（AP 照常运行，同 WiFiS3）；正在连接时先等它出结果。返回 WL_DISCONNECTED */
     int disconnect(void);
-    /* 同 disconnect()；Wi-Fi 协议栈初始化后不释放 */
+    /* 断开 STA 并停止 AP；Wi-Fi 协议栈初始化后不释放 */
     void end(void);
+    /* AP 运行时为 WL_AP_LISTENING，有设备连上时为 WL_AP_CONNECTED；启动 AP 失败后为 WL_AP_FAILED，直到下次 begin、beginAP 或 end */
     uint8_t status();
     /* 最近一次连接失败或断开时 wl80211 的状态码（WLAN_FW_*，12 为找不到 SSID） */
     uint8_t reasonCode();
 
+    /* AP 运行时 macAddress、localIP、subnetMask、gatewayIP、SSID 都是 AP 的（网关即 AP 地址） */
     uint8_t *macAddress(uint8_t *mac);
     IPAddress localIP();
     IPAddress subnetMask();
@@ -88,7 +102,8 @@ public:
     IPAddress dnsIP(int n = 0);
     /*
      * 静态地址，取值同 WiFiS3：省略的网关为 local_ip 的 x.y.z.1，掩码为 255.255.255.0，只给地址时 DNS 也用该网关。
-     * 之后每次连接都不启动 DHCP；已连接时立即生效。local_ip 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）
+     * 之后每次连接都不启动 DHCP；已连接时立即生效。local_ip 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）。
+     * 地址与掩码也用于之后启动的 AP（同 WiFiS3、WiFiNINA）
      */
     void config(IPAddress local_ip);
     void config(IPAddress local_ip, IPAddress dns_server);
@@ -103,6 +118,9 @@ public:
     const char *SSID();
     uint8_t *BSSID(uint8_t *bssid);
     int32_t RSSI();
+    /* AP 未运行时为 0.0.0.0、空串 */
+    IPAddress softAPIP();
+    const char *softAPSSID();
 
     /*
      * 扫描附近网络并等待完成（未调用 begin 时也可用），按 RSSI 从强到弱保留前 WL_NETWORKS_LIST_MAXNUM 个，
@@ -129,6 +147,7 @@ private:
     unsigned long timeout_ = 10000;
     char ssid_[WL_SSID_MAX_LENGTH + 1] = {};
     char pass_[WL_WPA_KEY_MAX_LENGTH + 2] = {};
+    char ap_ssid_[WL_SSID_MAX_LENGTH + 1] = {};
     struct wifi_port_ap *aps_ = nullptr; /* 第一次扫描时分配 */
     uint8_t ap_count_ = 0;
 };
