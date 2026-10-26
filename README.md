@@ -6,6 +6,8 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
+当前 Core 需要 `bl616cl-libs` 0.4.1（含 CherryUSB HID 类与配套头文件）。旧 0.4.0 包不包含这些输入；本地包更新和平台更新应一起使用。
+
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
 ## 目录
@@ -15,6 +17,7 @@
 | `platform.txt` | 编译、链接、镜像后处理、size、上传配方；参数和库全部来自板卡所选的预编译底层包 |
 | `boards.txt` | 板卡：`unor4wifi_bl616cl`（UNO R4 WiFi，协处理器换成 BL616CL） |
 | `cores/bouffalo/` | Core：入口、C++ 运行时、GPIO、时间、USB 串口与 UART、软件进入下载模式 |
+| `cores/bouffalo/usb_hid_port.h` | 可选 64 字节 raw HID；应用在全局构造时注册报告描述符与 Feature 回调，USB 启动前固定接口组合 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
 | `libraries/WiFi/` | 平台 WiFi 库（接口同官方 WiFiS3），经 `library.properties` 的 `ldflags` 链入底层包的 Wi-Fi 组 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
@@ -53,6 +56,10 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 
 ## 本地编译检查
 
+可选 raw HID 与 CDC 共用一次 USB 初始化；未注册时仅枚举 CDC，注册后增加接口 2 及中断 IN/OUT 端点。应用在任务中读写 HID，Feature 回调在 USB 中断中运行、不得阻塞。报告含义和目标芯片控制由应用实现，Core 不包含 CMSIS-DAP 或 RA4M1 逻辑。
+
+Linux 下 raw HID 需要设备权限；平台附有 `tools/99-arduino-bl.rules`（USB 与 hidraw，仅 VID:PID `349b:0011`）。安装到 `/etc/udev/rules.d/` 并重载规则、重新连接设备后生效；规则使用 `plugdev` 组与 `uaccess`。本轮实测采用仅对当前设备节点生效的临时 ACL，没有改系统永久规则。
+
 ```sh
 tests/compile_check.sh <bl616cl-libs 包目录> <Xuantie GCC 目录> <bl-flash-tools 目录> [要隐藏的路径...]
 ```
@@ -67,10 +74,11 @@ arduino-lint --project-type platform --compliance strict .
 
 ## 功能状态
 
-只有编译链接证据、没有实机运行证据的功能标为 experimental。表中证据针对板卡 `unor4wifi_bl616cl`（UNO R4 WiFi，BL616CL 模组 1V0）与 `bl616cl-libs` 0.4.0（0.4.0 上复验了编译检查与安装链，TLS 的实机证据来自 0.4.0，其余实机证据来自 0.3.2 至 0.3.5），主机为 Linux x86_64；Windows、macOS 未测。
+只有编译链接证据、没有实机运行证据的功能标为 experimental。未另注版本的表中证据针对板卡 `unor4wifi_bl616cl`（UNO R4 WiFi，BL616CL 模组 1V0）与 `bl616cl-libs` 0.4.0（0.4.0 上复验了编译检查与安装链，TLS 的实机证据来自 0.4.0，其余实机证据来自 0.3.2 至 0.3.5），主机为 Linux x86_64；Windows、macOS 未测。
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
+| 可选 raw HID（`usb_hid_port.h`），与 CDC 组成三接口 USB 设备 | experimental | 0.4.1：13 个 sketch 编译/map/镜像检查通过；完整 bridge 编译通过 | Linux x86_64、1V0、bridge：64 字节 HID 连续收发、Feature、真实 RA4M1 SWD 读写/编程/调试；与 CDC 并发回显 50 B–64 KB。未注册 HID 的 sketch 仍仅有 CDC；上层 DAP 证据在 bridge 任务。 |
 | 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.4.0） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiScan、WiFiServerCheck、WiFiSSLCheck、WiFiStaticIP、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
 | C++ 全局构造、`new`/`delete`、局部静态变量初始化保护 | experimental | 同上 | UsbAlive：全局构造执行 1 次；其余未测 |

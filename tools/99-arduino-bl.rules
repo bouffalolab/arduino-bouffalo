@@ -1,0 +1,3 @@
+# USB CDC/raw HID access for BL616CL Arduino boards on Linux.
+SUBSYSTEM=="usb", ATTR{idVendor}=="349b", ATTR{idProduct}=="0011", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="349b", ATTRS{idProduct}=="0011", MODE="0660", GROUP="plugdev", TAG+="uaccess"

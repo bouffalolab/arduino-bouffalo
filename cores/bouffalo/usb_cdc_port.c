@@ -30,6 +30,7 @@
 
 #include "isp_boot.h"
 #include "usb_cdc_port.h"
+#include "usb_hid_port.h"
 
 #define CDC_IN_EP  0x83
 #define CDC_OUT_EP 0x04
@@ -60,6 +61,9 @@ static const uint8_t config_descriptor[] = {
     CDC_ACM_DESCRIPTOR_INIT(0x00, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, CDC_MAX_MPS, 0x02)
 };
 
+static uint8_t composite_descriptor[USB_CONFIG_SIZE + 32];
+static const uint8_t *active_config_descriptor = config_descriptor;
+
 static const uint8_t device_quality_descriptor[] = {
     0x0a, USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER, 0x00, 0x02, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
 };
@@ -82,7 +86,7 @@ static const uint8_t *device_descriptor_callback(uint8_t speed)
 static const uint8_t *config_descriptor_callback(uint8_t speed)
 {
     (void)speed;
-    return config_descriptor;
+    return active_config_descriptor;
 }
 
 static const uint8_t *device_quality_descriptor_callback(uint8_t speed)
@@ -195,6 +199,7 @@ static void bulk_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
 static void event_handler(uint8_t busid, uint8_t event)
 {
     (void)busid;
+    usb_hid_port_event(event);
     switch (event) {
         case USBD_EVENT_CONFIGURED:
             configured = true;
@@ -306,6 +311,15 @@ void usb_cdc_port_init(void)
     usbd_add_interface(0, usbd_cdc_acm_init_intf(0, &intf1));
     usbd_add_endpoint(0, &out_ep);
     usbd_add_endpoint(0, &in_ep);
+    const uint8_t *hid = usb_hid_port_init();
+    if (hid != NULL) {
+        memcpy(composite_descriptor, config_descriptor, USB_CONFIG_SIZE);
+        memcpy(composite_descriptor + USB_CONFIG_SIZE, hid, 32);
+        composite_descriptor[2] = sizeof(composite_descriptor) & 0xff;
+        composite_descriptor[3] = sizeof(composite_descriptor) >> 8;
+        composite_descriptor[4] = 3;
+        active_config_descriptor = composite_descriptor;
+    }
     usbd_initialize(0, 0, event_handler);
 }
 
