@@ -102,7 +102,51 @@ static void free_conn(struct tls_conn *t)
     free(t);
 }
 
-/* 给定 PEM 时只信任它，否则用包内根证书束（bl_crt_bundle 的校验回调按签发者查找根证书） */
+/* SDK 的校验回调（bl_crt_bundle.c，只读），按签发者名查根证书；头文件未导出 */
+int bl_crt_verify_callback(void *buf, mbedtls_x509_crt *crt, int depth, uint32_t *flags);
+
+/*
+ * 束内根证书的布局同 bl_crt_bundle.c：2 字节证书数（大端），之后每张为 2 字节名称长、2 字节公钥长、名称（subject DER）、
+ * 公钥（SPKI DER）
+ */
+static bool is_bundle_root(const mbedtls_x509_crt *crt)
+{
+    const uint8_t *end = arduino_crt_bundle + arduino_crt_bundle_size;
+    const uint8_t *p = arduino_crt_bundle + 2;
+    int num = (arduino_crt_bundle[0] << 8) | arduino_crt_bundle[1];
+    for (int i = 0; i < num && p + 4 <= end; i++) {
+        size_t name_len = (p[0] << 8) | p[1];
+        size_t key_len = (p[2] << 8) | p[3];
+        const uint8_t *name = p + 4;
+        const uint8_t *key = name + name_len;
+        if (key + key_len > end) {
+            break;
+        }
+        if (name_len == crt->subject_raw.len && key_len == crt->pk_raw.len &&
+            memcmp(name, crt->subject_raw.p, name_len) == 0 && memcmp(key, crt->pk_raw.p, key_len) == 0) {
+            return true;
+        }
+        p = key + key_len;
+    }
+    return false;
+}
+
+/*
+ * 链顶证书本身就是束内根（名称与公钥都相同）时信任它。典型情况是服务器只发 COMODO RSA CA 的 AddTrust 交叉签发版本，
+ * 这时签发者 AddTrust 不在束内，SDK 的回调失败；本机 OpenSSL 按同一规则接受。有效期仍不检查（没有时间源）
+ */
+static int verify_bundle(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags)
+{
+    (void)depth;
+    int ret = bl_crt_verify_callback(data, crt, depth, flags);
+    if (ret != 0 && is_bundle_root(crt)) {
+        *flags = 0;
+        return 0;
+    }
+    return ret;
+}
+
+/* 给定 PEM 时只信任它，否则用包内根证书束（签发者查找由 bl_crt_bundle 完成，束内根本身由 verify_bundle 补充） */
 static int set_trust(struct tls_conn *t, const char *ca_pem)
 {
     if (ca_pem != NULL) {
@@ -119,7 +163,11 @@ static int set_trust(struct tls_conn *t, const char *ca_pem)
         }
         bundle_ready = true;
     }
-    return bl_crt_bundle_attach(&t->conf);
+    if (bl_crt_bundle_attach(&t->conf) != 0) {
+        return -1;
+    }
+    mbedtls_ssl_conf_verify(&t->conf, verify_bundle, NULL);
+    return 0;
 }
 
 int tls_port_open(int sock, const char *host, const char *ca_pem, uint32_t timeout_ms)

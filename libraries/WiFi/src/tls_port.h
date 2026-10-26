@@ -3,7 +3,7 @@
 /*
  * TLS 客户端（底层包的 mbedTLS 3.6，TLS 1.2），供 WiFiSSLClient 使用。实现在 tls_port.c：mbedTLS 与 lwIP 的头文件
  * 不进入 C++ 编译单元（同 net_port.h 的说明）。连接用 net_port_tcp_connect 建立的 socket 号标识，一个 socket 至多
- * 一个 TLS 连接。证书校验按 ticket 0029：默认用包内根证书束，不查证书有效期。同一连接只在一个任务中使用。
+ * 一个 TLS 连接。证书校验按 ticket 0029：默认用包内根证书束；链顶证书与束内根名称、公钥都相同时信任它；不查证书有效期。同一连接只在一个任务中使用。
  */
 #include <stdbool.h>
 #include <stddef.h>
