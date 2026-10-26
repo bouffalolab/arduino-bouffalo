@@ -20,7 +20,6 @@
 #include "wl80211.h"
 #include "wifi_mgmr.h"
 #include "macsw_plat.h"
-#include "rfparam_adapter.h"
 #include "async_event.h"
 #include "board_overlay.h"
 
@@ -165,7 +164,7 @@ int wifi_port_init(void)
     }
     init_result = -1;
     board_wifi_irq_init();
-    if (rfparam_init(0, NULL, 0) != 0) {
+    if (board_radio_init() != 0) {
         return -1;
     }
     async_event_init(async_event_loop_wake);

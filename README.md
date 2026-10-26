@@ -6,7 +6,7 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
-当前 Core 需要 `bl616cl-libs` 0.4.1（含 CherryUSB HID 类与配套头文件）。旧 0.4.0 包不包含这些输入；本地包更新和平台更新应一起使用。
+当前平台需要 `bl616cl-libs` 0.5.0（含 CherryUSB HID、可选external-host BLE Controller及共用射频初始化接口）；平台与底层包应一起更新。
 
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
@@ -20,6 +20,7 @@
 | `cores/bouffalo/usb_hid_port.h` | 可选 64 字节 raw HID；应用在全局构造时注册报告描述符与 Feature 回调，USB 启动前固定接口组合 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
 | `libraries/WiFi/` | 平台 WiFi 库（接口同官方 WiFiS3），经 `library.properties` 的 `ldflags` 链入底层包的 Wi-Fi 组 |
+| `libraries/BLEController/` | external-host H4 Controller接口与USB原始HCI示例，无BL端BLE Host；经`ldflags`选择BLE链接组 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
 | `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
 
@@ -78,6 +79,7 @@ arduino-lint --project-type platform --compliance strict .
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
+| `BLEController` external-host原始H4命令/事件/ACL、关闭再初始化（BL端无Host） | experimental | 0.5.0：13个普通sketch构建/map/镜像辅助检查不含Controller，另编译ControllerUSB；均不计实机验收 | Linux x86_64、1V0 + AX200：HCI查询、真实广告/central扫描、peripheral连接与双向ACL，1/20/21/100/244字节通知及Wi-Fi TCP/USB CDC并发、关闭重启通过；官方ArduinoBLE示例尚无实机结果。见BLEController README和ARDUINO-43任务。 |
 | 可选 raw HID（`usb_hid_port.h`），与 CDC 组成三接口 USB 设备 | experimental | 0.4.1：13 个 sketch 编译/map/镜像检查通过；完整 bridge 编译通过 | Linux x86_64、1V0、bridge：64 字节 HID 连续收发、Feature、真实 RA4M1 SWD 读写/编程/调试；与 CDC 并发回显 50 B–64 KB。未注册 HID 的 sketch 仍仅有 CDC；上层 DAP 证据在 bridge 任务。 |
 | 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.4.0） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiScan、WiFiServerCheck、WiFiSSLCheck、WiFiStaticIP、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |
