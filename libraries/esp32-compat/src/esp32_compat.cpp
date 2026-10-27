@@ -65,7 +65,7 @@ extern "C" void bflb_uart_set_console(struct bflb_device_s *dev);
 
 /* The USB device init chain clobbers the console UART binding.  Restore it
  * after USB.begin() so post-setup printf output remains visible on the
- * standard console (UART0, GPIO34/35 on bl616cldk). */
+ * standard console (UART0, GPIO34/35 on Ai-M64L-32S-Kit). */
 extern "C" void compat_console_restore(void)
 {
     struct bflb_device_s *gpio = bflb_device_get_by_name("gpio");

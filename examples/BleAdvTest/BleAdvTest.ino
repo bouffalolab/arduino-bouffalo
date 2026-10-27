@@ -13,7 +13,7 @@
  *
  * Build with the m2s1 flavor and the btble_cli-built libraries:
  *   arduino-cli compile --config-file arduino-cli.yaml \
- *     --fqbn bouffalo:bl616cl:unor4_bl616cl \
+ *     --fqbn bouffalo:bl616cl:ai_m64l_32s_kit \
  *     --build-path .build/BleAdvTest \
  *     --build-property "compiler.ble.libs=<...>/libbtblecontroller_bl616cl_m2s1.a <...>/libblestack.a -lrfparam -lbl616cl_phyrf -lshell" \
  *     --build-property "compiler.c.elf.extra_flags=-Wl,--defsym,__LD_CONFIG_EM_SIZE=16" \

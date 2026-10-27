@@ -1,4 +1,8 @@
-# BL616CL UNO R4 Bridge TODO
+# BL616CL UNO R4 Bridge TODO（历史）
+
+> UNO R4 WiFi 板卡定义和旧 `bl616cldk` Arduino variant 已于 2026-10-27
+> 移除，默认开发板改为 Ai-Thinker Ai-M64L-32S-Kit。本文保留为集成历史与
+> 待办归档，其中的板级引脚和 FQBN 不代表当前平台配置。
 
 ## 代码核查状态（2026-10-05）
 

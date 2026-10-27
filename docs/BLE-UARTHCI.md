@@ -8,7 +8,8 @@ sha256 `621ba45b…`）。Arduino bridge 直接链接该归档，
 
 ## 架构
 
-RA4M1 侧跑 BLE host（ArduinoBLE 或任意 HCI host），通过 bridge 的 AT 命令
+外部 HCI host（例如通过 UART 连接的桥接 MCU）运行 BLE host
+（ArduinoBLE 或任意 HCI host），通过 bridge 的 AT 命令
 （`AT+HCIBEGIN` / `AT+HCIWRITE` / `AT+HCIREAD` / `AT+HCIAVAILABLE` /
 `AT+HCIWAIT`）把 HCI 字节流透传给 BL616CL；BL616CL 只跑 controller
 （uarthci external-host flavor），广播参数全部由 host 决定。
@@ -41,16 +42,15 @@ bridge 侧实现：`libraries/esp32-compat/src/ble/ble_hci_port.cpp`、
 编译/烧录与普通 sketch 相同（runtime 会从 SDK 子模块现编）：
 
     arduino-cli compile --config-file arduino-cli.yaml \
-      --fqbn bouffalo:bl616cl:unor4_bl616cl <sketch>
+      --fqbn bouffalo:bl616cl:ai_m64l_32s_kit <sketch>
 
 串口约定（本测试台）：
 
 | 用途 | 设备 | 说明 |
 |---|---|---|
-| 控制台 / ISP 烧录（DK）；carrier 下为 RA4M1 日志/烧录口 | FT232 `BG02CSA6`（Linux `/dev/ttyUSB1`） | UART0 GPIO34/35 @ 2 Mbaud |
-| HCI 物理口（历史实验用） | FT232 `BG03YFET`（Linux `/dev/ttyUSB0`） | UART1 GPIO27 TX / 28 RX @ 2 Mbaud |
-| AT 通道 | UART1 `Serial1` GPIO6 TX / 7 RX @ 115200 | 接 RA4M1 SCI1 AT 口（P501/P502） |
-| 主机调试 / 用户串口 | 板载 USB CDC `/dev/ttyACM0`（2341:1002） | carrier 构建下与 UART0 双向透传，不再承载 AT |
+| 控制台 / ISP 烧录 | Ai-M64L-32S-Kit 板载 CH340（Linux `/dev/ttyUSB0`） | UART0 GPIO34/35 @ 2 Mbaud |
+| 外接 HCI host（可选） | USB-UART 适配器 | `Serial1` GPIO20 TX / GPIO21 RX |
+| AT / 用户串口 | 同上 | 使用 `Serial1` 与外部 host 交换 HCI 帧 |
 
 设备名随插拔顺序变化，复测前先用 `/dev/serial/by-id/` 核对序列号。
 

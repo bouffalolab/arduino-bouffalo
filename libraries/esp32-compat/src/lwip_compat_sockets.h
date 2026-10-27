@@ -52,9 +52,9 @@ extern "C" {
 /* Resolve a host name or a dotted-quad address string to a sockaddr_in.
  *
  * lwIP's lwip_getaddrinfo() parses numeric address strings only when
- * AI_NUMERICHOST is set; otherwise it always consults DNS.  The UNO R4
- * bridge AT commands pass numeric IPs as strings, so try the numeric form
- * first and fall back to DNS for real host names. */
+ * AI_NUMERICHOST is set; otherwise it always consults DNS.  BL616CL bridge
+ * AT commands pass numeric IPs as strings, so try the numeric form first and
+ * fall back to DNS for real host names. */
 static inline bool lwip_resolve_host(const char *host, uint16_t port, int socktype,
                                      struct sockaddr_in *out)
 {

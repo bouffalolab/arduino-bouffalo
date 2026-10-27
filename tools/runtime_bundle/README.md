@@ -40,6 +40,10 @@ any extra controller archive, so editing any of them rebuilds the runtime.
       --platform-root /path/to/hardware/bouffalo/bl616cl \
       --chip bl616cl --board bl616cldk --out /tmp/rt/bl616cl
 
+`--board` selects the Bouffalo SDK BSP. Arduino board definitions may select a
+different variant name through their `build.sdk_board` property; for example,
+`ai_m64l_32s_kit` uses the `bl616cldk` SDK BSP.
+
 `--force` rebuilds, `--keep-work` retains the SDK build tree under
 `<cache>/work/`, `--no-patches` skips the platform patch set.
 

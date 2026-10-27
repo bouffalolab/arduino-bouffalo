@@ -47,10 +47,11 @@ compiler.ar.extra_flags=
 compiler.objcopy.extra_flags=
 
 # Build the SDK runtime from the tools/sdk/bouffalo_sdk submodule before the
-# core/libraries/sketch compile.  build_sdk_runtime.py caches the heavy SDK
-# build (keyed by SDK revision, patch set, probe configuration and toolchain)
-# and materialises the staged runtime under compiler.sdk.path.
-recipe.hooks.prebuild.1.pattern=python3 "{runtime.platform.path}/tools/runtime_bundle/build_sdk_runtime.py" --platform-root "{runtime.platform.path}" --chip "{build.mcu}" --board "{build.variant}" --out "{compiler.sdk.path}"
+# core/libraries/sketch compile.  build.sdk_board selects the SDK BSP while
+# build.variant selects the Arduino pin mapping.  build_sdk_runtime.py caches
+# the heavy SDK build (keyed by SDK revision, patch set, probe configuration
+# and toolchain) and materialises the staged runtime under compiler.sdk.path.
+recipe.hooks.prebuild.1.pattern=python3 "{runtime.platform.path}/tools/runtime_bundle/build_sdk_runtime.py" --platform-root "{runtime.platform.path}" --chip "{build.mcu}" --board "{build.sdk_board}" --out "{compiler.sdk.path}"
 
 recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.cpreprocessor.flags} {compiler.c.flags} {compiler.warning_flags} {build.extra_flags} {compiler.c.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
 recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} {compiler.warning_flags} {build.extra_flags} {compiler.cpp.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"

@@ -1,4 +1,8 @@
-# UNO R4 WiFi BL616CL 载板：bridge 适配
+# UNO R4 WiFi BL616CL 载板：bridge 适配（历史）
+
+> 历史资料：UNO R4 WiFi 板卡定义和旧 `bl616cldk` Arduino variant 已于
+> 2026-10-27 移除。默认开发板现为 Ai-Thinker Ai-M64L-32S-Kit；本文仅保留
+> bridge 协议与调试背景，其中的板级引脚和 FQBN 不再作为当前配置使用。
 
 **状态（2026-10-05）：编译通过（935 232 B flash / 66 404 B RAM，mbedTLS
 2.28.2 runtime），RA4M1 实机链路待载板接线验证。**
