@@ -6,7 +6,7 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
-当前平台需要 `bl616cl-libs` 0.5.0（含 CherryUSB HID、可选external-host BLE Controller及共用射频初始化接口）；平台与底层包应一起更新。
+当前平台需要 `bl616cl-libs` 0.6.0 和 `bl-flash-tools` 0.2.0（新增 littlefs 引擎与统一分区工具，保留 HID/BLE 能力）；平台与依赖包应一起更新。
 
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
@@ -20,6 +20,7 @@
 | `cores/bouffalo/usb_hid_port.h` | 可选 64 字节 raw HID；应用在全局构造时注册报告描述符与 Feature 回调，USB 启动前固定接口组合 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
 | `libraries/WiFi/` | 平台 WiFi 库（接口同官方 WiFiS3），经 `library.properties` 的 `ldflags` 链入底层包的 Wi-Fi 组 |
+| `libraries/LittleFS/` | 平台程序 Flash 文件系统；内部回调直连原厂 Flash API，bridge/AT 无关，显式格式化 |
 | `libraries/BLEController/` | external-host H4 Controller接口与USB原始HCI示例，无BL端BLE Host；经`ldflags`选择BLE链接组 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
 | `tests/` | 测试 sketch 与编译检查脚本；不进入平台发布归档（`.gitattributes`） |
@@ -28,7 +29,7 @@
 
 ## 镜像与上传
 
-编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin`。上传用 `BLFlashCommand` 把底层包中的 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址见 `boards.txt`），写后校验 SHA-256，再用 warm reset 启动新固件。UNO R4 WiFi 上的 BL616CL 经板上 USB 口上传，选 sketch 运行时的 USB 串口（`349b:0011`）：
+编译后 `bflb_fw_post_proc` 原地改写 `<sketch>.ino.bin` 的启动头，并在编译目录生成 `partition.bin`。上传用 `BLFlashCommand` 把底层包中的 boot2、分区表、固件分别写到 0x0、0xE000、0x10000（地址与容量由构建目录的 `layout.json`/`layout.toml` 固定），写后校验 SHA-256，再用 warm reset 启动新固件。UNO R4 WiFi 上的 BL616CL 经板上 USB 口上传，选 sketch 运行时的 USB 串口（`349b:0011`）：
 
 ```sh
 arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <编译目录> <sketch>
@@ -40,7 +41,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p <串口> --input-dir <
 
 限制：
 
-- 烧录工具只有 Linux x86_64 版本；`BLFlashCommand` 每次运行都在自身目录下写 `log/`、`eflash_loader_cfg.ini` 和 `chips/bl616cl/img_create/`，工具安装目录必须可写。
+- 工具包目前仅提供 Linux x86_64 版本；上传在构建目录的 `flash-runner/` 中运行 FlashCommand 副本，工具安装目录可只读。
 - 镜像不含 SDK 原生流程追加的 DWARF CFI 表，崩溃时 `backtrace` 输出 0 帧。
 - dts 使用 SDK 开发板的工厂参数（晶振、RF），替换模组的参数尚未确认。
 
@@ -109,4 +110,13 @@ arduino-lint --project-type platform --compliance strict .
 | Wire、SPI 等其他平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
-| 包索引安装 | experimental | builder 的 `tools/install_check.sh`：本地包索引安装到空目录、移动数据目录、只读安装、修改 Core 后都能编译，工具包与 manifest 一致 | 公网索引未做；上传要求工具目录可写（见“镜像与上传”的限制） |
+| 包索引安装 | experimental | builder 的 `tools/install_check.sh`：本地包索引安装到空目录、移动数据目录、只读安装、修改 Core 后都能编译，工具包与 manifest 一致 | 公网索引未做；0.2.0 起通过构建目录运行副本，安装目录可只读 |
+
+### Program Flash filesystem
+
+平台库 `LittleFS` 与 bridge 独立；具体 API、错误与布局见
+[libraries/LittleFS/README.md](libraries/LittleFS/README.md)。依赖固定包 0.6.0，
+存储416 KiB，固件上限1.5 MiB；挂载失败不自动格式化。当前为 experimental：
+BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复位与写循环中断恢复；
+全片读回验证格式化范围及普通 bridge 上传的 FS 字节保持。真实掉电验收仍待现场配合。
+软件构建、map 和镜像检查只作辅助，不计实机通过。

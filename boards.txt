@@ -2,6 +2,7 @@
 # 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/#boardstxt
 
 menu.debuglog=Debug log
+menu.PartitionScheme=Partition Scheme
 
 # UNO R4 WiFi，协处理器换成 BL616CL 模组；本板卡编译的固件运行在 BL616CL 上
 unor4wifi_bl616cl.name=UNO R4 WiFi (BL616CL coprocessor)
@@ -24,10 +25,10 @@ unor4wifi_bl616cl.upload_port.0.pid=0x0011
 unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
 # 镜像后处理使用的底层包资源（包内 boot/）。dts 是 SDK 开发板的工厂参数，替换模组的晶振与 RF 参数未确认
 unor4wifi_bl616cl.build.bl_boot2=boot2_bl616cl_isp_release_v8.2.1.bin
-unor4wifi_bl616cl.build.bl_partition=partition_cfg_4M.toml
+unor4wifi_bl616cl.build.bl_partition=partition_cfg_4M_lfs_v1.toml
 unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
-# FW 分区 2 MB；RAM 为链接脚本中的 ram 区域 223 KB
-unor4wifi_bl616cl.upload.maximum_size=2097152
+# FW 分区 1.5 MiB；双槽连续等大；FW1 后 416 KiB 独立 littlefs；RAM 为链接脚本中的 ram 区域 223 KB
+unor4wifi_bl616cl.upload.maximum_size=1572864
 unor4wifi_bl616cl.upload.maximum_data_size=228352
 # 经板上 USB 口烧录：选 Serial 的 USB 串口上传，1200 bps touch 让固件复位进入下载模式，
 # 再用 ROM 在同一 USB 口上提供的下载串口烧录；已在下载模式时直接选该串口
@@ -36,7 +37,7 @@ unor4wifi_bl616cl.upload.protocol=serial
 unor4wifi_bl616cl.upload.speed=2000000
 unor4wifi_bl616cl.upload.use_1200bps_touch=true
 unor4wifi_bl616cl.upload.wait_for_upload_port=true
-# 烧录地址取自 partition_cfg_4M.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
+# 烧录地址取自 partition_cfg_4M_lfs_v1.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
 unor4wifi_bl616cl.upload.bl_partition_address=0xE000
 unor4wifi_bl616cl.upload.bl_fw_address=0x10000
 # 调试日志：默认关，printf 与 SDK 日志被丢弃；打开时从 uart2 输出（引脚见 variant 的 PIN_DEBUG_LOG_TX/RX），发布固件保持关闭
@@ -44,3 +45,9 @@ unor4wifi_bl616cl.menu.debuglog.off=Off
 unor4wifi_bl616cl.menu.debuglog.off.build.debug_log_flags=
 unor4wifi_bl616cl.menu.debuglog.uart2=uart2 (J6 IO41 TX, IO42 RX, 2000000 baud)
 unor4wifi_bl616cl.menu.debuglog.uart2.build.debug_log_flags=-DARDUINO_BL_DEBUG_LOG_BAUD=2000000
+
+# Custom uses partitions.toml in the sketch directory; an explicit CLI path takes priority.
+unor4wifi_bl616cl.menu.PartitionScheme.default=Default (dual 1.5 MiB, FS 416 KiB)
+unor4wifi_bl616cl.menu.PartitionScheme.default.build.bl_partition_scheme=default
+unor4wifi_bl616cl.menu.PartitionScheme.custom=Custom (sketch partitions.toml)
+unor4wifi_bl616cl.menu.PartitionScheme.custom.build.bl_partition_scheme=custom

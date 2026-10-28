@@ -54,7 +54,7 @@ recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {compile
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
 
 # 不使用 --whole-archive：ld_libs 已整体链入只靠整库链接才生效的成员（libforce_base.a）
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.bl_libs}/ld/linker.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.path}/layout.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
 
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 
@@ -62,7 +62,7 @@ recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{b
 # 生成 partition.bin，供上传使用。工具包只有 Linux 版本。
 # 不传 --boot2file：它会连同只读权限复制包内 boot2 再原地处理，安装目录只读时失败；
 # 处理后的 boot2 与包内原件逐字节相同，上传直接使用包内文件。
-recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.bl-flash-tools.path}/bflb_fw_post_proc/bflb_fw_post_proc-ubuntu" --chipname={build.mcu} "--imgfile={build.path}/{build.project_name}.bin" --appkeys=shared "--ptfile={build.bl_libs}/boot/{build.bl_partition}" "--dtsfile={build.bl_libs}/boot/{build.bl_dts}"
+recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" finalize --build "{build.path}" --project "{build.project_name}" --libs "{build.bl_libs}" --tools "{runtime.tools.bl-flash-tools.path}" --dts "{build.bl_dts}"
 
 recipe.output.tmp_file={build.project_name}.bin
 recipe.output.save_file={build.project_name}.{build.variant}.bin
@@ -80,9 +80,15 @@ pluggable_monitor.required.serial=builtin:serial-monitor
 # ROM 在 USB 上提供串口，仍用 --interface=uart；波特率对 USB 串口无实际作用。
 # --warm_reset：写完后热复位直接运行新固件。经 1200 bps touch 进入下载模式时，下载请求保存在 HBN 域，
 # 普通复位（--reset）会再次进入下载模式；新固件启动时由 Core 清除该请求。
-# BLFlashCommand 每次运行都改写自身目录下的 log/、eflash_loader 配置和 img_create/，工具安装目录必须可写。
+# BLFlashCommand 改写自身目录；bl-layout 将其复制到构建目录的 flash-runner 后运行，安装目录可只读。
 tools.bl_flash.path={runtime.tools.bl-flash-tools.path}/bouffalo_flash_cube
 tools.bl_flash.cmd=BLFlashCommand-ubuntu
 tools.bl_flash.upload.params.verbose=
 tools.bl_flash.upload.params.quiet=
-tools.bl_flash.upload.pattern="{path}/{cmd}" --interface=uart --chipname={build.mcu} "--port={upload.port.address}" --baudrate={upload.speed} --warm_reset write_flash_files 0x0 "{build.bl_libs}/boot/{build.bl_boot2}" {upload.bl_partition_address} "{build.path}/partition.bin" {upload.bl_fw_address} "{build.path}/{build.project_name}.bin"
+tools.bl_flash.upload.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" upload --build "{build.path}" --project "{build.project_name}" --libs "{build.bl_libs}" --tools "{runtime.tools.bl-flash-tools.path}" --port "{upload.port.address}" --speed "{upload.speed}"
+
+# One selected layout snapshot drives linking, post-processing, sizing and upload.
+build.bl_partition_file=
+recipe.hooks.prebuild.1.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" prepare --build "{build.path}" --sketch "{build.source.path}" --libs "{build.bl_libs}" --default "{build.bl_partition}" --boot2 "{build.bl_boot2}" --scheme "{build.bl_partition_scheme}" "--file={build.bl_partition_file}"
+recipe.advanced_size.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" size --build "{build.path}" --project "{build.project_name}" --size-tool "{compiler.path}{compiler.size.cmd}" --ram {upload.maximum_data_size}
+recipe.hooks.savehex.postsavehex.1.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" export --build "{build.path}" --project "{build.project_name}" --destination "{sketch_path}/bl-flash"

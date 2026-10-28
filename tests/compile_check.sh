@@ -45,7 +45,7 @@ for sketch in "$ROOT"/tests/sketches/*/; do
         --build-property "runtime.tools.bl-flash-tools.path=$FT" \
         --build-path "$out" --warnings default "$sketch" >"$TMP/$name.log" 2>&1; then
         echo "PASS $name: 编译"
-        grep -E '^(Sketch uses|Global variables)' "$TMP/$name.log" | sed 's/^/  /'
+        grep -E '^(Sketch uses|Global variables|Flash )' "$TMP/$name.log" | sed 's/^/  /'
         allow=()
         if grep -q '^#include <WiFi.h>' "$sketch"/*.ino; then
             allow=(--allow-group wifi)  # WiFi 库经 library.properties 的 ldflags 链入 Wi-Fi 组
