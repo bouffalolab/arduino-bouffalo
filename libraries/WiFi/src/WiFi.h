@@ -4,9 +4,9 @@
  * Wi-Fi station、AP 与 TCP/UDP/TLS，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
  * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）、
  * WiFiSSLClient（TLS 1.2）、静态地址（config、setDNS）、AP（beginAP：WPA2 或开放网络，带 DHCP 服务）。
- * 同一时间只用 STA 或 AP 之一。AP 运行时 WiFiServer、WiFiUDP 已在实板上验证（电脑连入后 TCP、UDP 收发）；
+ * begin/beginAP 默认切换 STA/AP；显式 mode(WIFI_AP_STA) 可保持另一个接口。AP 运行时 WiFiServer、WiFiUDP 已在实板上验证（电脑连入后 TCP、UDP 收发）；
  * WiFiClient::connect、ping(IPAddress) 在 AP 下未在实板上验证。
- * 未实现：STA 与 AP 同时运行、隐藏 SSID、UDP 组播。
+ * 新增模式、隐藏 SSID、自动重连和 IPv6 的实机状态见 README；UDP 组播未实现。
  * 所有调用在同一个任务中进行（通常是 setup/loop）。
  */
 #include "Arduino.h"
@@ -63,6 +63,8 @@ typedef enum {
 
 struct wifi_port_ap;
 
+enum WiFiMode { WIFI_OFF = 0, WIFI_STA = 1, WIFI_AP = 2, WIFI_AP_STA = 3 };
+
 class WiFiClass {
 public:
     /* 版本号即本库版本 */
@@ -76,17 +78,29 @@ public:
     int begin(const char *ssid);
     int begin(const char *ssid, const char *passphrase);
     /*
-     * 启动 AP 并等 DHCP 服务启动（最多约 3 s），返回 WL_AP_LISTENING 或 WL_AP_FAILED。STA 已连接或正在连接时先断开。
+     * 启动 AP 并等 DHCP 服务启动（最多约 3 s），返回 WL_AP_LISTENING 或 WL_AP_FAILED。除显式 mode(WIFI_AP_STA) 外，STA 已连接或正在连接时先断开。
      * 省略的信道为 1（同 WiFiS3），可用 1–13；密码 8–63 个字符时为 WPA2，省略或空串为开放网络。
-     * 地址为 config() 给出的地址与掩码（AP 运行时调用 config，下次 beginAP 时生效），未调用时为 192.168.4.1/24；
+     * 地址为 config() 给出的地址与掩码（AP 运行时调用 config 会重启 DHCP 以应用新地址），未调用时为 192.168.4.1/24；
      * DHCP 地址池为同一网段中紧邻该地址的 10 个
      */
     uint8_t beginAP(const char *ssid);
     uint8_t beginAP(const char *ssid, uint8_t channel);
     uint8_t beginAP(const char *ssid, const char *passphrase);
     uint8_t beginAP(const char *ssid, const char *passphrase, uint8_t channel);
+    uint8_t beginAP(const char *ssid, const char *passphrase, uint8_t channel, bool hidden, uint8_t maxConnections);
+    /* Generic extensions: mode is an interface bit mask; enabling alone does
+       not invent credentials or report an association. Settings live in RAM. */
+    bool mode(WiFiMode mode);
+    WiFiMode getMode() const { return mode_; }
+    bool setAutoReconnect(bool enable);
+    bool getAutoReconnect();
+    bool enableIpV6();
+    String localIPv6();
+    uint8_t stationStatus();
     /* 断开 STA（AP 照常运行，同 WiFiS3）；正在连接时先等它出结果。返回 WL_DISCONNECTED */
     int disconnect(void);
+    int disconnect(bool wifiOff);
+    bool softAPdisconnect(bool wifiOff = false);
     /* 断开 STA 并停止 AP；Wi-Fi 协议栈初始化后不释放 */
     void end(void);
     /* AP 运行时为 WL_AP_LISTENING，有设备连上时为 WL_AP_CONNECTED；启动 AP 失败后为 WL_AP_FAILED，直到下次 begin、beginAP 或 end */
@@ -94,7 +108,7 @@ public:
     /* 最近一次连接失败或断开时 wl80211 的状态码（WLAN_FW_*，12 为找不到 SSID） */
     uint8_t reasonCode();
 
-    /* AP 运行时 macAddress、localIP、subnetMask、gatewayIP、SSID 都是 AP 的（网关即 AP 地址） */
+    /* AP-only 时 localIP/subnetMask/gatewayIP/SSID 为 AP 的；STA+AP 时这些查询为 STA 的。 */
     uint8_t *macAddress(uint8_t *mac);
     IPAddress localIP();
     IPAddress subnetMask();
@@ -103,12 +117,18 @@ public:
     /*
      * 静态地址，取值同 WiFiS3：省略的网关为 local_ip 的 x.y.z.1，掩码为 255.255.255.0，只给地址时 DNS 也用该网关。
      * 之后每次连接都不启动 DHCP；已连接时立即生效。local_ip 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）。
-     * 地址与掩码也用于之后启动的 AP（同 WiFiS3、WiFiNINA）
+     * 地址与掩码也配置 AP（同 WiFiS3、WiFiNINA）；AP 当前支持 /24，独立配置请用 configSTA/softAPConfig
      */
     void config(IPAddress local_ip);
     void config(IPAddress local_ip, IPAddress dns_server);
     void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway);
     void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
+    /* Independent interface configuration, used when STA/AP coexist. */
+    void configSTA(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
+    bool softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
+    IPAddress stationIP();
+    IPAddress stationSubnetMask();
+    IPAddress stationGatewayIP();
     /*
      * 设 DNS 服务器（0.0.0.0 的不改）。静态地址时更新所用的 DNS；用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3
      * 经上游固件的结果）；用 DHCP 且未连接时不起作用，DNS 由 DHCP 给出
@@ -144,6 +164,7 @@ public:
     void setTimeout(unsigned long timeout);
 
 private:
+    WiFiMode mode_ = WIFI_OFF;
     unsigned long timeout_ = 10000;
     char ssid_[WL_SSID_MAX_LENGTH + 1] = {};
     char pass_[WL_WPA_KEY_MAX_LENGTH + 2] = {};

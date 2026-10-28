@@ -53,6 +53,17 @@ int wifi_port_connect(const char *ssid, const char *pass);
 void wifi_port_disconnect(uint32_t timeout_ms);
 /* AP 运行时报 AP 的状态，否则报 STA 的 */
 enum wifi_port_state wifi_port_state(void);
+/* Independent STA state/address, including while AP is running. */
+enum wifi_port_state wifi_port_sta_state(void);
+void wifi_port_sta_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw);
+bool wifi_port_ap_running(void);
+void wifi_port_ap_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw);
+/* AP address configuration is independent of STA; live changes restart DHCP. */
+int wifi_port_ap_config(uint32_t ip, uint32_t mask, uint32_t gw);
+int wifi_port_set_auto_reconnect(bool enable);
+bool wifi_port_get_auto_reconnect(void);
+int wifi_port_enable_ipv6(void);
+void wifi_port_ipv6(char *address, uint32_t size);
 /* 可以使用 socket：STA 已连接或 AP 运行中 */
 bool wifi_port_net_up(void);
 /* 正在连接（已发起、尚无结果） */
@@ -64,8 +75,7 @@ void wifi_port_last_error(uint16_t *status, uint16_t *reason);
 void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw);
 /*
  * 地址配置，之后每次连接都按它进行，已连接时立即生效。ip 为 0 时用 DHCP（DNS 由 DHCP 给出，dns1、dns2 不用）；
- * 否则用静态地址、不启动 DHCP，dns1、dns2 为 0 时不改对应的 DNS 服务器。ip 与 mask 也用于之后启动的 AP
- * （为 0 时 AP 用 192.168.4.1/24）
+ * 否则用静态地址、不启动 DHCP，dns1、dns2 为 0 时不改对应的 DNS 服务器。只配置 STA。
  */
 void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2);
 /*
@@ -87,11 +97,11 @@ int wifi_port_bssid(uint8_t bssid[6]);
 int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms);
 
 /*
- * 启动 AP（已运行时先停止）并等地址设好、DHCP 服务启动，最多 timeout_ms；不断开 STA，由调用者先断开。
- * pass 为 NULL 或空串为开放网络，否则 WPA2。地址见 wifi_port_ip_config，DHCP 地址池为同一网段中紧邻该地址的 10 个。
+ * 启动 AP（已运行时先停止）并等地址设好、DHCP 服务启动，最多 timeout_ms；不改变 STA。
+ * pass 为 NULL 或空串为开放网络，否则 WPA2。地址见 wifi_port_ap_config，DHCP 地址池为同一网段中紧邻该地址的 10 个。
  * 成功返回 0，失败时状态为 WIFI_PORT_AP_FAILED
  */
-int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, uint32_t timeout_ms);
+int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool hidden, uint8_t max_connections, uint32_t timeout_ms);
 /* 停止 AP 并等停止事件，最多 timeout_ms；清除 WIFI_PORT_AP_FAILED */
 void wifi_port_ap_stop(uint32_t timeout_ms);
 

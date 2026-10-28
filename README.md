@@ -6,7 +6,7 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
-当前平台需要 `bl616cl-libs` 0.6.0 和 `bl-flash-tools` 0.2.0（新增 littlefs 引擎与统一分区工具，保留 HID/BLE 能力）；平台与依赖包应一起更新。
+当前平台需要 `bl616cl-libs` 0.7.0 和 `bl-flash-tools` 0.2.0（IPv6 与隐藏 AP 适配，保留 littlefs、分区工具及 HID/BLE 能力）；平台与依赖包应一起更新。
 
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
@@ -106,7 +106,7 @@ arduino-lint --project-type platform --compliance strict .
 | `WiFiServer`（接口同 WiFiS3）：`begin()`、`begin(port)`、`available()`（接受新连接并保留最多 4 个，返回其中一个有数据可读的连接，同一连接可以多次返回；对端关闭且数据读完后服务端关闭它）、`accept()`（每个新连接只返回一次，之后由调用者 `stop()`）、`write`（发给 `available()` 保留的连接，返回各连接写出字节数中最少的）、`end()`、`operator bool`；STA 未连接且 AP 未运行时 `begin` 失败；对象不能复制。监听与每个连接各占一个 socket，与 `WiFiClient`、`WiFiUDP`、`ping` 共用 lwIP 的 8 个 | experimental | WiFiServerCheck 通过 `compile_check.sh` | WiFiServerCheck（电脑作客户端）：`available()` 对同一连接逐行应答；`write` 发给两个连接各一次，调用者 `stop()` 一个连接后不再重复发送；对端关闭的连接被回收，之后 6 个连接依次得到应答；`accept()` 的连接收发后被关闭。经 bridge 由 WiFiS3 调用（见 bridge README）。socket 用尽、长时间连接、大数据量收发未实测 |
 | `WiFiSSLClient`（接口同 WiFiS3）：TLS 1.2 客户端（底层包的 mbedTLS 3.6，曲线 P-256、P-384、P-521、X25519），`connect`（地址或域名；SNI 与证书名称校验；超时含 TCP 与握手，默认 10 s，`setConnectionTimeout` 可改）、`setCACert`（PEM，之后只信任它，`nullptr` 恢复）、`write`、`available`、`read`、`peek`、`connected`、`stop`（发 close_notify）、`remoteIP`、`remotePort`；默认用包内根证书束（SDK 的 `cacrt_all.pem`，147 张，Mozilla 2024-03-11）。不检查证书有效期（同上游 ESP32 固件）；证书束按链顶证书的签发者找根；找不到时，链顶与束内根的名称和公钥都相同则信任（COMODO RSA CA 的 AddTrust 交叉签发版本即如此，本机 OpenSSL 同样接受）；没有 `setEccSlot`。每个连接常驻约 38 KB 堆，握手时约 43–52 KB，先占 OCRAM；OCRAM 空闲不足 56 KB 时 `connect` 失败（FreeRTOS 只从 OCRAM 分配，耗尽会使固件停止）。TCP socket 与 `WiFiClient` 等共用 lwIP 的 8 个 | experimental | WiFiSSLCheck 通过 `compile_check.sh` | WiFiSSLCheck（`bl616cl-libs` 0.4.0）：证书束下 www.baidu.com（RSA）、valid-isrgrootx2.letsencrypt.org（P-384 根）、ecc384.badssl.com 成功，wrong.host、self-signed、untrusted-root.badssl.com 失败；expired.badssl.com 成功（链顶为束内根）；链顶与束内根同名、公钥不同的测试链失败；`setCACert` 测试 CA 后与电脑 TLS 服务往返 HTTP 100062 字节、字节和一致，回显一致，名称不符失败，过期证书成功；同时开 8 个连接时 3 个成功、其余失败，之后照常工作，结束时空闲堆与开始相差不到 1 KB。经 bridge 由 WiFiS3 调用（见 bridge README）。修复后复跑 run-tls-5：43 项全部通过（平台与 bridge 两轮）。本测试网络连不上 www.google.com（DNS 解析到不通的地址）；长时间连接未实测 |
 | 静态地址（接口同 WiFiS3）：`config(local_ip[, dns_server[, gateway[, subnet]]])`，省略的网关为 x.y.z.1、掩码 255.255.255.0，只给地址时 DNS 也用该网关；之后每次连接都不启动 DHCP，已连接时立即生效；`local_ip` 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）。`setDNS(dns1[, dns2])`：静态地址时更新 DNS，用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3 经上游固件的结果），用 DHCP 且未连接时不起作用 | experimental | WiFiStaticIP 通过 `compile_check.sh` | WiFiStaticIP：连接前设 .200 后连上，地址、掩码、网关、DNS 与配置相同，ping 网关、DNS 解析、与电脑 TCP 回显成功，电脑 ping 得到应答；断开重连（地址不变）仍为 .200；`setDNS` 后用新 DNS 解析成功；已连接时改为 .201 立即生效；已连接时 `config(0.0.0.0)` 后 2 s 内由 DHCP 取得地址；DHCP 下 `setDNS` 转为静态地址，之后重连地址不变。经 bridge 由 WiFiS3 调用（见 bridge README）。地址冲突检测（ARP 探测）没有做 |
-| `WiFi` AP：`beginAP`（WPA2 或开放网络，可设信道）、`status`（`WL_AP_LISTENING` / `WL_AP_CONNECTED` / `WL_AP_FAILED`）、AP 地址与 SSID 查询、`end` 停止 AP；同一时间只运行 STA 或 AP；AP 地址可用 `config` 设置，默认 `192.168.4.1/24`，DHCP 地址池为 10 个地址 | experimental | WiFiAPCheck 通过 `compile_check.sh` | 实板 run-ap-2：电脑取得 `192.168.4.2`，AP 状态 8，ping 应答；WiFiServer TCP 与 WiFiUDP 均完成电脑—板子回显；AP 运行时 `begin` 切换 STA 成功。AP 下 `WiFiClient::connect`、`ping(IPAddress)`、多设备连接未验证 |
+| `WiFi` AP：`beginAP`（WPA2 或开放网络，可设信道）、`status`（`WL_AP_LISTENING` / `WL_AP_CONNECTED` / `WL_AP_FAILED`）、AP 地址与 SSID 查询、`end` 停止 AP；默认切换 STA/AP，显式 `mode(WIFI_AP_STA)` 可并行；AP 地址可用 `config` 设置，默认 `192.168.4.1/24`，DHCP 地址池为 10 个地址 | experimental | WiFiAPCheck 通过 `compile_check.sh` | 实板 run-ap-2：电脑取得 `192.168.4.2`，AP 状态 8，ping 应答；WiFiServer TCP 与 WiFiUDP 均完成电脑—板子回显；AP 运行时 `begin` 切换 STA 成功。AP 下 `WiFiClient::connect`、`ping(IPAddress)`、多设备连接未验证 |
 | WiFi 的 UDP 组播（底层包未开 IGMP，`beginMulticast` 返回 0）、`setHostname` | unimplemented | — | `setHostname` 尚无接口 |
 | Wire、SPI 等其他平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
@@ -132,3 +132,13 @@ BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复�
 整数类型、字符串与二进制、默认值/只读、64槽边界、其他namespace与文件隔离、
 格式版本错误及EN写入中断已在BL616CL 1V0实机验证。现场完整断电后，首次4MiB读回
 与断电前一致。构建和软件/fake检查作为辅助证据，详见ARDUINO-48任务。
+
+## WiFi 模式与独立接口配置（ARDUINO-49）
+
+通用网络能力位于 `libraries/WiFi`，不依赖 bridge 或 RA4M1。普通 `begin` / `beginAP` 继续切换 STA/AP；显式 `WiFi.mode(WIFI_AP_STA)` 后二者可共存。`mode(WIFI_OFF)` 停两接口，`disconnect(true)` 只移除 STA 位，`softAPdisconnect(true)` 只移除 AP 位；不传 true 时断连接但保留接口选择。协议栈初始化后不释放。
+
+`config` 保留 Arduino 同时配置两接口的行为；独立配置用 `configSTA(ip, dns, gateway, mask)` 与 `softAPConfig(ip, gateway, mask)`。AP 当前只支持 /24；在线更新 AP 地址会重启 DHCP，客户端需续租/重连。模式3的 `localIP/subnetMask/gatewayIP/SSID` 返回 STA；`stationIP/stationSubnetMask/stationGatewayIP` 始终查询 STA，`softAPIP/softAPSSID` 始终查询 AP。
+
+`beginAP(ssid, pass, channel, hidden, maxConnections)` 支持隐藏及关联上限；默认上限5与固定官方 bridge 一致，但固定 wl80211 只有4个关联槽，因此有效容量最多4，不能承诺5台并发。`setAutoReconnect` 默认 true，仅在本次 begin 已成功取得 IP 后启用；意外掉线后后台重连，初次失败不会回到旧网络，显式 disconnect 后不重试。策略和凭据只存 RAM。
+
+`enableIpV6()` 启用 STA link-local，`localIPv6()` 返回字符串，无有效地址为 `::`；它不扩展现有 IPv4 `IPAddress`、TCP/UDP API，不承诺公网 IPv6 或 DHCPv6。底层0.7.0的 IPv6 ABI、头文件和库须成套更新。新增功能状态及实机验收边界见本轮任务记录；连接数限制需双关联实机证据，编译或单客户端接入不证明其有效。

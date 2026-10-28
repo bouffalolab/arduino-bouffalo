@@ -17,6 +17,7 @@
 #include "lwip/dns.h"
 #include "lwip/netifapi.h"
 #include "lwip/tcpip.h"
+#include "lwip/ip6_addr.h"
 #include "wl80211.h"
 #include "wifi_mgmr.h"
 #include "macsw_plat.h"
@@ -51,6 +52,9 @@ static volatile uint16_t last_reason;
 static volatile uint32_t disconnect_events;
 static volatile uint32_t scan_done_events;
 static uint32_t cfg_ip, cfg_mask, cfg_gw, cfg_dns[2]; /* cfg_ip 为 0 时用 DHCP */
+static uint32_t ap_ip, ap_mask, ap_gw;
+static bool auto_reconnect = true;
+static bool reconnect_armed; /* Only after this explicit begin acquired an IP. */
 static volatile bool static_pending; /* 已关联，等链路 up 后设置静态地址 */
 static volatile bool ap_up;            /* AP_STARTED 之后、AP_STOPPED 之前 */
 static volatile bool ap_failed;
@@ -65,6 +69,12 @@ static void wifi_event(async_input_event_t ev, void *priv)
 {
     (void)priv;
     switch (ev->code) {
+        case CODE_WIFI_ON_CONNECTING:
+            if (!user_disconnect) {
+                connecting = true;
+                state = WIFI_PORT_IDLE;
+            }
+            break;
         case CODE_WIFI_ON_GOT_IP:
             if (ev->value && user_disconnect) {
                 /* 应用断开时连接还没出结果（等待超时），之后连接才完成：不报告已连接，下一次调用接口时补发断开 */
@@ -74,6 +84,9 @@ static void wifi_event(async_input_event_t ev, void *priv)
                 got_ip = true;
                 connecting = false;
                 state = WIFI_PORT_CONNECTED;
+                reconnect_armed = true;
+                /* SDK setter only enters a critical section; it never blocks. */
+                wifi_port_set_auto_reconnect(auto_reconnect);
             } else if (got_ip && cfg_ip == 0) {
                 got_ip = false;
                 state = WIFI_PORT_LOST;
@@ -216,6 +229,8 @@ static void finish_static_ip(void)
         got_ip = true;
         connecting = false;
         state = WIFI_PORT_CONNECTED;
+        reconnect_armed = true;
+        wifi_port_set_auto_reconnect(auto_reconnect);
     }
 }
 
@@ -243,6 +258,10 @@ int wifi_port_connect(const char *ssid, const char *pass)
     p.use_dhcp = cfg_ip == 0;
 
     user_disconnect = false;
+    /* SDK retries last_connect_params (last successful SSID), which may differ
+       from this begin. Initial failures must not silently join the old AP. */
+    reconnect_armed = false;
+    wifi_mgmr_sta_autoconnect_disable();
     static_pending = false;
     got_ip = false;
     state = WIFI_PORT_IDLE;
@@ -266,6 +285,9 @@ static void wait_until(volatile bool *flag, bool value, uint32_t timeout_ms)
 /* wifi_mgmr_sta_disconnect 只对已关联的连接有效，所以先等进行中的连接出结果 */
 void wifi_port_disconnect(uint32_t timeout_ms)
 {
+    /* An explicit disconnect must not trigger wifi_mgmr's automatic retry. */
+    reconnect_armed = false;
+    wifi_mgmr_sta_autoconnect_disable();
     finish_pending_disconnect();
     wait_until(&connecting, false, timeout_ms);
     user_disconnect = true;
@@ -290,6 +312,61 @@ enum wifi_port_state wifi_port_state(void)
     return ap_failed ? WIFI_PORT_AP_FAILED : state;
 }
 
+enum wifi_port_state wifi_port_sta_state(void)
+{
+    finish_pending_disconnect();
+    finish_static_ip();
+    return init_result == -1 ? WIFI_PORT_NO_MODULE : state;
+}
+
+bool wifi_port_ap_running(void)
+{
+    return ap_up;
+}
+
+int wifi_port_set_auto_reconnect(bool enable)
+{
+    if (init_result == 0) {
+        int ret = enable && reconnect_armed && !user_disconnect ? wifi_mgmr_sta_autoconnect_enable() : wifi_mgmr_sta_autoconnect_disable();
+        if (ret != 0) {
+            return ret;
+        }
+    }
+    auto_reconnect = enable;
+    return 0;
+}
+
+bool wifi_port_get_auto_reconnect(void)
+{
+    return auto_reconnect;
+}
+
+/* These run in the TCP/IP thread through netifapi, like other netif changes. */
+static void enable_ipv6(struct netif *netif)
+{
+    if (ip6_addr_isinvalid(netif_ip6_addr_state(netif, 0))) {
+        netif_create_ip6_linklocal_address(netif, 1);
+    }
+}
+
+int wifi_port_enable_ipv6(void)
+{
+    return init_result == 0 ? netifapi_netif_common(STA_NETIF, enable_ipv6, NULL) : -1;
+}
+
+void wifi_port_ipv6(char *address, uint32_t size)
+{
+    strncpy(address, "::", size);
+    if (init_result != 0 || state != WIFI_PORT_CONNECTED) {
+        return;
+    }
+    LOCK_TCPIP_CORE();
+    if (ip6_addr_isvalid(netif_ip6_addr_state(STA_NETIF, 0))) {
+        ip6addr_ntoa_r(netif_ip6_addr(STA_NETIF, 0), address, (int)size);
+    }
+    UNLOCK_TCPIP_CORE();
+}
+
 bool wifi_port_net_up(void)
 {
     enum wifi_port_state s = wifi_port_state();
@@ -311,15 +388,56 @@ void wifi_port_last_error(uint16_t *status, uint16_t *reason)
 /* 断开事件到达时 netif 可能还留着旧地址，所以只在已连接时读 */
 void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
 {
-    uint32_t dns;
-
-    *ip = *mask = *gw = 0;
     if (ap_up) {
-        *ip = *gw = ip4_addr_get_u32(netif_ip4_addr(AP_NETIF));
-        *mask = ip4_addr_get_u32(netif_ip4_netmask(AP_NETIF));
-    } else if (state == WIFI_PORT_CONNECTED) {
+        wifi_port_ap_ip(ip, mask, gw);
+    } else {
+        wifi_port_sta_ip(ip, mask, gw);
+    }
+}
+
+void wifi_port_sta_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
+{
+    uint32_t dns;
+    *ip = *mask = *gw = 0;
+    if (wifi_port_sta_state() == WIFI_PORT_CONNECTED) {
         wifi_mgmr_sta_ip_get(ip, mask, gw, &dns);
     }
+}
+
+void wifi_port_ap_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
+{
+    *ip = *mask = *gw = 0;
+    if (ap_up) {
+        *ip = ip4_addr_get_u32(netif_ip4_addr(AP_NETIF));
+        *mask = ip4_addr_get_u32(netif_ip4_netmask(AP_NETIF));
+        *gw = ip4_addr_get_u32(netif_ip4_gw(AP_NETIF));
+    }
+}
+
+/* SDK's wl80211 lwIP port exports this helper, but not in a public header. */
+extern void _wifi_mgmr_ap_start_dhcpd(bool use_ipcfg, bool use_dhcpd, int start, int limit, uint32_t ip, uint32_t mask);
+
+int wifi_port_ap_config(uint32_t ip, uint32_t mask, uint32_t gw)
+{
+    /* dhcpd's address pool uses the final octet; support /24 networks. */
+    uint32_t host_ip = lwip_ntohl(ip);
+    if (ip != 0 && (mask != PP_HTONL(0xffffff00UL) || (host_ip & 255) == 0 || (host_ip & 255) == 255)) {
+        return -1;
+    }
+    ap_ip = ip;
+    ap_mask = mask;
+    ap_gw = gw;
+    if (ap_up) {
+        ip4_addr_t addr, netmask, gateway;
+        ip4_addr_set_u32(&addr, ap_ip != 0 ? ap_ip : PP_HTONL(0xc0a80401UL));
+        ip4_addr_set_u32(&netmask, ap_ip != 0 ? ap_mask : PP_HTONL(0xffffff00UL));
+        ip4_addr_set_u32(&gateway, ap_ip != 0 ? ap_gw : ip4_addr_get_u32(&addr));
+        uint8_t host = ip4_addr4(&addr);
+        _wifi_mgmr_ap_start_dhcpd(true, true, host <= 254 - AP_POOL_SIZE ? host + 1 : host - AP_POOL_SIZE,
+                                AP_POOL_SIZE, ip4_addr_get_u32(&addr), ip4_addr_get_u32(&netmask));
+        return netifapi_netif_set_addr(AP_NETIF, &addr, &netmask, &gateway);
+    }
+    return 0;
 }
 
 void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2)
@@ -465,7 +583,7 @@ static void ap_stop_wait(uint32_t timeout_ms)
     ap_stations = 0;
 }
 
-int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, uint32_t timeout_ms)
+int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool hidden, uint8_t max_connections, uint32_t timeout_ms)
 {
     wifi_mgmr_ap_params_t p;
     ip4_addr_t ip, zero;
@@ -473,19 +591,23 @@ int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, uint
     if (ap_up) {
         ap_stop_wait(timeout_ms);
     }
-    ip4_addr_set_u32(&ip, cfg_ip != 0 ? cfg_ip : PP_HTONL(LWIP_MAKEU32(192, 168, 4, 1)));
+    ip4_addr_set_u32(&ip, ap_ip != 0 ? ap_ip : PP_HTONL(LWIP_MAKEU32(192, 168, 4, 1)));
     uint8_t host = ip4_addr4(&ip);
     memset(&p, 0, sizeof(p));
     p.ssid = (char *)ssid;
     p.key = pass != NULL && pass[0] != '\0' ? (char *)pass : NULL; /* 有密码时 wl80211 用 WPA2-PSK */
     p.channel = channel;
+    p.hidden_ssid = hidden;
+    /* The pinned wl80211 has four association slots. A requested ceiling of
+       five (official bridge default) therefore has an effective ceiling of four. */
+    wifi_mgmr_conf_max_sta(max_connections > 4 ? 4 : max_connections);
     p.use_ipcfg = true;
     p.use_dhcpd = true;
     /* dhcpd_start 只在给出地址池时保留已设的地址（否则改为 192.168.169.1），池在地址的最后一段前后 */
     p.start = host <= 254 - AP_POOL_SIZE ? host + 1 : host - AP_POOL_SIZE;
     p.limit = AP_POOL_SIZE;
     p.ap_ipaddr = ip4_addr_get_u32(&ip);
-    p.ap_mask = cfg_ip != 0 ? cfg_mask : PP_HTONL(LWIP_MAKEU32(255, 255, 255, 0));
+    p.ap_mask = ap_ip != 0 ? ap_mask : PP_HTONL(LWIP_MAKEU32(255, 255, 255, 0));
     ap_failed = false;
     ap_stations = 0;
     /* 清掉上次的地址，下面才能按地址判断这次的设置已完成 */
@@ -497,6 +619,12 @@ int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, uint
     }
     for (uint32_t waited = 0; waited < timeout_ms; waited += 10) {
         if (ap_up && netif_is_link_up(AP_NETIF) && ip4_addr_cmp(netif_ip4_addr(AP_NETIF), &ip)) {
+            if (ap_ip != 0) {
+                ip4_addr_t mask, gw;
+                ip4_addr_set_u32(&mask, ap_mask);
+                ip4_addr_set_u32(&gw, ap_gw);
+                netifapi_netif_set_addr(AP_NETIF, &ip, &mask, &gw);
+            }
             return 0;
         }
         vTaskDelay(pdMS_TO_TICKS(10));
