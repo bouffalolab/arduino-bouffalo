@@ -118,5 +118,7 @@ arduino-lint --project-type platform --compliance strict .
 [libraries/LittleFS/README.md](libraries/LittleFS/README.md)。依赖固定包 0.6.0，
 存储416 KiB，固件上限1.5 MiB；挂载失败不自动格式化。当前为 experimental：
 BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复位与写循环中断恢复；
-全片读回验证格式化范围及普通 bridge 上传的 FS 字节保持。真实掉电验收仍待现场配合。
+全片读回验证格式化范围及普通 bridge 上传的 FS 字节保持。现场断电重接后，
+首次完整 4 MiB 读回与断电前一致，挂载及 10000 字节文件逐字节校验通过。
+断电操作由用户确认，读回与文件校验由测试机执行。
 软件构建、map 和镜像检查只作辅助，不计实机通过。
