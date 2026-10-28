@@ -20,6 +20,7 @@
 | `cores/bouffalo/usb_hid_port.h` | 可选 64 字节 raw HID；应用在全局构造时注册报告描述符与 Feature 回调，USB 启动前固定接口组合 |
 | `cores/bouffalo/api/` | ArduinoCore-API 原样拷贝，来源见下 |
 | `libraries/WiFi/` | 平台 WiFi 库（接口同官方 WiFiS3），经 `library.properties` 的 `ldflags` 链入底层包的 Wi-Fi 组 |
+| `libraries/Preferences/` | LittleFS 上的类型化命名空间键值存储；提交后原子替换，bridge/AT 无关 |
 | `libraries/LittleFS/` | 平台程序 Flash 文件系统；内部回调直连原厂 Flash API，bridge/AT 无关，显式格式化 |
 | `libraries/BLEController/` | external-host H4 Controller接口与USB原始HCI示例，无BL端BLE Host；经`ldflags`选择BLE链接组 |
 | `variants/unor4wifi_bl616cl/` | 板卡引脚、引脚表（引脚号到 GPIO，禁用系统引脚）与 `Serial1`、`Serial2` 实例 |
@@ -122,3 +123,12 @@ BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复�
 首次完整 4 MiB 读回与断电前一致，挂载及 10000 字节文件逐字节校验通过。
 断电操作由用户确认，读回与文件校验由测试机执行。
 软件构建、map 和镜像检查只作辅助，不计实机通过。
+
+### Preferences
+
+标准平台库 `Preferences` 基于 LittleFS，公共 API、格式与限制见
+[libraries/Preferences/README.md](libraries/Preferences/README.md)。状态 experimental；
+每 namespace 64 键、单值最多1023字节，流式快照256字节拷贝缓冲，close后rename提交。
+整数类型、字符串与二进制、默认值/只读、64槽边界、其他namespace与文件隔离、
+格式版本错误及EN写入中断已在BL616CL 1V0实机验证。现场完整断电后，首次4MiB读回
+与断电前一致。构建和软件/fake检查作为辅助证据，详见ARDUINO-48任务。
