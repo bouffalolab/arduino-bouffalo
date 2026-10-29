@@ -32,7 +32,10 @@ def read(esp,offset,size):
 def write(esp,offset,data):
  packed=zlib.compress(data,9);esp.flash_defl_begin(len(data),len(packed),offset)
  for i in range(0,len(packed),esp.FLASH_WRITE_SIZE):
-  esp.flash_defl_block(packed[i:i+esp.FLASH_WRITE_SIZE],i//esp.FLASH_WRITE_SIZE)
+  esp.flash_defl_block(packed[i:i+esp.FLASH_WRITE_SIZE],i//esp.FLASH_WRITE_SIZE,timeout=120)
+ # Full backups contain long erased runs. A compressed block can expand to
+ # megabytes; allow Flash erase/write latency and wait for the final stub ACK.
+ esp.read_reg(esp.CHIP_DETECT_MAGIC_REG_ADDR,timeout=120)
  assert esp.flash_md5sum(offset,len(data)).lower()==hashlib.md5(data).hexdigest(),'Flash MD5 mismatch'
  assert sha(read(esp,offset,len(data)))==sha(data),'Flash SHA256 readback mismatch'
  esp.flash_begin(0,0)
