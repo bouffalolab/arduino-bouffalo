@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "firmware_version": "0.6.0",
+    "captured_on": "2026-08-13",
+    "transport": "host USB CDC -> RA4M1 Serial -> Serial2 -> ESP32-S3 AT UART",
+    "notes": [
+      "This contract is derived from a real ESP32-S3 baseline capture.",
+      "It contains no SSID, BSSID, password, token, certificate, or private payload.",
+      "Observed dynamic values describe one capture environment and are not required BL616CL constants."
+    ]
+  },
+  "contracts": [
+    {
+      "id": "beginsta_empty_ssid",
+      "request_ascii": "AT+BEGINSTA=\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "ERROR\r\n"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "wifi_mode_invalid",
+      "request_ascii": "AT+WIFIMODE=4\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "ERROR\r\n"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "wifi_mode_write_null",
+      "request_ascii": "AT+WIFIMODE=0\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "+WIFIMODE: \r\nOK\r\n"
+      },
+      "evidence": "hardware-capture-required",
+      "observed_postconditions": {
+        "preflight_wifi_mode": "1",
+        "readback_wifi_mode": "0",
+        "readback_wifi_status": "255",
+        "scope": "STA mode with no active station or SoftAP session"
+      }
+    },
+    {
+      "id": "wifi_mode_write_sta",
+      "request_ascii": "AT+WIFIMODE=1\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "+WIFIMODE: \r\nOK\r\n"
+      },
+      "evidence": "hardware-capture-required",
+      "observed_postconditions": {
+        "preflight_wifi_mode": "0",
+        "readback_wifi_mode": "1",
+        "readback_wifi_status": "0",
+        "scope": "restoration after the captured NULL-mode case"
+      }
+    },
+    {
+      "id": "wifi_status_read",
+      "request_ascii": "AT+GETSTATUS?\r\n",
+      "response": {
+        "type": "prefixed-enum",
+        "prefix_ascii": "+GETSTATUS: ",
+        "allowed_values": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "255"
+        ],
+        "suffix_ascii": "\r\nOK\r\n",
+        "observed_value": "2"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "wifi_mode_read",
+      "request_ascii": "AT+WIFIMODE?\r\n",
+      "response": {
+        "type": "prefixed-enum",
+        "prefix_ascii": "+WIFIMODE: ",
+        "allowed_values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "suffix_ascii": "\r\n\r\nOK\r\n",
+        "observed_value": "1"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "reconnect_read",
+      "request_ascii": "AT+RECONNECT?\r\n",
+      "response": {
+        "type": "prefixed-enum",
+        "prefix_ascii": "+RECONNECT: ",
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "suffix_ascii": "\r\nOK\r\n",
+        "observed_value": "1"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "reconnect_write_disable",
+      "request_ascii": "AT+RECONNECT=0\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "OK\r\n"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "reconnect_write_enable",
+      "request_ascii": "AT+RECONNECT=1\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "OK\r\n"
+      },
+      "evidence": "hardware-capture-required"
+    },
+    {
+      "id": "autoconnect_read",
+      "request_ascii": "AT+AUTOCONNECT?\r\n",
+      "response": {
+        "type": "prefixed-enum",
+        "prefix_ascii": "+AUTOCONNECT: ",
+        "allowed_values": [
+          "0"
+        ],
+        "suffix_ascii": "\r\nOK\r\n",
+        "observed_value": "0"
+      },
+      "evidence": "hardware-capture-required",
+      "semantics": {
+        "baseline_behavior": "deprecated-no-op",
+        "source": "hardware/esp32-patched/esp32/libraries/WiFi/src/WiFiSTA.cpp",
+        "source_function": "WiFiSTAClass::getAutoConnect",
+        "return_value": false,
+        "compatibility_requirement": "BL616CL must report 0 for AT+AUTOCONNECT? unless an approved compatibility decision changes this baseline."
+      }
+    },
+    {
+      "id": "autoconnect_write_enable",
+      "request_ascii": "AT+AUTOCONNECT=1\r\n",
+      "response": {
+        "type": "exact",
+        "ascii": "OK\r\n"
+      },
+      "evidence": "hardware-capture-required",
+      "semantics": {
+        "baseline_behavior": "deprecated-no-op",
+        "source_handler": "UNOR4USBBridge/cmds_wifi_station.h",
+        "source_setter": "hardware/esp32-patched/esp32/libraries/WiFi/src/WiFiSTA.cpp",
+        "setter_function": "WiFiSTAClass::setAutoConnect",
+        "setter_return_value": false,
+        "setter_return_checked_by_handler": false,
+        "framework_appends_ok_for_handler_status": true,
+        "expected_readback_ascii": "+AUTOCONNECT: 0\r\nOK\r\n",
+        "compatibility_requirement": "BL616CL must accept the non-empty write argument and return OK without changing the AUTOCONNECT readback."
+      }
+    },
+    {
+      "id": "wifi_scan",
+      "request_ascii": "AT+WIFISCAN\r\n",
+      "response": {
+        "type": "wifi-scan",
+        "empty_response_ascii": "OK\r\n",
+        "nonempty_prefix_ascii": "+WIFISCAN: ",
+        "payload_length_separator_ascii": "|",
+        "field_delimiter_ascii": " | ",
+        "row_suffix_ascii": "\r\n",
+        "terminal_ascii": "OK\r\n",
+        "field_names": [
+          "ssid",
+          "bssid",
+          "rssi",
+          "channel",
+          "encryption"
+        ],
+        "allowed_encryption_values": [
+          "open",
+          "WEP",
+          "WPA",
+          "WPA2",
+          "WPA+WPA2",
+          "WPA2-EAP",
+          "WPA3",
+          "WPA2+WPA3",
+          "WAPI",
+          "unknown"
+        ],
+        "sanitized_example_response_ascii": "+WIFISCAN: 103|fixture-open | 02:00:00:00:00:01 | -42 | 1 | open\r\nfixture-wpa2 | 02:00:00:00:00:02 | -67 | 11 | WPA2\r\nOK\r\n",
+        "observed_network_rows": 33,
+        "observed_response_bytes": 1764,
+        "observed_elapsed_ms": 7326.814,
+        "observed_postconditions": {
+          "immediate_status_request_ascii": "AT+GETSTATUS?\r\n",
+          "immediate_status_response_ascii": "+GETSTATUS: 2\r\nOK\r\n",
+          "captured_at_utc": "2026-08-14T07:19:38.953037+00:00",
+          "scope": "STA mode with no active station or SoftAP session, immediately after the captured WIFIMODE 1 -> 0 -> 1 restoration",
+          "compatibility_note": "Status 2 is an observed post-scan transition, not an environment-independent constant."
+        }
+      },
+      "evidence": "hardware-capture-required"
+    }
+  ]
+}

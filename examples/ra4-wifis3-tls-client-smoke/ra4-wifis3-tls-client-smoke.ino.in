@@ -1,0 +1,379 @@
+#include <WiFiS3.h>
+#include <Modem.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace {
+
+constexpr size_t kCommandCapacity = 256U;
+constexpr unsigned long kWifiTimeoutMs = 30000UL;
+constexpr unsigned long kDnsTimeoutMs = 15000UL;
+constexpr unsigned long kDnsRetryIntervalMs = 250UL;
+constexpr unsigned long kReceiveTimeoutMs = 10000UL;
+constexpr unsigned long kTlsConnectionTimeoutMs = @TLS_CLIENT_TIMEOUT_MS@UL;
+constexpr unsigned long kModemResponseTimeoutMs = @MODEM_RESPONSE_TIMEOUT_MS@UL;
+constexpr bool kTraceTlsModem = @TRACE_TLS_MODEM@;
+constexpr unsigned long kReadyRepeatIntervalMs = 1000UL;
+constexpr char kExpectedReply[] = "bl616cl-tls-echo";
+constexpr char kRequest[] = "bl616cl-tls-ping";
+constexpr int kTlsDiagnosticSocket = 2000;
+
+const char kTestCa[] =
+@TLS_TEST_CA_LITERAL@;
+
+char command[kCommandCapacity] = {};
+size_t command_size = 0U;
+bool completed = false;
+bool connect_by_hostname = true;
+unsigned long next_ready_announcement_ms = 0UL;
+
+void fail(const char* reason) {
+  Serial.print("RA4_TLS_CLIENT:RESULT=FAIL:");
+  Serial.println(reason);
+  completed = true;
+}
+
+bool read_command_line() {
+  while (Serial.available() > 0) {
+    const int value = Serial.read();
+    if (value < 0) {
+      return false;
+    }
+    if (value == '\r') {
+      continue;
+    }
+    if (value == '\n') {
+      command[command_size] = '\0';
+      command_size = 0U;
+      return true;
+    }
+    if (command_size + 1U >= sizeof(command)) {
+      command_size = 0U;
+      fail("COMMAND");
+      return false;
+    }
+    command[command_size++] = static_cast<char>(value);
+  }
+  return false;
+}
+
+int hex_value(char value) {
+  if (value >= '0' && value <= '9') {
+    return value - '0';
+  }
+  if (value >= 'a' && value <= 'f') {
+    return value - 'a' + 10;
+  }
+  if (value >= 'A' && value <= 'F') {
+    return value - 'A' + 10;
+  }
+  return -1;
+}
+
+bool decode_hex(char* encoded) {
+  const size_t encoded_size = strlen(encoded);
+  if ((encoded_size & 1U) != 0U) {
+    return false;
+  }
+  const size_t decoded_size = encoded_size / 2U;
+  for (size_t index = 0U; index < decoded_size; ++index) {
+    const int high = hex_value(encoded[index * 2U]);
+    const int low = hex_value(encoded[index * 2U + 1U]);
+    if (high < 0 || low < 0) {
+      return false;
+    }
+    encoded[index] = static_cast<char>((high << 4U) | low);
+  }
+  encoded[decoded_size] = '\0';
+  return decoded_size != 0U;
+}
+
+bool parse_ip(const char* text, IPAddress& address) {
+  return text != nullptr && address.fromString(text);
+}
+
+bool parse_start(
+    char*& ssid,
+    char*& password,
+    char*& hostname,
+    IPAddress& dns_ip,
+    uint16_t& port) {
+  constexpr char kHostnamePrefix[] = "START ";
+  constexpr char kIpPrefix[] = "STARTIP ";
+  const char* prefix = nullptr;
+  if (strncmp(command, kIpPrefix, sizeof(kIpPrefix) - 1U) == 0) {
+    prefix = kIpPrefix;
+    connect_by_hostname = false;
+  } else if (strncmp(command, kHostnamePrefix, sizeof(kHostnamePrefix) - 1U) == 0) {
+    prefix = kHostnamePrefix;
+    connect_by_hostname = true;
+  } else {
+    return false;
+  }
+
+  char* fields[5] = {};
+  fields[0] = command + strlen(prefix);
+  for (size_t index = 1U; index < sizeof(fields) / sizeof(fields[0]); ++index) {
+    fields[index] = strchr(fields[index - 1U], ' ');
+    if (fields[index] == nullptr) {
+      return false;
+    }
+    *fields[index]++ = '\0';
+  }
+  if (strchr(fields[4], ' ') != nullptr) {
+    return false;
+  }
+
+  ssid = fields[0];
+  password = fields[1];
+  hostname = fields[2];
+  const unsigned long parsed_port = strtoul(fields[4], nullptr, 10);
+  return decode_hex(ssid) &&
+      decode_hex(password) &&
+      hostname[0] != '\0' &&
+      parsed_port > 0U &&
+      parsed_port <= 65535U &&
+      parse_ip(fields[3], dns_ip) &&
+      (port = static_cast<uint16_t>(parsed_port), true);
+}
+
+bool wait_for_station() {
+  const unsigned long started_at = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) {
+      return false;
+    }
+    delay(20);
+  }
+  return true;
+}
+
+bool resolve_hostname(const char* hostname, IPAddress& resolved) {
+  const unsigned long started_at = millis();
+  do {
+    if (WiFi.hostByName(hostname, resolved) == 1) {
+      return true;
+    }
+    delay(kDnsRetryIntervalMs);
+  } while (millis() - started_at < kDnsTimeoutMs);
+  return false;
+}
+
+void print_hostname_diagnostic() {
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+HOSTBYNAMEDIAG:",
+          response,
+          "AT+HOSTBYNAMEDIAG\r\n")) {
+    Serial.print("RA4_TLS_CLIENT:DNS_DIAG=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_TLS_CLIENT:DNS_DIAG=UNAVAILABLE");
+  }
+}
+
+void print_tls_diagnostic() {
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTDIAG:",
+          response,
+          "AT+SSLCLIENTDIAG=%d\r\n",
+          kTlsDiagnosticSocket)) {
+    Serial.print("RA4_TLS_CLIENT:TLS_DIAG=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_TLS_CLIENT:TLS_DIAG=UNAVAILABLE");
+  }
+}
+
+void print_tls_verify_flags() {
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTVERIFYFLAGS:",
+          response,
+          "AT+SSLCLIENTVERIFYFLAGS=%d\r\n",
+          kTlsDiagnosticSocket)) {
+    Serial.print("RA4_TLS_CLIENT:TLS_VERIFY_FLAGS=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_TLS_CLIENT:TLS_VERIFY_FLAGS=UNAVAILABLE");
+  }
+}
+
+void print_tls_endpoint() {
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTENDPOINT:",
+          response,
+          "AT+SSLCLIENTENDPOINT=%d\r\n",
+          kTlsDiagnosticSocket)) {
+    Serial.print("RA4_TLS_CLIENT:TLS_ENDPOINT=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_TLS_CLIENT:TLS_ENDPOINT=UNAVAILABLE");
+  }
+}
+
+void run_smoke() {
+  char* ssid = nullptr;
+  char* password = nullptr;
+  char* hostname = nullptr;
+  IPAddress dns_ip;
+  uint16_t port = 0U;
+  if (!parse_start(ssid, password, hostname, dns_ip, port)) {
+    fail("START");
+    return;
+  }
+
+  WiFi.setTimeout(kWifiTimeoutMs);
+  Serial.println("RA4_TLS_CLIENT:WIFI_BEGIN_START");
+  const int wifi_begin_result = WiFi.begin(ssid, password);
+  Serial.print("RA4_TLS_CLIENT:WIFI_BEGIN_RESULT=");
+  Serial.println(wifi_begin_result);
+  if (wifi_begin_result != WL_CONNECTED && !wait_for_station()) {
+    fail("WIFI_CONNECT");
+    return;
+  }
+  Serial.println("RA4_TLS_CLIENT:WIFI_CONNECTED");
+  Serial.println("RA4_TLS_CLIENT:DNS_OVERRIDE_START");
+  WiFi.setDNS(dns_ip);
+  Serial.println("RA4_TLS_CLIENT:DNS_OVERRIDE_DONE");
+  Serial.print("RA4_TLS_CLIENT:IP_CONFIG=");
+  Serial.print(WiFi.localIP());
+  Serial.print(",");
+  Serial.print(WiFi.gatewayIP());
+  Serial.print(",");
+  Serial.print(WiFi.dnsIP());
+  Serial.println();
+
+  WiFiClient tcp_probe;
+  const int tcp_probe_result = tcp_probe.connect(dns_ip, port);
+  Serial.print("RA4_TLS_CLIENT:TCP_IP_PROBE=");
+  Serial.println(tcp_probe_result == 1 ? "PASS" : "FAIL");
+  tcp_probe.stop();
+
+  if (connect_by_hostname) {
+    IPAddress resolved;
+    if (!resolve_hostname(hostname, resolved)) {
+      print_hostname_diagnostic();
+      WiFi.disconnect();
+      fail("DNS");
+      return;
+    }
+    Serial.println("RA4_TLS_CLIENT:DNS_PASS");
+    if (resolved != dns_ip) {
+      WiFi.disconnect();
+      fail("DNS_ROUTE");
+      return;
+    }
+    Serial.println("RA4_TLS_CLIENT:DNS_PEER_PASS");
+  } else {
+    Serial.println("RA4_TLS_CLIENT:DNS_BYPASS");
+  }
+
+  WiFiSSLClient client;
+  client.setCACert(kTestCa);
+  client.setConnectionTimeout(kTlsConnectionTimeoutMs);
+  if (kTraceTlsModem) {
+    Serial.println("RA4_TLS_CLIENT:MODEM_TRACE_BEGIN");
+    modem.debug(Serial, 1);
+  }
+  // WiFiSSLClient passes its timeout to the bridge, but its synchronous AT
+  // response wait otherwise remains ModemClass's 10-second default.
+  modem.timeout(kModemResponseTimeoutMs);
+  const unsigned long tls_connect_started_at = millis();
+  const int connect_result = connect_by_hostname
+      ? client.connect(hostname, port)
+      : client.connect(dns_ip, port);
+  modem.timeout(MODEM_TIMEOUT);
+  if (kTraceTlsModem) {
+    modem.noDebug();
+    Serial.println("RA4_TLS_CLIENT:MODEM_TRACE_END");
+  }
+  Serial.print("RA4_TLS_CLIENT:TLS_CONNECT_ELAPSED_MS=");
+  Serial.println(millis() - tls_connect_started_at);
+  if (connect_result != 1) {
+    print_tls_diagnostic();
+    print_tls_verify_flags();
+    print_tls_endpoint();
+    client.stop();
+    WiFi.disconnect();
+    fail("TLS_CONNECT");
+    return;
+  }
+  Serial.println("RA4_TLS_CLIENT:TLS_CONNECT_PASS");
+
+  const size_t request_size = sizeof(kRequest) - 1U;
+  if (client.write(
+          reinterpret_cast<const uint8_t*>(kRequest),
+          request_size) != request_size) {
+    client.stop();
+    WiFi.disconnect();
+    fail("TLS_WRITE");
+    return;
+  }
+  Serial.println("RA4_TLS_CLIENT:TLS_WRITE_PASS");
+
+  const size_t expected_size = sizeof(kExpectedReply) - 1U;
+  char reply[sizeof(kExpectedReply)] = {};
+  size_t reply_size = 0U;
+  const unsigned long started_at = millis();
+  while (reply_size < expected_size && millis() - started_at < kReceiveTimeoutMs) {
+    if (client.available() > 0) {
+      if (reply_size == 0U && client.peek() < 0) {
+        client.stop();
+        WiFi.disconnect();
+        fail("TLS_PEEK");
+        return;
+      }
+      const int value = client.read();
+      if (value >= 0) {
+        reply[reply_size++] = static_cast<char>(value);
+      }
+    } else {
+      delay(10);
+    }
+  }
+  client.stop();
+  WiFi.disconnect();
+
+  if (reply_size != expected_size ||
+      memcmp(reply, kExpectedReply, expected_size) != 0) {
+    fail("TLS_ECHO");
+    return;
+  }
+
+  Serial.println("RA4_TLS_CLIENT:TLS_READ_PASS");
+  Serial.println("RA4_TLS_CLIENT:TLS_CLOSE_PASS");
+  Serial.println("RA4_TLS_CLIENT:RESULT=PASS");
+  completed = true;
+}
+
+}  // namespace
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("RA4_TLS_CLIENT:READY");
+  next_ready_announcement_ms = millis() + kReadyRepeatIntervalMs;
+}
+
+void loop() {
+  if (completed) {
+    delay(10);
+    return;
+  }
+
+  if (static_cast<long>(millis() - next_ready_announcement_ms) >= 0) {
+    Serial.println("RA4_TLS_CLIENT:READY");
+    next_ready_announcement_ms += kReadyRepeatIntervalMs;
+  }
+
+  if (read_command_line()) {
+    Serial.println("RA4_TLS_CLIENT:START_RECEIVED");
+    run_smoke();
+  }
+}

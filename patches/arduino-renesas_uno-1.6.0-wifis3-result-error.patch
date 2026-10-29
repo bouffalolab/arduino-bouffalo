@@ -1,0 +1,22 @@
+diff --git a/src/Modem.cpp b/src/Modem.cpp
+index 44303d9..b1f0001 100644
+--- a/src/Modem.cpp
++++ b/src/Modem.cpp
+@@ -4,7 +4,7 @@
+ #define ERROR_TOKEN     "ERROR"
+ #define TERM_TOKEN      "\r\n"
+ #define RESULT_OK       OK_TOKEN TERM_TOKEN
+-#define RESULT_ERROR    OK_TOKEN TERM_TOKEN
++#define RESULT_ERROR    ERROR_TOKEN TERM_TOKEN
+ #define RESULT_DATA     "DATA" TERM_TOKEN
+ 
+ using namespace std;
+@@ -387,7 +387,7 @@ ModemClass::ParseResult ModemClass::buf_read(const string &prompt, string &data
+          break;
+       }
+ 
+-      if(restart && state == at_parse_state_t::Completed) {
++      if(restart && state == at_parse_state_t::Completed && res != Error) {
+          state = at_parse_state_t::Begin;
+          restart = false;
+       }

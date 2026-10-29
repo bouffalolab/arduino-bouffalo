@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "description": "ESP32-S3 Wi-Fi AT state-changing capture plan. It intentionally contains no network credentials and requires a separate read-only preflight record before a mutation can run.",
+  "cases": [
+    {
+      "id": "wifi_mode_write_null",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the response and observable state transition from STA mode to NULL mode without the optional auto-connect argument.",
+      "preconditions": [
+        "The same physical board has first completed this case's --preflight capture.",
+        "Only run this case when preflight reports +WIFIMODE: 1 and no active station or SoftAP session needs credential-based recovery.",
+        "This plan must not contain an SSID or password."
+      ],
+      "state_change": "persistent",
+      "pre_state_requests_ascii": [
+        "AT+GETSTATUS?\r\n",
+        "AT+WIFIMODE?\r\n",
+        "AT+RECONNECT?\r\n",
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "request_ascii": "AT+WIFIMODE=0\r\n",
+      "follow_up_requests_ascii": [
+        "AT+WIFIMODE?\r\n",
+        "AT+GETSTATUS?\r\n"
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "Restore STA mode with the separately captured wifi_mode_write_sta case.",
+          "If preflight reported an active association or AP role, verify recovery manually; do not place credentials in this plan."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 5000,
+        "quiet_ms": 150
+      }
+    },
+    {
+      "id": "wifi_mode_write_sta",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the response and observable state transition restoring STA mode from the preceding NULL-mode case.",
+      "preconditions": [
+        "The same physical board has first completed this case's --preflight capture.",
+        "Only run this case when preflight reports +WIFIMODE: 0 after a successful wifi_mode_write_null capture.",
+        "This plan must not contain an SSID or password."
+      ],
+      "state_change": "persistent",
+      "pre_state_requests_ascii": [
+        "AT+GETSTATUS?\r\n",
+        "AT+WIFIMODE?\r\n",
+        "AT+RECONNECT?\r\n",
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "request_ascii": "AT+WIFIMODE=1\r\n",
+      "follow_up_requests_ascii": [
+        "AT+WIFIMODE?\r\n",
+        "AT+GETSTATUS?\r\n"
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "This case restores the preceding wifi_mode_write_null preflight value of 1.",
+          "Verify +WIFIMODE: 1 after the write before attempting another state-changing case."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 5000,
+        "quiet_ms": 150
+      }
+    },
+    {
+      "id": "reconnect_write_disable",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the response to disabling automatic reconnect.",
+      "preconditions": [
+        "The same physical board has first completed this case's --preflight capture.",
+        "Only run this case when preflight reports +RECONNECT: 1; otherwise it would not exercise a transition."
+      ],
+      "state_change": "persistent",
+      "pre_state_requests_ascii": [
+        "AT+GETSTATUS?\r\n",
+        "AT+WIFIMODE?\r\n",
+        "AT+RECONNECT?\r\n",
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "request_ascii": "AT+RECONNECT=0\r\n",
+      "follow_up_requests_ascii": [
+        "AT+RECONNECT?\r\n"
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "Restore the exact +RECONNECT value observed in preflight with a separately authorized write command."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "reconnect_write_enable",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the response to enabling automatic reconnect and restore the preceding disable case's setting.",
+      "preconditions": [
+        "The same physical board has first completed this case's --preflight capture.",
+        "Only run this recovery case when preflight reports +RECONNECT: 0."
+      ],
+      "state_change": "persistent",
+      "pre_state_requests_ascii": [
+        "AT+GETSTATUS?\r\n",
+        "AT+WIFIMODE?\r\n",
+        "AT+RECONNECT?\r\n",
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "request_ascii": "AT+RECONNECT=1\r\n",
+      "follow_up_requests_ascii": [
+        "AT+RECONNECT?\r\n"
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "This case restores the preceding reconnect_write_disable preflight value of 1.",
+          "Verify +RECONNECT: 1 after the write before attempting another state-changing case."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "wifi_disconnect_run",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the run-form disconnect response and post-disconnect status.",
+      "preconditions": [
+        "The same physical board has first completed this case's --preflight capture.",
+        "This command may disconnect the active station and cannot be credential-free restored by the capture tool."
+      ],
+      "state_change": "temporary",
+      "pre_state_requests_ascii": [
+        "AT+GETSTATUS?\r\n",
+        "AT+WIFIMODE?\r\n",
+        "AT+RECONNECT?\r\n",
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "request_ascii": "AT+DISCONNECT\r\n",
+      "follow_up_requests_ascii": [
+        "AT+GETSTATUS?\r\n"
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "Do not assume that automatic reconnect will recover the association.",
+          "Reconnect only through a separately authorized, private credential procedure; never add that credential to this plan or its capture output."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 5000,
+        "quiet_ms": 150
+      }
+    }
+  ]
+}

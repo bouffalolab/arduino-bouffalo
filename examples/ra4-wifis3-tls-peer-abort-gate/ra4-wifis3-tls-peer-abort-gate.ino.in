@@ -1,0 +1,193 @@
+#include <WiFiS3.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace {
+
+constexpr unsigned long kWifiTimeoutMs = 30000UL;
+constexpr unsigned long kPeerAbortWaitMs = 1200UL;
+constexpr unsigned long kIoTimeoutMs = 10000UL;
+constexpr size_t kPayloadSize = 32U;
+
+const char kTrustedCa[] =
+@TLS_TRUSTED_CA_LITERAL@;
+
+char command[240] = {};
+size_t command_size = 0U;
+bool finished = false;
+WiFiSSLClient client;
+uint8_t payload[kPayloadSize] = {};
+uint8_t reply[kPayloadSize] = {};
+
+void fail(const char *reason) {
+  client.stop();
+  WiFi.disconnect();
+  Serial.print("RA4_TLS_PEER_ABORT:RESULT=FAIL:");
+  Serial.println(reason);
+  finished = true;
+}
+
+int hex_digit(char value) {
+  if (value >= '0' && value <= '9') return value - '0';
+  if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+  if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+  return -1;
+}
+
+bool decode_hex(char *field) {
+  const size_t encoded = strlen(field);
+  if (encoded == 0U || (encoded & 1U) != 0U) return false;
+  for (size_t index = 0U; index < encoded / 2U; ++index) {
+    const int high = hex_digit(field[index * 2U]);
+    const int low = hex_digit(field[index * 2U + 1U]);
+    if (high < 0 || low < 0) return false;
+    field[index] = static_cast<char>((high << 4U) | low);
+  }
+  field[encoded / 2U] = '\0';
+  return true;
+}
+
+bool parse_start(
+    char *&ssid,
+    char *&password,
+    IPAddress &peer,
+    uint16_t &port) {
+  if (strncmp(command, "START ", 6U) != 0) return false;
+  char *fields[4] = {command + 6U};
+  for (size_t index = 1U; index < 4U; ++index) {
+    fields[index] = strchr(fields[index - 1U], ' ');
+    if (fields[index] == nullptr) return false;
+    *fields[index]++ = '\0';
+  }
+  if (strchr(fields[3], ' ') != nullptr) return false;
+  char *port_end = nullptr;
+  const unsigned long parsed_port = strtoul(fields[3], &port_end, 10);
+  ssid = fields[0];
+  password = fields[1];
+  if (!decode_hex(ssid) || !decode_hex(password) ||
+      !peer.fromString(fields[2]) || port_end == fields[3] ||
+      *port_end != '\0' || parsed_port == 0U || parsed_port > 65535U) {
+    return false;
+  }
+  port = static_cast<uint16_t>(parsed_port);
+  return true;
+}
+
+bool wait_station() {
+  const unsigned long started_at = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) return false;
+    delay(20);
+  }
+  return true;
+}
+
+bool read_exact(size_t size) {
+  size_t received = 0U;
+  const unsigned long started_at = millis();
+  while (received < size && millis() - started_at < kIoTimeoutMs) {
+    const int count = client.read(reply + received, size - received);
+    if (count > 0) {
+      received += static_cast<size_t>(count);
+    } else {
+      delay(10);
+    }
+  }
+  return received == size;
+}
+
+void run_gate() {
+  char *ssid = nullptr;
+  char *password = nullptr;
+  IPAddress peer;
+  uint16_t port = 0U;
+  if (!parse_start(ssid, password, peer, port)) {
+    fail("START");
+    return;
+  }
+  WiFi.setTimeout(kWifiTimeoutMs);
+  if (WiFi.begin(ssid, password) != WL_CONNECTED && !wait_station()) {
+    fail("WIFI");
+    return;
+  }
+  Serial.println("RA4_TLS_PEER_ABORT:WIFI_CONNECTED");
+
+  client.setCACert(kTrustedCa);
+  client.setConnectionTimeout(kIoTimeoutMs);
+  if (client.connect(peer, port) != 1) {
+    fail("FIRST_CONNECT");
+    return;
+  }
+  Serial.println("RA4_TLS_PEER_ABORT:FIRST_HANDSHAKE_PASS");
+  delay(kPeerAbortWaitMs);
+
+  const int connected_after_abort = client.connected() ? 1 : 0;
+  Serial.print("RA4_TLS_PEER_ABORT:CONNECTED_AFTER_ABORT=");
+  Serial.println(connected_after_abort);
+  for (size_t index = 0U; index < sizeof(payload); ++index) {
+    payload[index] = static_cast<uint8_t>(0x60U + index);
+  }
+  const size_t failed_write = client.write(payload, sizeof(payload));
+  Serial.print("RA4_TLS_PEER_ABORT:WRITE_AFTER_ABORT=");
+  Serial.println(static_cast<unsigned long>(failed_write));
+  if (connected_after_abort != 0 || failed_write != 0U) {
+    fail("ABORT_STATE");
+    return;
+  }
+  Serial.println("RA4_TLS_PEER_ABORT:ABORT_DETECTED_PASS");
+
+  client.stop();
+  Serial.println("RA4_TLS_PEER_ABORT:CLOSE_PASS");
+  client.setCACert(kTrustedCa);
+  client.setConnectionTimeout(kIoTimeoutMs);
+  if (client.connect(peer, port) != 1) {
+    fail("RECOVERY_CONNECT");
+    return;
+  }
+  Serial.println("RA4_TLS_PEER_ABORT:RECOVERY_HANDSHAKE_PASS");
+  if (client.write(payload, sizeof(payload)) != sizeof(payload) ||
+      !read_exact(sizeof(reply)) ||
+      memcmp(reply, payload, sizeof(reply)) != 0) {
+    fail("RECOVERY_ECHO");
+    return;
+  }
+  client.stop();
+  WiFi.disconnect();
+  Serial.println("RA4_TLS_PEER_ABORT:RECOVERY_ECHO_PASS");
+  Serial.println("RA4_TLS_PEER_ABORT:RESULT=PASS");
+  finished = true;
+}
+
+}  // namespace
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("RA4_TLS_PEER_ABORT:READY");
+}
+
+void loop() {
+  if (finished) {
+    delay(10);
+    return;
+  }
+  static unsigned long last_ready = millis();
+  if (millis() - last_ready >= 1000UL) {
+    Serial.println("RA4_TLS_PEER_ABORT:READY");
+    last_ready = millis();
+  }
+  while (Serial.available() > 0) {
+    const int value = Serial.read();
+    if (value == '\r') continue;
+    if (value == '\n') {
+      command[command_size] = '\0';
+      command_size = 0U;
+      run_gate();
+      return;
+    }
+    if (value < 0 || command_size + 1U >= sizeof(command)) {
+      fail("COMMAND");
+      return;
+    }
+    command[command_size++] = static_cast<char>(value);
+  }
+}

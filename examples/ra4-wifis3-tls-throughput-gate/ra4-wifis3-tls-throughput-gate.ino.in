@@ -1,0 +1,208 @@
+#include <WiFiS3.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace {
+
+constexpr size_t kChunkBytes = 1000U;
+constexpr size_t kChunks = 64U;
+constexpr unsigned long kIoTimeoutMs = 15000UL;
+constexpr unsigned long kWifiTimeoutMs = 30000UL;
+constexpr bool kSoftAp = @SOFTAP@;
+const char kTrustedCa[] =
+@TLS_TRUSTED_CA_LITERAL@;
+
+char command[240] = {};
+size_t command_size = 0U;
+bool finished = false;
+bool softap_prepared = false;
+bool preparation_queried = false;
+uint8_t sent[kChunkBytes] = {};
+uint8_t received[kChunkBytes] = {};
+WiFiSSLClient client;
+
+void fail(const char *reason) {
+  client.stop();
+  WiFi.disconnect();
+  Serial.print("RA4_TLS_THROUGHPUT:RESULT=FAIL:");
+  Serial.println(reason);
+  finished = true;
+}
+
+int hex_digit(char value) {
+  if (value >= '0' && value <= '9') return value - '0';
+  if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+  if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+  return -1;
+}
+
+bool decode_hex(char *field) {
+  const size_t encoded = strlen(field);
+  if (encoded == 0U || (encoded & 1U) != 0U) return false;
+  for (size_t index = 0U; index < encoded / 2U; ++index) {
+    const int high = hex_digit(field[index * 2U]);
+    const int low = hex_digit(field[index * 2U + 1U]);
+    if (high < 0 || low < 0) return false;
+    field[index] = static_cast<char>((high << 4U) | low);
+  }
+  field[encoded / 2U] = '\0';
+  return true;
+}
+
+bool parse_start(char *&ssid, char *&password, IPAddress &peer, uint16_t &port) {
+  const bool preparing = kSoftAp && (strncmp(command, "PREPAP ", 7U) == 0 ||
+      strncmp(command, "ARMPAP ", 7U) == 0);
+  if (!preparing && strncmp(command, "START ", 6U) != 0) return false;
+  char *fields[4] = {command + (preparing ? 7U : 6U)};
+  for (size_t index = 1U; index < 4U; ++index) {
+    fields[index] = strchr(fields[index - 1U], ' ');
+    if (fields[index] == nullptr) return false;
+    *fields[index]++ = '\0';
+  }
+  if (strchr(fields[3], ' ') != nullptr) return false;
+  char *end = nullptr;
+  const unsigned long parsed_port = strtoul(fields[3], &end, 10);
+  ssid = fields[0];
+  password = fields[1];
+  return decode_hex(ssid) && decode_hex(password) &&
+      peer.fromString(fields[2]) && end != fields[3] && *end == '\0' &&
+      parsed_port > 0U && parsed_port <= 65535U &&
+      (port = static_cast<uint16_t>(parsed_port), true);
+}
+
+void make_payload(size_t sequence) {
+  sent[0] = static_cast<uint8_t>((sequence >> 24U) & 0xFFU);
+  sent[1] = static_cast<uint8_t>((sequence >> 16U) & 0xFFU);
+  sent[2] = static_cast<uint8_t>((sequence >> 8U) & 0xFFU);
+  sent[3] = static_cast<uint8_t>(sequence & 0xFFU);
+  for (size_t index = 4U; index < kChunkBytes; ++index) {
+    sent[index] = static_cast<uint8_t>((sequence * 31U + index * 17U) & 0xFFU);
+  }
+}
+
+bool read_exact() {
+  size_t used = 0U;
+  const unsigned long started = millis();
+  while (used < kChunkBytes && millis() - started < kIoTimeoutMs) {
+    const int count = client.read(received + used, kChunkBytes - used);
+    if (count > 0) {
+      used += static_cast<size_t>(count);
+    } else {
+      delay(1);
+    }
+  }
+  return used == kChunkBytes;
+}
+
+void run_gate() {
+  char *ssid = nullptr;
+  char *password = nullptr;
+  IPAddress peer;
+  uint16_t port = 0U;
+  const unsigned input_length = strlen(command);
+  const bool echoed_marker = strncmp(command, "RA4_TLS_THROUGHPUT:", 19U) == 0;
+  if (!parse_start(ssid, password, peer, port)) {
+    Serial.print("RA4_TLS_THROUGHPUT:CONTROL_FAILURE=");
+    Serial.print(input_length);Serial.print(',');Serial.println(echoed_marker ? 1 : 0);
+    return fail("START");
+  }
+  WiFi.setTimeout(kWifiTimeoutMs);
+  if (kSoftAp && (strncmp(command, "PREPAP", 6U) == 0 || strncmp(command, "ARMPAP", 6U) == 0)) {
+    if (softap_prepared) return fail("SOFTAP_START");
+    if (strncmp(command, "ARMPAP", 6U) == 0) {
+      Serial.println("RA4_TLS_THROUGHPUT:SOFTAP_ARMED");
+      delay(5000);  // Host closes CDC and detaches USB/IP before WLAN changes.
+    }
+    // The peer certificate/listener uses this fixed subnet. setDNS() in a
+    // previous STA Sketch also updates the bridge's saved AP configuration.
+    WiFi.config(IPAddress(192, 168, 4, 1));
+    if (WiFi.beginAP(ssid, password, 1) != WL_AP_LISTENING)
+      return fail("SOFTAP_START");
+    const unsigned long started = millis();
+    while (WiFi.status() != WL_AP_LISTENING && WiFi.status() != WL_AP_CONNECTED) {
+      if (millis() - started >= kWifiTimeoutMs) return fail("SOFTAP_READY");
+      delay(10);
+    }
+    if (WiFi.localIP() != IPAddress(192, 168, 4, 1)) return fail("SOFTAP_ADDRESS");
+    softap_prepared = true;
+    Serial.println("RA4_TLS_THROUGHPUT:SOFTAP_STARTED");
+    return;
+  }
+  if (kSoftAp && !softap_prepared) return fail("SOFTAP_NOT_PREPARED");
+  const int connected_status = kSoftAp ? WL_AP_CONNECTED : WL_CONNECTED;
+  const int begin_status = kSoftAp ? WiFi.status() : WiFi.begin(ssid, password);
+  if (begin_status != connected_status) {
+    const unsigned long wifi_started = millis();
+    while (WiFi.status() != connected_status &&
+           millis() - wifi_started < kWifiTimeoutMs) delay(20);
+    if (WiFi.status() != connected_status) return fail("WIFI");
+  }
+  Serial.println("RA4_TLS_THROUGHPUT:WIFI_CONNECTED");
+  client.setCACert(kTrustedCa);
+  client.setConnectionTimeout(kIoTimeoutMs);
+  if (client.connect(peer, port) != 1) return fail("CONNECT");
+  Serial.println("RA4_TLS_THROUGHPUT:TLS_CONNECTED");
+  const unsigned long started = millis();
+  for (size_t sequence = 0U; sequence < kChunks; ++sequence) {
+    make_payload(sequence);
+    if (client.write(sent, kChunkBytes) != kChunkBytes) return fail("WRITE");
+    if (!read_exact()) return fail("READ");
+    if (memcmp(sent, received, kChunkBytes) != 0) return fail("PAYLOAD");
+  }
+  const unsigned long elapsed = millis() - started;
+  client.stop();
+  WiFi.disconnect();
+  Serial.print("RA4_TLS_THROUGHPUT:CHUNKS=");
+  Serial.println(kChunks);
+  Serial.print("RA4_TLS_THROUGHPUT:BYTES_EACH_DIRECTION=");
+  Serial.println(kChunks * kChunkBytes);
+  Serial.print("RA4_TLS_THROUGHPUT:ELAPSED_MS=");
+  Serial.println(elapsed);
+  Serial.println("RA4_TLS_THROUGHPUT:RESULT=PASS");
+  finished = true;
+}
+
+}  // namespace
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("RA4_TLS_THROUGHPUT:READY");
+}
+
+void loop() {
+  if (finished) return delay(10);
+  static unsigned long last_ready = millis();
+  if (!softap_prepared && millis() - last_ready >= 1000UL) {
+    Serial.println("RA4_TLS_THROUGHPUT:READY");
+    last_ready = millis();
+  }
+  while (Serial.available() > 0) {
+    const int value = Serial.read();
+    if (value == '\r') continue;
+    if (kSoftAp && !preparation_queried && value == '@') { command_size = 0U; continue; }
+    if (value == '\n') {
+      command[command_size] = '\0';
+      command_size = 0U;
+      if (kSoftAp && strncmp(command, "PREPSTATUS ", 11U) == 0) {
+        const char *nonce = command + 11U;
+        if (!softap_prepared || strlen(nonce) != 16U) return;
+        for (unsigned i = 0; i < 16U; ++i) if (hex_digit(nonce[i]) < 0) return;
+        preparation_queried = true;
+        Serial.print("RA4_TLS_THROUGHPUT:PREPSTATUS=");
+        Serial.print(nonce); Serial.println(",1");
+        return;  // Cached preparation only: never query AT or restart the AP.
+      }
+      if (kSoftAp && softap_prepared && !preparation_queried &&
+          strncmp(command, "START ", 6U) != 0) {
+        Serial.println("RA4_TLS_THROUGHPUT:PREPARATION_INPUT_NOISE");
+        return;
+      }
+      if (strncmp(command, "START ", 6U) == 0)
+        Serial.println("RA4_TLS_THROUGHPUT:START_RECEIVED");
+      run_gate();
+      return;
+    }
+    if (command_size + 1U >= sizeof(command)) return fail("COMMAND");
+    command[command_size++] = static_cast<char>(value);
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "description": "ESP32-S3 BLE raw HCI AT transcript capture plan. It records the byte-exact controller transport sequence needed by the RA4M1 ArduinoBLE adapter without exposing application data or BLE identities.",
+  "cases": [
+    {
+      "id": "hci_reset_round_trip",
+      "classification": "hardware-capture-required",
+      "summary": "Start the ESP32-S3 HCI transport, send one H4 Reset command, capture wait/available/read framing, then stop the transport.",
+      "preconditions": [
+        "UNO R4 WiFi is running the ESP32-S3 baseline bridge firmware.",
+        "RA4M1 is already running examples/ra4-at-transcript-proxy at 115200 baud.",
+        "The preflight firmware response must identify the expected ESP32-S3 baseline.",
+        "This sequence contains no BLE advertising, scanning, connection, pairing, key, or user payload.",
+        "The capture sequence must reach hci_end; if it is interrupted, manually send AT+HCIEND followed by CRLF through the proxy before another BLE capture."
+      ],
+      "state_change": "temporary",
+      "pre_state_requests_ascii": [
+        "AT+FWVERSION?\r\n"
+      ],
+      "pre_state_expected_responses_ascii": [
+        "+FWVERSION: 0.6.0\r\nOK\r\n"
+      ],
+      "steps": [
+        {
+          "phase": "hci_begin",
+          "request_ascii": "AT+HCIBEGIN\r\n"
+        },
+        {
+          "phase": "hci_write_reset",
+          "request_ascii": "AT+HCIWRITE=4\r\n",
+          "raw_payload_hex": "01030c00"
+        },
+        {
+          "phase": "hci_wait",
+          "request_ascii": "AT+HCIWAIT=1000\n\r"
+        },
+        {
+          "phase": "hci_available",
+          "request_ascii": "AT+HCIAVAILABLE?\r\n"
+        },
+        {
+          "phase": "hci_read",
+          "request_ascii": "AT+HCIREAD\r\n"
+        },
+        {
+          "phase": "hci_end",
+          "request_ascii": "AT+HCIEND\r\n"
+        }
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "If hci_end did not complete, manually send AT+HCIEND followed by CRLF through the proxy before running another BLE capture.",
+          "Do not infer controller state from a timed-out exchange; record and investigate the raw transcript first."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 5000,
+        "quiet_ms": 150
+      }
+    },
+    {
+      "id": "hci_end_after_ra4_wait_smoke",
+      "classification": "hardware-capture-required",
+      "summary": "Stop the controller left active by the RA4M1 ArduinoBLE wait smoke before a separate timing capture.",
+      "preconditions": [
+        "UNO R4 WiFi is running the ESP32-S3 baseline bridge firmware.",
+        "RA4M1 is already running examples/ra4-at-transcript-proxy at 115200 baud.",
+        "The preceding RA4M1 ArduinoBLE wait smoke may have initialized the ESP32-S3 raw HCI controller because its ArduinoBLE transport end() implementation is empty.",
+        "The preflight firmware response must identify the expected ESP32-S3 baseline.",
+        "This sequence does not scan, advertise, connect, pair, read BLE identities, or send HCI payload data."
+      ],
+      "state_change": "temporary",
+      "pre_state_requests_ascii": [
+        "AT+FWVERSION?\r\n"
+      ],
+      "pre_state_expected_responses_ascii": [
+        "+FWVERSION: 0.6.0\r\nOK\r\n"
+      ],
+      "steps": [
+        {
+          "phase": "hci_end_after_ra4_wait_smoke",
+          "request_ascii": "AT+HCIEND\r\n"
+        }
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "Proceed to hci_wait_250_round_trip only when this HCIEND capture reached a terminal response.",
+          "If it times out, do not infer controller state or issue HCIBEGIN; record and investigate the raw result first."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 5000,
+        "quiet_ms": 150
+      }
+    },
+    {
+      "id": "hci_wait_250_round_trip",
+      "classification": "hardware-capture-required",
+      "summary": "From a known stopped controller, measure HCIWAIT=250 and the following HCIAVAILABLE response without an HCI payload.",
+      "preconditions": [
+        "UNO R4 WiFi is running the ESP32-S3 baseline bridge firmware.",
+        "RA4M1 is already running examples/ra4-at-transcript-proxy at 115200 baud.",
+        "The immediately preceding hci_end_after_ra4_wait_smoke capture reached a terminal response on the same board.",
+        "The preflight firmware response must identify the expected ESP32-S3 baseline.",
+        "This sequence contains no BLE advertising, scanning, connection, pairing, identity read, key, or application payload."
+      ],
+      "state_change": "temporary",
+      "pre_state_requests_ascii": [
+        "AT+FWVERSION?\r\n"
+      ],
+      "pre_state_expected_responses_ascii": [
+        "+FWVERSION: 0.6.0\r\nOK\r\n"
+      ],
+      "steps": [
+        {
+          "phase": "hci_begin",
+          "request_ascii": "AT+HCIBEGIN\r\n"
+        },
+        {
+          "phase": "hci_wait_250",
+          "request_ascii": "AT+HCIWAIT=250\n\r"
+        },
+        {
+          "phase": "hci_available_after_wait",
+          "request_ascii": "AT+HCIAVAILABLE?\r\n"
+        },
+        {
+          "phase": "hci_end",
+          "request_ascii": "AT+HCIEND\r\n"
+        }
+      ],
+      "recovery": {
+        "automatic_restore": false,
+        "operator_actions": [
+          "If hci_end did not complete, manually send AT+HCIEND followed by CRLF through the proxy before another BLE capture.",
+          "Treat a timeout or stale bytes before a step as capture evidence; do not retry HCIBEGIN until controller state is re-established."
+        ]
+      },
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 15000,
+        "quiet_ms": 150
+      }
+    }
+  ]
+}
