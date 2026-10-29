@@ -27,6 +27,7 @@ int net_port_recv(int sock, uint8_t *buf, size_t len, bool peek);
 /* 连接仍在，或还有未读数据 */
 bool net_port_connected(int sock);
 int net_port_peer(int sock, uint32_t *addr, uint16_t *port);
+int net_port_local(int sock, uint32_t *addr, uint16_t *port);
 void net_port_close(int sock);
 /* sock 这个号被 net_port_close 关闭过的次数。保存的号与当时的计数不同，说明那条连接已关闭（号可能已给了新连接） */
 uint32_t net_port_close_count(int sock);

@@ -192,6 +192,19 @@ int net_port_peer(int sock, uint32_t *addr, uint16_t *port)
     return 0;
 }
 
+int net_port_local(int sock, uint32_t *addr, uint16_t *port)
+{
+    struct sockaddr_in sa;
+    socklen_t len = sizeof(sa);
+
+    if (lwip_getsockname(sock, (struct sockaddr *)&sa, &len) != 0) {
+        return -1;
+    }
+    *addr = sa.sin_addr.s_addr;
+    *port = lwip_ntohs(sa.sin_port);
+    return 0;
+}
+
 void net_port_close(int sock)
 {
     struct rx_cache *c = cache_of(sock);

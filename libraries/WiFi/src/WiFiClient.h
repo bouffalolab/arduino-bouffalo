@@ -28,6 +28,8 @@ public:
 
     IPAddress remoteIP();
     uint16_t remotePort();
+    IPAddress localIP();
+    uint16_t localPort();
     /* 连接超时（毫秒），0 为默认 10 s；同 WiFiS3 */
     void setConnectionTimeout(int timeout);
 

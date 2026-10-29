@@ -29,7 +29,7 @@ int WiFiSSLClient::connect(const char *host, uint16_t port)
         return 0;
     }
     uint32_t used = millis() - start;
-    if (used >= timeout || tls_port_open(sock, host, root_ca_, timeout - used) != 0) {
+    if (used >= timeout || tls_port_open(sock, host, root_ca_, certificate_, private_key_, timeout - used) != 0) {
         net_port_close(sock);
         return 0;
     }
@@ -40,6 +40,16 @@ int WiFiSSLClient::connect(const char *host, uint16_t port)
 void WiFiSSLClient::setCACert(const char *root_ca)
 {
     root_ca_ = root_ca;
+}
+
+void WiFiSSLClient::setCertificate(const char *certificate)
+{
+    certificate_ = certificate;
+}
+
+void WiFiSSLClient::setPrivateKey(const char *private_key)
+{
+    private_key_ = private_key;
 }
 
 size_t WiFiSSLClient::write(const uint8_t *buf, size_t size)

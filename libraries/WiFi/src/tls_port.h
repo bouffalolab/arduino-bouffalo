@@ -18,7 +18,9 @@ extern "C" {
  * 否则只信任它（PEM，以 '\0' 结尾）。OCRAM 空闲不足一次握手所需时不开始握手。成功返回 0；失败返回 -1，并释放
  * TLS 资源，sock 由调用者关闭
  */
-int tls_port_open(int sock, const char *host, const char *ca_pem, uint32_t timeout_ms);
+int tls_port_open(int sock, const char *host, const char *ca_pem,
+                  const char *client_cert_pem, const char *client_key_pem,
+                  uint32_t timeout_ms);
 /* 加密发送，最多等 timeout_ms；返回已发送的明文字节数，未发出任何字节时返回 -1 */
 int tls_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms);
 /* 已解密、尚未读取的字节数（不等待）；连接已关闭且无数据时返回 -1 */

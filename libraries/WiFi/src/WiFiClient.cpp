@@ -132,6 +132,26 @@ uint16_t WiFiClient::remotePort()
     return port;
 }
 
+IPAddress WiFiClient::localIP()
+{
+    uint32_t addr = 0;
+    uint16_t port = 0;
+    if (sock_ < 0 || net_port_local(sock_, &addr, &port) != 0) {
+        return IPAddress((uint32_t)0);
+    }
+    return IPAddress(addr);
+}
+
+uint16_t WiFiClient::localPort()
+{
+    uint32_t addr = 0;
+    uint16_t port = 0;
+    if (sock_ < 0 || net_port_local(sock_, &addr, &port) != 0) {
+        return 0;
+    }
+    return port;
+}
+
 void WiFiClient::setConnectionTimeout(int timeout)
 {
     connect_timeout_ = timeout;

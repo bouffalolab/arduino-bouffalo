@@ -10,6 +10,7 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/net_sockets.h"
+#include "mbedtls/pk.h"
 #include "mbedtls/ssl.h"
 
 #include "arduino_crt_bundle.h"
@@ -35,6 +36,8 @@ struct tls_conn {
     mbedtls_ctr_drbg_context drbg;
     mbedtls_entropy_context entropy;
     mbedtls_x509_crt ca;
+    mbedtls_x509_crt client_cert;
+    mbedtls_pk_context client_key;
 };
 
 /* 按 socket 号索引，同 net_port.c */
@@ -99,6 +102,8 @@ static void free_conn(struct tls_conn *t)
     mbedtls_ctr_drbg_free(&t->drbg);
     mbedtls_entropy_free(&t->entropy);
     mbedtls_x509_crt_free(&t->ca);
+    mbedtls_x509_crt_free(&t->client_cert);
+    mbedtls_pk_free(&t->client_key);
     free(t);
 }
 
@@ -170,7 +175,9 @@ static int set_trust(struct tls_conn *t, const char *ca_pem)
     return 0;
 }
 
-int tls_port_open(int sock, const char *host, const char *ca_pem, uint32_t timeout_ms)
+int tls_port_open(int sock, const char *host, const char *ca_pem,
+                  const char *client_cert_pem, const char *client_key_pem,
+                  uint32_t timeout_ms)
 {
     int i = sock - LWIP_SOCKET_OFFSET;
     if (i < 0 || i >= MEMP_NUM_NETCONN || conns[i] != NULL || kfree_size(MM_HEAP_OCRAM_0) < TLS_OCRAM_MIN) {
@@ -189,11 +196,24 @@ int tls_port_open(int sock, const char *host, const char *ca_pem, uint32_t timeo
     mbedtls_ctr_drbg_init(&t->drbg);
     mbedtls_entropy_init(&t->entropy);
     mbedtls_x509_crt_init(&t->ca);
+    mbedtls_x509_crt_init(&t->client_cert);
+    mbedtls_pk_init(&t->client_key);
 
     if (mbedtls_ctr_drbg_seed(&t->drbg, mbedtls_entropy_func, &t->entropy, NULL, 0) != 0 ||
         mbedtls_ssl_config_defaults(&t->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
                                     MBEDTLS_SSL_PRESET_DEFAULT) != 0 ||
         set_trust(t, ca_pem) != 0) {
+        goto fail;
+    }
+    if ((client_cert_pem == NULL) != (client_key_pem == NULL)) {
+        goto fail;
+    }
+    if (client_cert_pem != NULL &&
+        (mbedtls_x509_crt_parse(&t->client_cert, (const unsigned char *)client_cert_pem,
+                                strlen(client_cert_pem) + 1) < 0 ||
+         mbedtls_pk_parse_key(&t->client_key, (const unsigned char *)client_key_pem,
+                              strlen(client_key_pem) + 1, NULL, 0, NULL, NULL) != 0 ||
+         mbedtls_ssl_conf_own_cert(&t->conf, &t->client_cert, &t->client_key) != 0)) {
         goto fail;
     }
     mbedtls_ssl_conf_authmode(&t->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
