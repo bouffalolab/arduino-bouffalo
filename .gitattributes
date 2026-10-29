@@ -1,0 +1,2 @@
+# Unified diffs preserve SDK context whitespace and have manifest-pinned hashes.
+*.patch -whitespace

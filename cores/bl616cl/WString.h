@@ -4,7 +4,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined(BL616CL_BRIDGE_PROVISIONAL)
 #include <string>
+#endif
 
 #include "pgmspace.h"
 
@@ -64,7 +66,9 @@ public:
     bool operator==(const char *value) const { return strcmp(c_str(), value == nullptr ? "" : value) == 0; }
     bool operator!=(const char *value) const { return !(*this == value); }
     explicit operator bool() const { return buffer_ != nullptr; }
+#if !defined(BL616CL_BRIDGE_PROVISIONAL)
     operator std::string() const { return std::string(c_str()); }
+#endif
 
     char operator[](unsigned int index) const;
     char &operator[](unsigned int index);

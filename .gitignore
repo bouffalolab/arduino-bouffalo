@@ -21,3 +21,6 @@ build/
 .DS_Store
 Thumbs.db
 *~
+
+# Local Arduino runner configuration; generated build workspace has its own config.
+/arduino-cli.yaml
