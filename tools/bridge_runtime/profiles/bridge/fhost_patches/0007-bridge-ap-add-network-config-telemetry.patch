@@ -1,0 +1,73 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c
+@@ -20,6 +20,10 @@
+ #include "fst/fst.h"
+ #include "config.h"
+ 
++#ifdef CONFIG_EXTRA_WPA_SSID_FLAG
++#include <fhost_wpa.h>
++#endif /* CONFIG_EXTRA_WPA_SSID_FLAG */
++
+ 
+ #if !defined(CONFIG_CTRL_IFACE) && defined(CONFIG_NO_CONFIG_WRITE)
+ #define NO_CONFIG_WRITE
+@@ -2749,18 +2753,25 @@
+ 	struct wpa_ssid *ssid;
+ 	int ret = 0;
+ 
++	fhost_bridge_ap_start_progress(197, 0);
+ 	os_free(config->pssid);
++	fhost_bridge_ap_start_progress(198, 0);
+ 	config->pssid = NULL;
+ 	config->num_prio = 0;
+ 
++	fhost_bridge_ap_start_progress(199, 0);
+ 	ssid = config->ssid;
+ 	while (ssid) {
++		fhost_bridge_ap_start_progress(200, 0);
+ 		ssid->pnext = NULL;
++		fhost_bridge_ap_start_progress(201, 0);
+ 		if (wpa_config_add_prio_network(config, ssid) < 0)
+ 			ret = -1;
++		fhost_bridge_ap_start_progress(202, ret);
+ 		ssid = ssid->next;
+ 	}
+ 
++	fhost_bridge_ap_start_progress(203, ret);
+ 	return ret;
+ }
+ 
+@@ -3053,25 +3064,33 @@
+ 
+ 	id = -1;
+ 	ssid = config->ssid;
++	fhost_bridge_ap_start_progress(187, 0);
+ 	while (ssid) {
+ 		if (ssid->id > id)
+ 			id = ssid->id;
+ 		last = ssid;
+ 		ssid = ssid->next;
+ 	}
++	fhost_bridge_ap_start_progress(188, 0);
+ 	id++;
+ 
++	fhost_bridge_ap_start_progress(189, 0);
+ 	ssid = os_zalloc(sizeof(*ssid));
++	fhost_bridge_ap_start_progress(190, ssid ? 0 : -1);
+ 	if (ssid == NULL)
+ 		return NULL;
++	fhost_bridge_ap_start_progress(191, 0);
+ 	ssid->id = id;
+ 	dl_list_init(&ssid->psk_list);
++	fhost_bridge_ap_start_progress(192, 0);
+ 	if (last)
+ 		last->next = ssid;
+ 	else
+ 		config->ssid = ssid;
+ 
++	fhost_bridge_ap_start_progress(193, 0);
+ 	wpa_config_update_prio_list(config);
++	fhost_bridge_ap_start_progress(194, 0);
+ 
+ 	return ssid;
+ }

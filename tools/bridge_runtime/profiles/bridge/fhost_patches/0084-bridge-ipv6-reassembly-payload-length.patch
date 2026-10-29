@@ -1,0 +1,14 @@
+--- a/components/net/lwip/lwip/src/core/ipv6/ip6_frag.c
++++ b/components/net/lwip/lwip/src/core/ipv6/ip6_frag.c
+@@ -682,7 +682,10 @@
+       sizeof(struct ip6_frag_hdr));
+ 
+     /* Adjust datagram length by adding header lengths. */
+-    ipr->datagram_len = (u16_t)(ipr->datagram_len + ((u8_t*)p->payload - (u8_t*)iphdr_ptr)
++    /* p->payload still points to the original Fragment Header. Measure
++     * preceding extensions from the original IPv6 header, before its move;
++     * iphdr_ptr is already shifted by IP6_FRAG_HLEN and undercounts by 8. */
++    ipr->datagram_len = (u16_t)(ipr->datagram_len + ((u8_t*)p->payload - (u8_t*)ipr->iphdr)
+                          - IP6_HLEN);
+ 
+     /* Set payload length in ip header. */

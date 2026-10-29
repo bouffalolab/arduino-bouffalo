@@ -1,0 +1,35 @@
+--- a/components/net/lwip/lwip/src/core/ipv4/ip4_frag.c
++++ b/components/net/lwip/lwip/src/core/ipv4/ip4_frag.c
+@@ -51,4 +51,5 @@
+ #include "lwip/icmp.h"
++#include "lwip/sys.h"
+ 
+ #include <string.h>
+ 
+@@ -778,4 +779,7 @@
+   u16_t tmp;
+   int mf_set;
++#if LWIP_NETIF_TX_SINGLE_PBUF && defined(BL616CL_BRIDGE_IP_FRAG_RETRY)
++  const u32_t fragment_started_ms = sys_now();
++#endif
+ 
+   original_iphdr = (struct ip_hdr *)p->payload;
+@@ -800,7 +804,15 @@
+ 
+ #if LWIP_NETIF_TX_SINGLE_PBUF
+-    rambuf = pbuf_alloc(PBUF_IP, fragsize, PBUF_RAM);
+-    if (rambuf == NULL) {
+-      goto memerr;
++    while ((rambuf = pbuf_alloc(PBUF_IP, fragsize, PBUF_RAM)) == NULL) {
++#if defined(BL616CL_BRIDGE_IP_FRAG_RETRY)
++      /* MAC confirmations free earlier fragments on another thread. Bound
++       * the wait so a genuinely exhausted heap still returns ERR_MEM. */
++      if ((u32_t)(sys_now() - fragment_started_ms) >= 100U) {
++        goto memerr;
++      }
++      sys_msleep(1U);
++#else
++      goto memerr;
++#endif
+     }
+     LWIP_ASSERT("this needs a pbuf in one piece!",

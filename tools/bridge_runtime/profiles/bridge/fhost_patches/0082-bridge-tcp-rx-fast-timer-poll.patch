@@ -1,0 +1,20 @@
+--- a/components/net/lwip/lwip/src/core/tcp.c
++++ b/components/net/lwip/lwip/src/core/tcp.c
+@@ -1582,6 +1582,9 @@
+ {
+   struct tcp_pcb *pcb;
+ 
++  LWIP_ASSERT_CORE_LOCKED();
++  if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.poll();
++
+   ++tcp_timer_ctr;
+ 
+ tcp_fasttmr_start:
+@@ -1823,7 +1826,6 @@
+ tcp_setprio(struct tcp_pcb *pcb, u8_t prio)
+ {
+   LWIP_ASSERT_CORE_LOCKED();
+-  if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.poll();
+ 
+   LWIP_ERROR("tcp_setprio: invalid pcb", pcb != NULL, return);
+ 

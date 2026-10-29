@@ -1,0 +1,53 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -86,7 +86,12 @@
+     uint8_t phase, int fhost_vif_idx, uint8_t message_kind,
+     uint16_t message_length, uint8_t raw_state, uint8_t vif_state,
+     int result);
+-extern void fhost_ap_state_update_from_hostapd(bool enabled);
++extern void fhost_bridge_ap_start_hostapd_state_update(
++    uint8_t hostapd_state, uint8_t enabled, uint8_t raw_state_before,
++    uint8_t vif_state_before, uint8_t raw_state_after,
++    uint8_t vif_state_after);
++extern void fhost_ap_state_update_from_hostapd(
++    uint8_t hostapd_state, bool enabled);
+ extern void fhost_bridge_ap_start_allocator_heap_walk(void);
+ 
+ /*
+--- a/components/wireless/wifi6/fhost/src/fhost_cntrl.c
++++ b/components/wireless/wifi6/fhost/src/fhost_cntrl.c
+@@ -3955,9 +3955,11 @@
+     }
+ }
+ 
+-void fhost_ap_state_update_from_hostapd(bool enabled)
++void fhost_ap_state_update_from_hostapd(uint8_t hostapd_state, bool enabled)
+ {
+     struct fhost_vif_tag *vif = &fhost_env.vif[MGMR_VIF_AP];
++    const uint8_t raw_state_before = vif->raw_state;
++    const uint8_t vif_state_before = vif->state;
+ 
+     /*
+      * hostapd owns AP lifecycle. Its enabled state is authoritative while
+@@ -3965,6 +3967,9 @@
+      */
+     vif->raw_state = enabled ? FHOST_VIF_COMPLETED : FHOST_VIF_DISCONNECTED;
+     vif->state = enabled ? FHOST_AP_ENABLED : FHOST_AP_DISABLED;
++    fhost_bridge_ap_start_hostapd_state_update(
++        hostapd_state, enabled, raw_state_before, vif_state_before,
++        vif->raw_state, vif->state);
+ }
+ 
+ static void fhost_cntrl_cfgmacsw_status_code(void *msg)
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
+@@ -3404,7 +3404,8 @@
+ 		   iface->conf ? iface->conf->bss[0]->iface : "N/A",
+ 		   hostapd_state_text(iface->state), hostapd_state_text(s));
+ 	iface->state = s;
+-	fhost_ap_state_update_from_hostapd(s == HAPD_IFACE_ENABLED);
++	fhost_ap_state_update_from_hostapd((uint8_t) s,
++					   s == HAPD_IFACE_ENABLED);
+ }
+ 
+ 

@@ -20,3 +20,55 @@ ai_m64l_32s_kit.upload.speed=2000000
 ai_m64l_32s_kit.upload.maximum_size=2097152
 # BL616CL SRAM is 384 KiB minus the 64 KiB Wi-Fi reservation in this profile.
 ai_m64l_32s_kit.upload.maximum_data_size=327680
+
+# Independent UNO R4 bridge source runtime; upstream board defaults above are preserved.
+unor4_bl616cl_provisional.name=UNO R4 WiFi BL616CL (Provisional Bridge)
+unor4_bl616cl_provisional.vid.0=0x0000
+unor4_bl616cl_provisional.pid.0=0x0000
+
+unor4_bl616cl_provisional.build.mcu=bl616cl
+unor4_bl616cl_provisional.build.board=UNOR4_BL616CL_PROVISIONAL
+unor4_bl616cl_provisional.build.core=bl616cl
+unor4_bl616cl_provisional.build.variant=unor4_bl616cl_provisional
+unor4_bl616cl_provisional.build.extra_flags=-DBL616CL_BRIDGE_PROVISIONAL=1
+unor4_bl616cl_provisional.build.sdk_profile=bridge
+unor4_bl616cl_provisional.build.bridge_cpp_profile=-include "{runtime.platform.path}/variants/{build.variant}/bridge_profile.h"
+unor4_bl616cl_provisional.build.sdk_extra_includes={compiler.sdk.bridge.includes}
+unor4_bl616cl_provisional.build.sdk_preinclude={compiler.sdk.bridge.preinclude}
+unor4_bl616cl_provisional.build.sdk_extra_defines={compiler.sdk.bridge.defines}
+unor4_bl616cl_provisional.build.sdk_libraries={compiler.sdk.bridge.libs}
+unor4_bl616cl_provisional.build.sdk_linker_flags={compiler.sdk.bridge.linker_flags}
+# The bridge bundle uses the SDK bl616cldk BSP until a UNO R4 carrier BSP is
+# available. Bridge partition v1 preserves supplier data and isolates RA4 OTA.
+unor4_bl616cl_provisional.build.partition_config=partition_cfg_4M_bridge_v1.toml
+unor4_bl616cl_provisional.build.boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4_bl616cl_provisional.build.dts_config=bl_factory_params_IoTKitA_auto.dts
+
+unor4_bl616cl_provisional.upload.tool=blflash
+unor4_bl616cl_provisional.upload.tool.default=blflash
+unor4_bl616cl_provisional.upload.protocol=uart
+unor4_bl616cl_provisional.upload.speed=2000000
+unor4_bl616cl_provisional.upload.maximum_size=1474560
+unor4_bl616cl_provisional.upload.maximum_data_size=327680
+
+unor4_bl616cl_provisional.build.sdk_board=bl616cldk
+unor4_bl616cl_provisional.compiler.c.elf.flags=-march=rv32imafc_xtheade -mabi=ilp32f -mtune=e907 -Wl,--cref -Wl,--gc-sections -nostartfiles -fms-extensions -flto -ffunction-sections -fdata-sections --specs=nano.specs -ufw_header -Wl,-wrap,snprintf -Wl,-wrap,sprintf
+unor4_bl616cl_provisional.compiler.sdk.root={runtime.platform.path}/tools/sdk/{build.mcu}
+unor4_bl616cl_provisional.compiler.sdk.path={runtime.platform.path}/build/bridge-runtime/tools/sdk/bl616cl/bridge
+unor4_bl616cl_provisional.compiler.sdk.includes="-I{compiler.sdk.path}/include" "-I{compiler.sdk.path}/include/freertos" "-I{compiler.sdk.path}/include/freertos/portable" "-I{compiler.sdk.path}/include/freertos/chip_specific" "-I{compiler.sdk.path}/include/board" "-I{compiler.sdk.path}/include/sdk/mm" "-I{compiler.sdk.path}/include/sdk/mm/tlsf" "-I{compiler.sdk.path}/include/sdk/sysinit" "-I{compiler.sdk.path}/include/sdk/libc" "-I{compiler.sdk.path}/include/sdk/utils" "-I{compiler.sdk.path}/include/sdk/utils/log" "-I{compiler.sdk.path}/include/sdk/utils/ring_buffer" "-I{compiler.sdk.path}/include/sdk/utils/bflb_block_pool" "-I{compiler.sdk.path}/include/sdk/utils/bflb_timestamp" "-I{compiler.sdk.path}/include/sdk/utils/getopt" "-I{compiler.sdk.path}/include/sdk/utils/coredump" "-I{compiler.sdk.path}/include/sdk/utils/cjson" "-I{compiler.sdk.path}/include/sdk/utils/math/include" "-I{compiler.sdk.path}/include/sdk/utils/list" "-I{compiler.sdk.path}/include/sdk/lhal" "-I{compiler.sdk.path}/include/sdk/lhal/arch" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head" "-I{compiler.sdk.path}/include/sdk/lhal/arch/risc-v/t-head/Core/Include" "-I{compiler.sdk.path}/include/sdk/lhal-config" "-I{compiler.sdk.path}/include/sdk/flash" "-I{compiler.sdk.path}/include/sdk/soc" "-I{compiler.sdk.path}/include/sdk/soc/hardware" "-I{compiler.sdk.path}/include/sdk/sys" "-I{compiler.sdk.path}/include/sdk/sys/bl616cl"
+unor4_bl616cl_provisional.compiler.sdk.bridge.includes="-I{compiler.sdk.path}/include/sdk/bflb_mtd" "-I{compiler.sdk.path}/include/sdk/littlefs/littlefs" "-I{compiler.sdk.path}/include/sdk/littlefs/easyflash" "-I{compiler.sdk.path}/include/sdk/utils/async_event" "-I{compiler.sdk.path}/include/sdk/rfparam" "-I{compiler.sdk.path}/include/fota/compat" "-I{compiler.sdk.path}/include/fota/ota" "-I{compiler.sdk.path}/include/mbedtls" "-I{compiler.sdk.path}/include/lwip" "-I{compiler.sdk.path}/include/wifi/macsw" "-I{compiler.sdk.path}/include/wifi/fhost" "-I{compiler.sdk.path}/include/cherryusb/common" "-I{compiler.sdk.path}/include/cherryusb/core" "-I{compiler.sdk.path}/include/cherryusb/class/cdc" "-I{compiler.sdk.path}/include/cherryusb/class/hid" "-I{compiler.sdk.path}/include/bluetooth/controller" "-I{compiler.sdk.path}/include/bluetooth/blestack/drivers/bluetooth"
+unor4_bl616cl_provisional.compiler.sdk.bridge.preinclude=-include "{compiler.sdk.path}/include/cherryusb/common/usb_util.h"
+unor4_bl616cl_provisional.compiler.sdk.bridge.defines=-DLFS_THREADSAFE -DCFG_IPV6
+unor4_bl616cl_provisional.compiler.cpreprocessor.flags=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_BL616CL -DBL616CL -DARCH_RISCV -DBFLB_USE_HAL_DRIVER -DBFLB_USE_ROM_DRIVER -DCONFIG_BOUFFALO_SDK -DCONFIG_LHAL_ROMAPI -DCONFIG_FREERTOS -DCONFIG_IRQ_NUM=83 -DCONFIG_LIBC_FLOAT=0 -DCONFIG_LIBC_LONG_LONG=1 -DCONFIG_LOG_LEVEL=3 -DconfigMTIME_BASE_ADDRESS=0xE000BFF8UL -DconfigMTIMECMP_BASE_ADDRESS=0xE0004000UL -DportasmHANDLE_INTERRUPT=interrupt_entry -Ddefault_interrupt_handler=freertos_risc_v_trap_handler -include "{compiler.sdk.path}/include/autoconf.h" {build.sdk_preinclude} {compiler.sdk.includes} {build.sdk_extra_includes} {build.sdk_extra_defines}
+unor4_bl616cl_provisional.compiler.sdk.libs=-lfreertos -llhal -llibc -lmm -lstd -lsys -lsysinit -lutils
+unor4_bl616cl_provisional.compiler.ble.libs=-lbtblecontroller_bl616cl_m2s1 -lblestack -lrfparam -lbl616cl_phyrf -lshell
+unor4_bl616cl_provisional.compiler.sdk.stage1.libs={compiler.sdk.libs} {compiler.ble.libs}
+unor4_bl616cl_provisional.compiler.sdk.bridge.libs={compiler.sdk.libs} -lcherryusb -ldebug -lfhost_bl616cl_default -lfhost_config -lfota -llittlefs -llwip -lmacsw_bl616cl -lmacsw_config_bl616cl_default -lmacsw_os_adapter -lmacsw_plat -lmbedtls -lping -lpka_bl616cl -lrfparam -lwifi6_lwip_adapter -lwpa_supplicant -lbtblecontroller_bl616cl_m2s1 -lblestack -lbl616cl_phyrf
+unor4_bl616cl_provisional.compiler.sdk.stage1.linker_flags=
+unor4_bl616cl_provisional.compiler.sdk.bridge.linker_flags=-Wl,--defsym,__LD_CONFIG_EM_SIZE=16
+unor4_bl616cl_provisional.build.bridge_cpp_profile=
+unor4_bl616cl_provisional.compiler.c.elf.extra_flags=
+unor4_bl616cl_provisional.recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} {build.bridge_cpp_profile} {compiler.warning_flags} {build.extra_flags} {compiler.cpp.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
+unor4_bl616cl_provisional.recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.sdk_linker_flags} "-T{compiler.sdk.path}/ld" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{compiler.sdk.path}" "-L{compiler.sdk.path}/lib" "-L{compiler.sdk.path}/lib_board" -Wl,--whole-archive "{archive_file_path}" -Wl,--no-whole-archive {object_files} -Wl,--whole-archive -lapp {build.sdk_libraries} -Wl,--no-whole-archive {compiler.system.libs} -Wl,-EL -o "{build.path}/{build.project_name}.elf"
+unor4_bl616cl_provisional.recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.platform.path}/tools/runtime_bundle/copy_image_artifacts.py" {compiler.sdk.path} "{build.path}" "{build.project_name}" "{runtime.platform.path}/tools/partitions/{build.partition_config}"
+unor4_bl616cl_provisional.recipe.hooks.prebuild.1.pattern=python3 "{runtime.platform.path}/tools/build_bridge_runtime.py" --platform-root "{runtime.platform.path}"

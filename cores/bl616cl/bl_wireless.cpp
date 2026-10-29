@@ -1,3 +1,4 @@
+#if !defined(BL616CL_BRIDGE_PROVISIONAL)
 // Platform wireless bring-up for BL616CL, called from init() before the
 // scheduler starts -- the same place the SDK examples do it in main()
 // (examples/wifi/macsw_bare/main.c calls rfparam_init() there):
@@ -79,3 +80,5 @@ extern "C" __attribute__((weak)) int bl_rand(void)
     seed = seed * 1103515245U + 12345U;
     return (int)(seed >> 16);
 }
+
+#endif

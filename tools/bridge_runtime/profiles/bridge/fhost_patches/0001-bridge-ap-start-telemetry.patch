@@ -1,0 +1,960 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -49,7 +49,22 @@
+ #include "net_al.h"
+ #include "fhost_api.h"
+ 
+-#define fhost_printf(...) printf(__VA_ARGS__)
++/*
++ * Optional bridge-owned AP-start telemetry. The implementation lives in the
++ * Arduino application and is linked only by the bridge runtime profile.
++ */
++extern void fhost_bridge_ap_start_progress(uint8_t stage, int result);
++extern void fhost_bridge_ap_start_pointer(uint8_t location, uint32_t address);
++extern void fhost_bridge_ap_start_channel_counts(uint32_t chan2g4_count,
++                                                 uint32_t chan5g_count);
++extern void fhost_bridge_ap_start_heap_before_allocate(uint32_t size);
++extern void fhost_bridge_ap_start_heap_after_allocate(uint32_t address);
++
++/*
++ * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
++ * out of that protocol channel.
++ */
++#define fhost_printf(...) ((void)0)
+ 
+ #define INVARIANTS
+ 
+--- a/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
++++ b/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
+@@ -1296,10 +1296,9 @@
+     // If STA is operating concurrently with SAP, follow STA's channel.
+     if (wifi_mgmr_sta_state_get()) {
+         uint8_t channel = 0;
+-        if (wifi_mgmr_sta_channel_get(&channel)) {
++        if (wifi_mgmr_sta_channel_get(&channel) == 0) {
+             cfg.chan.prim20_freq = phy_channel_to_freq(cfg.chan.band, channel);
+         }
+-        printf("follow sta channel: %d\r\n", channel);
+     }
+ 
+     if (PHY_CHNL_BW_20 == cfg.chan.type) {
+@@ -1419,8 +1418,18 @@
+     }
+ 
+     // (Re)Set interface type to AP
+-    if (fhost_set_vif_type(wifi_mgmr_cfgmacsw_resp_q, fhost_vif_idx, VIF_UNKNOWN, false) ||
+-        fhost_set_vif_type(wifi_mgmr_cfgmacsw_resp_q, fhost_vif_idx, VIF_AP, false))
++    fhost_bridge_ap_start_progress(1, 0);
++    res = fhost_set_vif_type(wifi_mgmr_cfgmacsw_resp_q, fhost_vif_idx,
++                             VIF_UNKNOWN, false);
++    fhost_bridge_ap_start_progress(1, res);
++    if (res)
++        goto end;
++
++    fhost_bridge_ap_start_progress(2, 0);
++    res = fhost_set_vif_type(wifi_mgmr_cfgmacsw_resp_q, fhost_vif_idx,
++                             VIF_AP, false);
++    fhost_bridge_ap_start_progress(2, res);
++    if (res)
+         goto end;
+ 
+     // Set hidden ssid
+@@ -1435,7 +1444,10 @@
+     cfg.bcn_timer = wifiMgmr.ap_bcn_timer;
+     cfg.disable_wmm = config->disable_wmm;
+ 
+-    if (fhost_ap_cfg(fhost_vif_idx, &cfg, false)) {
++    fhost_bridge_ap_start_progress(3, 0);
++    res = fhost_ap_cfg(fhost_vif_idx, &cfg, false);
++    fhost_bridge_ap_start_progress(3, res);
++    if (res) {
+         fhost_printf("Failed to start AP, check your configuration");
+         goto end;
+     }
+--- a/components/wireless/wifi6/fhost/src/fhost.c
++++ b/components/wireless/wifi6/fhost/src/fhost.c
+@@ -1234,12 +1234,32 @@
+     if (mesh_mode)
+         res = fhost_wpa_create_network(fhost_vif_idx, cfg_str, cfg_ssid_str,
+                                        cfg_key_str, true, cfg->country_code, NULL, 0);
+-    else
+-        res = (fhost_wpa_create_network(fhost_vif_idx, cfg_str, cfg_ssid_str,
+-                                        cfg_key_str, false, cfg->country_code, NULL, 0) |
+-               fhost_wpa_execute_cmd(fhost_vif_idx, NULL, 0, "AP_SCAN 2") |
+-               (cfg->ap_vendor_elements && fhost_wpa_execute_cmd(fhost_vif_idx, NULL, 0, cfg->ap_vendor_elements)) |
+-               fhost_wpa_enable_network(fhost_vif_idx));
++    else {
++        int stage_res;
++
++        fhost_bridge_ap_start_progress(4, 0);
++        res = fhost_wpa_create_network(fhost_vif_idx, cfg_str, cfg_ssid_str,
++                                       cfg_key_str, false, cfg->country_code,
++                                       NULL, 0);
++        fhost_bridge_ap_start_progress(4, res);
++
++        fhost_bridge_ap_start_progress(5, 0);
++        stage_res = fhost_wpa_execute_cmd(fhost_vif_idx, NULL, 0, "AP_SCAN 2");
++        fhost_bridge_ap_start_progress(5, stage_res);
++        res |= stage_res;
++
++        fhost_bridge_ap_start_progress(6, 0);
++        stage_res = cfg->ap_vendor_elements &&
++            fhost_wpa_execute_cmd(fhost_vif_idx, NULL, 0,
++                                  cfg->ap_vendor_elements);
++        fhost_bridge_ap_start_progress(6, stage_res);
++        res |= stage_res;
++
++        fhost_bridge_ap_start_progress(7, 0);
++        stage_res = fhost_wpa_enable_network(fhost_vif_idx);
++        fhost_bridge_ap_start_progress(7, stage_res);
++        res |= stage_res;
++    }
+ 
+     if (res)
+         fhost_wpa_remove_vif(fhost_vif_idx);
+--- a/components/os/freertos/portable/MemMang/heap_3.c
++++ b/components/os/freertos/portable/MemMang/heap_3.c
+@@ -55,23 +55,35 @@
+ #endif
+ 
+ #include "mm.h"
++
++__attribute__((weak)) void fhost_bridge_ap_start_allocator_progress(
++    uint8_t stage)
++{
++    (void)stage;
++}
+ /*-----------------------------------------------------------*/
+ 
+ void * pvPortMalloc( size_t xWantedSize )
+ {
+     void * pvReturn;
+ 
++    fhost_bridge_ap_start_allocator_progress(151U);
+     vTaskSuspendAll();
++    fhost_bridge_ap_start_allocator_progress(152U);
+     {
++        fhost_bridge_ap_start_allocator_progress(153U);
+         pvReturn = kmalloc( xWantedSize, 0 );
++        fhost_bridge_ap_start_allocator_progress(154U);
+         traceMALLOC( pvReturn, xWantedSize );
+     }
+     ( void ) xTaskResumeAll();
++    fhost_bridge_ap_start_allocator_progress(155U);
+ 
+     #if ( configUSE_MALLOC_FAILED_HOOK == 1 )
+     {
+         if( pvReturn == NULL )
+         {
++            fhost_bridge_ap_start_allocator_progress(156U);
+             vApplicationMallocFailedHook();
+         }
+     }
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -668,13 +668,22 @@
+         return res;
+     }
+ 
+-    // Send the cmd and wait for its response
++    /*
++     * AP INTERFACE_ADD is synchronous. Record enqueue and completion
++     * boundaries without changing the request ownership or wait semantics.
++     */
++    if (fhost_vif_idx == FHOST_WPA_GLOBAL_VIF &&
++        strncmp(req, "INTERFACE_ADD wl2", sizeof("INTERFACE_ADD wl2") - 1) == 0)
++        fhost_bridge_ap_start_progress(47, 0);
+     if (eloop_event_commit_sync(ELOOP_EVT_WPA_IFACE_CTRL,
+                             req, req_len + offset + 1, &resp, &len, -1) < 0) {
+         fhost_printf("failed to commit eloop sync event\r\n");
+         res = -3;
+         goto end;
+     }
++    if (fhost_vif_idx == FHOST_WPA_GLOBAL_VIF &&
++        strncmp(req, "INTERFACE_ADD wl2", sizeof("INTERFACE_ADD wl2") - 1) == 0)
++        fhost_bridge_ap_start_progress(66, 0);
+     if (strncmp(resp, "FAIL", 4) == 0) {
+         fhost_printf("RESP: FAILED\r\n");
+         res = -4;
+@@ -809,11 +818,22 @@
+     int res_len;
+ 
+     if (!net_cfg || !ssid_cfg || !wpa_vif ||
+-        (assoc_ies_len && !assoc_ies) || fhost_wpa_add_vif(fhost_vif_idx))
++        (assoc_ies_len && !assoc_ies))
+     {
+         goto end;
+     }
+ 
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(41, 0);
++    if (fhost_wpa_add_vif(fhost_vif_idx))
++    {
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(41, -1);
++        goto end;
++    }
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(41, 0);
++
+     if (assoc_ies_len && fhost_wpa_set_assoc_ie(fhost_vif_idx, assoc_ies, assoc_ies_len))
+     {
+         fhost_wpa_remove_vif(fhost_vif_idx);
+@@ -822,20 +842,32 @@
+ 
+     // Create and configure network block
+     res_len = sizeof(res) - 1;
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(42, 0);
+     if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "ADD_NETWORK"))
+     {
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(42, -1);
+         goto end;
+     }
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(42, 0);
+     res[res_len] = '\0';
+     wpa_vif->network_id = atoi(res);
+ 
+ #if 1
+     // Enable H2E
+     res_len = sizeof(res) - 1;
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(43, 0);
+     if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET sae_pwe 2"))
+     {
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(43, -1);
+         goto end;
+     }
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(43, 0);
+ #endif
+ 
+     if (country_code && country_code[0]) {
+@@ -856,36 +888,54 @@
+     {
+         res_len = sizeof(res);
+         printf("Exec %s\r\n", tok);
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(44, 0);
+         if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET_NETWORK %d %s",
+                                   wpa_vif->network_id, tok))
+         {
++            if (fhost_vif_idx == MGMR_VIF_AP)
++                fhost_bridge_ap_start_progress(44, -1);
+             fhost_printf("SET_NETWORK (%s) failed\r\n", tok);
+             fhost_wpa_remove_vif(fhost_vif_idx);
+             goto end;
+         }
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(44, 0);
+         tok = strtok_r(NULL, ";", &saveptr);
+     }
+ 
+     printf("Exec %s\r\n", ssid_cfg);
+     res_len = sizeof(res);
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(45, 0);
+     if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET_NETWORK %d %s",
+                               wpa_vif->network_id, ssid_cfg))
+     {
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(45, -1);
+         fhost_printf("SET_NETWORK (%s) failed\r\n", ssid_cfg);
+         fhost_wpa_remove_vif(fhost_vif_idx);
+         goto end;
+     }
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        fhost_bridge_ap_start_progress(45, 0);
+ 
+     if (*key_cfg) {
+         printf("Exec %s\r\n", key_cfg);
+         res_len = sizeof(res);
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(46, 0);
+         if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET_NETWORK %d %s",
+                                   wpa_vif->network_id, key_cfg))
+         {
++            if (fhost_vif_idx == MGMR_VIF_AP)
++                fhost_bridge_ap_start_progress(46, -1);
+             fhost_printf("SET_NETWORK (%s) failed\r\n", key_cfg);
+             fhost_wpa_remove_vif(fhost_vif_idx);
+             goto end;
+         }
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(46, 0);
+     }
+     fhost_printf("WPA network %d: created and configured", wpa_vif->network_id);
+ 
+@@ -907,6 +957,7 @@
+ {
+     struct fhost_wpa_target_event target;
+     struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
++    int wait_timeout_ms = -1;
+ 
+     if (!wpa_vif || (wpa_vif->network_id < 0))
+         return -1;
+@@ -914,6 +965,15 @@
+     if (wpa_vif->state == FHOST_WPA_STATE_CONNECTED)
+         return 0;
+ 
++    /*
++     * AP startup must not leave the bridge-owned worker blocked forever when
++     * the WPA completion event is missing. The SDK's timeout branch already
++     * unregisters the stack-owned callback before it returns. Preserve the
++     * SDK's unbounded STA behavior while making only AP startup recoverable.
++     */
++    if (fhost_vif_idx == MGMR_VIF_AP)
++        wait_timeout_ms = 10000;
++
+     if (fhost_wpa_wait_event_register(fhost_vif_idx, FHOST_WPA_CONNECTED, &target))
+         return -1;
+ 
+@@ -925,7 +985,11 @@
+     }
+ 
+     // Wait until connection is completed or failed.
+-    rtos_task_wait_notification(-1);
++    if (rtos_task_wait_notification(wait_timeout_ms) == 0)
++    {
++        fhost_wpa_wait_event_unregister(fhost_vif_idx);
++        return -1;
++    }
+ 
+     if (wpa_vif->state == FHOST_WPA_STATE_STOPPED)
+     {
+--- a/components/wireless/wifi6/fhost/src/fhost_cntrl.c
++++ b/components/wireless/wifi6/fhost/src/fhost_cntrl.c
+@@ -1728,8 +1728,15 @@
+ static void fhost_cntrl_cfgmacsw_resp_send(void const *msg, int msg_len,
+                                           rtos_queue resp_queue)
+ {
++    const struct cfgmacsw_msg_hdr *hdr = msg;
++    const struct cfgmacsw_hw_feature *feature = msg;
+     void *msg_buf;
+ 
++    if (hdr->id == CFGMACSW_HW_FEATURE_RESP) {
++        fhost_bridge_ap_start_progress(113, 0);
++        fhost_bridge_ap_start_pointer(3, (uint32_t)(uintptr_t)feature->chan);
++    }
++
+     // Allocate memory to copy the data, because the message memory used by the caller
+     // is supposed to be re-usable immediately after the function returns
+     msg_buf = rtos_malloc(msg_len);
+@@ -1739,8 +1746,18 @@
+         return;
+     }
+ 
++    if (hdr->id == CFGMACSW_HW_FEATURE_RESP)
++        fhost_bridge_ap_start_progress(114, 0);
++
+     memcpy(msg_buf, msg, msg_len);
++    if (hdr->id == CFGMACSW_HW_FEATURE_RESP) {
++        fhost_bridge_ap_start_progress(115, 0);
++        fhost_bridge_ap_start_pointer(
++            4, (uint32_t)(uintptr_t)((struct cfgmacsw_hw_feature *)msg_buf)->chan);
++    }
+     rtos_queue_write(resp_queue, &msg_buf, -1, false);
++    if (hdr->id == CFGMACSW_HW_FEATURE_RESP)
++        fhost_bridge_ap_start_progress(116, 0);
+ }
+ 
+ /**
+@@ -1842,10 +1859,17 @@
+     struct cfgmacsw_hw_feature feat;
+     struct fhost_mm_start_req fhost_start;
+ 
++    fhost_bridge_ap_start_progress(110, 0);
+     feat.hdr.id = CFGMACSW_HW_FEATURE_RESP;
+     feat.hdr.len = sizeof(feat);
++    fhost_bridge_ap_start_progress(111, 0);
+     fhost_config_prepare(&feat.me_config, &fhost_start, false);
++    fhost_bridge_ap_start_progress(112, 0);
+     feat.chan = &fhost_chan;
++    fhost_bridge_ap_start_pointer(1, (uint32_t)(uintptr_t)&fhost_chan);
++    fhost_bridge_ap_start_pointer(2, (uint32_t)(uintptr_t)feat.chan);
++    fhost_bridge_ap_start_channel_counts(
++        fhost_chan.chan2G4_cnt, fhost_chan.chan5G_cnt);
+     feat.ap_11b_only = IS_11B_ONLY(wifiMgmr.ap_mode);
+     fhost_cntrl_cfgmacsw_resp_send(&feat, feat.hdr.len, cmd->hdr.resp_queue);
+ }
+@@ -4244,6 +4268,9 @@
+     const struct fhost_cntrl_cfgmacsw_handler *handler = fhost_cntrl_cfgmacsw_msg_handlers;
+     int index = FHOST_MSG_INDEX(msg->id);
+ 
++    if (index == CFGMACSW_HW_FEATURE_CMD)
++        fhost_bridge_ap_start_progress(118, 0);
++
+     while (handler->index)
+     {
+         if (handler->index == index)
+@@ -4609,14 +4636,31 @@
+                                  struct cfgmacsw_msg_hdr *resp)
+ {
+     struct cfgmacsw_msg_hdr *msg_hdr;
++    const bool bridge_ap_vif_update =
++        cmd->id == CFGMACSW_SET_VIF_TYPE_CMD &&
++        ((struct cfgmacsw_set_vif_type *)cmd)->fhost_vif_idx == MGMR_VIF_AP;
++    const bool bridge_ap_hw_feature =
++        cmd->id == CFGMACSW_HW_FEATURE_CMD;
+ 
+     if (resp) {
++         if (bridge_ap_vif_update)
++             fhost_bridge_ap_start_progress(62, 0);
++         if (bridge_ap_hw_feature)
++             fhost_bridge_ap_start_progress(107, 0);
+          rtos_mutex_lock(fhost_cntrl_link_mutex);
++         if (bridge_ap_vif_update)
++             fhost_bridge_ap_start_progress(63, 0);
++         if (bridge_ap_hw_feature)
++             fhost_bridge_ap_start_progress(108, 0);
+     }
+ 
+     // Send the command to the FHOST control thread
+     fhost_cntrl_write_msg(FHOST_MSG_ID(FHOST_MSG_CFGMACSW, cmd->id),
+                           cmd, cmd->len);
++    if (bridge_ap_vif_update)
++        fhost_bridge_ap_start_progress(64, 0);
++    if (bridge_ap_hw_feature)
++        fhost_bridge_ap_start_progress(109, 0);
+ 
+     // return immediately if no response is expected
+     if (!resp)
+@@ -4624,6 +4668,13 @@
+ 
+     // Wait for the response from the FHOST control thread
+     rtos_queue_read(cmd->resp_queue, &msg_hdr, -1, false);
++    if (bridge_ap_vif_update)
++        fhost_bridge_ap_start_progress(65, 0);
++    if (bridge_ap_hw_feature) {
++        fhost_bridge_ap_start_progress(117, 0);
++        fhost_bridge_ap_start_pointer(
++            5, (uint32_t)(uintptr_t)((struct cfgmacsw_hw_feature *)msg_hdr)->chan);
++    }
+ 
+     if (resp) {
+          rtos_mutex_unlock(fhost_cntrl_link_mutex);
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -21,6 +21,8 @@
+ #undef wpa_printf
+ #define wpa_printf(l, f, ...) printf(f, ##__VA_ARGS__)
+ 
++extern void fhost_bridge_ap_start_progress(uint8_t stage, int result);
++
+ #define ELOOP_MSGQ_SIZE_MAX   (16)
+ 
+ struct eloop_timeout {
+@@ -410,6 +412,11 @@
+ int eloop_event_commit_sync(int type, const char *request, int req_len,
+                             char **resp, int *resp_len, int timeout_ms) {
+   int ret = 0;
++  int bridge_ap_interface_add =
++      type == ELOOP_EVT_WPA_IFACE_CTRL &&
++      request != NULL &&
++      strncmp(request, "INTERFACE_ADD wl2",
++              sizeof("INTERFACE_ADD wl2") - 1) == 0;
+   struct event_sync_msg * data = os_malloc(sizeof(struct event_sync_msg) + req_len);
+ 
+   memcpy(data + 1, request, req_len);
+@@ -422,6 +429,8 @@
+   if (ret) {
+     goto exit;
+   }
++  if (bridge_ap_interface_add)
++    fhost_bridge_ap_start_progress(48, 0);
+   rtos_semaphore_wait(data->done, timeout_ms);
+ 
+ exit:
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c
+@@ -83,8 +83,9 @@
+     struct cfgmacsw_status_code_print *cmd;
+     struct wpa_macsw_driver_itf_data *drv = ((struct wpa_supplicant *)ctx)->drv_priv;
+ 
+-    if (level >= wpa_debug_level)
+-      dbg(D_CRT "[WPA] %s\n", txt);
++    (void)level;
++    (void)type;
++    (void)len;
+ 
+     if (!drv || drv->fhost_vif_idx >= MACSW_VIRT_DEV_MAX) {
+         return;
+@@ -113,11 +114,7 @@
+         cmd->fhost_vif_idx = drv->fhost_vif_idx;
+         cmd->msg = txt;
+ 
+-        if (fhost_cntrl_cfgmacsw_cmd_send(&cmd->hdr, NULL)) {
+-            printf("%s: cmd send failed, txt is %s\r\n", __func__, txt);
+-        } else {
+-            printf("%s: cmd send succeded, txt is %s\r\n", __func__, txt);
+-        }
++        (void)fhost_cntrl_cfgmacsw_cmd_send(&cmd->hdr, NULL);
+     }
+ }
+ #endif
+@@ -157,7 +154,13 @@
+ 
+   eloop_get_request_body(((void **)&req_body));
+ 
++  if (strncmp((char *)(req_body + 1), "INTERFACE_ADD wl2",
++              sizeof("INTERFACE_ADD wl2") - 1) == 0)
++    fhost_bridge_ap_start_progress(49, 0);
+   reply = wpa_supplicant_global_ctrl_iface_process(global, (char *)(req_body + 1), &reply_len);
++  if (strncmp((char *)(req_body + 1), "INTERFACE_ADD wl2",
++              sizeof("INTERFACE_ADD wl2") - 1) == 0)
++    fhost_bridge_ap_start_progress(50, 0);
+ 
+   if (reply) {
+     *req_body->resp = reply;
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c
+@@ -35,6 +35,7 @@
+ #include "fst/fst.h"
+ #include "fst/fst_ctrl_iface.h"
+ #include "config.h"
++#include "fhost.h"
+ #include "wpa_supplicant_i.h"
+ #include "driver_i.h"
+ #include "wps_supplicant.h"
+@@ -12857,6 +12858,7 @@
+ 	char *pos, *extra;
+ 	struct wpa_supplicant *wpa_s;
+ 	unsigned int create_iface = 0;
++	int bridge_ap_start;
+ 	u8 mac_addr[ETH_ALEN];
+ 	enum wpa_driver_if_type type = WPA_IF_STATION;
+ 
+@@ -12867,6 +12869,7 @@
+ 	wpa_printf(MSG_DEBUG, "CTRL_IFACE GLOBAL INTERFACE_ADD '%s'", cmd);
+ 
+ 	os_memset(&iface, 0, sizeof(iface));
++	bridge_ap_start = os_strncmp(cmd, "wl2", sizeof("wl2") - 1) == 0;
+ 
+ 	do {
+ 		iface.ifname = pos = cmd;
+@@ -12973,7 +12976,11 @@
+ 	if (wpa_supplicant_get_iface(global, iface.ifname))
+ 		goto fail;
+ 
++	if (bridge_ap_start)
++		fhost_bridge_ap_start_progress(51, 0);
+ 	wpa_s = wpa_supplicant_add_iface(global, &iface, NULL);
++	if (bridge_ap_start)
++		fhost_bridge_ap_start_progress(52, wpa_s ? 0 : -1);
+ 	if (!wpa_s)
+ 		goto fail;
+ 	wpa_s->added_vif = create_iface;
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c
+@@ -25,6 +25,7 @@
+ #include "eap_server/eap_methods.h"
+ #include "rsn_supp/wpa.h"
+ #include "eloop.h"
++#include "fhost.h"
+ #include "config.h"
+ #include "utils/ext_password.h"
+ #include "l2_packet/l2_packet.h"
+@@ -5449,8 +5450,15 @@
+ {
+ 	static int interface_count = 0;
+ 
+-	if (wpa_supplicant_update_mac_addr(wpa_s) < 0)
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(85, 0);
++	if (wpa_supplicant_update_mac_addr(wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(86, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(86, 0);
+ 
+ 	wpa_dbg(wpa_s, MSG_DEBUG, "Own MAC address: " MACSTR,
+ 		MAC2STR(wpa_s->own_addr));
+@@ -5477,14 +5485,26 @@
+ 			   "Note: nl80211 driver interface is not designed to be used with ap_scan=2; this can result in connection failures");
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(87, 0);
+ 	wpa_clear_keys(wpa_s, NULL);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(88, 0);
+ 
+ 	/* Make sure that TKIP countermeasures are not left enabled (could
+ 	 * happen if wpa_supplicant is killed during countermeasures. */
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(89, 0);
+ 	wpa_drv_set_countermeasures(wpa_s, 0);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(90, 0);
+ 
+ 	wpa_dbg(wpa_s, MSG_DEBUG, "RSN: flushing PMKID list in the driver");
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(91, 0);
+ 	wpa_drv_flush_pmkid(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(92, 0);
+ 
+ 	wpa_s->prev_scan_ssid = WILDCARD_SSID_SCAN;
+ 	wpa_s->prev_scan_wildcard = 0;
+@@ -6626,7 +6646,11 @@
+ 	if (wpa_supplicant_set_driver(wpa_s, driver) < 0)
+ 		return -1;
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(55, 0);
+ 	wpa_s->drv_priv = wpa_drv_init(wpa_s, wpa_s->ifname);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(56, wpa_s->drv_priv ? 0 : -1);
+ 	if (wpa_s->drv_priv == NULL) {
+ 		const char *pos;
+ 		int level = MSG_ERROR;
+@@ -6646,24 +6670,42 @@
+ 		wpa_msg(wpa_s, level, "Failed to initialize driver interface");
+ 		return -1;
+ 	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(67, 0);
+ 	if (wpa_drv_set_param(wpa_s, wpa_s->conf->driver_param) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(68, -1);
+ 		wpa_msg(wpa_s, MSG_ERROR, "Driver interface rejected "
+ 			"driver_param '%s'", wpa_s->conf->driver_param);
+ 		return -1;
+ 	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(68, 0);
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(69, 0);
+ 	ifname = wpa_drv_get_ifname(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(70, 0);
+ 	if (ifname && os_strcmp(ifname, wpa_s->ifname) != 0) {
+ 		wpa_dbg(wpa_s, MSG_DEBUG, "Driver interface replaced "
+ 			"interface name with '%s'", ifname);
+ 		os_strlcpy(wpa_s->ifname, ifname, sizeof(wpa_s->ifname));
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(71, 0);
+ 	rn = wpa_driver_get_radio_name(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(72, 0);
+ 	if (rn && rn[0] == '\0')
+ 		rn = NULL;
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(73, 0);
+ 	wpa_s->radio = radio_add_interface(wpa_s, rn);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(74, wpa_s->radio ? 0 : -1);
+ 	if (wpa_s->radio == NULL)
+ 		return -1;
+ 
+@@ -6814,13 +6856,24 @@
+ 	if (wpas_init_driver(wpa_s, iface) < 0)
+ 		return -1;
+ 
+-	if (wpa_supplicant_init_wpa(wpa_s) < 0)
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(75, 0);
++	if (wpa_supplicant_init_wpa(wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(76, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(76, 0);
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(77, 0);
+ 	wpa_sm_set_ifname(wpa_s->wpa, wpa_s->ifname,
+ 			  wpa_s->bridge_ifname[0] ? wpa_s->bridge_ifname :
+ 			  NULL);
+ 	wpa_sm_set_fast_reauth(wpa_s->wpa, wpa_s->conf->fast_reauth);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(78, 0);
+ 
+ 	if (wpa_s->conf->dot11RSNAConfigPMKLifetime &&
+ 	    wpa_sm_set_param(wpa_s->wpa, RSNA_PMK_LIFETIME,
+@@ -6846,10 +6899,14 @@
+ 		return -1;
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(79, 0);
+ 	wpa_s->hw.modes = wpa_drv_get_hw_feature_data(wpa_s,
+ 						      &wpa_s->hw.num_modes,
+ 						      &wpa_s->hw.flags,
+ 						      &dfs_domain);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(80, 0);
+ 	if (wpa_s->hw.modes) {
+ 		u16 i;
+ 
+@@ -6868,7 +6925,11 @@
+ 		}
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(81, 0);
+ 	capa_res = wpa_drv_get_capa(wpa_s, &capa);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(82, capa_res);
+ 	if (capa_res == 0) {
+ 		wpa_s->drv_capa_known = 1;
+ 		wpa_s->drv_flags = capa.flags;
+@@ -6921,8 +6982,15 @@
+ 	if (wpa_s->num_multichan_concurrent == 0)
+ 		wpa_s->num_multichan_concurrent = 1;
+ 
+-	if (wpa_supplicant_driver_init(wpa_s) < 0)
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(83, 0);
++	if (wpa_supplicant_driver_init(wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(84, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(84, 0);
+ 
+ #ifdef CONFIG_TDLS
+ 	if (!iface->p2p_mgmt && wpa_tdls_init(wpa_s->wpa))
+@@ -6957,8 +7025,15 @@
+ 	}
+ #endif /* CONFIG_FST */
+ 
+-	if (wpas_wps_init(wpa_s))
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(93, 0);
++	if (wpas_wps_init(wpa_s)) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(94, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(94, 0);
+ 
+ #ifdef CONFIG_GAS_SERVER
+ 	wpa_s->gas_server = gas_server_init(wpa_s, wpas_gas_server_tx);
+@@ -6973,11 +7048,22 @@
+ 		return -1;
+ #endif /* CONFIG_DPP */
+ 
+-	if (wpa_supplicant_init_eapol(wpa_s) < 0)
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(95, 0);
++	if (wpa_supplicant_init_eapol(wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(96, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(96, 0);
+ 	wpa_sm_set_eapol(wpa_s->wpa, wpa_s->eapol);
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(97, 0);
+ 	wpa_s->ctrl_iface = wpa_supplicant_ctrl_iface_init(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(98, wpa_s->ctrl_iface ? 0 : -1);
+ 	if (wpa_s->ctrl_iface == NULL) {
+ 		wpa_printf(MSG_ERROR,
+ 			   "Failed to initialize control interface '%s'.\n"
+@@ -6991,21 +7077,38 @@
+ 		return -1;
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(99, 0);
+ 	wpa_s->gas = gas_query_init(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(100, wpa_s->gas ? 0 : -1);
+ 	if (wpa_s->gas == NULL) {
+ 		wpa_printf(MSG_ERROR, "Failed to initialize GAS query");
+ 		return -1;
+ 	}
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(101, 0);
+ 	if ((!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE) ||
+ 	     wpa_s->p2p_mgmt) &&
+ 	    wpas_p2p_init(wpa_s->global, wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(102, -1);
+ 		wpa_msg(wpa_s, MSG_ERROR, "Failed to init P2P");
+ 		return -1;
+ 	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(102, 0);
+ 
+-	if (wpa_bss_init(wpa_s) < 0)
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(103, 0);
++	if (wpa_bss_init(wpa_s) < 0) {
++		if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++			fhost_bridge_ap_start_progress(104, -1);
+ 		return -1;
++	}
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(104, 0);
+ 
+ #ifdef CONFIG_PMKSA_CACHE_EXTERNAL
+ #ifdef CONFIG_MESH
+@@ -7068,7 +7171,11 @@
+ 	wpas_mbo_update_non_pref_chan(wpa_s, wpa_s->conf->non_pref_chan);
+ #endif /* CONFIG_MBO */
+ 
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(105, 0);
+ 	wpa_supplicant_set_default_scan_ies(wpa_s);
++	if (os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(106, 0);
+ 
+ 	return 0;
+ }
+@@ -7264,6 +7371,8 @@
+ 	wpa_s = wpa_supplicant_alloc(parent);
+ 	if (wpa_s == NULL)
+ 		return NULL;
++	if (iface->ifname && os_strcmp(iface->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(52, 0);
+ 
+ 	wpa_s->global = global;
+ 
+@@ -7282,12 +7391,16 @@
+ 		t_iface.ctrl_interface =
+ 			global->params.override_ctrl_interface;
+ 	}
++	if (iface->ifname && os_strcmp(iface->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(53, 0);
+ 	if (wpa_supplicant_init_iface(wpa_s, &t_iface)) {
+ 		wpa_printf(MSG_DEBUG, "Failed to add interface %s",
+ 			   iface->ifname);
+ 		wpa_supplicant_deinit_iface(wpa_s, 0, 0);
+ 		return NULL;
+ 	}
++	if (iface->ifname && os_strcmp(iface->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(54, 0);
+ 
+ 	if (iface->p2p_mgmt == 0) {
+ 		/* Notify the control interfaces about new iface */
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -1226,6 +1226,8 @@
+ 
+ 	//TRACE_FHOST(WPA_INFO, "Driver MACSW init for %s", TR_STR_8(ifname));
+ 
++	if (os_strcmp(ifname, "wl2") == 0)
++		fhost_bridge_ap_start_progress(57, 0);
+ 	fhost_vif_idx = fhost_vif_idx_from_name(ifname);
+ 	if (fhost_vif_idx < 0)
+ 		goto err;
+@@ -1254,9 +1256,13 @@
+     } else {
+         type = VIF_AP;
+     }
++	if (fhost_vif_idx == MGMR_VIF_AP)
++		fhost_bridge_ap_start_progress(58, 0);
+ 	if (wpa_macsw_driver_vif_update(drv, type, 0)) {
+         goto err;
+     }
++	if (fhost_vif_idx == MGMR_VIF_AP)
++		fhost_bridge_ap_start_progress(59, 0);
+ 
+ 	// Configure default RX filters (whatever initial interface type is)
+ 	fhost_wpa_set_mgmt_rx_filter(fhost_vif_idx, STA_MGMT_RX_FILTER);
+@@ -1465,33 +1471,59 @@
+ 	struct mac_chan_def *chan_tag;
+ 	int i;
+ 
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(136, 0);
+ 	mode->mode = hw_mode;
+ 	mode->num_channels = feat->chan->chan2G4_cnt;
+ 	if (hw_mode == HOSTAPD_MODE_IEEE80211B) {
+ 		mode->channels = macsw_2g_11b_channels;
+ 	} else {
++		fhost_bridge_ap_start_progress(137, feat->chan->chan2G4_cnt);
++		fhost_bridge_ap_start_progress(148, 0);
++		fhost_bridge_ap_start_heap_before_allocate(
++			feat->chan->chan2G4_cnt * sizeof(struct hostapd_channel_data));
++		fhost_bridge_ap_start_progress(149, 0);
+ 		mode->channels = os_malloc(feat->chan->chan2G4_cnt *
+-				   sizeof(struct hostapd_channel_data));
++					   sizeof(struct hostapd_channel_data));
++		fhost_bridge_ap_start_progress(150, 0);
++		fhost_bridge_ap_start_heap_after_allocate(
++			(uint32_t)(uintptr_t)mode->channels);
+ 		if (!mode->channels)
+ 			return -1;
++		fhost_bridge_ap_start_progress(138, 0);
+ 	}
+ 
+ 	chan = mode->channels;
+ 	chan_tag = feat->chan->chan2G4;
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(139, feat->chan->chan2G4_cnt);
+ 	for (i = 0; i < feat->chan->chan2G4_cnt; i++, chan++, chan_tag++)
+ 		macsw_to_hostapd_channel(chan_tag, chan);
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(140, i);
+ 
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(141, is_11b_only_rates);
+ 	mode->rates = macsw_init_rates(&mode->num_rates, is_11b_only_rates);
+ 	if (!mode->rates)
+ 		return -1;
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(142, mode->num_rates);
+ 
+ 	if (hw_mode == HOSTAPD_MODE_IEEE80211G && feat->me_config.ht_supp) {
++		fhost_bridge_ap_start_progress(143, 0);
+ 		macsw_ht_capabilities_init(mode, (struct mac_htcapability *)&feat->me_config.ht_cap);
++		fhost_bridge_ap_start_progress(144, 0);
+ 
+-		if (feat->me_config.he_supp)
++		if (feat->me_config.he_supp) {
++			fhost_bridge_ap_start_progress(145, 0);
+ 			macsw_he_capabilities_init(mode, (struct mac_hecapability *)&feat->me_config.he_cap);
++			fhost_bridge_ap_start_progress(146, 0);
++		}
+ 	}
+ 
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
++		fhost_bridge_ap_start_progress(147, 0);
+ 	return 0;
+ }
+ 
+@@ -1517,17 +1549,25 @@
+ 	if (fhost_cntrl_cfgmacsw_cmd_send(&cmd.hdr, &feat.hdr))
+ 		return NULL;
+ 
++	fhost_bridge_ap_start_progress(125, 0);
+ 	*num_modes = 0;
++	fhost_bridge_ap_start_progress(126, feat.chan->chan2G4_cnt);
+ 	if (feat.chan->chan2G4_cnt)
+ 		*num_modes += 2;
++	fhost_bridge_ap_start_progress(127, *num_modes);
++	fhost_bridge_ap_start_progress(128, feat.chan->chan5G_cnt);
+ 	if (feat.chan->chan5G_cnt)
+ 		*num_modes += 1;
++	fhost_bridge_ap_start_progress(129, *num_modes);
++	fhost_bridge_ap_start_progress(130, *num_modes);
+ 	modes = os_zalloc(*num_modes * sizeof(struct hostapd_hw_modes));
+ 	if (!modes)
+ 		return NULL;
++	fhost_bridge_ap_start_progress(131, *num_modes);
+ 
+ 	mode = modes;
+ 	if (feat.chan->chan2G4_cnt) {
++		fhost_bridge_ap_start_progress(132, 0);
+ 		/*
+ 		 * Export 2.4 GHz primarily as 11g so STA/AP capability
+ 		 * derivation keeps using the normal ERP path. Add a separate

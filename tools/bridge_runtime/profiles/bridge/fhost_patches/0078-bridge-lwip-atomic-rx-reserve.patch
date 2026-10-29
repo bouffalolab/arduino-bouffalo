@@ -1,0 +1,119 @@
+--- a/components/net/lwip/lwip/src/core/mem.c
++++ b/components/net/lwip/lwip/src/core/mem.c
+@@ -833,8 +833,8 @@
+     unsigned free_bytes, unsigned largest, unsigned holes, unsigned valid,
+     unsigned used, unsigned errors, unsigned long caller) __attribute__((weak));
+ 
+-void *
+-mem_malloc(mem_size_t size_in)
++static void *
++bridge_mem_malloc_internal(mem_size_t size_in, unsigned reserve, int *denied)
+ {
+   mem_size_t ptr, ptr2, size;
+   struct mem *mem, *mem2;
+@@ -843,6 +843,18 @@
+ #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
+   LWIP_MEM_ALLOC_DECL_PROTECT();
+ 
++  if (denied) *denied = 0;
++  if (reserve > MEM_SIZE_ALIGNED) {
++    if (denied) *denied = 1;
++    return NULL;
++  }
++#if !(LWIP_STATS && MEM_STATS)
++  /* A reserve requires the native live-charge counter. Fail closed. */
++  if (reserve) {
++    if (denied) *denied = 1;
++    return NULL;
++  }
++#endif
+   if (size_in == 0) {
+     return NULL;
+   }
+@@ -894,6 +906,23 @@
+         /* mem is not used and at least perfect fit is possible:
+          * mem->next - (ptr + SIZEOF_STRUCT_MEM) gives us the 'user data size' of mem */
+ 
++        /* Admission and native allocation share the heap lock. Include the
++         * allocator header and unsplittable slack, not only requested bytes.
++         * mem_free/mem_trim return credit through the existing native stats.
++         * Other (control/TX) allocations remain unrestricted. */
++#if LWIP_STATS && MEM_STATS
++        if (reserve) {
++          const unsigned limit = MEM_SIZE_ALIGNED - reserve;
++          const unsigned charge =
++              mem->next - (ptr + SIZEOF_STRUCT_MEM) >=
++                  size + SIZEOF_STRUCT_MEM + MIN_SIZE_ALIGNED
++              ? size + SIZEOF_STRUCT_MEM : mem->next - ptr;
++          if (lwip_stats.mem.used > limit || charge > limit - lwip_stats.mem.used) {
++            if (denied) *denied = 1;
++            continue;
++          }
++        }
++#endif
+         if (mem->next - (ptr + SIZEOF_STRUCT_MEM) >= (size + SIZEOF_STRUCT_MEM + MIN_SIZE_ALIGNED)) {
+           /* (in addition to the above, we test if another struct mem (SIZEOF_STRUCT_MEM) containing
+            * at least MIN_SIZE_ALIGNED of data also fits in the 'user data space' of 'mem')
+@@ -967,6 +996,7 @@
+         mem_overflow_init_element(mem, size_in);
+ #endif
+         MEM_SANITY();
++        if (denied) *denied = 0;
+         return (u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET;
+       }
+     }
+@@ -974,6 +1004,11 @@
+     /* if we got interrupted by a mem_free, try again */
+   } while (local_mem_free_count != 0);
+ #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
++  if (denied && *denied) {
++    LWIP_MEM_ALLOC_UNPROTECT();
++    sys_mutex_unlock(&mem_mutex);
++    return NULL;
++  }
+   MEM_STATS_INC(err);
+   if (bridge_lwip_mem_failure) {
+     /* Offsets strictly increase and are checked before dereferencing. The
+@@ -1018,6 +1053,16 @@
+   return NULL;
+ }
+ 
++/* Bridge-only native-heap API. No custom pbuf type or separate credit ledger. */
++void *bridge_mem_malloc_reserved(mem_size_t size, unsigned reserve, int *denied)
++{
++  return bridge_mem_malloc_internal(size, reserve, denied);
++}
++void *mem_malloc(mem_size_t size)
++{
++  return bridge_mem_malloc_internal(size, 0, NULL);
++}
++
+ #endif /* MEM_USE_POOLS */
+ 
+ #if MEM_LIBC_MALLOC && (!LWIP_STATS || !MEM_STATS)
+--- a/components/net/lwip/lwip/src/core/pbuf.c
++++ b/components/net/lwip/lwip/src/core/pbuf.c
+@@ -220,6 +220,23 @@
+  * @return the allocated pbuf. If multiple pbufs where allocated, this
+  * is the first pbuf of a pbuf chain.
+  */
++/* Bridge ingress only; allocated pbufs retain ordinary PBUF_RAM lifetime.
++ * The native allocator checks exact live charge under its existing lock. */
++extern void *bridge_mem_malloc_reserved(mem_size_t, unsigned, int *);
++struct pbuf *
++bridge_pbuf_alloc_reserved(u16_t length, unsigned reserve, int *denied)
++{
++  struct pbuf *p;
++  const mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + LWIP_MEM_ALIGN_SIZE(length));
++  if (denied) *denied = 0;
++  if (alloc_len < LWIP_MEM_ALIGN_SIZE(length)) return NULL;
++  p = (struct pbuf *)bridge_mem_malloc_reserved(alloc_len, reserve, denied);
++  if (!p) return NULL;
++  pbuf_init_alloced_pbuf(p, LWIP_MEM_ALIGN((void *)((u8_t *)p + SIZEOF_STRUCT_PBUF)),
++                       length, length, PBUF_RAM, 0);
++  return p;
++}
++
+ struct pbuf *
+ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
+ {

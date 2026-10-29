@@ -1,0 +1,108 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
+@@ -1143,6 +1143,7 @@
+ 
+ 	wpa_printf(MSG_DEBUG, "%s(hapd=%p (%s), first=%d)",
+ 		   __func__, hapd, conf->iface, first);
++	bridge_ap_start_hostapd(hapd->iface, 42, 0, first, 0);
+ 
+ #ifdef EAP_SERVER_TNC
+ 	if (conf->tnc && tncs_global_init() < 0) {
+@@ -1157,6 +1158,7 @@
+ 		return -1;
+ 	}
+ 	hapd->started = 1;
++	bridge_ap_start_hostapd(hapd->iface, 43, 0, hapd->started, 0);
+ 
+ 	if (!first || first == -1) {
+ 		u8 *addr = hapd->own_addr;
+@@ -1215,6 +1217,7 @@
+ 	if (flush_old_stations)
+ 		hostapd_flush(hapd);
+ 	hostapd_set_privacy(hapd, 0);
++	bridge_ap_start_hostapd(hapd->iface, 44, 0, flush_old_stations, 0);
+ 
+ #ifdef CONFIG_WEP
+ 	if (!hostapd_drv_nl80211(hapd))
+@@ -1229,6 +1232,8 @@
+ 	 * match.
+ 	 */
+ 	ssid_len = hostapd_get_ssid(hapd, ssid, sizeof(ssid));
++	bridge_ap_start_hostapd(
++		hapd->iface, 45, ssid_len, conf->ssid.ssid_set, 0);
+ 	if (ssid_len < 0) {
+ 		wpa_printf(MSG_ERROR, "Could not read SSID from system");
+ 		return -1;
+@@ -1265,17 +1270,21 @@
+ 	}
+ 
+ 	if (hostapd_setup_wpa_psk(conf)) {
++		bridge_ap_start_hostapd(hapd->iface, 46, -1, 0, 0);
+ 		wpa_printf(MSG_ERROR, "WPA-PSK setup failed.");
+ 		return -1;
+ 	}
++	bridge_ap_start_hostapd(hapd->iface, 46, 0, 0, 0);
+ 
+ 	/* Set SSID for the kernel driver (to be used in beacon and probe
+ 	 * response frames) */
+ 	if (set_ssid && hostapd_set_ssid(hapd, conf->ssid.ssid,
+ 					 conf->ssid.ssid_len)) {
++		bridge_ap_start_hostapd(hapd->iface, 47, -1, set_ssid, 0);
+ 		wpa_printf(MSG_ERROR, "Could not set SSID for kernel driver");
+ 		return -1;
+ 	}
++	bridge_ap_start_hostapd(hapd->iface, 47, 0, set_ssid, 0);
+ 
+ 	if (wpa_debug_level <= MSG_MSGDUMP)
+ 		conf->radius->msg_dumps = 1;
+@@ -1354,8 +1363,13 @@
+ 		return -1;
+ 	}
+ 
+-	if ((conf->wpa || conf->osen) && hostapd_setup_wpa(hapd))
+-		return -1;
++	if (conf->wpa || conf->osen) {
++		int setup_wpa_result = hostapd_setup_wpa(hapd);
++		bridge_ap_start_hostapd(
++			hapd->iface, 48, setup_wpa_result, conf->wpa, conf->osen);
++		if (setup_wpa_result)
++			return -1;
++	}
+ 
+ 	if (accounting_init(hapd)) {
+ 		wpa_printf(MSG_ERROR, "Accounting initialization failed.");
+@@ -1406,8 +1420,13 @@
+ 		return -1;
+ 	}
+ 
+-	if (!conf->start_disabled && ieee802_11_set_beacon(hapd) < 0)
+-		return -1;
++	if (!conf->start_disabled) {
++		int beacon_result = ieee802_11_set_beacon(hapd);
++		bridge_ap_start_hostapd(
++			hapd->iface, 49, beacon_result, conf->start_disabled, 0);
++		if (beacon_result < 0)
++			return -1;
++	}
+ 
+ 	if (flush_old_stations && !conf->start_disabled &&
+ 	    conf->broadcast_deauth) {
+@@ -1424,11 +1443,16 @@
+ 				       WLAN_REASON_PREV_AUTH_NOT_VALID);
+ 	}
+ 
+-	if (hapd->wpa_auth && wpa_init_keys(hapd->wpa_auth) < 0)
+-		return -1;
++	if (hapd->wpa_auth) {
++		int keys_result = wpa_init_keys(hapd->wpa_auth);
++		bridge_ap_start_hostapd(hapd->iface, 50, keys_result, 0, 0);
++		if (keys_result < 0)
++			return -1;
++	}
+ 
+ 	if (hapd->driver && hapd->driver->set_operstate)
+ 		hapd->driver->set_operstate(hapd->drv_priv, 1, -1, -1);
++	bridge_ap_start_hostapd(hapd->iface, 51, 0, 0, 0);
+ 
+ 	return 0;
+ }

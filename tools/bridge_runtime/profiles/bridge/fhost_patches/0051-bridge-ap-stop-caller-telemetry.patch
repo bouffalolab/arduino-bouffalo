@@ -1,0 +1,13 @@
+--- a/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
++++ b/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
+@@ -1482,6 +1482,11 @@
+ int wifi_mgmr_ap_stop(void)
+ {
++    fhost_bridge_ap_start_hostapd_lifecycle(
++        41, 0, 0xff, 0,
++        (uint32_t)(uintptr_t)__builtin_return_address(0),
++        0);
++
+ #ifdef CONFIG_WIFI_GATEWAY
+     net_al_gw_service_disable(fhost_to_net_if(MGMR_VIF_AP));
+ #endif

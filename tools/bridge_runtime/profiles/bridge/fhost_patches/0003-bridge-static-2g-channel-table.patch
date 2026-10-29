@@ -1,0 +1,52 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -302,6 +302,11 @@ static const int macsw_legacy_rates_11b_only[] = { 10, 20, 55, 110 };
+ static const int macsw_legacy_rates_5g[] =
+ 	{ 60, 90, 120, 180, 240, 360, 480, 540 };
+-static struct hostapd_channel_data macsw_2g_11b_channels[14];
++/*
++ * BL616CL exposes at most the 14 channels in the 2.4 GHz band. The 11b and
++ * 11g hardware modes describe the same physical channels, so they can share
++ * this immutable-at-runtime capability table instead of consuming heap.
++ */
++static struct hostapd_channel_data macsw_2g_channels[14];
+ 
+ static int *macsw_init_rates(int *num, bool is_11b_only)
+ {
+@@ -324,7 +328,7 @@ bool macsw_hw_feature_uses_static_rates(const int *rates)
+ 
+ bool macsw_hw_feature_uses_static_channels(const struct hostapd_channel_data *channels)
+ {
+-	return channels == macsw_2g_11b_channels;
++	return channels == macsw_2g_channels;
+ }
+ 
+ static void macsw_ht_capabilities_init(struct hostapd_hw_modes *mode,
+@@ -1469,23 +1473,13 @@ static int macsw_populate_2g_mode(struct hostapd_hw_modes *mode,
+ 
+ 	if (hw_mode == HOSTAPD_MODE_IEEE80211G)
+ 		fhost_bridge_ap_start_progress(136, 0);
++	if (feat->chan->chan2G4_cnt > ARRAY_SIZE(macsw_2g_channels))
++		return -1;
+ 	mode->mode = hw_mode;
+ 	mode->num_channels = feat->chan->chan2G4_cnt;
+-	if (hw_mode == HOSTAPD_MODE_IEEE80211B) {
+-		mode->channels = macsw_2g_11b_channels;
+-	} else {
++	mode->channels = macsw_2g_channels;
++	if (hw_mode == HOSTAPD_MODE_IEEE80211G) {
+ 		fhost_bridge_ap_start_progress(137, feat->chan->chan2G4_cnt);
+-		fhost_bridge_ap_start_progress(148, 0);
+-		fhost_bridge_ap_start_heap_before_allocate(
+-			feat->chan->chan2G4_cnt * sizeof(struct hostapd_channel_data));
+-		fhost_bridge_ap_start_progress(149, 0);
+-		mode->channels = os_malloc(feat->chan->chan2G4_cnt *
+-					   sizeof(struct hostapd_channel_data));
+-		fhost_bridge_ap_start_progress(150, 0);
+-		fhost_bridge_ap_start_heap_after_allocate(
+-			(uint32_t)(uintptr_t)mode->channels);
+-		if (!mode->channels)
+-			return -1;
+ 		fhost_bridge_ap_start_progress(138, 0);
+ 	}
+ 

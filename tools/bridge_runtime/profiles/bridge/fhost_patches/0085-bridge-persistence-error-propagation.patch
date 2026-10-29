@@ -1,0 +1,107 @@
+--- a/components/fs/littlefs/easyflash_port/lfs_easyflash.c
++++ b/components/fs/littlefs/easyflash_port/lfs_easyflash.c
+@@ -306,7 +306,11 @@
+         EF_GIANT_UNLOCK(EF_WRITE_ERR);
+     }
+ 
+-    lfs_file_close(lfs, &file);
++    ret = lfs_file_close(lfs, &file);
++    if (ret != LFS_ERR_OK) {
++        errno = -ret;
++        EF_GIANT_UNLOCK(EF_WRITE_ERR);
++    }
+ 
+     EF_GIANT_UNLOCK(EF_NO_ERR);
+ }
+@@ -331,7 +335,11 @@
+         EF_GIANT_UNLOCK(EF_ENV_NAME_ERR);
+     }
+ 
+-    lfs_remove(lfs, path_buffer);
++    ret = lfs_remove(lfs, path_buffer);
++    if (ret != LFS_ERR_OK && ret != LFS_ERR_NOENT) {
++        errno = -ret;
++        EF_GIANT_UNLOCK(EF_WRITE_ERR);
++    }
+     EF_GIANT_UNLOCK(EF_NO_ERR);
+ }
+ 
+--- a/components/fs/littlefs/port/lfs_xip_flash.c
++++ b/components/fs/littlefs/port/lfs_xip_flash.c
+@@ -59,7 +59,12 @@
+     }
+ 
+     memset(&info, 0, sizeof(info));
+-    bflb_mtd_info(handle, &info);
++    ret = bflb_mtd_info(handle, &info);
++    if (ret < 0 || info.size == 0 || info.size % cfg->block_size != 0) {
++        bflb_mtd_close(handle);
++        errno = EIO;
++        return NULL;
++    }
+     LOG_I("Found valid PSM partition, XIP addr %08x, flash addr %08x, size %d\r\n",
+           info.xip_addr,
+           info.offset,
+@@ -74,30 +79,55 @@
+ 
+ #ifdef CONFIG_FREERTOS
+ #if configUSE_RECURSIVE_MUTEXES
+-    lfs_xip_ctx->fs_giant_lock = xSemaphoreCreateRecursiveMutex();
+-#else
+-    lfs_xip_ctx->fs_giant_lock = xSemaphoreCreateMutex();
++    if (lfs_xip_ctx->fs_giant_lock == NULL) {
++        lfs_xip_ctx->fs_giant_lock = xSemaphoreCreateRecursiveMutex();
++    }
++#else
++    if (lfs_xip_ctx->fs_giant_lock == NULL) {
++        lfs_xip_ctx->fs_giant_lock = xSemaphoreCreateMutex();
++    }
+ #endif
+ #endif
+ 
+     // mount the filesystem
+     ret = lfs_mount(lfs, cfg);
+ 
+-    // reformat if we can't mount the filesystem
+-    // this should only happen on the first boot
++    // lfs_mount deinitializes on failure but leaves cfg set. Do not let a
++    // subsequent init mistake that object for a successful mount.
++    if (ret) { lfs->cfg = NULL; }
++
++    // Only a completely erased partition may be initialized automatically.
++    // Mount I/O errors and nonblank corruption must never erase user keys.
+     if (ret) {
++        uint8_t probe[256];
++        for (lfs_block_t block = 0; block < cfg->block_count; ++block) {
++            for (lfs_off_t off = 0; off < cfg->block_size; off += sizeof(probe)) {
++                if (cfg->read(cfg, block, off, probe, sizeof(probe)) != 0) {
++                    errno = EIO;
++                    return NULL;
++                }
++                for (size_t i = 0; i < sizeof(probe); ++i) {
++                    if (probe[i] != 0xff) {
++                        errno = EIO;
++                        return NULL;
++                    }
++                }
++            }
++        }
+         LOG_W("try to reformat \r\n");
+         ret = lfs_format(lfs, cfg);
+         if (ret) {
+             LOG_F("reformat fail\r\n");
+-            errno = LFS_ERR_CORRUPT;
++            lfs->cfg = NULL;
++            errno = EIO;
+             return NULL;
+         }
+ 
+         LOG_I("reformat success\r\n");
+         ret = lfs_mount(lfs, cfg);
+         if (ret) {
+-            errno = ret;
++            lfs->cfg = NULL;
++            errno = EIO;
+             return NULL;
+         }
+     } else if (ret != LFS_ERR_OK) {

@@ -1,0 +1,13 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c
+@@ -299,7 +299,8 @@
+ 	if (wpa_s->ap_iface &&
+ 	    os_strcmp(wpa_s->ifname, "wl2") == 0)
+ 		fhost_bridge_ap_start_hostapd_lifecycle(
+ 			38, 0, wpa_s->ap_iface->state, 0,
+-			wpa_s->wpa_state, 0);
++			(uint32_t)(uintptr_t)__builtin_return_address(0),
++			wpa_s->wpa_state);
+ 	wpa_supplicant_ap_deinit(wpa_s);
+ #endif /* CONFIG_AP */
+ 

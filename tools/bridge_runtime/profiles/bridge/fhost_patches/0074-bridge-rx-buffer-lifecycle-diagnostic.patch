@@ -1,0 +1,41 @@
+--- a/components/wireless/wifi6/fhost/src/macif_fhost.c
++++ b/components/wireless/wifi6/fhost/src/macif_fhost.c
+@@ -1,4 +1,7 @@
+ #include <assert.h>
++extern void fhost_bridge_rx_event(unsigned, unsigned, unsigned, unsigned) __attribute__((weak));
++#define BRIDGE_RX_EVENT(e,a,b,c) do { if (fhost_bridge_rx_event) fhost_bridge_rx_event((e),(a),(b),(c)); } while (0)
++
+ #include <stdarg.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -172,7 +175,8 @@
+   struct fhost_rx_buf_desc_tag buf;
+ 
+   // Pop a buffer from the RX buffer queue (without waiting)
+-  rtos_queue_read(fhost_rx_env.queue_buf, &buf, 0, false);
++  int result = rtos_queue_read(fhost_rx_env.queue_buf, &buf, 0, false);
++  BRIDGE_RX_EVENT(22, result != 0, 0, 0);
+ 
+   *host_id = buf.host_id;
+ 
+@@ -202,7 +206,9 @@
+ }
+ 
+ bool macif_rx_buf_check(void) {
+-  return !rtos_queue_is_empty(fhost_rx_env.queue_buf);
++  bool available = !rtos_queue_is_empty(fhost_rx_env.queue_buf);
++  if (!available) BRIDGE_RX_EVENT(24, 0, 0, 0);
++  return available;
+ }
+ 
+ void macif_tx_cfm_push(uint8_t access_category, struct txdesc *txdesc) {
+--- a/components/wireless/wifi6/fhost/src/fhost_rx.c
++++ b/components/wireless/wifi6/fhost/src/fhost_rx.c
+@@ -802,6 +802,7 @@
+         buf->ref = 1;
+ 
+         res = rtos_queue_write(fhost_rx_env.queue_buf, &buf_desc, 0, false);
++        BRIDGE_RX_EVENT(23, res != 0, 0, 0);
+         assert(res == 0);
+ 
+         // Warn the WiFi task about the new buffer availability, if required

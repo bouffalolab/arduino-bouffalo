@@ -1,0 +1,63 @@
+--- a/components/net/lwip/lwip/src/core/mem.c
++++ b/components/net/lwip/lwip/src/core/mem.c
+@@ -621,6 +621,33 @@
+  * @param rmem is the data portion of a struct mem as returned by a previous
+  *             call to mem_malloc()
+  */
++/* Exact full native charge for a live allocation base. The caller holds a
++ * pbuf reference across query/bind, so the allocation cannot be finally freed.
++ * Walk actual block boundaries: an aligned interior pointer is not a base.
++ * No allocation, observer, logging or TCP core lock acquisition is performed. */
++unsigned
++bridge_lwip_mem_charge(const void *allocation)
++{
++  unsigned charge = 0;
++  mem_size_t offset = 0;
++  LWIP_MEM_FREE_DECL_PROTECT();
++  if (allocation == NULL) return 0;
++  LWIP_MEM_FREE_PROTECT();
++  while (offset <= MEM_SIZE_ALIGNED - SIZEOF_STRUCT_MEM) {
++    struct mem *block = ptr_to_mem(offset);
++    mem_size_t next = block->next;
++    if (next < offset + SIZEOF_STRUCT_MEM || next > MEM_SIZE_ALIGNED ||
++        (next & (MEM_ALIGNMENT - 1)) || block->used > 1) break;
++    if ((const u8_t *)allocation == ram + offset + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET) {
++      if (block->used && mem_link_valid(block)) charge = next - offset;
++      break;
++    }
++    offset = next;
++  }
++  LWIP_MEM_FREE_UNPROTECT();
++  return charge;
++}
++
+ void
+ mem_free(void *rmem)
+ {
+--- a/components/net/lwip/lwip/src/core/tcp_in.c
++++ b/components/net/lwip/lwip/src/core/tcp_in.c
+@@ -46,6 +46,10 @@
+ #if LWIP_TCP /* don't build if not configured for use in lwipopts.h */
+ 
+ #include "lwip/priv/tcp_priv.h"
++
++/* Optional owned-RX admission, before sequence processing or ACK. */
++extern int bridge_tcp_rx_memory_admit(struct tcp_pcb *, struct pbuf *)
++    __attribute__((weak));
+ #include "lwip/def.h"
+ #include "lwip/ip_addr.h"
+ #include "lwip/netif.h"
+@@ -428,6 +432,13 @@
+   }
+ #endif
+   if (pcb != NULL) {
++    /* Rejection frees only this unacknowledged input, never refused/OOSEQ data.
++     * FIN can retain a zero-payload pbuf and must also bind its full charge. */
++    if (bridge_tcp_rx_memory_admit && (p->tot_len || (flags & TCP_FIN)) &&
++        !bridge_tcp_rx_memory_admit(pcb, p)) {
++      pbuf_free(p);
++      return;
++    }
+     /* The incoming segment belongs to a connection. */
+ #if TCP_INPUT_DEBUG
+     tcp_debug_print_state(pcb->state);

@@ -1,0 +1,16 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -1092,7 +1092,13 @@
+ 	hapd_iface->extended_capa = wpa_s->extended_capa;
+ 	hapd_iface->extended_capa_mask = wpa_s->extended_capa_mask;
+ 	hapd_iface->extended_capa_len = wpa_s->extended_capa_len;
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			5, 0, wpa_s->wpa_state, 1);
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			5, 0, wpa_s->wpa_state, 2);
+ 	wpa_s->ap_iface->conf = conf = hostapd_config_defaults();
+ 	if (bridge_ap)
+ 		fhost_bridge_ap_start_create_ap(

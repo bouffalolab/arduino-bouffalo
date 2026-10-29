@@ -1,0 +1,39 @@
+--- a/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_adv.c
++++ b/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_adv.c
+@@ -1197,6 +1197,9 @@
+  * @brief Check the reception during activity
+  ****************************************************************************************
+  */
++/* Optional numeric observer; no payload or identity is passed. */
++extern void bridge_ble_adv_rx_observe(unsigned event) __attribute__((weak));
++
+ __STATIC bool lld_adv_pkt_rx(uint8_t act_id)
+ {
+     bool connect_req_received = false;
+@@ -1216,6 +1219,10 @@
+         #endif
+         // Retrieve RX status and type
+         uint16_t rxstat_pkt = em_ble_rxstatadv_get(rxdesc_idx);
++        if (bridge_ble_adv_rx_observe) {
++            bridge_ble_adv_rx_observe(0);
++            if (rxstat_pkt & LLD_ADV_ERR_MASK) bridge_ble_adv_rx_observe(3);
++        }
+ 
+         // Trace the current RX descriptor
+         TRC_REQ_RX_DESC(LLD_ADV, act_id, REG_EM_BLE_RX_DESC_ADDR_GET(rxdesc_idx));
+@@ -1229,6 +1236,7 @@
+             // sync info and data pointer, and then let LLM to do the job.
+             if (rxtype == BLE_CONNECT_IND)
+             {
++                if (bridge_ble_adv_rx_observe) bridge_ble_adv_rx_observe(1);
+                 struct pdu_con_req data;
+                 struct bd_addr init_id_addr, init_rpa, adv_rpa;
+ 
+@@ -1251,6 +1259,7 @@
+                     uint16_t ral_ptr = em_ble_rxralptr_getf(rxdesc_idx);
+ 
+                     connect_req_received = true;
++                    if (bridge_ble_adv_rx_observe) bridge_ble_adv_rx_observe(2);
+ 
+                     if (ral_ptr != 0)
+                     {

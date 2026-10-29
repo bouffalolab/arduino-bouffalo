@@ -1,0 +1,23 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -566,13 +566,19 @@
+   dl_list_del(&evreq->entry);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(229, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(230, 0);
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(164, 0);
+   if (bridge_ap_set_sae_pwe)
+     fhost_bridge_ap_start_progress(216, 0);
+   rtos_mutex_unlock(eloop.mtx);
+ 
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(231, 0);
+   // do the req done cb
+   if (evreq->done) evreq->done(evreq->body);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(232, 0);
+   os_free(evreq);
+ 
+   goto retry;

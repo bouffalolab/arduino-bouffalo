@@ -1,0 +1,61 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -1138,9 +1138,15 @@
+ 		fhost_bridge_ap_start_create_ap(8, 0, wpa_s->wpa_state, conf->num_bss);
+ 
+ 	for (i = 0; i < conf->num_bss; i++) {
++		if (bridge_ap)
++			fhost_bridge_ap_start_create_ap(
++				9, 0, wpa_s->wpa_state, i);
+ 		hapd_iface->bss[i] =
+ 			hostapd_alloc_bss_data(hapd_iface, conf,
+ 					       conf->bss[i]);
++		if (bridge_ap)
++			fhost_bridge_ap_start_create_ap(
++				10, hapd_iface->bss[i] ? 0 : -1, wpa_s->wpa_state, i);
+ 		if (hapd_iface->bss[i] == NULL) {
+ 			wpa_supplicant_ap_deinit(wpa_s);
+ 			return -1;
+@@ -1173,14 +1179,19 @@
+ 		hapd_iface->bss[i]->ext_eapol_frame_io =
+ 			wpa_s->ext_eapol_frame_io;
+ #endif /* CONFIG_TESTING_OPTIONS */
++		if (bridge_ap)
++			fhost_bridge_ap_start_create_ap(
++				11, 0, wpa_s->wpa_state, i);
+ 	}
+ 
+ 	if (bridge_ap)
+-		fhost_bridge_ap_start_create_ap(9, 0, wpa_s->wpa_state, conf->num_bss);
++		fhost_bridge_ap_start_create_ap(12, 0, wpa_s->wpa_state, conf->num_bss);
+ 
+ 	os_memcpy(hapd_iface->bss[0]->own_addr, wpa_s->own_addr, ETH_ALEN);
+ 	hapd_iface->bss[0]->driver = wpa_s->driver;
+ 	hapd_iface->bss[0]->drv_priv = wpa_s->drv_priv;
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(13, 0, wpa_s->wpa_state, 0);
+ 
+ 	wpa_s->current_ssid = ssid;
+ 	eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
+@@ -1198,10 +1209,10 @@
+ #endif /* CONFIG_P2P && CONFIG_ACS */
+ 
+ 	if (bridge_ap)
+-		fhost_bridge_ap_start_create_ap(10, 0, wpa_s->wpa_state, 0);
++		fhost_bridge_ap_start_create_ap(14, 0, wpa_s->wpa_state, 0);
+ 	setup_result = hostapd_setup_interface(wpa_s->ap_iface);
+ 	if (bridge_ap)
+-		fhost_bridge_ap_start_create_ap(11, setup_result, wpa_s->wpa_state, 0);
++		fhost_bridge_ap_start_create_ap(15, setup_result, wpa_s->wpa_state, 0);
+ 	if (setup_result) {
+ 		wpa_printf(MSG_ERROR, "Failed to initialize AP interface");
+ 		wpa_supplicant_ap_deinit(wpa_s);
+@@ -1209,7 +1220,7 @@
+ 	}
+ 
+ 	if (bridge_ap)
+-		fhost_bridge_ap_start_create_ap(12, 0, wpa_s->wpa_state, 0);
++		fhost_bridge_ap_start_create_ap(16, 0, wpa_s->wpa_state, 0);
+ 	return 0;
+ }
+ 

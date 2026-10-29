@@ -1,0 +1,152 @@
+# Bouffalo Arduino bundle builder (multi-chip)
+
+This directory is the only place where the Arduino platform invokes the
+Bouffalo SDK build system. Normal Arduino builds compile the sketch, libraries,
+and Core directly, then link the checked-in bundles:
+
+- `tools/sdk/{chip}/`: chip/runtime headers, generated `autoconf.h`, SDK
+  archives, the generated linker script, and the chip-runtime manifest;
+- `variants/{board}/`: board headers, `libapp.a`, pin map, boot2, partition
+  configuration/binary, eFuse sidecars, and board manifest;
+- `tools/{toolchain_dirname}/`: minimal toolchain subset for the chip.
+
+This follows the same high-level model as Arduino ESP32's `tools/sdk/<chip>`.
+
+## Runtime Profiles
+
+`--profile stage1` is the default lightweight Arduino runtime. `--profile
+bridge` emits a sibling `tools/sdk/bl616cl/bridge/` bundle for the provisional
+UNO R4 BL616CL bridge FQBN. The bridge profile includes Wi-Fi/MACSW/FHOST, BLE,
+CherryUSB, LittleFS/EasyFlash, lwIP and mbedTLS archives and headers.
+
+The generator also copies SDK linker-script `INCLUDE` fragments, bridge
+external archives built under `build_macsw/` and `build_fhost/`, and the GCC
+LTO executables required by MACSW's `-flto -ffat-lto-objects` archives.
+
+## Supported chips
+
+| Chip | Toolchain prefix | Core |
+|------|-----------------|------|
+| bl616cl | `riscv64-unknown-elf-` | T-Head E907 |
+| bl616 | `riscv64-unknown-elf-` | T-Head E907 |
+| bl618dg | `riscv64-zephyr-elf-` | T-Head E907 |
+| bl602 | `riscv64-unknown-elf-` | SiFive E24 |
+| bl702 | `riscv64-unknown-elf-` | T-Head E907 |
+| bl702l | `riscv64-unknown-elf-` | T-Head E907 |
+
+See `CHIP_CONFIG` in `generate_runtime_bundle.py` for the full per-chip
+settings (ABI flags, MTIME addresses, FreeRTOS extension directory).
+
+## Controlled SDK Source
+
+The bridge runtime uses the root repository's project-controlled
+`third_party/bouffalo_sdk` Git submodule by default. Its root commit, required
+recursive submodules, remote URLs and sparse checkout closure are locked in
+`third_party/bouffalo_sdk.lock.json`. Initialize and check it from the root
+repository:
+
+```bash
+python3 tools/prepare_bouffalo_sdk_source.py --init
+python3 tools/prepare_bouffalo_sdk_source.py --check
+```
+
+This materializes the minimum source closure needed by the bridge profile. Do
+not edit `third_party/bouffalo_sdk`; bridge-owned configuration and generated
+bundle compatibility fixes remain in this platform checkout. `--sdk` is an
+explicit development override, not the normal build path.
+
+## Regenerate
+
+The generator records the checked-out controlled SDK commit. Uncommitted source
+changes are rejected by default. Pass `--allow-dirty-sdk` only for a
+development bundle that must be tested before the SDK worktree is clean; such
+a bundle is not release reproducible.
+
+From the repository root:
+
+    # For BL616CL (default Xuantie-900 toolchain)
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --chip bl616cl
+
+    # For BL618DG (Zephyr toolchain required)
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --chip bl618dg \
+      --toolchain /opt/riscv64-zephyr-elf
+
+    # Custom board
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --chip bl616cl \
+      --board my_custom_board
+
+    # BL616CL provisional bridge runtime
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/generate_runtime_bundle.py \
+      --chip bl616cl \
+      --profile bridge \
+      --toolchain /path/to/Xuantie-900-gcc
+
+Do not pass a toolchain path that lies inside the platform `tools/` directory —
+the generator atomically replaces that target.
+
+The generator builds a minimal probe (`main.c` → empty `while(1)`) to produce
+all required archives and side-car binaries in one shot, validates the ELF
+header, copies only versioned FlashCube chip resources (not `img_create`,
+generated `.ini`, or logs), and writes SHA-256 manifests.  Regenerate and
+review manifests whenever the SDK commit, `defconfig`, toolchain, ABI flags, or
+partition layout change.
+
+For the bridge profile, the generator may apply explicitly named compatibility
+fixes to the copied public headers required by the Arduino C++ build. These
+patches affect only the generated bundle; the external Bouffalo SDK checkout is
+never modified. The current fix adds an explicit cast in the MACSW inline
+classifier where the latest SDK uses a C-only `const void *` conversion; the
+cast remains valid when the same header is included from C.
+
+The bridge profile also applies source patches from
+`profiles/bridge/fhost_patches/` to an ephemeral hard-linked SDK view used only
+for that build. The controlled SDK checkout remains clean. Each patch records
+its target file baseline/result SHA-256 in the profile manifest, and the
+generated runtime manifest records the patch file hash and target metadata.
+Multiple patches may touch one target only when their SHA-256 values form a
+contiguous manifest-order chain.
+This is the mechanism for bridge-owned FHOST, WPA, and mbedTLS build fixes such
+as AP+STA channel selection, protocol-UART log suppression, AP-start telemetry,
+and profile-controlled TLS record-buffer sizing.
+
+The bridge bundle also ships the mbedTLS Kconfig config, Bouffalo allocator port
+header, and any Kconfig-selected hardware accelerator `*_alt.h` headers. Its
+`mbedtls/mbedtls_config.h` is a bridge-owned wrapper: it imports the generated
+Kconfig values and mirrors the fixed feature definitions that Bouffalo's
+mbedTLS CMake target supplies while building `libmbedtls.a`. This keeps Arduino
+translation units and the linked archive on one mbedTLS public API/ABI
+configuration without relying on quoted `MBEDTLS_CONFIG_FILE` compiler flags.
+
+## Verify a bundle
+
+The bridge bundle verifier checks every manifest file hash and size, the
+bridge `defconfig`, the required Wi-Fi/MACSW/FHOST/lwIP/WPA and BLE archives,
+the public headers, and the recorded controlled SDK and build-input
+sub-repository commits. It also checks
+`source_manifest.json` and `proprietary_manifest.json`: every bridge link
+archive must be classified exactly once as a public-source build input or a
+supplier-prebuilt artifact, while BL616CL ROM ABI dependencies are explicit.
+The recorded source repositories include mbedTLS, LittleFS, lwIP, CherryUSB,
+Bluetooth, Wi-Fi6/MACSW, LHAL, BL616CL PHY/std, system and post-processing
+tools:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
+      --bundle hardware/bouffalo/bl616cl/tools/sdk/bl616cl/bridge
+
+The verifier rejects `-dirty` source records by default.  For development-only
+inspection against an intentionally selected SDK checkout:
+
+    python3 hardware/bouffalo/bl616cl/tools/runtime_bundle/verify_runtime_bundle.py \
+      --allow-dirty \
+      --sdk /path/to/bouffalo_sdk
+
+The release gate is the first command without `--allow-dirty`; it must print
+`SOURCE_REPRODUCIBILITY=REPRODUCIBLE` and
+`BL616CL_RUNTIME_BUNDLE_VERIFY_PASS`. `BL616CL_SOURCE_BOUNDARY_VERIFY_PASS`
+means that the binary boundary is auditable; it does not approve supplier
+binary redistribution. The final product still needs a pinned SDK source
+snapshot or submodule, supplier license confirmation, and a clean regeneration
+before publication.

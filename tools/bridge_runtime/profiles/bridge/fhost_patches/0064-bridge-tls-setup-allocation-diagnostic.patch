@@ -1,0 +1,62 @@
+--- a/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls.c
++++ b/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls.c
+@@ -1050,6 +1050,18 @@
+     memset(session, 0, sizeof(mbedtls_ssl_session));
+ }
+ 
++/* Bridge diagnostic only: preserve allocator and error/cleanup semantics. */
++extern void bridge_mbedtls_alloc_failed(const void *ssl, unsigned stage,
++                                        size_t requested) __attribute__((weak));
++
++static void bridge_ssl_alloc_failed(const mbedtls_ssl_context *ssl,
++                                    unsigned stage, size_t requested)
++{
++    if (bridge_mbedtls_alloc_failed != NULL) {
++        bridge_mbedtls_alloc_failed(ssl, stage, requested);
++    }
++}
++
+ MBEDTLS_CHECK_RETURN_CRITICAL
+ static int ssl_handshake_init(mbedtls_ssl_context *ssl)
+ {
+@@ -1075,15 +1087,24 @@
+      */
+     if (ssl->transform_negotiate == NULL) {
+         ssl->transform_negotiate = mbedtls_calloc(1, sizeof(mbedtls_ssl_transform));
++        if (ssl->transform_negotiate == NULL) {
++            bridge_ssl_alloc_failed(ssl, 3, sizeof(mbedtls_ssl_transform));
++        }
+     }
+ #endif /* MBEDTLS_SSL_PROTO_TLS1_2 */
+ 
+     if (ssl->session_negotiate == NULL) {
+         ssl->session_negotiate = mbedtls_calloc(1, sizeof(mbedtls_ssl_session));
++        if (ssl->session_negotiate == NULL) {
++            bridge_ssl_alloc_failed(ssl, 4, sizeof(mbedtls_ssl_session));
++        }
+     }
+ 
+     if (ssl->handshake == NULL) {
+         ssl->handshake = mbedtls_calloc(1, sizeof(mbedtls_ssl_handshake_params));
++        if (ssl->handshake == NULL) {
++            bridge_ssl_alloc_failed(ssl, 5, sizeof(mbedtls_ssl_handshake_params));
++        }
+     }
+ #if defined(MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH)
+     /* If the buffers are too small - reallocate */
+@@ -1399,6 +1420,7 @@
+ #endif
+     ssl->in_buf = mbedtls_calloc(1, in_buf_len);
+     if (ssl->in_buf == NULL) {
++        bridge_ssl_alloc_failed(ssl, 1, in_buf_len);
+         MBEDTLS_SSL_DEBUG_MSG(1, ("alloc(%" MBEDTLS_PRINTF_SIZET " bytes) failed", in_buf_len));
+         ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
+         goto error;
+@@ -1409,6 +1431,7 @@
+ #endif
+     ssl->out_buf = mbedtls_calloc(1, out_buf_len);
+     if (ssl->out_buf == NULL) {
++        bridge_ssl_alloc_failed(ssl, 2, out_buf_len);
+         MBEDTLS_SSL_DEBUG_MSG(1, ("alloc(%" MBEDTLS_PRINTF_SIZET " bytes) failed", out_buf_len));
+         ret = MBEDTLS_ERR_SSL_ALLOC_FAILED;
+         goto error;

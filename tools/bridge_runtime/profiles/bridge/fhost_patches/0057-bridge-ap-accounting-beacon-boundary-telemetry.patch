@@ -1,0 +1,22 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
+@@ -1371,7 +1371,10 @@
+ 			return -1;
+ 	}
+ 
+-	if (accounting_init(hapd)) {
++	bridge_ap_start_hostapd(hapd->iface, 52, 0, 0, 0);
++	int accounting_result = accounting_init(hapd);
++	bridge_ap_start_hostapd(hapd->iface, 53, accounting_result, 0, 0);
++	if (accounting_result) {
+ 		wpa_printf(MSG_ERROR, "Accounting initialization failed.");
+ 		return -1;
+ 	}
+@@ -1420,6 +1423,7 @@
+ 	}
+ 
+ 	if (!conf->start_disabled) {
++		bridge_ap_start_hostapd(hapd->iface, 54, 0, 0, 0);
+ 		int beacon_result = ieee802_11_set_beacon(hapd);
+ 		bridge_ap_start_hostapd(
+ 			hapd->iface, 49, beacon_result, conf->start_disabled, 0);

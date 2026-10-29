@@ -1,0 +1,8 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -482,4 +482 @@
+-  int bridge_ap_enable_network =
+-      msg != NULL &&
+-      strncmp((char *)(msg + 1), "IFNAME=wl2 ENABLE_NETWORK ",
+-              sizeof("IFNAME=wl2 ENABLE_NETWORK ") - 1) == 0;
++  int bridge_ap_enable_network = msg != NULL && msg->use_task_notification;

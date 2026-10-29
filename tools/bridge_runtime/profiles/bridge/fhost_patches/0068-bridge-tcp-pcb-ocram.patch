@@ -1,0 +1,51 @@
+--- a/components/net/lwip/lwip/src/include/lwip/memp.h
++++ b/components/net/lwip/lwip/src/include/lwip/memp.h
+@@ -99,7 +99,10 @@
+  *   extern u8_t \_\_attribute\_\_((section(".onchip_mem"))) memp_memory_my_private_pool_base[];
+  */
+ #define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
+-  LWIP_DECLARE_MEMORY_ALIGNED(memp_memory_ ## name ## _base, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size)))); \
++  LWIP_MEMPOOL_DECLARE_WITH_MEMORY(name,num,size,desc,LWIP_DECLARE_MEMORY_ALIGNED)
++
++#define LWIP_MEMPOOL_DECLARE_WITH_MEMORY(name,num,size,desc,declare_memory) \
++  declare_memory(memp_memory_ ## name ## _base, ((num) * (MEMP_SIZE + MEMP_ALIGN_SIZE(size)))); \
+     \
+   LWIP_MEMPOOL_DECLARE_STATS_INSTANCE(memp_stats_ ## name) \
+     \
+--- a/components/net/lwip/lwip/src/include/lwip/priv/memp_std.h
++++ b/components/net/lwip/lwip/src/include/lwip/priv/memp_std.h
+@@ -47,7 +47,11 @@
+ #endif /* LWIP_UDP */
+ 
+ #if LWIP_TCP
++#ifdef LWIP_MEMPOOL_TCP_PCB
++LWIP_MEMPOOL_TCP_PCB(TCP_PCB, MEMP_NUM_TCP_PCB, sizeof(struct tcp_pcb), "TCP_PCB")
++#else
+ LWIP_MEMPOOL(TCP_PCB,        MEMP_NUM_TCP_PCB,         sizeof(struct tcp_pcb),        "TCP_PCB")
++#endif
+ LWIP_MEMPOOL(TCP_PCB_LISTEN, MEMP_NUM_TCP_PCB_LISTEN,  sizeof(struct tcp_pcb_listen), "TCP_PCB_LISTEN")
+ LWIP_MEMPOOL(TCP_SEG,        MEMP_NUM_TCP_SEG,         sizeof(struct tcp_seg),        "TCP_SEG")
+ #endif /* LWIP_TCP */
+--- a/components/net/lwip/lwip/src/core/memp.c
++++ b/components/net/lwip/lwip/src/core/memp.c
+@@ -81,7 +81,20 @@
+ #define LWIP_MEMPOOL_ATTR(name,num,size,desc) LWIP_MEMPOOL_ATTR_DECLARE(name,num,size,desc)
+ #endif
+ 
++/* TCP PCBs contain CPU-only protocol state, never DMA packet storage.
++ * Keep all other pools in the SDK-selected shared memory region. */
++#if BRIDGE_LWIP_TCP_PCB_OCRAM && !MEMP_MEM_MALLOC
++#define BRIDGE_DECLARE_PCB_MEMORY(variable_name, size) \
++  u8_t variable_name[LWIP_MEM_ALIGN_BUFFER(size)] \
++    __attribute__((section(".bss.bridge_tcp_pcb"), aligned(MEM_ALIGNMENT)))
++#define LWIP_MEMPOOL_TCP_PCB(name,num,size,desc) \
++  LWIP_MEMPOOL_DECLARE_WITH_MEMORY(name,num,size,desc,BRIDGE_DECLARE_PCB_MEMORY)
++#endif
++
+ #include "lwip/priv/memp_std.h"
++
++#undef LWIP_MEMPOOL_TCP_PCB
++#undef BRIDGE_DECLARE_PCB_MEMORY
+ 
+ const struct memp_desc *const memp_pools[MEMP_MAX] = {
+ #define LWIP_MEMPOOL(name,num,size,desc) &memp_ ## name,

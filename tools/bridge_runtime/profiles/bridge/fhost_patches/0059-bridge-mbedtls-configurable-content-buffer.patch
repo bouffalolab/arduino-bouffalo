@@ -1,0 +1,11 @@
+--- a/components/crypto/mbedtls/CMakeLists.txt
++++ b/components/crypto/mbedtls/CMakeLists.txt
+@@ -255,7 +255,7 @@ sdk_add_compile_definitions(-DCONFIG_MBEDTLS_ENTROPY_C)
+ sdk_add_compile_definitions(-DCONFIG_MBEDTLS_ENTROPY_POLL)
+ sdk_add_compile_definitions(-DCONFIG_MBEDTLS_SERVER_NAME_INDICATION)
+ sdk_add_compile_definitions(-DCONFIG_MBEDTLS_DHM_C)
+-sdk_add_compile_definitions(-DCONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN=16384)
++sdk_add_compile_definitions(-DCONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN=${CONFIG_MBEDTLS_SSL_MAX_CONTENT_LEN})
+ #CONFIG_MBEDTLS_DEBUG=y
+ #CONFIG_MBEDTLS_DEBUG_LEVEL=0
+ #CONFIG_MBEDTLS_DEBUG_EXTRACT_BASENAME_AT_RUNTIME=y
