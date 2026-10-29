@@ -64,6 +64,17 @@ def safe_file(directory, name):
     return path
 
 
+PUBLIC_PACKAGE_FILES = {name for name, _, _ in IMAGES.values()} | {
+    'README.md', 'bl616cl_release.py', 'update_bl616cl_release.py',
+    'source-manifest.json', 'proprietary-manifest.json',
+}
+
+
+def public_package_file(name):
+    return name in PUBLIC_PACKAGE_FILES or (name.startswith('licenses/') and
+        Path(name).suffix.lower() in {'.txt', '.md', '.json'})
+
+
 def verify(directory):
     directory = directory.resolve()
     manifest = json.loads(safe_file(directory, 'release.json').read_text())
@@ -78,6 +89,7 @@ def verify(directory):
     listed = manifest.get('files', {})
     require(isinstance(listed, dict) and listed, 'missing package file hashes')
     for name, record in listed.items():
+        require(public_package_file(name), 'non-public package file: ' + name)
         data = safe_file(directory, name).read_bytes()
         require(record == {'bytes':len(data), 'sha256':digest(data)}, 'file hash/size mismatch: ' + name)
     for role, (name, address, limit) in IMAGES.items():
@@ -109,23 +121,14 @@ def pack(build, output, version):
     for role, (name, _, _) in IMAGES.items():
         suffix = {'boot2':'boot2.bin','partition':'partition.bin','application':'bin'}[role]
         shutil.copy2(build / ('UNOR4BL616CLBridge.ino.' + suffix), output / name)
-    # Curated build evidence, not whole working trees or private flash dumps.
-    for suffix in ['elf','map','cpp']:
-        source = build / ('UNOR4BL616CLBridge.ino.' + suffix)
-        if source.is_file():
-            (output/'evidence').mkdir(exist_ok=True)
-            shutil.copy2(source, output/'evidence'/source.name)
-    platform = ROOT/'.'
-    for source, target in [
-        (platform/'build/bridge-runtime/tools/sdk/bl616cl/bridge/manifest.json','runtime-manifest.json'),
-        (platform/'tools/bridge_runtime/source_manifest.json','source-manifest.json'),
-        (platform/'tools/bridge_runtime/proprietary_manifest.json','proprietary-manifest.json'),
-        (platform/'variants'/BOARD/'bridge_profile.h','bridge_profile.h')]:
-        (output/'evidence').mkdir(exist_ok=True)
-        shutil.copy2(source, output/'evidence'/target)
+    # Public distribution is an allowlist. Keep debug/build evidence local.
+    for name in ['source_manifest.json', 'proprietary_manifest.json']:
+        shutil.copy2(ROOT/'tools/bridge_runtime'/name, output/name.replace('_','-'))
+    shutil.copytree(ROOT/'licenses/bl616cl', output/'licenses/bl616cl')
     for source in ['bl616cl_release.py','update_bl616cl_release.py']:
         shutil.copy2(ROOT/'tools'/source, output/source)
-    shutil.copy2(ROOT/'docs/bridge/BL616CL发布与恢复工具.md', output/'README.md')
+    shutil.copy2(ROOT/'docs/BL616CL-BRIDGE.md', output/'README.md')
+    platform = ROOT
     manifest = {'schema':1,'chip':'bl616cl','board':BOARD,'layout':'bridge-v1-4MiB',
                 'target_serial':SERIAL,'usb':{'vid':0x2341,'pid':0x1002,'interface':0},
                 'firmware_version':version,'channel':'local-development',

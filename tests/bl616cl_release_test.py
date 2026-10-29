@@ -37,10 +37,18 @@ class ReleaseTest(unittest.TestCase):
         self.bp=self.root/'binding.json';self.bp.write_text(json.dumps(self.binding))
         self.tool=self.root/'tool';self.tool.touch()
     def save(self):
-        for p in self.pkg.iterdir():
-            if p.name!='release.json':self.manifest['files'][p.name]={'bytes':p.stat().st_size,'sha256':r.digest(p.read_bytes())}
+        for p in self.pkg.rglob('*'):
+            if p.is_file() and p.name!='release.json':self.manifest['files'][p.relative_to(self.pkg).as_posix()]={'bytes':p.stat().st_size,'sha256':r.digest(p.read_bytes())}
         (self.pkg/'release.json').write_text(json.dumps(self.manifest))
     def test_valid(self):r.verify(self.pkg)
+    def test_hash_list_cannot_authorize_debug_or_private_artifacts(self):
+        for name in ('firmware.elf','firmware.map','firmware.cpp','runtime-manifest.json',
+                     'evidence/local.json','logs/session.log','original-full-flash.bin'):
+            path=self.pkg/name;path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_bytes(b'private test artifact');self.save()
+            with self.assertRaisesRegex(ValueError,'non-public'):r.verify(self.pkg)
+            path.unlink();self.manifest['files'].pop(name,None);self.save()
+
     def test_corruption_before_device(self):
         (self.pkg/'application.bin').write_bytes(b'bad')
         with patch.object(u,'bootrom') as device,patch.object(u.subprocess,'run') as writer:
