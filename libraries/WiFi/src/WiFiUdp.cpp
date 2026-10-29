@@ -44,7 +44,8 @@ uint8_t WiFiUDP::begin(IPAddress ip, uint16_t port)
 
 uint8_t WiFiUDP::beginMulticast(IPAddress ip, uint16_t port)
 {
-    if (ip[0] < 224 || ip[0] > 239 || port == 0 || !open(0, port)) {
+    /* lwIP's implicit all-hosts group cannot be joined explicitly (SDK asserts). */
+    if (ip[0] < 224 || ip[0] > 239 || ip == IPAddress(224, 0, 0, 1) || port == 0 || !open(0, port)) {
         return 0;
     }
     if (net_port_udp_join(sock_, (uint32_t)ip) != 0) {
