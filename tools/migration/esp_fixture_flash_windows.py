@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Windows COM backend: exact ESP BootROM identity, private backup and readback."""
-import argparse,hashlib,json,os,re,subprocess,sys,time,zlib
+import argparse,hashlib,json,os,re,struct,subprocess,sys,time,zlib
 from pathlib import Path
 sys.dont_write_bytecode=True
 ROOT=Path(__file__).resolve().parents[2]
@@ -19,15 +19,25 @@ def enter():
  device=matches[0];ports=re.findall(r'\bCOM[0-9]+\b',device['Description'])
  assert len(ports)==1 and not device.get('IsWslAttached'),'expected one Windows-owned BootROM COM port'
  print('ESP_FIXTURE_WINDOWS_BOOTROM_TARGET bus='+device['BusId']+' port='+ports[0],flush=True)
- esp=esptool.detect_chip(port=ports[0],connect_mode='no_reset')
+ esp=esptool.detect_chip(port=ports[0],connect_mode='default_reset')
  assert esp.CHIP_NAME=='ESP32-S3' and bytes(esp.read_mac()).hex().upper()==SERIAL,'BootROM silicon identity mismatch'
  print('ESP_FIXTURE_BOOTROM_MAC_VERIFIED',flush=True)
+ esp._port.set_buffer_size(rx_size=1048576,tx_size=65536)
  stub=esp.run_stub()
  return stub,device['BusId']
 def read(esp,offset,size):
- def progress(done,total):
-  if done%0x40000==0 or done==total:print(f'ESP_FLASH_READ_PROGRESS={done}/{total}',flush=True)
- return esp.read_flash(offset,size,progress)
+ # One outstanding 4KiB frame bounds the native COM receive queue. The
+ # supplier default allows 64 frames, which can overrun a Windows driver queue.
+ esp.check_command('read flash',esp.ESP_READ_FLASH,struct.pack('<IIII',offset,size,esp.FLASH_SECTOR_SIZE,1))
+ data=bytearray()
+ while len(data)<size:
+  packet=esp.read()
+  if len(packet)!=min(esp.FLASH_SECTOR_SIZE,size-len(data)):raise RuntimeError('Flash read frame size mismatch')
+  data.extend(packet);esp.write(struct.pack('<I',len(data)))
+  if len(data)%0x40000==0 or len(data)==size:print(f'ESP_FLASH_READ_PROGRESS={len(data)}/{size}',flush=True)
+ digest=esp.read()
+ if len(digest)!=16 or digest!=hashlib.md5(data).digest():raise RuntimeError('Flash read transport digest mismatch')
+ return bytes(data)
 
 def write(esp,offset,data):
  packed=zlib.compress(data,9);esp.flash_defl_begin(len(data),len(packed),offset)
@@ -43,10 +53,10 @@ def write(esp,offset,data):
  print(f'ESP_FIXTURE_WRITE_VERIFY_PASS offset=0x{offset:x} bytes={len(data)} sha256={sha(data)}',flush=True)
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['install','restore']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['install','restore','verify-restore']);args=parser.parse_args()
  PRIVATE.mkdir(mode=0o700,parents=True,exist_ok=True);os.chmod(PRIVATE,0o700)
  backup=PRIVATE/'original-full-flash.bin';manifest=PRIVATE/'manifest.json'
- if args.mode=='restore':
+ if args.mode!='install':
   m=json.loads(manifest.read_text());data=backup.read_bytes();assert len(data)==0x400000 and sha(data)==m['sha256']
  else:
   assert FIXTURE.is_file(),'compile target fixture first'
@@ -72,7 +82,11 @@ def main():
    image=FIXTURE.read_bytes();assert len(image)<=0x300000
    write(esp,0x10000,image)
   else:
-   write(esp,0,data)
+   if args.mode=='restore':write(esp,0,data)
+   else:
+    assert esp.flash_md5sum(0,len(data)).lower()==hashlib.md5(data).hexdigest(),'restored Flash MD5 mismatch'
+    assert sha(read(esp,0,len(data)))==sha(data),'restored Flash SHA256 mismatch'
+    print('ESP_RESTORED_FULL_FLASH_READBACK_PASS sha256='+sha(data),flush=True)
    print('ESP_BASELINE_FULL_FLASH_RESTORED',flush=True)
   success=True
  finally:

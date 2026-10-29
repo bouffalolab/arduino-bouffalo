@@ -36,7 +36,7 @@ def enter():
  return bus
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['install','restore']);parser.add_argument('--resume-bootrom',action='store_true');args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['install','restore','verify-restore']);parser.add_argument('--resume-bootrom',action='store_true');args=parser.parse_args()
  if args.resume_bootrom:
   matches=[d for d in state() if d.get('BusId') and d['InstanceId'].upper()=='USB\\VID_303A&PID_1001\\00:00:00:00:00:01']
   assert len(matches)==1,'resume requires exact authorized silicon USB serial'
