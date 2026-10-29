@@ -7,14 +7,15 @@ ROOT=Path(__file__).resolve().parents[2]
 REFERENCE=ROOT.parent/'uno-r4-wifi-usb-bridge'
 sys.path.insert(0,str(REFERENCE/'hardware/esp32-patched/esp32/tools/esptool'))
 import esptool
-SERIAL='TESTESP000001'
+SERIAL=os.environ.get('UNO_R4_BASELINE_SERIAL','').upper()
 PRIVATE=ROOT/'build/esp32-baseline-private'
 FIXTURE=ROOT/'build/esp32-static-ap-fixture/compiled/UNOR4USBBridge.ino.bin'
 def sha(b):return hashlib.sha256(b).hexdigest()
 def enter():
+ assert re.fullmatch(r"[0-9A-F]{12}",SERIAL),"Set UNO_R4_BASELINE_SERIAL before hardware access"
  assert os.name=='nt','use the WSL identity-verifying wrapper'
  devices=json.loads(subprocess.check_output(['usbipd.exe','state']))['Devices']
- matches=[d for d in devices if d.get('BusId') and d['InstanceId'].upper()=='USB\\VID_303A&PID_1001\\00:00:00:00:00:01']
+ matches=[d for d in devices if d.get('BusId') and d['InstanceId'].upper()==('USB\\VID_303A&PID_1001\\'+':'.join(SERIAL[i:i+2] for i in range(0,12,2)))]
  assert len(matches)==1,'expected exactly authorized S3 BootROM identity'
  device=matches[0];ports=re.findall(r'\bCOM[0-9]+\b',device['Description'])
  assert len(ports)==1 and not device.get('IsWslAttached'),'expected one Windows-owned BootROM COM port'

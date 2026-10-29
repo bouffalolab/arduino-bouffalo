@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI="${ARDUINO_CLI:-/home/developer/.local/bin/arduino-cli}"
+CLI="${ARDUINO_CLI:-arduino-cli}"
 WORK="${ROOT}/build/migration-workspace"
 BUILD="${BL616CL_BUILD_ROOT:-${ROOT}/build/bridge-image}"
 mkdir -p "${WORK}/hardware/bouffalo"

@@ -9,7 +9,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Application,
 
-    [string]$FlashTool = 'D:\developer\tools\flash_cube\v1.4.0\BLFlashCommand.exe',
+    [string]$FlashTool = $env:BL616CL_FLASH_TOOL,
     [string]$CkLinkPort = 'COM30',
     [string]$RelayPort = 'COM35',
     [int]$BaudRate = 2000000,

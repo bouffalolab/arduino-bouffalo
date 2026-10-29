@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch,call
 ROOT=Path(__file__).resolve().parents[1]
-spec=importlib.util.spec_from_file_location('sta_session',ROOT/'tools/migration/ensure_sta_route.py');s=importlib.util.module_from_spec(spec);spec.loader.exec_module(s)
+spec=importlib.util.spec_from_file_location('sta_session',ROOT/'tools/hardware_regression/ensure_sta_route.py');s=importlib.util.module_from_spec(spec);spec.loader.exec_module(s)
 class Session(unittest.TestCase):
  def invoke(self,current='other-network',status=7,wait_error=False):
   with patch.object(s,'load_private_credentials',return_value=('test-sta','test-password')),patch.object(s,'profile',return_value='original-profile'),patch.object(s,'ssid',return_value=current),patch.object(s,'connect') as connect,patch.object(s,'connect_private') as private,patch.object(s,'wait',side_effect=[RuntimeError('association failed'),None] if wait_error else None) as wait,patch.object(s.subprocess,'run',return_value=SimpleNamespace(returncode=status)) as run,patch.object(sys,'argv',['session','gate-command']):

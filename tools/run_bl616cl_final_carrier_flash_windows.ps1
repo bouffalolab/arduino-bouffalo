@@ -10,7 +10,7 @@ param(
     [string]$Application,
 
     [string]$BootRomPort = 'auto',
-    [string]$FlashTool = 'D:\developer\tools\flash_cube\v1.4.0\BLFlashCommand.exe',
+    [string]$FlashTool = $env:BL616CL_FLASH_TOOL,
     [int]$BaudRate = 2000000,
     [int]$BootRomTimeoutSeconds = 15,
     [int]$BootRomSettleMilliseconds = 1000,

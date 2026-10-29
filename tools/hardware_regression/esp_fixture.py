@@ -5,14 +5,14 @@ The immutable full Flash backup is private build data. Restore verifies every
 byte, including the original partition table, NVS and application. No reference
 source or generated library is written.
 """
-import argparse,array,fcntl,json,os,subprocess,sys,time
+import argparse,array,fcntl,json,os,re,subprocess,sys,time
 from pathlib import Path
 sys.dont_write_bytecode=True
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from uno_r4_usb_identity import resolve_baseline_esp32_port,tty_properties
 from ble_independent_failure_probe import prepare_baseline_usb
-SERIAL='TESTESP000001'
+SERIAL=os.environ.get('UNO_R4_BASELINE_SERIAL','').upper()
 PRIVATE=ROOT/'build/esp32-baseline-private'
 def state():return json.loads(subprocess.check_output(['usbipd.exe','state'],text=True,timeout=30))['Devices']
 def enter():
@@ -37,16 +37,17 @@ def enter():
 
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['install','restore','verify-restore']);parser.add_argument('--resume-bootrom',action='store_true');args=parser.parse_args()
+ if not re.fullmatch(r"[0-9A-F]{12}",SERIAL):raise RuntimeError("Set UNO_R4_BASELINE_SERIAL to the authorized ESP MAC/USB serial")
  if args.resume_bootrom:
-  matches=[d for d in state() if d.get('BusId') and d['InstanceId'].upper()=='USB\\VID_303A&PID_1001\\00:00:00:00:00:01']
+  matches=[d for d in state() if d.get('BusId') and d['InstanceId'].upper()==('USB\\VID_303A&PID_1001\\'+':'.join(SERIAL[i:i+2] for i in range(0,12,2)))]
   assert len(matches)==1,'resume requires exact authorized silicon USB serial'
   bus=matches[0]['BusId']
  else:bus=enter()
  from run_ra4_wifis3_tls_gate import wsl_unc_path
- worker=ROOT/'tools/migration/esp_fixture_flash_windows.py'
+ worker=ROOT/'tools/hardware_regression/esp_fixture_flash_windows.py'
  result=None
  try:
-  result=subprocess.run(['powershell.exe','-NoProfile','-Command',f'& py.exe -3 -u "{wsl_unc_path(worker)}" {args.mode}'],timeout=1500)
+  result=subprocess.run(['powershell.exe','-NoProfile','-Command',f"$env:UNO_R4_BASELINE_SERIAL='{SERIAL}'; & py.exe -3 -u \"{wsl_unc_path(worker)}\" {args.mode}"],timeout=1500)
  finally:
   # The normal-mode identity was already shared before entering BootROM.
   devices=[d for d in state() if d.get('BusId')==bus]

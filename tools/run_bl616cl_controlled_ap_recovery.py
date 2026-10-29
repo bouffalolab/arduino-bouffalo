@@ -231,7 +231,7 @@ def apsta_recovery(sta, peer, upstream_request, gateway, ssid, password):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sta-ota', action='store_true', help='Also verify STA HTTP/HTTPS OTA on this controlled AP, without private WLAN credentials')
-    parser.add_argument('--arduino-cli', default='/home/developer/.local/bin/arduino-cli')
+    parser.add_argument('--arduino-cli', default='arduino-cli')
     parser.add_argument('--ap-udp-control', '--ap-fragment-control', dest='ap_fragment_control', action='store_true', help='Diagnostic: verify direct-to-original-AP unfragmented 1460 B UDP; original SDK disables IPv4 reassembly')
     parser.add_argument('--ap-tx-diagnostic', action='store_true', help='Read AP TX-completion fragment metadata; requires the temporary observer firmware')
     parser.add_argument('--host-udp-profile', choices=('basic','extended'), default='extended', help='basic: baseline 1460-byte boundary plus 4 KiB; extended: also three 16 KiB datagrams (default)')

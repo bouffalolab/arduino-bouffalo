@@ -22,16 +22,16 @@ def run(name,args,timeout=1500,**metadata):
  return code
 for name,image,initial,version in ([] if options.only_ap else [('self-fota-forward',alt,'0.6.0','0.6.1'),('self-fota-back',base,'0.6.1','0.6.0')]):
  if run(name,['tools/run_bl616cl_self_fota_gate.py','--application',image,'--expected-version',version,'--initial-version',initial,'--check-header'],installed_application_sha256=sha(image)):
-  run('self-fota-failure-restore',['tools/migration/flash_target.py'])
+  run('self-fota-failure-restore',['tools/hardware_regression/flash_target.py'])
   raise SystemExit('FOTA gate failed; base restoration attempted; inspect preserved logs')
 try:
  if options.fixture_ready and not (T/'build/esp32-baseline-private/manifest.json').is_file():raise RuntimeError('Require existing verified private fixture backup')
- if not options.fixture_ready and run('esp-ap-fixture-install',['tools/migration/esp_fixture.py','install']):raise RuntimeError('AP installation failed')
+ if not options.fixture_ready and run('esp-ap-fixture-install',['tools/hardware_regression/esp_fixture.py','install']):raise RuntimeError('AP installation failed')
  if run('controlled-ap-32x16k',['tools/run_bl616cl_controlled_ap_recovery.py','--host-services-work-dir','build/migration-controlled-ap-host','--udp-large-count','32','--ap-tx-diagnostic','--sta-ota'],timeout=2400):raise RuntimeError('Controlled AP regression failed')
 finally:
  # Full backup remains private, never include it in a public evidence archive.
  if (T/'build/esp32-baseline-private/manifest.json').exists():
-  if run('esp-baseline-flash-restore',['tools/migration/esp_fixture.py','restore']):raise RuntimeError('ESP full Flash restoration failed')
+  if run('esp-baseline-flash-restore',['tools/hardware_regression/esp_fixture.py','restore']):raise RuntimeError('ESP full Flash restoration failed')
   if run('esp-baseline-scan-restore',['-c',"import sys;sys.path.insert(0,'tools');from ble_independent_failure_probe import prepare_baseline_usb,restore_probe;from uno_r4_usb_identity import resolve_baseline_esp32_port;prepare_baseline_usb();restore_probe(resolve_baseline_esp32_port('auto'))"]):raise RuntimeError('ESP RA4 scan restoration failed')
  if run('final-bl-scan',['tools/run_ra4_wifis3_scan_final_carrier.py']):raise RuntimeError('BL RA4 scan restoration failed')
 print('EXTRA_REGRESSION_AND_RESTORATION_PASS',flush=True)

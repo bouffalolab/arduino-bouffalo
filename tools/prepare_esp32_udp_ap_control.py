@@ -4,6 +4,7 @@
 The original bridge source and installed WiFi library remain unchanged. Match
 --partition-scheme to a verified Flash backup before using the built application.
 """
+import os
 import argparse
 import hashlib
 import json
@@ -13,7 +14,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 # Read-only external baseline input; all generated copies and logs belong to ROOT/build.
-REFERENCE = Path('/home/developer/git/arduino/uno-r4-wifi-usb-bridge')
+REFERENCE = Path(os.environ.get('UNO_R4_REFERENCE_ROOT',str(ROOT.parent/'uno-r4-wifi-usb-bridge')))
 
 
 def prepare(output, rx_buffers, sdk_static=True):
@@ -72,7 +73,7 @@ def main():
     parser.set_defaults(sdk_static_buffers=True)
     parser.add_argument('--partition-scheme',choices=('huge_app','unor4wifi'),required=True)
     parser.add_argument('--compile',action='store_true')
-    parser.add_argument('--arduino-cli',default='/home/developer/.local/bin/arduino-cli')
+    parser.add_argument('--arduino-cli',default='arduino-cli')
     args=parser.parse_args()
     sketch=prepare(args.output,args.rx_buffers,args.sdk_static_buffers)
     if args.compile:

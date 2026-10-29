@@ -47,7 +47,7 @@ def main():
     print('TARGET=BL616CL-PROVISIONAL RA4M1 Sketch only; BL Flash unchanged',flush=True)
     primary=None
     try:
-        subprocess.run(['/home/developer/.local/bin/arduino-cli','compile','--fqbn','arduino:renesas_uno:unor4wifi',
+        subprocess.run(['arduino-cli','compile','--fqbn','arduino:renesas_uno:unor4wifi',
             '--build-path',str(work/'build'),str(ROOT/'examples/ra4-startup-handoff-smoke')],check=True)
         subprocess.run([sys.executable,str(ROOT/'tools/run_ra4_bossac_final_carrier.py'),'--bridge-port',port,
             '--attempts','1','--image',str(work/'build/ra4-startup-handoff-smoke.ino.bin')],check=True)
@@ -84,6 +84,6 @@ def main():
     except Exception as error:primary=error
     finally:
         subprocess.run([sys.executable,str(ROOT/'tools/run_ra4_wifis3_scan_final_carrier.py'),
-            '--arduino-cli','/home/developer/.local/bin/arduino-cli'],check=True)
+            '--arduino-cli','arduino-cli'],check=True)
     if primary:raise primary
 if __name__=='__main__':main()

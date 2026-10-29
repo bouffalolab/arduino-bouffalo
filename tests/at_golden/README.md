@@ -101,7 +101,7 @@ credential procedure to reconnect.
 Review a captured response against the ESP32-S3 command handler, normalize
 only explicitly documented volatile fields, then add a focused BL616CL host
 regression vector with the capture file and test conditions recorded in
-`../../docs/项目进展.md`. A successful capture is baseline evidence, not BL616CL hardware
+the local, untracked hardware evidence directory. A successful capture is baseline evidence, not BL616CL hardware
 validation.
 
 ## BLE Raw HCI Capture

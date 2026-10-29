@@ -44,7 +44,7 @@ def main():
         subprocess.run(['usbipd.exe','wsl','detach','--busid',ftdi[0]['BusId']],check=True)
         restore_usb(physical_reset=True)
     opts=argparse.Namespace(bridge_port=resolve_paired_bl616cl_port('auto'),
-        arduino_cli='/home/developer/.local/bin/arduino-cli',runtime_settle_ms=1000)
+        arduino_cli='arduino-cli',runtime_settle_ms=1000)
     d.final_scan.require_final_carrier_bridge(opts.bridge_port)
     link=None;prepared=None;installed=False
     current_version=args.initial_version

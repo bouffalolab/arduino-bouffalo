@@ -5,7 +5,8 @@ if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
     throw "CMSIS-DAP helper source does not exist: $source"
 }
 
-$env:CMSIS_DAP_TARGET_SERIAL = 'TESTESP000002'
+if (-not $env:UNO_R4_BASELINE_SERIAL) { throw 'Set UNO_R4_BASELINE_SERIAL before hardware access' }
+$env:CMSIS_DAP_TARGET_SERIAL = $env:UNO_R4_BASELINE_SERIAL
 $env:CMSIS_DAP_TARGET_INTERFACE = '00'
 $env:CMSIS_DAP_SKIP_SWJ_PIN_READBACK = '1'
 try {

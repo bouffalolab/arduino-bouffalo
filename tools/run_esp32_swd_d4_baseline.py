@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import argparse
 import re
 import subprocess
@@ -28,7 +29,7 @@ from uno_r4_usb_identity import (
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 WINDOWS_WSL_ROOT = r"\\wsl.localhost\Ubuntu-22.04"
-BASELINE_SERIAL = "TESTESP000002"
+BASELINE_SERIAL = os.environ.get("UNO_R4_BASELINE_SERIAL", "").upper()
 WINDOWS_D4_RUNNER = ROOT_DIR / "tools" / "verify_esp32_swd_halt_reset_windows.ps1"
 WINDOWS_D4_SOURCE = ROOT_DIR / "tools" / "verify_bl616cl_cmsis_dap_windows.cs"
 
@@ -43,6 +44,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def require_baseline_port(port: str) -> None:
+    if not BASELINE_SERIAL:raise RuntimeError("Set UNO_R4_BASELINE_SERIAL to the explicitly selected test board")
     properties = tty_properties(port)
     if (
         properties.get("ID_VENDOR_ID", "").lower() != "2341"
@@ -71,6 +73,7 @@ def resolve_wsl_usbip_host(requested: str) -> str:
 
 
 def discover_windows_bus_id() -> str:
+    if not BASELINE_SERIAL:raise RuntimeError("Set UNO_R4_BASELINE_SERIAL before hardware access")
     script = (
         "$ErrorActionPreference = 'Stop'; "
         "$matches = @((usbipd state | ConvertFrom-Json).Devices | "

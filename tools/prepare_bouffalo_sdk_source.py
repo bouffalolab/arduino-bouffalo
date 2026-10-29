@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import json
 import subprocess
 import sys
@@ -142,7 +143,7 @@ def require_origin(repository: Path, expected: str, description: str) -> None:
 
 
 def normalize_origin(url: str) -> str:
-    return url.rstrip("/").removesuffix(".git")
+    return re.sub(r"^(ssh://)[^/@]+@",r"\1",url).rstrip("/").removesuffix(".git")
 
 
 def require_clean(repository: Path, description: str) -> None:

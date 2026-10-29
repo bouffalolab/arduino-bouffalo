@@ -35,7 +35,7 @@ for name,args in gates:
     subprocess.run(['arduino-cli','compile','--fqbn','arduino:renesas_uno:unor4wifi','--build-path',str(root/'build/ra4-swd-sram-scratch'),str(root/'examples/ra4-swd-sram-scratch')],cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT,check=True,timeout=180)
     subprocess.run(['python3',str(root/'tools/ra4_swd_flash_loader/build_ra4_swd_flash_loader.py')],cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT,check=True,timeout=180)
    command=['python3','-u',str(root/'tools'/args[0]),*args[1:]]
-   if name in ('ota-https','ota-failure') and '--softap' not in args:command=['python3',str(root/'tools/migration/ensure_sta_route.py'),*command]
+   if name in ('ota-https','ota-failure') and '--softap' not in args:command=['python3',str(root/'tools/hardware_regression/ensure_sta_route.py'),*command]
    code=subprocess.run(command,cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT,timeout=1200).returncode
   except subprocess.TimeoutExpired:code=124
   except subprocess.CalledProcessError as error:code=error.returncode

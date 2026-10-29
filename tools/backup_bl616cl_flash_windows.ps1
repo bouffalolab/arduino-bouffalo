@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$Output,
-    [string]$FlashTool='D:\developer\tools\flash_cube\v1.4.0\BLFlashCommand.exe'
+    [string]$FlashTool=$env:BL616CL_FLASH_TOOL
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'

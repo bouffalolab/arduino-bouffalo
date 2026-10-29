@@ -3,18 +3,13 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
 
 PAIRED_BL616CL_SERIAL = "BL616CL-PROVISIONAL"
-BASELINE_ESP32_SERIALS = frozenset(
-    {
-        "TESTESP000003",
-        "TESTESP000001",
-        "TESTESP000002",
-    }
-)
+BASELINE_ESP32_SERIALS = frozenset(s.strip().upper() for s in os.environ.get('UNO_R4_BASELINE_SERIALS',os.environ.get('UNO_R4_BASELINE_SERIAL','')).split(',') if s.strip())
 
 
 def tty_properties(port: str) -> dict[str, str]:

@@ -17,7 +17,7 @@ from bl616cl_usb_mapping import ensure_bl_usb_mapping
 from run_ra4_wifis3_tls_gate import wsl_unc_path
 
 ROOT = Path(__file__).resolve().parents[1]
-CLI = "/home/developer/.local/bin/arduino-cli"
+CLI = "arduino-cli"
 BUILD = ROOT / "build/ra4-generic-at-proxy"
 
 

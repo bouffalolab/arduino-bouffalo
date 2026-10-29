@@ -12,6 +12,10 @@ import ble_independent_failure_probe as probe
 
 
 class FailureProbeTest(unittest.TestCase):
+    def setUp(self):
+        fixture=patch.object(probe,"BASELINE_ESP32_SERIALS",frozenset({"TESTESP000001"}))
+        fixture.start();self.addCleanup(fixture.stop)
+
     def test_detached_baseline_repair_preserves_bl(self):
         with tempfile.TemporaryDirectory() as temporary:
             sys_root = Path(temporary)
