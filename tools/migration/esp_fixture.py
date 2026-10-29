@@ -11,8 +11,7 @@ sys.dont_write_bytecode=True
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from uno_r4_usb_identity import resolve_baseline_esp32_port,tty_properties
-from read_bl616cl_windows_telemetry import resolve_wsl_usbip_host
-from run_esp32_swd_d4_baseline import reattach_to_wsl
+from ble_independent_failure_probe import prepare_baseline_usb
 SERIAL='TESTESP000001'
 PRIVATE=ROOT/'build/esp32-baseline-private'
 def state():return json.loads(subprocess.check_output(['usbipd.exe','state'],text=True,timeout=30))['Devices']
@@ -52,7 +51,17 @@ def main():
   # The normal-mode identity was already shared before entering BootROM.
   devices=[d for d in state() if d.get('BusId')==bus]
   if len(devices)==1 and devices[0]['InstanceId'].upper().endswith('\\'+SERIAL) and 'VID_2341&PID_1002' in devices[0]['InstanceId'].upper():
-   reattach_to_wsl(resolve_wsl_usbip_host('auto'),bus,20)
+   prepare_baseline_usb()
+   deadline=time.monotonic()+20
+   while True:
+    try:
+     port=resolve_baseline_esp32_port('auto');properties=tty_properties(port)
+     assert properties['ID_SERIAL_SHORT']==SERIAL and properties['ID_USB_INTERFACE_NUM']=='01'
+     with open(port,'rb',buffering=0):pass
+     break
+    except (RuntimeError,OSError):
+     if time.monotonic()>deadline:raise
+     time.sleep(.2)
  if result is None or result.returncode:raise RuntimeError('ESP fixture native COM operation failed; preserve private backup and inspect log')
  # chmod on Windows UNC may not retain Linux permission bits; enforce here.
  if PRIVATE.exists():
