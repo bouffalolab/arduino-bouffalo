@@ -6,7 +6,7 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
-当前平台需要 `bl616cl-libs` 0.7.0 和 `bl-flash-tools` 0.2.0（IPv6 与隐藏 AP 适配，保留 littlefs、分区工具及 HID/BLE 能力）；平台与依赖包应一起更新。
+当前平台需要 `bl616cl-libs` 0.8.0 和 `bl-flash-tools` 0.2.0（SNTP、DHCP hostname 与配套 netif ABI，保留 IPv6、隐藏 AP、littlefs 及 HID/BLE）；平台与依赖包应一起更新。
 
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
@@ -142,3 +142,11 @@ BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复�
 `beginAP(ssid, pass, channel, hidden, maxConnections)` 支持隐藏及关联上限；默认上限5与固定官方 bridge 一致，但固定 wl80211 只有4个关联槽，因此有效容量最多4，不能承诺5台并发。`setAutoReconnect` 默认 true，仅在本次 begin 已成功取得 IP 后启用；意外掉线后后台重连，初次失败不会回到旧网络，显式 disconnect 后不重试。策略和凭据只存 RAM。
 
 `enableIpV6()` 启用 STA link-local，`localIPv6()` 返回字符串，无有效地址为 `::`；它不扩展现有 IPv4 `IPAddress`、TCP/UDP API，不承诺公网 IPv6 或 DHCPv6。底层0.7.0的 IPv6 ABI、头文件和库须成套更新。新增功能状态及实机验收边界见本轮任务记录；连接数限制需双关联实机证据，编译或单客户端接入不证明其有效。
+
+## SNTP 与 DHCP 主机名（ARDUINO-45）
+
+`WiFi.getTime()` 立即返回 UTC Unix 秒，2000 年以前或未同步返回 0，不等待网络。首次初始化 WiFi 后自动配置 `pool.ntp.org`，取得 STA 地址后异步发起 SNTP；同步后断网仍走时，重连再次请求。`WiFi.configTime(server)` 可异步指定服务器，空指针、空串或超过 253 字节返回 false。只改服务器不会清除已同步时钟。
+
+`WiFi.getHostname()` / `WiFi.setHostname(name)` 使用 RAM，默认 `bl616cl-` 加 STA MAC 最后 3 字节大写十六进制。名称为 1..31 字节 ASCII DNS label，允许字母、数字和中划线，首尾不能为中划线；非法值返回 false 且保留旧值。在线设置不主动断网，后续 DHCP 请求携带新名字，复位回默认；不提供 DNS/mDNS 服务或 Flash 持久化。
+
+底层 0.8.0 开启 `LWIP_NETIF_HOSTNAME` 并编译 SDK SNTP，头文件、库和配置须成套更新。newlib UTC 由系统微秒计时器推进，SDK 原实现误用 RTC 闹钟、板载 RC32K 漂移的问题由固定补丁修正。未承诺深睡眠走时或断电保持；新增 SNTP 不改变 TLS 不检查证书有效期的既有策略。示例见 `libraries/WiFi/examples/WiFiTime`。实机验收以独立 ARDUINO-45 记录为准。

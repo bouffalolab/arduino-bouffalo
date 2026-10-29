@@ -94,6 +94,14 @@ public:
     WiFiMode getMode() const { return mode_; }
     bool setAutoReconnect(bool enable);
     bool getAutoReconnect();
+    /* UTC Unix seconds; 0 before synchronization. Never waits for SNTP. */
+    unsigned long getTime();
+    /* RAM-only DNS label (1..31 bytes). Applies to future DHCP requests;
+       changing it does not disconnect an existing station. */
+    const char *getHostname();
+    bool setHostname(const char *hostname);
+    /* Asynchronous SNTP configuration; default is also started on WiFi init. */
+    bool configTime(const char *server = "pool.ntp.org");
     bool enableIpV6();
     String localIPv6();
     uint8_t stationStatus();

@@ -125,6 +125,38 @@ bool WiFiClass::getAutoReconnect()
     return wifi_port_get_auto_reconnect();
 }
 
+unsigned long WiFiClass::getTime()
+{
+    return wifi_port_time();
+}
+
+const char *WiFiClass::getHostname()
+{
+    return wifi_port_init() == 0 ? wifi_port_hostname() : nullptr;
+}
+
+bool WiFiClass::setHostname(const char *hostname)
+{
+    size_t len = hostname != nullptr ? strlen(hostname) : 0;
+    if (len == 0 || len > 31 || hostname[0] == '-' || hostname[len - 1] == '-') {
+        return false;
+    }
+    for (size_t i = 0; i < len; ++i) {
+        char c = hostname[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || c == '-')) {
+            return false;
+        }
+    }
+    return wifi_port_init() == 0 && wifi_port_set_hostname(hostname) == 0;
+}
+
+bool WiFiClass::configTime(const char *server)
+{
+    return server != nullptr && server[0] != '\0' && strlen(server) <= 253 &&
+           wifi_port_init() == 0 && wifi_port_config_time(server) == 0;
+}
+
 bool WiFiClass::enableIpV6()
 {
     return (mode_ & WIFI_STA) && wifi_port_enable_ipv6() == 0;

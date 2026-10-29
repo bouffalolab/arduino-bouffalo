@@ -62,6 +62,10 @@ void wifi_port_ap_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw);
 int wifi_port_ap_config(uint32_t ip, uint32_t mask, uint32_t gw);
 int wifi_port_set_auto_reconnect(bool enable);
 bool wifi_port_get_auto_reconnect(void);
+unsigned long wifi_port_time(void);
+const char *wifi_port_hostname(void);
+int wifi_port_set_hostname(const char *hostname);
+int wifi_port_config_time(const char *server);
 int wifi_port_enable_ipv6(void);
 void wifi_port_ipv6(char *address, uint32_t size);
 /* 可以使用 socket：STA 已连接或 AP 运行中 */

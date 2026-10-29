@@ -10,6 +10,8 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -18,6 +20,7 @@
 #include "lwip/netifapi.h"
 #include "lwip/tcpip.h"
 #include "lwip/ip6_addr.h"
+#include "lwip/apps/sntp.h"
 #include "wl80211.h"
 #include "wifi_mgmr.h"
 #include "macsw_plat.h"
@@ -61,6 +64,35 @@ static volatile bool ap_failed;
 static volatile uint8_t ap_stations;
 static volatile uint32_t ap_stopped_events;
 
+static char hostname[32];
+static char time_server[254] = "pool.ntp.org";
+/* The public WiFi API has one caller. netifapi completes before these
+   borrowed arguments go out of scope; live buffers are written on tcpip. */
+static const char *pending_hostname;
+static const char *pending_time_server;
+
+static void restart_sntp(void *arg)
+{
+    (void)arg;
+    sntp_stop();
+    sntp_init();
+}
+
+static void apply_hostname(struct netif *netif)
+{
+    memmove(hostname, pending_hostname, strlen(pending_hostname) + 1);
+    netif_set_hostname(netif, hostname);
+}
+
+static void configure_sntp(struct netif *netif)
+{
+    (void)netif;
+    sntp_stop();
+    memmove(time_server, pending_time_server, strlen(pending_time_server) + 1);
+    sntp_setservername(0, time_server);
+    sntp_init();
+}
+
 /*
  * EV_WIFI 回调。async_event_loop 在定时器任务中、调度器挂起时运行（同 macsw_bare），这里只更新状态，
  * 不调用会阻塞的接口。
@@ -87,6 +119,7 @@ static void wifi_event(async_input_event_t ev, void *priv)
                 reconnect_armed = true;
                 /* SDK setter only enters a critical section; it never blocks. */
                 wifi_port_set_auto_reconnect(auto_reconnect);
+                tcpip_try_callback(restart_sntp, NULL);
             } else if (got_ip && cfg_ip == 0) {
                 got_ip = false;
                 state = WIFI_PORT_LOST;
@@ -189,6 +222,16 @@ int wifi_port_init(void)
     }
     if (init_task_done) {
         init_result = 0;
+        uint8_t mac[6];
+        if (wifi_mgmr_sta_mac_get(mac) != 0) {
+            init_result = -1;
+            return init_result;
+        }
+        char default_hostname[32];
+        snprintf(default_hostname, sizeof(default_hostname), "bl616cl-%02X%02X%02X", mac[3], mac[4], mac[5]);
+        if (wifi_port_set_hostname(default_hostname) != 0 || wifi_port_config_time(time_server) != 0) {
+            init_result = -1;
+        }
     }
     return init_result;
 }
@@ -231,6 +274,7 @@ static void finish_static_ip(void)
         state = WIFI_PORT_CONNECTED;
         reconnect_armed = true;
         wifi_port_set_auto_reconnect(auto_reconnect);
+        tcpip_try_callback(restart_sntp, NULL);
     }
 }
 
@@ -339,6 +383,29 @@ int wifi_port_set_auto_reconnect(bool enable)
 bool wifi_port_get_auto_reconnect(void)
 {
     return auto_reconnect;
+}
+
+unsigned long wifi_port_time(void)
+{
+    time_t now = time(NULL);
+    return now >= 946684800 ? (unsigned long)now : 0;
+}
+
+const char *wifi_port_hostname(void)
+{
+    return hostname;
+}
+
+int wifi_port_set_hostname(const char *name)
+{
+    pending_hostname = name;
+    return netifapi_netif_common(STA_NETIF, apply_hostname, NULL);
+}
+
+int wifi_port_config_time(const char *server)
+{
+    pending_time_server = server;
+    return netifapi_netif_common(STA_NETIF, configure_sntp, NULL);
 }
 
 /* These run in the TCP/IP thread through netifapi, like other netif changes. */
