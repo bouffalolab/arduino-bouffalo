@@ -23,7 +23,6 @@ def enter():
  assert esp.CHIP_NAME=='ESP32-S3' and bytes(esp.read_mac()).hex().upper()==SERIAL,'BootROM silicon identity mismatch'
  print('ESP_FIXTURE_BOOTROM_MAC_VERIFIED',flush=True)
  stub=esp.run_stub()
- stub.change_baud(921600)
  return stub,device['BusId']
 def read(esp,offset,size):
  def progress(done,total):
@@ -50,6 +49,7 @@ def main():
   assert FIXTURE.is_file(),'compile target fixture first'
   assert not backup.exists() and not manifest.exists(),'preserve existing immutable backup; restore before a new installation'
  esp,bus=enter()
+ success=False
  try:
   if args.mode=='install':
    data=read(esp,0,0x400000)
@@ -71,11 +71,14 @@ def main():
   else:
    write(esp,0,data)
    print('ESP_BASELINE_FULL_FLASH_RESTORED',flush=True)
+  success=True
  finally:
   # HID software download flag survives an ordinary RTS reset.
-  reg=0x6000812c;esp.write_reg(reg,esp.read_reg(reg)&~1)
-  esp.hard_reset();esp._port.close()
-  time.sleep(2)
+  try:
+   if success:
+    reg=0x6000812c;esp.write_reg(reg,esp.read_reg(reg)&~1)
+    esp.hard_reset();time.sleep(2)
+  finally:esp._port.close()
   # The WSL owner reattaches the already-shared normal-mode identity.
  print('ESP_FIXTURE_NORMAL_USB_RESTORED',flush=True)
 if __name__=='__main__':main()
