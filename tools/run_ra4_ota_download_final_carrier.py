@@ -704,6 +704,7 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Generate the OTA fixture, optional TLS material, and proxy build without hardware access.",
     )
+    parser.add_argument("--softap", action="store_true", help="Use the isolated board AP and restore the original host WLAN.")
     return parser.parse_args()
 
 
@@ -742,9 +743,13 @@ def main() -> int:
             shutil.rmtree(work_dir, ignore_errors=True)
 
     args.bridge_port = resolve_paired_bl616cl_port(args.bridge_port)
-    ssid, password = load_private_credentials(args.credential_env)
+    ssid, password = (None,None) if args.softap else load_private_credentials(args.credential_env)
     final_scan.require_final_carrier_bridge(args.bridge_port)
-    host = windows_wlan_address()
+    network = None
+    if args.softap:
+        from ota_softap_test_network import OtaSoftApNetwork
+        network=OtaSoftApNetwork(args,work_dir)
+    host = network.host if network else windows_wlan_address()
     response_timeout = args.response_timeout_ms / 1000.0
     protocol = "HTTPS" if args.https else "HTTP"
     peer_marker = f"{protocol}_OTA_PEER"
@@ -763,6 +768,11 @@ def main() -> int:
     progress_samples: list[int] = []
     try:
         image = compile_proxy(args)
+        if network:
+            upload_proxy(args,image);proxy_uploaded=True
+            bridge=open_bridge(args.bridge_port)
+            network.start(bridge,response_timeout)
+            sta_requested=True
         certificate: Path | None = None
         key: Path | None = None
         ca_certificate = b""
@@ -789,9 +799,10 @@ def main() -> int:
             args.peer_ready_timeout_ms / 1000.0,
         )
 
-        upload_proxy(args, image)
-        proxy_uploaded = True
-        bridge = open_bridge(args.bridge_port)
+        if not proxy_uploaded:
+            upload_proxy(args, image)
+            proxy_uploaded = True
+            bridge = open_bridge(args.bridge_port)
         bridge.reset_input_buffer()
 
         if args.https:
@@ -812,34 +823,34 @@ def main() -> int:
             )
             print("RA4_OTA_HTTPS_CA_UPLOAD_PASS")
 
-        print(f"RA4_OTA_{protocol}_STA_CONNECT_STARTED")
-        require_exact(
-            transact(bridge, b"AT+WIFIMODE=1\r\n", response_timeout),
-            b"+WIFIMODE: \r\nOK\r\n",
-            "WIFIMODE=1",
-        )
-        require_exact(
-            transact(bridge, b"AT+RECONNECT=0\r\n", response_timeout),
-            b"OK\r\n",
-            "RECONNECT=0",
-        )
-        begin_sta = (
-            "AT+BEGINSTA="
-            + quote_at_argument(ssid)
-            + ("," + quote_at_argument(password) if password else "")
-            + "\r\n"
-        ).encode("ascii")
-        response = transact(bridge, begin_sta, response_timeout)
-        if re.fullmatch(rb"^\+BEGINSTA: [0-9]{1,3}\r\nOK\r\n$", response) is None:
-            raise RuntimeError("BEGINSTA did not match the expected AT framing")
-        sta_requested = True
-        statuses = wait_for_sta(
-            bridge,
-            args.sta_timeout_ms / 1000.0,
-            response_timeout,
-        )
-        print(f"RA4_OTA_{protocol}_STA_CONNECT_PASS")
-
+        if not network:
+            print(f"RA4_OTA_{protocol}_STA_CONNECT_STARTED")
+            require_exact(
+                transact(bridge, b"AT+WIFIMODE=1\r\n", response_timeout),
+                b"+WIFIMODE: \r\nOK\r\n",
+                "WIFIMODE=1",
+            )
+            require_exact(
+                transact(bridge, b"AT+RECONNECT=0\r\n", response_timeout),
+                b"OK\r\n",
+                "RECONNECT=0",
+            )
+            begin_sta = (
+                "AT+BEGINSTA="
+                + quote_at_argument(ssid)
+                + ("," + quote_at_argument(password) if password else "")
+                + "\r\n"
+            ).encode("ascii")
+            response = transact(bridge, begin_sta, response_timeout)
+            if re.fullmatch(rb"^\+BEGINSTA: [0-9]{1,3}\r\nOK\r\n$", response) is None:
+                raise RuntimeError("BEGINSTA did not match the expected AT framing")
+            sta_requested = True
+            statuses = wait_for_sta(
+                bridge,
+                args.sta_timeout_ms / 1000.0,
+                response_timeout,
+            )
+            print(f"RA4_OTA_{protocol}_STA_CONNECT_PASS")
         request = (
             f"AT+{'OTADOWNLOAD' if args.synchronous else 'OTADOWNLOADSTART'}="
             f"{'https' if args.https else 'http'}://{host}:{OTA_PORT}/ra4.ota,{OTA_PATH}\r\n"
@@ -919,6 +930,11 @@ def main() -> int:
         subprocess.SubprocessError,
     ) as error:
         primary_error = error
+        if args.tcp_diagnostics and proxy_uploaded:
+            try:
+                print(capture_ota_download_telemetry(tcp_diagnostics=True), flush=True)
+            except (OSError, RuntimeError, subprocess.SubprocessError):
+                print("RA4_OTA_FAILURE_TELEMETRY_UNAVAILABLE", flush=True)
     finally:
         if bridge is not None and bridge.is_open:
             if sta_requested:
@@ -948,6 +964,10 @@ def main() -> int:
         for line in peer_output.splitlines():
             if line.startswith((f"{peer_marker}:SEND_PROGRESS=", f"{peer_marker}:TCP_INFO")):
                 print(line)
+        if network:
+            try:network.close()
+            except (OSError,RuntimeError,subprocess.SubprocessError) as error:
+                if primary_error is None:primary_error=error
         if proxy_uploaded:
             try:
                 restore_scan(args)

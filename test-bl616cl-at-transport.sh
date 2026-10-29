@@ -207,3 +207,6 @@ g++ -std=gnu++17 -Wall -Wextra -Werror \
   "${ROOT_DIR}/tests/bl616cl_udp_fragment_content_test.cpp" \
   -o "${BUILD_DIR}/bl616cl_udp_fragment_content_test"
 "${BUILD_DIR}/bl616cl_udp_fragment_content_test"
+
+python3 "${ROOT_DIR}/tests/bouffalo_sdk_source_lock_test.py"
+python3 "${ROOT_DIR}/tests/bouffalo_sdk_bootstrap_test.py"

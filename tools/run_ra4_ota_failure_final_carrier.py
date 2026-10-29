@@ -19,14 +19,20 @@ from uno_r4_usb_identity import resolve_paired_bl616cl_port
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--softap",action="store_true");options=parser.parse_args()
     args = argparse.Namespace(bridge_port="auto", arduino_cli="arduino-cli", runtime_settle_ms=1000)
     args.bridge_port = resolve_paired_bl616cl_port(args.bridge_port)
     d.final_scan.require_final_carrier_bridge(args.bridge_port)
-    ssid, password = d.load_private_credentials(d.DEFAULT_CREDENTIAL_ENV)
-    host = d.windows_wlan_address()
+    args.softap=options.softap
+    ssid, password = (None,None) if args.softap else d.load_private_credentials(d.DEFAULT_CREDENTIAL_ENV)
     root = d.ROOT_DIR / "build/ra4-ota-failure-final-carrier"
     root.mkdir(exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="cases-", dir=root))
+    network=None
+    if args.softap:
+        from ota_softap_test_network import OtaSoftApNetwork
+        network=OtaSoftApNetwork(args,work)
+    host=network.host if network else d.windows_wlan_address()
     bridge = None
     installed = False
     original_peer = d.WINDOWS_OTA_PEER
@@ -35,6 +41,8 @@ def main():
         d.require_exact(d.transact(bridge, request, 3), expected, label)
 
     def connect():
+        if network:
+            network.start(bridge,3);return
         exact(b"AT+WIFIMODE=1\r\n", b"+WIFIMODE: \r\nOK\r\n", "mode")
         exact(b"AT+RECONNECT=0\r\n", b"OK\r\n", "reconnect")
         request = ("AT+BEGINSTA=" + d.quote_at_argument(ssid)
@@ -87,6 +95,7 @@ def main():
         bridge.close()
         bridge = None
         restore_usb(physical_reset=True)
+        if network:network.pause()
         args.bridge_port = resolve_paired_bl616cl_port("auto")
         d.final_scan.require_final_carrier_bridge(args.bridge_port)
         # The paired carrier can restart RA4M1 in SAM-BA when BL is reset.
@@ -164,8 +173,10 @@ def main():
                 print("RA4_OTA_FAILURE_DISCONNECT_CLEANUP_FAILED",flush=True)
             finally:
                 bridge.close()
-        if installed:
-            d.restore_scan(args)
+        try:
+            if network:network.close()
+        finally:
+            if installed:d.restore_scan(args)
     shutil.rmtree(work)
     print("RA4_OTA_FAILURE_FINAL_CARRIER_PASS")
     return 0
