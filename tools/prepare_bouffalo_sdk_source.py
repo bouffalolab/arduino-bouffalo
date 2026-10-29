@@ -57,13 +57,17 @@ def source_path(lock: dict[str, object]) -> Path:
 
 
 def ensure_root_submodule(lock: dict[str, object], destination: Path) -> None:
+    if (destination / ".git").exists():
+        require_commit(destination, str(lock["commit"]), "existing Bouffalo SDK")
+        require_origin(destination, str(lock["source_url"]), "existing Bouffalo SDK")
+        require_clean(destination, "existing Bouffalo SDK")
+        return
     if destination.exists():
-        if not (destination / ".git").exists():
+        if not destination.is_dir() or any(destination.iterdir()):
             raise RuntimeError(
                 f"{destination} exists but is not a Git checkout; "
                 "move it aside before initializing the pinned source input"
             )
-        return
 
     path = str(lock["path"])
     expected = str(lock["commit"])
@@ -74,19 +78,14 @@ def ensure_root_submodule(lock: dict[str, object], destination: Path) -> None:
             "project Git index is missing the locked Bouffalo SDK gitlink: "
             f"expected={expected_entry!r}, actual={entry!r}"
         )
-    run(
-        [
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            "--filter=blob:none",
-            "--no-checkout",
-            str(lock["source_url"]),
-            str(destination),
-        ]
-    )
-    run(["git", "checkout", "--detach", str(lock["commit"])], cwd=destination)
+    # Fetch the locked revision directly: a shallow clone of remote HEAD does
+    # not contain an older approved SDK revision. An empty gitlink directory
+    # from a fresh parent checkout is a valid destination.
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    run(["git", "init", str(destination)])
+    run(["git", "remote", "add", "origin", str(lock["source_url"])], cwd=destination)
+    run(["git", "fetch", "--depth", "1", "origin", expected], cwd=destination)
+    run(["git", "checkout", "--detach", expected], cwd=destination)
 
 
 def configure_sparse_checkout(lock: dict[str, object], destination: Path) -> None:

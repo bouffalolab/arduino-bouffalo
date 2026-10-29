@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Run new-image hardware gates sequentially and preserve failures and restoration logs."""
-import json,os,subprocess,time
+import hashlib,json,os,subprocess,time
 from pathlib import Path
 root=Path(__file__).resolve().parents[2]; out=root/'build/migration-evidence'; out.mkdir(parents=True,exist_ok=True)
+image_sha=hashlib.sha256((root/'build/bridge-image/UNOR4BL616CLBridge.ino.bin').read_bytes()).hexdigest()
 # Identity verification precedes every gate; each runner also checks before writes.
 gates=[
  ('scan',['run_ra4_wifis3_scan_final_carrier.py']),
@@ -23,13 +24,13 @@ gates=[
 ]
 results=json.loads((out/'hardware-results.json').read_text()) if (out/'hardware-results.json').exists() else [];env=os.environ.copy(); env['ARDUINO_CONFIG_FILE']=str(root/'build/migration-workspace/arduino-cli.yaml'); env['PYTHONDONTWRITEBYTECODE']='1'
 for name,args in gates:
- if any(r['gate']==name and r['exit_code']==0 for r in results):continue
+ if any(r['gate']==name and r['exit_code']==0 and r.get('application_sha256')==image_sha for r in results):continue
  log=out/(name+'-'+str(time.time_ns())+'.log'); start=time.monotonic()
  with log.open('w') as f:
   # Approved WSL root surface for live enumeration, then strict chip/port open in runner.
   try:code=subprocess.run(['python3','-u',str(root/'tools'/args[0]),*args[1:]],cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT,timeout=1200).returncode
   except subprocess.TimeoutExpired:code=124
- results.append({'gate':name,'exit_code':code,'seconds':round(time.monotonic()-start,1),'log':str(log.relative_to(root))})
+ results.append({'gate':name,'application_sha256':image_sha,'exit_code':code,'seconds':round(time.monotonic()-start,1),'log':str(log.relative_to(root))})
  (out/'hardware-results.json').write_text(json.dumps(results,indent=2)+'\n')
  print(name,code,flush=True)
  if code:break
