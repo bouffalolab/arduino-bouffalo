@@ -23,7 +23,7 @@ assert overridden['BL616CL_RA4_NORMAL_BOOT_ON_STARTUP']=='0'
 assert overridden['BL616CL_TLS_WINDOW_TIMING']=='1' and overridden['BL616CL_IPV6_TCP_DIAGNOSTIC']=='1'
 assert overridden['BL616CL_TLS_CACHED_AVAILABLE']=='0'
 boards=(platform/'boards.txt').read_text()
-assert len(re.findall(r'^\w+\.build\.bridge_cpp_profile=.+$',boards,re.M))==1
+assert len(re.findall(r'^\w+\.build\.bridge_cpp_profile=.*$',boards,re.M))==1
 assert 'unor4_bl616cl_provisional.build.bridge_cpp_profile=-include ' in boards
 cpp_recipe=next(x for x in boards.splitlines() if x.startswith('unor4_bl616cl_provisional.recipe.cpp.o.pattern='))
 assert '{build.bridge_cpp_profile}' in cpp_recipe

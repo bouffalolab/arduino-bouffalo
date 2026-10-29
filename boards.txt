@@ -66,7 +66,6 @@ unor4_bl616cl_provisional.compiler.sdk.stage1.libs={compiler.sdk.libs} {compiler
 unor4_bl616cl_provisional.compiler.sdk.bridge.libs={compiler.sdk.libs} -lcherryusb -ldebug -lfhost_bl616cl_default -lfhost_config -lfota -llittlefs -llwip -lmacsw_bl616cl -lmacsw_config_bl616cl_default -lmacsw_os_adapter -lmacsw_plat -lmbedtls -lping -lpka_bl616cl -lrfparam -lwifi6_lwip_adapter -lwpa_supplicant -lbtblecontroller_bl616cl_m2s1 -lblestack -lbl616cl_phyrf
 unor4_bl616cl_provisional.compiler.sdk.stage1.linker_flags=
 unor4_bl616cl_provisional.compiler.sdk.bridge.linker_flags=-Wl,--defsym,__LD_CONFIG_EM_SIZE=16
-unor4_bl616cl_provisional.build.bridge_cpp_profile=
 unor4_bl616cl_provisional.compiler.c.elf.extra_flags=
 unor4_bl616cl_provisional.recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpreprocessor.flags} {compiler.cpp.flags} {build.bridge_cpp_profile} {compiler.warning_flags} {build.extra_flags} {compiler.cpp.extra_flags} {includes} -MMD -c "{source_file}" -o "{object_file}"
 unor4_bl616cl_provisional.recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.sdk_linker_flags} "-T{compiler.sdk.path}/ld" "-Wl,-Map,{build.path}/{build.project_name}.map" "-L{compiler.sdk.path}" "-L{compiler.sdk.path}/lib" "-L{compiler.sdk.path}/lib_board" -Wl,--whole-archive "{archive_file_path}" -Wl,--no-whole-archive {object_files} -Wl,--whole-archive -lapp {build.sdk_libraries} -Wl,--no-whole-archive {compiler.system.libs} -Wl,-EL -o "{build.path}/{build.project_name}.elf"

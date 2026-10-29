@@ -14,6 +14,11 @@ namespace {
 // 24 empty buffer check, 25 failed get, 26 failed return.
 // Events 15,19..21,25..26 are derived here and cannot be passed by callers.
 uint32_t counts[27];
+// CPU-only diagnostic words may live in WRAM. Preserve the OCRAM heap
+// floor after upstream HardwareSerial added baud-rate bookkeeping.
+#if defined(__riscv)
+__attribute__((section(".wifi_ram.bridge_mac_last")))
+#endif
 uint32_t last_event, last_values[3];
 #if defined(__riscv)
 __attribute__((section(".wifi_ram.bridge_udp_mac")))
