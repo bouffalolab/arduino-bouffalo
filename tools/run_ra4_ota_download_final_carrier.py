@@ -674,6 +674,8 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bridge-port", default="auto")
     parser.add_argument("--credential-env", type=Path, default=DEFAULT_CREDENTIAL_ENV)
+    parser.add_argument("--session-sta-env", action="store_true", help="Use ephemeral controlled-AP credentials from process environment only.")
+    parser.add_argument("--peer-host", type=ipaddress.IPv4Address)
     parser.add_argument("--arduino-cli", default="arduino-cli")
     parser.add_argument("--response-timeout-ms", type=int, default=2000)
     parser.add_argument("--sta-timeout-ms", type=int, default=45000)
@@ -743,13 +745,14 @@ def main() -> int:
             shutil.rmtree(work_dir, ignore_errors=True)
 
     args.bridge_port = resolve_paired_bl616cl_port(args.bridge_port)
-    ssid, password = (None,None) if args.softap else load_private_credentials(args.credential_env)
+    if args.softap and args.session_sta_env:raise RuntimeError("Select one network fixture")
+    ssid, password = ((os.environ["BRIDGE_TEST_STA_SSID"], os.environ["BRIDGE_TEST_STA_PASSWORD"]) if args.session_sta_env else (None,None) if args.softap else load_private_credentials(args.credential_env))
     final_scan.require_final_carrier_bridge(args.bridge_port)
     network = None
     if args.softap:
         from ota_softap_test_network import OtaSoftApNetwork
         network=OtaSoftApNetwork(args,work_dir)
-    host = network.host if network else windows_wlan_address()
+    host = network.host if network else args.peer_host or windows_wlan_address()
     response_timeout = args.response_timeout_ms / 1000.0
     protocol = "HTTPS" if args.https else "HTTP"
     peer_marker = f"{protocol}_OTA_PEER"
