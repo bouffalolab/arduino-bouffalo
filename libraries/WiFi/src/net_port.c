@@ -258,17 +258,26 @@ int net_port_tcp_accept(int listen_sock)
 int net_port_udp_open(uint32_t addr, uint16_t port)
 {
     struct sockaddr_in sa;
+    int one = 1;
     int sock = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (sock < 0) {
         return -1;
     }
     to_sockaddr(&sa, addr, port);
-    if (lwip_bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
+    if (lwip_setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != 0 ||
+        lwip_bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
         lwip_close(sock);
         return -1;
     }
     return sock;
+}
+
+int net_port_udp_join(int sock, uint32_t group)
+{
+    struct ip_mreq membership = { .imr_multiaddr = { .s_addr = group },
+                                  .imr_interface = { .s_addr = INADDR_ANY } };
+    return lwip_setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &membership, sizeof(membership));
 }
 
 int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len)

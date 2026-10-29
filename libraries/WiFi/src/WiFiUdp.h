@@ -9,7 +9,7 @@
  * UDP，接口同 Arduino 官方 WiFi 库（WiFiS3）的 WiFiUDP。收发缓冲在 begin 或第一次 beginPacket 时分配：
  * 一个数据报最多发 WIFI_UDP_BUFFER_SIZE 字节，收到更长的数据报时超出部分丢弃。
  * 未连上网络时 begin、beginPacket 失败；未调用 begin 时 beginPacket 用协议栈分配的本地端口（同 WiFiNINA）。
- * 组播未实现（底层包未开 IGMP），beginMulticast、beginMulticastPacket 返回 0。
+ * beginMulticast 绑定非零端口并加入 IPv4 组；stop（包括重新 begin）关闭 socket 时离组。
  * 对象持有 socket 与缓冲，不能复制；析构时关闭。同一对象只在一个任务中使用。
  */
 class WiFiUDP : public arduino::UDP {
@@ -27,6 +27,8 @@ public:
     int beginMulticastPacket();
     void stop() override;
 
+    /* 复用最近发包目标或最近 parsePacket 成功的数据报来源；没有目标时失败 */
+    int beginPacket();
     int beginPacket(IPAddress ip, uint16_t port) override;
     int beginPacket(const char *host, uint16_t port) override;
     int endPacket() override;
@@ -62,4 +64,6 @@ private:
     size_t tx_len_ = 0;
     uint32_t tx_addr_ = 0;
     uint16_t tx_port_ = 0;
+    uint32_t multicast_addr_ = 0;
+    uint16_t multicast_port_ = 0;
 };

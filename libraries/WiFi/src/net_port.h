@@ -38,6 +38,8 @@ int net_port_tcp_accept(int listen_sock);
 
 /* UDP socket，绑定本地地址 addr（0 为任意地址）与端口 port（0 由协议栈分配）；成功返回 socket，失败返回 -1 */
 int net_port_udp_open(uint32_t addr, uint16_t port);
+/* 加入IPv4组；成功返回0。lwIP在close时自动退出该socket加入的组 */
+int net_port_udp_join(int sock, uint32_t group);
 /* 发一个数据报；成功返回 0 */
 int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len);
 /* 不等待地取下一个数据报，超出 len 的部分丢弃；返回写入 buf 的字节数，没有数据报（或收到空数据报）返回 0，出错返回 -1 */

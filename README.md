@@ -6,7 +6,7 @@
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
-当前平台需要 `bl616cl-libs` 0.8.0 和 `bl-flash-tools` 0.2.0（SNTP、DHCP hostname 与配套 netif ABI，保留 IPv6、隐藏 AP、littlefs 及 HID/BLE）；平台与依赖包应一起更新。
+当前平台需要 `bl616cl-libs` 0.9.0 和 `bl-flash-tools` 0.2.0（IPv4 IGMP 组播与配套 netif ABI，保留 SNTP、DHCP hostname、IPv6、隐藏 AP、littlefs 及 HID/BLE）；平台与依赖包应一起更新。
 
 本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
 
@@ -107,7 +107,7 @@ arduino-lint --project-type platform --compliance strict .
 | `WiFiSSLClient`（接口同 WiFiS3）：TLS 1.2 客户端（底层包的 mbedTLS 3.6，曲线 P-256、P-384、P-521、X25519），`connect`（地址或域名；SNI 与证书名称校验；超时含 TCP 与握手，默认 10 s，`setConnectionTimeout` 可改）、`setCACert`（PEM，之后只信任它，`nullptr` 恢复）、`write`、`available`、`read`、`peek`、`connected`、`stop`（发 close_notify）、`remoteIP`、`remotePort`；默认用包内根证书束（SDK 的 `cacrt_all.pem`，147 张，Mozilla 2024-03-11）。不检查证书有效期（同上游 ESP32 固件）；证书束按链顶证书的签发者找根；找不到时，链顶与束内根的名称和公钥都相同则信任（COMODO RSA CA 的 AddTrust 交叉签发版本即如此，本机 OpenSSL 同样接受）；没有 `setEccSlot`。每个连接常驻约 38 KB 堆，握手时约 43–52 KB，先占 OCRAM；OCRAM 空闲不足 56 KB 时 `connect` 失败（FreeRTOS 只从 OCRAM 分配，耗尽会使固件停止）。TCP socket 与 `WiFiClient` 等共用 lwIP 的 8 个 | experimental | WiFiSSLCheck 通过 `compile_check.sh` | WiFiSSLCheck（`bl616cl-libs` 0.4.0）：证书束下 www.baidu.com（RSA）、valid-isrgrootx2.letsencrypt.org（P-384 根）、ecc384.badssl.com 成功，wrong.host、self-signed、untrusted-root.badssl.com 失败；expired.badssl.com 成功（链顶为束内根）；链顶与束内根同名、公钥不同的测试链失败；`setCACert` 测试 CA 后与电脑 TLS 服务往返 HTTP 100062 字节、字节和一致，回显一致，名称不符失败，过期证书成功；同时开 8 个连接时 3 个成功、其余失败，之后照常工作，结束时空闲堆与开始相差不到 1 KB。经 bridge 由 WiFiS3 调用（见 bridge README）。修复后复跑 run-tls-5：43 项全部通过（平台与 bridge 两轮）。本测试网络连不上 www.google.com（DNS 解析到不通的地址）；长时间连接未实测 |
 | 静态地址（接口同 WiFiS3）：`config(local_ip[, dns_server[, gateway[, subnet]]])`，省略的网关为 x.y.z.1、掩码 255.255.255.0，只给地址时 DNS 也用该网关；之后每次连接都不启动 DHCP，已连接时立即生效；`local_ip` 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）。`setDNS(dns1[, dns2])`：静态地址时更新 DNS，用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3 经上游固件的结果），用 DHCP 且未连接时不起作用 | experimental | WiFiStaticIP 通过 `compile_check.sh` | WiFiStaticIP：连接前设 .200 后连上，地址、掩码、网关、DNS 与配置相同，ping 网关、DNS 解析、与电脑 TCP 回显成功，电脑 ping 得到应答；断开重连（地址不变）仍为 .200；`setDNS` 后用新 DNS 解析成功；已连接时改为 .201 立即生效；已连接时 `config(0.0.0.0)` 后 2 s 内由 DHCP 取得地址；DHCP 下 `setDNS` 转为静态地址，之后重连地址不变。经 bridge 由 WiFiS3 调用（见 bridge README）。地址冲突检测（ARP 探测）没有做 |
 | `WiFi` AP：`beginAP`（WPA2 或开放网络，可设信道）、`status`（`WL_AP_LISTENING` / `WL_AP_CONNECTED` / `WL_AP_FAILED`）、AP 地址与 SSID 查询、`end` 停止 AP；默认切换 STA/AP，显式 `mode(WIFI_AP_STA)` 可并行；AP 地址可用 `config` 设置，默认 `192.168.4.1/24`，DHCP 地址池为 10 个地址 | experimental | WiFiAPCheck 通过 `compile_check.sh` | 实板 run-ap-2：电脑取得 `192.168.4.2`，AP 状态 8，ping 应答；WiFiServer TCP 与 WiFiUDP 均完成电脑—板子回显；AP 运行时 `begin` 切换 STA 成功。AP 下 `WiFiClient::connect`、`ping(IPAddress)`、多设备连接未验证 |
-| WiFi 的 UDP 组播（底层包未开 IGMP，`beginMulticast` 返回 0）、`setHostname` | unimplemented | — | `setHostname` 尚无接口 |
+| WiFi UDP IPv4 组播：`beginMulticast`、`beginMulticastPacket`、无参数 `beginPacket` | experimental | 0.9.0：完整 bridge、新 WiFiMulticast 示例及普通 sketch 编译通过 | BL616CL 1V0 + 真实 RA WiFiS3 经 vela 双向 1/255/1460 字节，4 组同端口、20 次入组/离组、关闭编号复用、无参目标复用和共享 UDP/TCP/TLS 资源边界实机通过；最终制品证据见 ARDUINO-50 task |
 | Wire、SPI 等其他平台库 | unimplemented | — | — |
 | 镜像后处理 | experimental | Blink、SerialEcho 通过 `check_image.py`；启动头与 SDK 原生镜像只在长度和 CRC 上不同，`partition.bin`、boot2 逐字节相同 | 烧录后固件正常启动 |
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
@@ -150,3 +150,11 @@ BL616CL 1V0 实机已验证显式格式化、跨块读写、满盘恢复、复�
 `WiFi.getHostname()` / `WiFi.setHostname(name)` 使用 RAM，默认 `bl616cl-` 加 STA MAC 最后 3 字节大写十六进制。名称为 1..31 字节 ASCII DNS label，允许字母、数字和中划线，首尾不能为中划线；非法值返回 false 且保留旧值。在线设置不主动断网，后续 DHCP 请求携带新名字，复位回默认；不提供 DNS/mDNS 服务或 Flash 持久化。
 
 底层 0.8.0 开启 `LWIP_NETIF_HOSTNAME` 并编译 SDK SNTP，头文件、库和配置须成套更新。newlib UTC 由系统微秒计时器推进，SDK 原实现误用 RTC 闹钟、板载 RC32K 漂移的问题由固定补丁修正。未承诺深睡眠走时或断电保持；新增 SNTP 不改变 TLS 不检查证书有效期的既有策略。示例见 `libraries/WiFi/examples/WiFiTime`。实机验收以独立 ARDUINO-45 记录为准。
+
+## IPv4 UDP 组播（ARDUINO-50）
+
+`WiFiUDP::beginMulticast(group, port)` 接受224..239开头的IPv4组地址与非零端口，绑定任意本地地址并经lwIP加入组；非法输入或底层入组失败返回0。底层保留协议限制，例如224.0.0.1是接口隐式加入的all-hosts组，不能通过该接口显式加入。`stop()`、析构及重新`begin()`关闭socket时，由lwIP自动离组、回收缓冲。UDP使用`SO_REUSEADDR`，允许多个组共用本地端口。
+
+`beginMulticastPacket()`选择入组时的组地址/端口；新增`beginPacket()`扩展复用最近显式选择的目标，或最近成功`parsePacket()`的数据报来源。新建/重开socket后没有目标，返回0；两种begin均只准备发送，仍需`write`和`endPacket`。每个数据报收发上限仍为1460字节。`remoteIP/remotePort`保持本平台既有的当前接收数据报来源语义；与固定ESP32在显式选发送目标后也修改remote查询值的行为有差异。
+
+0.9.0启用`LWIP_IGMP=1`，IGMP池为`2 * MEMP_NUM_NETCONN + 2 = 18`：固定wl80211同时创建STA/AP两个netif，任意接口入组会各占一项，另有all-hosts项。通用socket上限仍为8，bridge的UDP对象上限仍为4；没有新增另一套成员表。头文件与库必须成套更新。组播依赖实际AP转发与IGMP环境，UDP不承诺可靠送达；不扩展为IPv6 UDP或跨信道STA/AP支持。示例见`libraries/WiFi/examples/WiFiMulticast`。

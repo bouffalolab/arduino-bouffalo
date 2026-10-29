@@ -44,14 +44,21 @@ uint8_t WiFiUDP::begin(IPAddress ip, uint16_t port)
 
 uint8_t WiFiUDP::beginMulticast(IPAddress ip, uint16_t port)
 {
-    (void)ip;
-    (void)port;
-    return 0;
+    if (ip[0] < 224 || ip[0] > 239 || port == 0 || !open(0, port)) {
+        return 0;
+    }
+    if (net_port_udp_join(sock_, (uint32_t)ip) != 0) {
+        stop();
+        return 0;
+    }
+    multicast_addr_ = (uint32_t)ip;
+    multicast_port_ = port;
+    return 1;
 }
 
 int WiFiUDP::beginMulticastPacket()
 {
-    return 0;
+    return multicast_port_ != 0 ? beginPacket(IPAddress(multicast_addr_), multicast_port_) : 0;
 }
 
 void WiFiUDP::stop()
@@ -67,6 +74,18 @@ void WiFiUDP::stop()
     rx_port_ = 0;
     tx_open_ = false;
     tx_len_ = 0;
+    tx_addr_ = multicast_addr_ = 0;
+    tx_port_ = multicast_port_ = 0;
+}
+
+int WiFiUDP::beginPacket()
+{
+    if (sock_ < 0 || tx_port_ == 0) {
+        return 0;
+    }
+    tx_open_ = true;
+    tx_len_ = 0;
+    return 1;
 }
 
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
@@ -74,11 +93,9 @@ int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
     if (port == 0 || (sock_ < 0 && !open(0, 0))) {
         return 0;
     }
-    tx_open_ = true;
-    tx_len_ = 0;
     tx_addr_ = (uint32_t)ip; /* IPAddress 按网络字节序保存 */
     tx_port_ = port;
-    return 1;
+    return beginPacket();
 }
 
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
@@ -136,6 +153,8 @@ int WiFiUDP::parsePacket()
     rx_len_ = n;
     rx_addr_ = addr;
     rx_port_ = port;
+    tx_addr_ = addr;
+    tx_port_ = port;
     return n;
 }
 
