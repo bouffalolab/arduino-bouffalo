@@ -51,7 +51,17 @@ class MappingTest(unittest.TestCase):
         with patch.object(mapping,'usbip_listing',return_value='4-1 2341:1002 Dedicated Shared\n'), \
              patch.object(mapping,'resolve_paired_bl616cl_port') as resolve:
             with self.assertRaises(RuntimeError):mapping.ensure_bl_usb_mapping(helper)
-            resolve.assert_not_called()
+            resolve.assert_called_once_with('auto')
+    def test_live_identity_checked_interface_avoids_windows_query(self):
+        with patch.object(mapping,'resolve_paired_bl616cl_port',return_value='/dev/ttyACM7'), \
+             patch.object(mapping.os,'open',return_value=99) as opened, \
+             patch.object(mapping.os,'close') as closed, \
+             patch.object(mapping,'dedicated_bus_id') as windows:
+            self.assertEqual(mapping.ensure_bl_usb_mapping(),'/dev/ttyACM7')
+            opened.assert_called_once()
+            closed.assert_called_once_with(99)
+            windows.assert_not_called()
+
     def test_stale_selection(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);controller=root/'devices/platform/vhci_hcd.0';controller.mkdir(parents=True)

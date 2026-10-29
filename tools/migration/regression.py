@@ -7,7 +7,7 @@ root=Path(__file__).resolve().parents[2]; out=root/'build/migration-evidence'; o
 gates=[
  ('scan',['run_ra4_wifis3_scan_final_carrier.py']),
  ('generic-at',['run_bl616cl_generic_at_final_carrier.py']),
- ('resource',['run_ra4_wifis3_tls_resource_gate.py','--softap','--direct-ip','--rounds','2','--receive-burst-bytes','4096','--ble-scan','--usb-echo','--mixed-probe','--mixed-udp-send']),
+ ('resource',['run_ra4_wifis3_tls_resource_gate.py','--softap','--direct-ip','--rounds','2','--receive-burst-bytes','4096','--ble-scan','--usb-echo','--mixed-probe','--mixed-udp-send','--ra4-sized-response-reserve','--skip-peer-firewall']),
  ('storage',['run_ra4_storage_final_carrier.py']),
  ('softse',['run_ra4_softse_final_carrier.py']),
  ('ble-gatt',['run_ra4_ble_windows_long_gatt_gate.py','--connected-coex','--peer-log',str(out/'ble-gatt-peer.log')]),

@@ -1,5 +1,6 @@
 """Repair WSL forwarding of the dedicated BL, without resetting either chip."""
 from pathlib import Path
+import os
 import ipaddress
 import json
 import re
@@ -56,6 +57,16 @@ def dedicated_bus_id():
 
 
 def ensure_bl_usb_mapping(prepared_attach=None):
+    # A live, identity-checked Linux interface is already attached. Avoid an
+    # unnecessary Windows enumeration round trip while switching WLAN routes.
+    try:
+        port=resolve_paired_bl616cl_port('auto')
+        if not isinstance(port,str):raise RuntimeError('invalid serial path')
+        descriptor=os.open(port,os.O_RDWR|os.O_NOCTTY|os.O_NONBLOCK)
+        os.close(descriptor)
+        return port
+    except (OSError,RuntimeError):
+        pass
     bus_id=dedicated_bus_id()
     listing=usbip_listing()
     lines=[line for line in listing.splitlines() if re.match(rf'^{re.escape(bus_id)}\s+2341:1002\s+',line)]

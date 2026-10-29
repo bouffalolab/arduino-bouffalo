@@ -12,6 +12,8 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+# Read-only external baseline input; all generated copies and logs belong to ROOT/build.
+REFERENCE = Path('/home/developer/git/arduino/uno-r4-wifi-usb-bridge')
 
 
 def prepare(output, rx_buffers, sdk_static=True):
@@ -21,13 +23,13 @@ def prepare(output, rx_buffers, sdk_static=True):
         raise ValueError('Custom RX counts apply only to the dynamic profile')
     output = Path(output).resolve()
     if output == ROOT or any(path == output or path in output.parents for path in
-                             (ROOT/'UNOR4USBBridge',ROOT/'hardware')):
+                             (REFERENCE/'UNOR4USBBridge',REFERENCE/'hardware')):
         raise ValueError('Output must be separate from baseline source and platform')
     output.mkdir(parents=True, exist_ok=False)
     sketch = output / 'UNOR4USBBridge'
     sketch.mkdir()
     hashes = {}
-    for source in sorted((ROOT / 'UNOR4USBBridge').iterdir()):
+    for source in sorted((REFERENCE / 'UNOR4USBBridge').iterdir()):
         if source.is_file() and source.suffix in ('.ino','.cpp','.c','.h','.hpp'):
             shutil.copy2(source,sketch/source.name)
             hashes['UNOR4USBBridge/'+source.name] = hashlib.sha256(source.read_bytes()).hexdigest()
@@ -40,7 +42,7 @@ def prepare(output, rx_buffers, sdk_static=True):
         if text.count(before)!=1:
             raise RuntimeError('Expected WiFi setup changed; review source')
         main.write_text(text.replace(before,'  WiFi.useStaticBuffers(true);\n'+before))
-    library = ROOT / 'hardware/esp32-patched/esp32/libraries/WiFi'
+    library = REFERENCE / 'hardware/esp32-patched/esp32/libraries/WiFi'
     shutil.copytree(library,output/'WiFi')
     generic = output / 'WiFi/src/WiFiGeneric.cpp'
     text = generic.read_text()
@@ -75,7 +77,9 @@ def main():
     sketch=prepare(args.output,args.rx_buffers,args.sdk_static_buffers)
     if args.compile:
         fqbn='esp32-patched:esp32:arduino_unor4wifi_usb_bridge:USBMode=default,CDCOnBoot=default,MSCOnBoot=default,DFUOnBoot=default,PartitionScheme='+args.partition_scheme
-        subprocess.run([args.arduino_cli,'compile','--config-file',str(ROOT/'arduino-cli.yaml'),
+        output_config=sketch.parent/'arduino-cli.yaml'
+        output_config.write_text('directories:\n  user: '+str(REFERENCE)+'\n')
+        subprocess.run([args.arduino_cli,'compile','--config-file',str(output_config),
                         '--fqbn',fqbn,'--library',str(sketch.parent/'WiFi'),
                         '--build-path',str(sketch.parent/'compiled'),str(sketch)],cwd=ROOT,check=True)
     print('ESP32_UDP_AP_CONTROL_PREPARED profile='+('sdk-static' if args.sdk_static_buffers else 'arduino-dynamic')+' dynamic_profile_rx_buffers='+str(args.rx_buffers))
