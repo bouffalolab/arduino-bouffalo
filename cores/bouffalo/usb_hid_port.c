@@ -24,6 +24,9 @@ static volatile uint32_t rx_size;
 static volatile bool configured;
 static volatile bool tx_busy;
 
+/**
+ * @brief Publish a received HID packet for task-context consumption.
+ */
 static void hid_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
@@ -31,6 +34,9 @@ static void hid_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
     rx_size = nbytes; /* Leave OUT unarmed until the reader has copied it. */
 }
 
+/**
+ * @brief Release the HID transmit buffer after endpoint completion.
+ */
 static void hid_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
@@ -42,11 +48,19 @@ static void hid_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
 static struct usbd_endpoint out_ep = { .ep_addr = HID_OUT_EP, .ep_cb = hid_out };
 static struct usbd_endpoint in_ep = { .ep_addr = HID_IN_EP, .ep_cb = hid_in };
 
+/**
+ * @brief Register an application-owned HID descriptor and Feature callbacks before USB
+ * startup.
+ */
 void usb_hid_port_register(const struct usb_hid_port_config *cfg)
 {
     config = cfg;
 }
 
+/**
+ * @brief Initialize the optional HID interface and return its configuration descriptor
+ * contribution.
+ */
 const uint8_t *usb_hid_port_init(void)
 {
     if (config == NULL) {
@@ -61,6 +75,9 @@ const uint8_t *usb_hid_port_init(void)
     return descriptor;
 }
 
+/**
+ * @brief Update optional HID endpoint state on USB lifecycle events.
+ */
 void usb_hid_port_event(uint8_t event)
 {
     if (config == NULL) {
@@ -78,6 +95,9 @@ void usb_hid_port_event(uint8_t event)
     }
 }
 
+/**
+ * @brief Copy one pending HID packet to the caller, or report that none is available.
+ */
 int usb_hid_port_read(uint8_t data[USB_HID_PORT_PACKET_SIZE])
 {
     taskENTER_CRITICAL();
@@ -91,6 +111,9 @@ int usb_hid_port_read(uint8_t data[USB_HID_PORT_PACKET_SIZE])
     return size;
 }
 
+/**
+ * @brief Submit one fixed-size HID packet when the endpoint is ready.
+ */
 bool usb_hid_port_write(const uint8_t data[USB_HID_PORT_PACKET_SIZE])
 {
     TickType_t start = xTaskGetTickCount();
@@ -114,6 +137,9 @@ bool usb_hid_port_write(const uint8_t data[USB_HID_PORT_PACKET_SIZE])
     return ok;
 }
 
+/**
+ * @brief Provide a Feature response through the registered application callback.
+ */
 void usbd_hid_get_report(uint8_t busid, uint8_t intf, uint8_t report_id,
                          uint8_t report_type, uint8_t **data, uint32_t *len)
 {
@@ -129,6 +155,9 @@ void usbd_hid_get_report(uint8_t busid, uint8_t intf, uint8_t report_id,
     }
 }
 
+/**
+ * @brief Deliver supported Feature writes to the registered application callback.
+ */
 void usbd_hid_set_report(uint8_t busid, uint8_t intf, uint8_t report_id,
                          uint8_t report_type, uint8_t *report, uint32_t report_len)
 {

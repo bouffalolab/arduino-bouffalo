@@ -1,12 +1,18 @@
-// 回显 Serial1（硬件 UART）收到的字节；每秒打印一次运行时间，用于确认 millis() 与发送
+// Echo Serial1 hardware-UART input and print uptime each second to check millis() and TX.
 static unsigned long last;
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial1.begin(115200);
     Serial1.println("Serial1Echo ready");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     while (Serial1.available() > 0) {

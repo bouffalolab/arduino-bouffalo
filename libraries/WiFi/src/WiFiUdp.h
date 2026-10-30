@@ -3,58 +3,137 @@
 #include "Arduino.h"
 #include "api/Udp.h"
 
-#define WIFI_UDP_BUFFER_SIZE 1460 /* 收、发各一块，同 ESP32 Arduino 的 WiFiUDP */
+#define WIFI_UDP_BUFFER_SIZE 1460 /* Separate RX and TX buffers, following ESP32 Arduino WiFiUDP. */
 
 /*
- * UDP，接口同 Arduino 官方 WiFi 库（WiFiS3）的 WiFiUDP。收发缓冲在 begin 或第一次 beginPacket 时分配：
- * 一个数据报最多发 WIFI_UDP_BUFFER_SIZE 字节，收到更长的数据报时超出部分丢弃。
- * 未连上网络时 begin、beginPacket 失败；未调用 begin 时 beginPacket 用协议栈分配的本地端口（同 WiFiNINA）。
- * beginMulticast 绑定非零端口并加入 IPv4 组；stop（包括重新 begin）关闭 socket 时离组。
- * 对象持有 socket 与缓冲，不能复制；析构时关闭。同一对象只在一个任务中使用。
+ * WiFiS3-compatible UDP. Allocate buffers in begin() or the first beginPacket(). Send at most
+ * WIFI_UDP_BUFFER_SIZE bytes per datagram; discard excess received bytes. begin/beginPacket fail
+ * without a usable network. Without begin(), use a stack-assigned local port, matching WiFiNINA.
+ * beginMulticast binds a nonzero port and joins an IPv4 group; closing in stop() or a later
+ * begin() leaves groups. The noncopyable object owns its socket/buffers and closes on destruction.
+ * Use each instance from one task.
  */
 class WiFiUDP : public arduino::UDP {
 public:
+    /**
+     * @brief Construct an inactive UDP socket and empty packet buffers.
+     */
     WiFiUDP() = default;
+    /**
+     * @brief Close the UDP socket and release packet state.
+     */
     ~WiFiUDP();
+    /**
+     * @brief Disallow copying this uniquely owned socket resource.
+     */
     WiFiUDP(const WiFiUDP &) = delete;
+    /**
+     * @brief Disallow copying this uniquely owned socket resource.
+     */
     WiFiUDP &operator=(const WiFiUDP &) = delete;
 
-    /* 绑定本地端口；已打开时先关闭。成功返回 1 */
+    /**
+     * @brief Bind a local port, closing an existing socket first. Return 1 on success.
+     */
     uint8_t begin(uint16_t port) override;
-    /* 绑定本地地址与端口（WiFiS3 的扩展） */
+    /**
+     * @brief Bind a local address and port, following the WiFiS3 extension.
+     */
     uint8_t begin(IPAddress ip, uint16_t port);
+    /**
+     * @brief Bind a nonzero UDP port and join the specified IPv4 multicast group.
+     *
+     * @param ip IPv4 multicast group; the implicit all-hosts group 224.0.0.1 is rejected.
+     * @param port Nonzero local UDP port.
+     * @return 1 on success; 0 for invalid input, unavailable networking or resource/join
+     *   failure.
+     */
     uint8_t beginMulticast(IPAddress ip, uint16_t port) override;
+    /**
+     * @brief Select this socket's joined multicast group as the pending destination.
+     */
     int beginMulticastPacket();
+    /**
+     * @brief Close the UDP socket and release both packet buffers and destination state.
+     */
     void stop() override;
 
-    /* 复用最近发包目标或最近 parsePacket 成功的数据报来源；没有目标时失败 */
+    /**
+     * @brief Reuse the most recent send destination or source of a successfully parsed packet;
+     * fail if no destination exists.
+     */
     int beginPacket();
+    /**
+     * @brief Select a datagram destination, reusing the most recent one when no address is
+     * supplied.
+     */
     int beginPacket(IPAddress ip, uint16_t port) override;
+    /**
+     * @brief Select a datagram destination, reusing the most recent one when no address is
+     * supplied.
+     */
     int beginPacket(const char *host, uint16_t port) override;
+    /**
+     * @brief Send the buffered datagram and report whether transmission was accepted.
+     */
     int endPacket() override;
-    /* 没有进行中的数据报或缓冲已满时返回 0 */
+    /**
+     * @brief Return zero if no datagram is being built or the buffer is full.
+     */
     size_t write(uint8_t b) override;
+    /**
+     * @brief Append bytes to the bounded pending datagram and return the accepted count.
+     */
     size_t write(const uint8_t *buffer, size_t size) override;
     using Print::write;
 
-    /* 不等待；丢弃上一个数据报未读的部分。返回新数据报的长度，没有时返回 0 */
+    /**
+     * @brief Nonblocking: discard unread bytes from the previous datagram. Return the next
+     * datagram length, or zero if none is available.
+     */
     int parsePacket() override;
+    /**
+     * @brief Return the currently readable byte count without consuming input.
+     */
     int available() override;
+    /**
+     * @brief Consume unread bytes from the current datagram without waiting.
+     */
     int read() override;
+    /**
+     * @brief Consume unread bytes from the current datagram without waiting.
+     */
     int read(unsigned char *buffer, size_t len) override;
+    /**
+     * @brief Consume unread bytes from the current datagram without waiting.
+     */
     int read(char *buffer, size_t len) override;
+    /**
+     * @brief Return the next input byte without consuming it, or -1 when none is available.
+     */
     int peek() override;
-    /* 丢弃当前数据报未读的部分 */
+    /**
+     * @brief Discard unread bytes from the current datagram.
+     */
     void flush() override;
-    /* 当前数据报的来源；parsePacket 之前为 0 */
+    /**
+     * @brief Source of the current datagram; zero before parsePacket().
+     */
     IPAddress remoteIP() override;
+    /**
+     * @brief Return the connected peer or current datagram source port.
+     */
     uint16_t remotePort() override;
 
 private:
+    /**
+     * @brief Open an absolute path with a supported mode, returning an invalid File on
+     * failure.
+     */
     bool open(uint32_t addr, uint16_t port);
 
     int sock_ = -1;
-    uint8_t *rx_ = nullptr; /* 2 × WIFI_UDP_BUFFER_SIZE，后一半是 tx_ */
+    uint8_t *rx_ = nullptr; /* Two WIFI_UDP_BUFFER_SIZE regions; tx_ points to the second half. */
     uint8_t *tx_ = nullptr;
     size_t rx_len_ = 0;
     size_t rx_pos_ = 0;

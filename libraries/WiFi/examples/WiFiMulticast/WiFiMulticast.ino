@@ -6,6 +6,9 @@ WiFiUDP udp;
 const IPAddress group(239, 1, 2, 3);
 const uint16_t port = 4210;
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -18,6 +21,9 @@ void setup()
     }
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     if (udp.parsePacket()) {

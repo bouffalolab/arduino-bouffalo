@@ -1,13 +1,12 @@
 #pragma once
 
 /*
- * Wi-Fi station、AP 与 TCP/UDP/TLS，接口同 Arduino 官方 WiFi 库（WiFiS3、WiFiNINA）的公共部分。
- * 已实现：STA（WPA2/WPA3 个人与开放网络，PMF 可选）、扫描、DHCP、DNS、ping、WiFiClient、WiFiServer、WiFiUDP（单播与广播）、
- * WiFiSSLClient（TLS 1.2）、静态地址（config、setDNS）、AP（beginAP：WPA2 或开放网络，带 DHCP 服务）。
- * begin/beginAP 默认切换 STA/AP；显式 mode(WIFI_AP_STA) 可保持另一个接口。AP 运行时 WiFiServer、WiFiUDP 已在实板上验证（电脑连入后 TCP、UDP 收发）；
- * WiFiClient::connect、ping(IPAddress) 在 AP 下未在实板上验证。
- * 新增模式、隐藏 SSID、自动重连和 IPv6 的实机状态见 README；UDP 组播未实现。
- * 所有调用在同一个任务中进行（通常是 setup/loop）。
+ * Wi-Fi STA/AP and TCP/UDP/TLS interfaces follow the shared public API of WiFiS3/WiFiNINA. Support
+ * includes WPA2/WPA3/open STA with optional PMF, scan, DHCP, DNS, ping, TCP client/server, UDP
+ * unicast/broadcast/multicast, TLS 1.2, static addressing and WPA2/open AP with DHCP.
+ * begin/beginAP normally switch interfaces; explicit WIFI_AP_STA retains the other interface. See
+ * README for verified mode, hidden-SSID, reconnect and IPv6 paths. Serialize all calls in one
+ * task, normally setup/loop; concurrent STA/AP requires one channel.
  */
 #include "Arduino.h"
 
@@ -22,9 +21,9 @@
 #define WL_WPA_KEY_MAX_LENGTH 63
 #define WL_MAC_ADDR_LENGTH    6
 #define WL_IPV4_LENGTH        4
-#define WL_NETWORKS_LIST_MAXNUM 10 /* scanNetworks 保留的网络数，同 WiFiS3、WiFiNINA */
+#define WL_NETWORKS_LIST_MAXNUM 10 /* Maximum retained scan results, matching WiFiS3 and WiFiNINA. */
 
-/* 取值同 WiFiS3 */
+/* Values match WiFiS3. */
 typedef enum {
     WL_NO_SHIELD = 255,
     WL_NO_MODULE = WL_NO_SHIELD,
@@ -40,7 +39,7 @@ typedef enum {
     WL_AP_FAILED
 } wl_status_t;
 
-/* 取值同 WiFiS3 */
+/* Values match WiFiS3. */
 enum wl_enc_type {
     ENC_TYPE_WEP,
     ENC_TYPE_WPA,
@@ -67,108 +66,271 @@ enum WiFiMode { WIFI_OFF = 0, WIFI_STA = 1, WIFI_AP = 2, WIFI_AP_STA = 3 };
 
 class WiFiClass {
 public:
-    /* 版本号即本库版本 */
+    /**
+     * @brief Version number of this library.
+     */
     const char *firmwareVersion();
 
-    /*
-     * 连接并等待取得地址，最多 setTimeout() 给定的时间（默认 10 s）。返回 WL_CONNECTED，或
-     * WL_NO_SSID_AVAIL、WL_CONNECT_FAILED；超时仍在连接时返回 WL_IDLE_STATUS，连接继续在后台进行，
-     * 之后用 status() 查询。已连上同一网络时直接返回 WL_CONNECTED。密码 8–63 个字符，NULL 或空串为开放网络。
+    /**
+     * @brief Connect and wait for an address up to setTimeout() (default 10 s). Return
+     * WL_CONNECTED, WL_NO_SSID_AVAIL or WL_CONNECT_FAILED; a still-pending connection at
+     * timeout returns WL_IDLE_STATUS and continues in the background. Query status()
+     * afterward. An existing connection to the same network returns immediately. Passphrases
+     * are 8-63 characters; NULL/empty selects an open network.
      */
     int begin(const char *ssid);
+    /**
+     * @brief Initialize this host fixture interface without claiming physical hardware.
+     */
     int begin(const char *ssid, const char *passphrase);
-    /*
-     * 启动 AP 并等 DHCP 服务启动（最多约 3 s），返回 WL_AP_LISTENING 或 WL_AP_FAILED。除显式 mode(WIFI_AP_STA) 外，STA 已连接或正在连接时先断开。
-     * 省略的信道为 1（同 WiFiS3），可用 1–13；密码 8–63 个字符时为 WPA2，省略或空串为开放网络。
-     * 地址为 config() 给出的地址与掩码（AP 运行时调用 config 会重启 DHCP 以应用新地址），未调用时为 192.168.4.1/24；
-     * DHCP 地址池为同一网段中紧邻该地址的 10 个
+    /**
+     * @brief Start an AP and wait up to about 3 s for DHCP, returning WL_AP_LISTENING or
+     * WL_AP_FAILED. Disconnect an active/pending STA unless WIFI_AP_STA was selected
+     * explicitly. Default channel is 1, supported range 1-13. An 8-63-character passphrase
+     * selects WPA2; omitted/empty selects open. config() supplies AP address/netmask and
+     * restarts DHCP when changed online; the default is 192.168.4.1/24. The pool contains the
+     * next ten addresses in the subnet.
      */
     uint8_t beginAP(const char *ssid);
+    /**
+     * @brief Start an access point with the selected credentials, channel and association
+     * options.
+     */
     uint8_t beginAP(const char *ssid, uint8_t channel);
+    /**
+     * @brief Start an access point with the selected credentials, channel and association
+     * options.
+     */
     uint8_t beginAP(const char *ssid, const char *passphrase);
+    /**
+     * @brief Start an access point with the selected credentials, channel and association
+     * options.
+     */
     uint8_t beginAP(const char *ssid, const char *passphrase, uint8_t channel);
+    /**
+     * @brief Start an access point with the selected credentials, channel and association
+     * options.
+     */
     uint8_t beginAP(const char *ssid, const char *passphrase, uint8_t channel, bool hidden, uint8_t maxConnections);
-    /* Generic extensions: mode is an interface bit mask; enabling alone does
-       not invent credentials or report an association. Settings live in RAM. */
+    /**
+     * @brief Generic extensions: mode is an interface bit mask; enabling alone does not invent
+     * credentials or report an association. Settings live in RAM.
+     */
     bool mode(WiFiMode mode);
+    /**
+     * @brief Return the enabled Wi-Fi interface mode bits.
+     */
     WiFiMode getMode() const { return mode_; }
+    /**
+     * @brief Enable or disable reconnect after an unexpected STA disconnection.
+     */
     bool setAutoReconnect(bool enable);
+    /**
+     * @brief Return the current unexpected-disconnect reconnect policy.
+     */
     bool getAutoReconnect();
-    /* UTC Unix seconds; 0 before synchronization. Never waits for SNTP. */
+    /**
+     * @brief UTC Unix seconds; 0 before synchronization. Never waits for SNTP.
+     */
     unsigned long getTime();
-    /* RAM-only DNS label (1..31 bytes). Applies to future DHCP requests;
-       changing it does not disconnect an existing station. */
+    /**
+     * @brief RAM-only DNS label (1..31 bytes). Applies to future DHCP requests; changing it
+     * does not disconnect an existing station.
+     */
     const char *getHostname();
+    /**
+     * @brief Validate and set the RAM-resident DHCP hostname for subsequent network use.
+     */
     bool setHostname(const char *hostname);
-    /* Asynchronous SNTP configuration; default is also started on WiFi init. */
+    /**
+     * @brief Asynchronous SNTP configuration; default is also started on WiFi init.
+     */
     bool configTime(const char *server = "pool.ntp.org");
+    /**
+     * @brief Enable the supported STA link-local IPv6 address.
+     */
     bool enableIpV6();
+    /**
+     * @brief Return the supported STA link-local IPv6 address as text.
+     */
     String localIPv6();
+    /**
+     * @brief Return STA status independently of an active AP.
+     */
     uint8_t stationStatus();
-    /* 断开 STA（AP 照常运行，同 WiFiS3）；正在连接时先等它出结果。返回 WL_DISCONNECTED */
+    /**
+     * @brief Disconnect STA while leaving AP running, as in WiFiS3. Wait for a pending
+     * connection result first. Return WL_DISCONNECTED.
+     */
     int disconnect(void);
+    /**
+     * @brief Disconnect STA, optionally removing its mode bit while preserving AP.
+     */
     int disconnect(bool wifiOff);
+    /**
+     * @brief Stop AP, optionally removing its mode bit while preserving STA.
+     */
     bool softAPdisconnect(bool wifiOff = false);
-    /* 断开 STA 并停止 AP；Wi-Fi 协议栈初始化后不释放 */
+    /**
+     * @brief Disconnect STA and stop AP; the initialized Wi-Fi stack is retained.
+     */
     void end(void);
-    /* AP 运行时为 WL_AP_LISTENING，有设备连上时为 WL_AP_CONNECTED；启动 AP 失败后为 WL_AP_FAILED，直到下次 begin、beginAP 或 end */
+    /**
+     * @brief AP status is WL_AP_LISTENING or WL_AP_CONNECTED with clients. A failed start
+     * reports WL_AP_FAILED until begin, beginAP or end.
+     */
     uint8_t status();
-    /* 最近一次连接失败或断开时 wl80211 的状态码（WLAN_FW_*，12 为找不到 SSID） */
+    /**
+     * @brief Most recent wl80211 connection/disconnection reason (WLAN_FW_*); 12 means SSID
+     * not found.
+     */
     uint8_t reasonCode();
 
-    /* AP-only 时 localIP/subnetMask/gatewayIP/SSID 为 AP 的；STA+AP 时这些查询为 STA 的。 */
+    /**
+     * @brief In AP-only mode, address and SSID queries describe AP. In STA+AP mode, they
+     * describe STA.
+     */
     uint8_t *macAddress(uint8_t *mac);
+    /**
+     * @brief Return the mode-selected local address.
+     */
     IPAddress localIP();
+    /**
+     * @brief Return the mode-selected network mask.
+     */
     IPAddress subnetMask();
+    /**
+     * @brief Return the mode-selected gateway address.
+     */
     IPAddress gatewayIP();
+    /**
+     * @brief Return the selected DNS server address.
+     */
     IPAddress dnsIP(int n = 0);
-    /*
-     * 静态地址，取值同 WiFiS3：省略的网关为 local_ip 的 x.y.z.1，掩码为 255.255.255.0，只给地址时 DNS 也用该网关。
-     * 之后每次连接都不启动 DHCP；已连接时立即生效。local_ip 为 0.0.0.0 时恢复 DHCP（同上游 ESP32 固件）。
-     * 地址与掩码也配置 AP（同 WiFiS3、WiFiNINA）；AP 当前支持 /24，独立配置请用 configSTA/softAPConfig
+    /**
+     * @brief Configure static addressing with WiFiS3 defaults: omitted gateway is x.y.z.1,
+     * netmask 255.255.255.0; an address-only call also uses that gateway as DNS. Disable DHCP
+     * on future connections and apply immediately when connected. Address 0.0.0.0 restores
+     * DHCP. Like WiFiS3/WiFiNINA, this also configures AP; AP currently supports /24. Use
+     * configSTA/softAPConfig for independent configuration.
      */
     void config(IPAddress local_ip);
+    /**
+     * @brief Apply WiFiS3-compatible static addressing and defaults; zero address restores
+     * DHCP.
+     */
     void config(IPAddress local_ip, IPAddress dns_server);
+    /**
+     * @brief Apply WiFiS3-compatible static addressing and defaults; zero address restores
+     * DHCP.
+     */
     void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway);
+    /**
+     * @brief Apply WiFiS3-compatible static addressing and defaults; zero address restores
+     * DHCP.
+     */
     void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
-    /* Independent interface configuration, used when STA/AP coexist. */
+    /**
+     * @brief Independent interface configuration, used when STA/AP coexist.
+     */
     void configSTA(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
+    /**
+     * @brief Configure the AP address and supported subnet, restarting DHCP when necessary.
+     */
     bool softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
+    /**
+     * @brief Return the STA address independently of AP mode.
+     */
     IPAddress stationIP();
+    /**
+     * @brief Return the STA subnet mask independently of AP mode.
+     */
     IPAddress stationSubnetMask();
+    /**
+     * @brief Return the STA gateway independently of AP mode.
+     */
     IPAddress stationGatewayIP();
-    /*
-     * 设 DNS 服务器（0.0.0.0 的不改）。静态地址时更新所用的 DNS；用 DHCP 且已连接时以当前地址转为静态地址（同 WiFiS3
-     * 经上游固件的结果）；用 DHCP 且未连接时不起作用，DNS 由 DHCP 给出
+    /**
+     * @brief Set nonzero DNS servers. Update static settings directly. With DHCP and an active
+     * link, retain the current address as static, matching WiFiS3 through its upstream
+     * firmware; before connecting, DHCP still supplies DNS.
      */
     void setDNS(IPAddress dns_server1);
+    /**
+     * @brief Update nonzero DNS entries using the WiFiS3-compatible DHCP/static policy.
+     */
     void setDNS(IPAddress dns_server1, IPAddress dns_server2);
+    /**
+     * @brief Return the selected current or indexed scan-result SSID.
+     */
     const char *SSID();
+    /**
+     * @brief Copy the current or indexed scan-result BSSID into the caller's six-byte buffer.
+     */
     uint8_t *BSSID(uint8_t *bssid);
+    /**
+     * @brief Return current or indexed scan-result signal strength in dBm.
+     */
     int32_t RSSI();
-    /* AP 未运行时为 0.0.0.0、空串 */
+    /**
+     * @brief Return 0.0.0.0 or an empty string when AP is stopped.
+     */
     IPAddress softAPIP();
+    /**
+     * @brief Return the active AP SSID, or an empty string when stopped.
+     */
     const char *softAPSSID();
 
-    /*
-     * 扫描附近网络并等待完成（未调用 begin 时也可用），按 RSSI 从强到弱保留前 WL_NETWORKS_LIST_MAXNUM 个，
-     * 返回个数，失败返回 -1。结果到下次扫描前有效，用下面带序号的函数读取；序号越界时返回空串或 0。
-     * 加密方式按 WiFiS3 归类（WPA/WPA2 混合为 ENC_TYPE_WPA2，WPA2/WPA3 混合为 ENC_TYPE_WPA3）；底层不区分 WEP 与开放网络
+    /**
+     * @brief Scan nearby networks even before begin(), waiting for completion. Retain up to
+     * WL_NETWORKS_LIST_MAXNUM entries in descending RSSI order. Return count, or -1 on
+     * failure. Results remain valid until the next scan. Out-of-range queries return empty
+     * strings or zero. WiFiS3 encryption categories map WPA/WPA2 to WPA2 and WPA2/WPA3 to
+     * WPA3; the backend does not distinguish WEP from open networks.
      */
     int8_t scanNetworks();
+    /**
+     * @brief Return the selected current or indexed scan-result SSID.
+     */
     const char *SSID(uint8_t networkItem);
+    /**
+     * @brief Return current or indexed scan-result signal strength in dBm.
+     */
     int32_t RSSI(uint8_t networkItem);
+    /**
+     * @brief Return the WiFiS3 encryption category for the selected scan result.
+     */
     uint8_t encryptionType(uint8_t networkItem);
+    /**
+     * @brief Copy the current or indexed scan-result BSSID into the caller's six-byte buffer.
+     */
     uint8_t *BSSID(uint8_t networkItem, uint8_t *bssid);
+    /**
+     * @brief Return the selected scan result's channel, or zero for an invalid index.
+     */
     uint8_t channel(uint8_t networkItem);
 
-    /* 成功返回 1 */
+    /**
+     * @brief Return 1 on success.
+     */
     int hostByName(const char *aHostname, IPAddress &aResult);
-    /* 发 count 次 ICMP echo（每次最多等 1 s，间隔 1 s）；返回成功各次的平均往返毫秒数，或 WL_PING_* */
+    /**
+     * @brief Send count ICMP echo requests, each with a 1 s timeout and 1 s interval. Return
+     * mean successful round-trip time in milliseconds, or WL_PING_*.
+     */
     int ping(IPAddress ip, uint8_t ttl = 128, uint8_t count = 1);
+    /**
+     * @brief Send bounded ICMP echo probes and return mean successful RTT or a WL_PING error.
+     */
     int ping(const String &hostname, uint8_t ttl = 128, uint8_t count = 1);
+    /**
+     * @brief Send bounded ICMP echo probes and return mean successful RTT or a WL_PING error.
+     */
     int ping(const char *host, uint8_t ttl = 128, uint8_t count = 1);
 
+    /**
+     * @brief Set the Wi-Fi association/address wait timeout in milliseconds.
+     */
     void setTimeout(unsigned long timeout);
 
 private:
@@ -177,7 +339,7 @@ private:
     char ssid_[WL_SSID_MAX_LENGTH + 1] = {};
     char pass_[WL_WPA_KEY_MAX_LENGTH + 2] = {};
     char ap_ssid_[WL_SSID_MAX_LENGTH + 1] = {};
-    struct wifi_port_ap *aps_ = nullptr; /* 第一次扫描时分配 */
+    struct wifi_port_ap *aps_ = nullptr; /* Allocated on the first scan. */
     uint8_t ap_count_ = 0;
 };
 

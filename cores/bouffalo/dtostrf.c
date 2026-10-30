@@ -1,2 +1,2 @@
-/* String(float/double) 需要 dtostrf；使用 ArduinoCore-API 自带的实现。 */
+/* String(float/double) requires dtostrf; reuse the implementation supplied by ArduinoCore-API. */
 #include "api/deprecated-avr-comp/avr/dtostrf.c.impl"

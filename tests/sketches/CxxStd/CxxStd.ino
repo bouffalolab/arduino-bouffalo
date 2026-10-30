@@ -1,5 +1,5 @@
-// C++ 标准库检查：string、shared_ptr、vector、map、function、ostringstream、time() 能编译链接并运行。
-// 每秒输出一行，sum 恒为 28（(7 + 7) * 2），t 随时间递增
+// C++ library check: compile/link/run string, shared_ptr, vector, map, function, ostringstream and time().
+// Print once per second; sum remains 28 ((7 + 7) * 2) and t increases.
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -10,11 +10,17 @@
 #include <string>
 #include <vector>
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     auto values = std::make_shared<std::vector<int>>(3, 7);

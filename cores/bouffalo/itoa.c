@@ -1,6 +1,6 @@
 /*
- * api/itoa.h 要求的转换函数中，newlib 只提供 itoa 与 utoa；这里补上 ltoa 与 ultoa。
- * 本平台是 ILP32，long 与 int 等宽，直接转给 newlib 的实现。
+ * newlib supplies itoa/utoa but api/itoa.h also requires ltoa/ultoa. ILP32 makes long and int
+ * equally wide, so delegate to newlib.
  */
 #include <stdlib.h>
 
@@ -8,11 +8,18 @@
 
 _Static_assert(sizeof(long) == sizeof(int), "ltoa/ultoa assume ILP32");
 
+/**
+ * @brief Convert a signed long to text through the ILP32-compatible newlib integer converter.
+ */
 char *ltoa(long value, char *string, int radix)
 {
     return itoa((int)value, string, radix);
 }
 
+/**
+ * @brief Convert an unsigned long to text through the ILP32-compatible newlib integer
+ * converter.
+ */
 char *ultoa(unsigned long value, char *string, int radix)
 {
     return utoa((unsigned)value, string, radix);

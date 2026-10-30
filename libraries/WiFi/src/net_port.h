@@ -1,9 +1,10 @@
 #pragma once
 
 /*
- * lwIP socket 的薄封装，供 WiFi、WiFiClient 使用。实现在 net_port.c：lwIP 的 sockets.h 把 read、write、close、
- * connect 等定义成宏，不能进入 C++ 编译单元；它与 wl80211.h 都定义 struct iovec，也不能与 wifi_port.c 合并。
- * 地址均为网络字节序。同一个 socket 只在一个任务中使用（lwIP 未开 LWIP_NETCONN_FULLDUPLEX）。
+ * Thin lwIP adapter for WiFi/WiFiClient, implemented in net_port.c. sockets.h defines
+ * read/write/close/connect macros that cannot enter C++ units; it also defines struct iovec,
+ * conflicting with wl80211.h, so keep it separate from wifi_port.c. Addresses use network order.
+ * Use each socket from one task; LWIP_NETCONN_FULLDUPLEX is disabled.
  */
 #include <stdbool.h>
 #include <stddef.h>
@@ -13,40 +14,86 @@
 extern "C" {
 #endif
 
-/* 域名或点分十进制地址解析为 IPv4；成功返回 0 */
+/**
+ * @brief Resolve a hostname or dotted IPv4 address. Return zero on success.
+ */
 int net_port_resolve(const char *host, uint32_t *addr);
 
-/* 建立 TCP 连接，最多等 timeout_ms；成功返回 socket，失败返回 -1 */
+/**
+ * @brief Connect TCP within timeout_ms; return a socket or -1 on failure.
+ */
 int net_port_tcp_connect(uint32_t addr, uint16_t port, uint32_t timeout_ms);
-/* 发送，最多等 timeout_ms；返回已发送的字节数，连接出错且未发出任何字节时返回 -1 */
+/**
+ * @brief Send within timeout_ms. Return bytes sent, or -1 if the connection fails before
+ * sending any bytes.
+ */
 int net_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms);
-/* 已收到、尚未读取的字节数（读入内部缓冲后计数，最多为缓冲大小）；连接已关闭且无数据时返回 -1 */
+/**
+ * @brief Return buffered unread bytes after a nonblocking fill, capped by buffer capacity;
+ * return -1 if closed and empty.
+ */
 int net_port_available(int sock);
-/* 不等待地读取；返回字节数，暂无数据返回 0，连接已关闭且无数据时返回 -1。peek 为真时不取走（只看 1 字节） */
+/**
+ * @brief Read without waiting: return bytes read, zero if temporarily empty, or -1 if closed
+ * and drained. With peek, inspect one byte without consuming it.
+ */
 int net_port_recv(int sock, uint8_t *buf, size_t len, bool peek);
-/* 连接仍在，或还有未读数据 */
+/**
+ * @brief True while connected or unread data remains.
+ */
 bool net_port_connected(int sock);
+/**
+ * @brief Read the peer IPv4 address and port from a valid socket.
+ */
 int net_port_peer(int sock, uint32_t *addr, uint16_t *port);
+/**
+ * @brief Read the local IPv4 address and bound port from a valid socket.
+ */
 int net_port_local(int sock, uint32_t *addr, uint16_t *port);
+/**
+ * @brief Close the socket, clear its receive cache and increment its reuse counter.
+ */
 void net_port_close(int sock);
-/* sock 这个号被 net_port_close 关闭过的次数。保存的号与当时的计数不同，说明那条连接已关闭（号可能已给了新连接） */
+/**
+ * @brief Number of net_port_close calls for this socket number. A changed count means the
+ * saved connection closed, even if its number has since been reused.
+ */
 uint32_t net_port_close_count(int sock);
 
-/* 在本地端口 port 上监听 TCP；成功返回监听 socket，失败返回 -1 */
+/**
+ * @brief Listen for TCP on port; return the listening socket, or -1 on failure.
+ */
 int net_port_tcp_listen(uint16_t port);
-/* 不等待地取一个已建立的新连接；返回其 socket（同 net_port_tcp_connect 的 socket），没有时返回 -1 */
+/**
+ * @brief Accept an established connection without waiting; return a socket compatible with
+ * net_port_tcp_connect, or -1 if none is pending.
+ */
 int net_port_tcp_accept(int listen_sock);
 
-/* UDP socket，绑定本地地址 addr（0 为任意地址）与端口 port（0 由协议栈分配）；成功返回 socket，失败返回 -1 */
+/**
+ * @brief Bind UDP to addr (zero means any address) and port (zero selects an ephemeral port).
+ * Return a socket, or -1 on failure.
+ */
 int net_port_udp_open(uint32_t addr, uint16_t port);
-/* 加入IPv4组；成功返回0。lwIP在close时自动退出该socket加入的组 */
+/**
+ * @brief Join an IPv4 group; return zero on success. lwIP leaves this socket's groups
+ * automatically on close.
+ */
 int net_port_udp_join(int sock, uint32_t group);
-/* 发一个数据报；成功返回 0 */
+/**
+ * @brief Send one datagram; return zero on success.
+ */
 int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len);
-/* 不等待地取下一个数据报，超出 len 的部分丢弃；返回写入 buf 的字节数，没有数据报（或收到空数据报）返回 0，出错返回 -1 */
+/**
+ * @brief Receive the next datagram without waiting, discarding bytes beyond len. Return bytes
+ * copied, zero for no packet or an empty packet, and -1 on error.
+ */
 int net_port_udp_recv(int sock, uint8_t *buf, size_t len, uint32_t *addr, uint16_t *port);
 
-/* ICMP echo 一次，最多等 timeout_ms；返回往返毫秒数，超时返回 -2，出错返回 -4（取值同 WL_PING_*） */
+/**
+ * @brief Send one ICMP echo within timeout_ms. Return round-trip milliseconds, -2 for timeout
+ * or -4 for error, matching WL_PING_*.
+ */
 int net_port_ping(uint32_t addr, uint8_t ttl, uint16_t seq, uint32_t timeout_ms);
 
 #ifdef __cplusplus

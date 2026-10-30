@@ -1,6 +1,7 @@
 /*
- * lwIP socket 封装，接口说明见 net_port.h。
- * 本 lwIP 未开 LWIP_SO_RCVBUF，FIONREAD 不可用，所以每个 socket 配一块接收缓冲：available() 不等待地把数据读进来再计数。
+ * lwIP socket adapter; see net_port.h. LWIP_SO_RCVBUF is disabled and FIONREAD is unavailable, so
+ * each socket owns an RX buffer. available() fills it without waiting, then reports the byte
+ * count.
  */
 #include <errno.h>
 #include <string.h>
@@ -23,31 +24,43 @@
 struct rx_cache {
     uint16_t start;
     uint16_t len;
-    bool eof; /* 对端关闭或连接出错 */
+    bool eof; /* The peer closed or the connection failed. */
     uint8_t buf[RX_CACHE_SIZE];
 };
 
-/* lwIP 的 socket 号为 LWIP_SOCKET_OFFSET 起的 MEMP_NUM_NETCONN 个 */
+/* lwIP allocates MEMP_NUM_NETCONN socket numbers starting at LWIP_SOCKET_OFFSET. */
 static struct rx_cache caches[MEMP_NUM_NETCONN];
 static uint32_t close_counts[MEMP_NUM_NETCONN];
 
+/**
+ * @brief Resolve the per-socket receive cache, or NULL for an invalid socket number.
+ */
 static struct rx_cache *cache_of(int sock)
 {
     int i = sock - LWIP_SOCKET_OFFSET;
     return i >= 0 && i < MEMP_NUM_NETCONN ? &caches[i] : NULL;
 }
 
+/**
+ * @brief Return monotonic time in milliseconds for bounded I/O waits.
+ */
 static uint32_t now_ms(void)
 {
     return xTaskGetTickCount() * portTICK_PERIOD_MS;
 }
 
+/**
+ * @brief Apply a bounded socket send/receive timeout option.
+ */
 static void set_timeout(int sock, int opt, uint32_t ms)
 {
     struct timeval tv = { .tv_sec = ms / 1000, .tv_usec = (ms % 1000) * 1000 };
     lwip_setsockopt(sock, SOL_SOCKET, opt, &tv, sizeof(tv));
 }
 
+/**
+ * @brief Resolve a hostname or dotted address to network-order IPv4; return zero on success.
+ */
 int net_port_resolve(const char *host, uint32_t *addr)
 {
     ip_addr_t ip;
@@ -59,6 +72,9 @@ int net_port_resolve(const char *host, uint32_t *addr)
     return 0;
 }
 
+/**
+ * @brief Establish a TCP socket within timeout_ms; return its descriptor or -1.
+ */
 int net_port_tcp_connect(uint32_t addr, uint16_t port, uint32_t timeout_ms)
 {
     int sock = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -80,7 +96,7 @@ int net_port_tcp_connect(uint32_t addr, uint16_t port, uint32_t timeout_ms)
     sa.sin_port = lwip_htons(port);
     sa.sin_addr.s_addr = addr;
 
-    /* 非阻塞连接再 select 等待，lwIP 的阻塞 connect 没有超时 */
+    /* Use nonblocking connect plus select, because lwIP blocking connect has no timeout. */
     int flags = lwip_fcntl(sock, F_GETFL, 0);
     lwip_fcntl(sock, F_SETFL, flags | O_NONBLOCK);
     if (lwip_connect(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
@@ -108,6 +124,9 @@ fail:
     return -1;
 }
 
+/**
+ * @brief Send with a bounded timeout; return bytes sent or -1 before any successful write.
+ */
 int net_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms)
 {
     size_t done = 0;
@@ -123,7 +142,9 @@ int net_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms)
     return done > 0 || len == 0 ? (int)done : -1;
 }
 
-/* 不等待地把数据读进缓冲 */
+/**
+ * @brief Fill the receive buffer without waiting.
+ */
 static void fill(int sock, struct rx_cache *c)
 {
     if (c->eof || c->len == RX_CACHE_SIZE) {
@@ -141,6 +162,9 @@ static void fill(int sock, struct rx_cache *c)
     }
 }
 
+/**
+ * @brief Return cached/prefetched unread bytes, or -1 when closed and drained.
+ */
 int net_port_available(int sock)
 {
     struct rx_cache *c = cache_of(sock);
@@ -152,6 +176,10 @@ int net_port_available(int sock)
     return c->len > 0 ? c->len : (c->eof ? -1 : 0);
 }
 
+/**
+ * @brief Read without waiting, optionally peeking one byte; distinguish no data from
+ * closed/drained.
+ */
 int net_port_recv(int sock, uint8_t *buf, size_t len, bool peek)
 {
     struct rx_cache *c = cache_of(sock);
@@ -174,11 +202,17 @@ int net_port_recv(int sock, uint8_t *buf, size_t len, bool peek)
     return (int)n;
 }
 
+/**
+ * @brief Report a live connection or buffered data remaining after peer closure.
+ */
 bool net_port_connected(int sock)
 {
     return net_port_available(sock) >= 0;
 }
 
+/**
+ * @brief Read the peer IPv4 address and port from a valid socket.
+ */
 int net_port_peer(int sock, uint32_t *addr, uint16_t *port)
 {
     struct sockaddr_in sa;
@@ -192,6 +226,9 @@ int net_port_peer(int sock, uint32_t *addr, uint16_t *port)
     return 0;
 }
 
+/**
+ * @brief Read the local IPv4 address and bound port from a valid socket.
+ */
 int net_port_local(int sock, uint32_t *addr, uint16_t *port)
 {
     struct sockaddr_in sa;
@@ -205,6 +242,9 @@ int net_port_local(int sock, uint32_t *addr, uint16_t *port)
     return 0;
 }
 
+/**
+ * @brief Close the socket, clear its receive cache and increment its reuse counter.
+ */
 void net_port_close(int sock)
 {
     struct rx_cache *c = cache_of(sock);
@@ -217,12 +257,18 @@ void net_port_close(int sock)
     lwip_close(sock);
 }
 
+/**
+ * @brief Return the generation counter used to detect socket descriptor reuse.
+ */
 uint32_t net_port_close_count(int sock)
 {
     struct rx_cache *c = cache_of(sock);
     return c != NULL ? close_counts[c - caches] : 0;
 }
 
+/**
+ * @brief Populate an IPv4 sockaddr with a network-order address and host-order port.
+ */
 static void to_sockaddr(struct sockaddr_in *sa, uint32_t addr, uint16_t port)
 {
     memset(sa, 0, sizeof(*sa));
@@ -232,6 +278,9 @@ static void to_sockaddr(struct sockaddr_in *sa, uint32_t addr, uint16_t port)
     sa->sin_addr.s_addr = addr;
 }
 
+/**
+ * @brief Bind/listen on a TCP port and return the listening descriptor, or -1.
+ */
 int net_port_tcp_listen(uint16_t port)
 {
     struct sockaddr_in sa;
@@ -241,16 +290,19 @@ int net_port_tcp_listen(uint16_t port)
     if (sock < 0) {
         return -1;
     }
-    lwip_setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* end() 之后能在同一端口马上再 begin */
+    lwip_setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* Allow begin() on the same port immediately after end(). */
     to_sockaddr(&sa, 0, port);
     if (lwip_bind(sock, (struct sockaddr *)&sa, sizeof(sa)) != 0 || lwip_listen(sock, LISTEN_BACKLOG) != 0) {
         lwip_close(sock);
         return -1;
     }
-    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) | O_NONBLOCK); /* accept 不等待 */
+    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) | O_NONBLOCK); /* Do not wait in accept. */
     return sock;
 }
 
+/**
+ * @brief Accept a pending TCP connection without waiting; return -1 if none is available.
+ */
 int net_port_tcp_accept(int listen_sock)
 {
     int sock = lwip_accept(listen_sock, NULL, NULL);
@@ -264,10 +316,13 @@ int net_port_tcp_accept(int listen_sock)
     }
     c->start = c->len = 0;
     c->eof = false;
-    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) & ~O_NONBLOCK); /* 同 tcp_connect：阻塞，收发各自带超时 */
+    lwip_fcntl(sock, F_SETFL, lwip_fcntl(sock, F_GETFL, 0) & ~O_NONBLOCK); /* As for tcp_connect: blocking I/O with separate send/receive timeouts. */
     return sock;
 }
 
+/**
+ * @brief Bind a UDP socket to the supplied address/port, allowing ephemeral port selection.
+ */
 int net_port_udp_open(uint32_t addr, uint16_t port)
 {
     struct sockaddr_in sa;
@@ -286,6 +341,9 @@ int net_port_udp_open(uint32_t addr, uint16_t port)
     return sock;
 }
 
+/**
+ * @brief Join an IPv4 multicast group on a UDP socket; return zero on success.
+ */
 int net_port_udp_join(int sock, uint32_t group)
 {
     struct ip_mreq membership = { .imr_multiaddr = { .s_addr = group },
@@ -293,6 +351,9 @@ int net_port_udp_join(int sock, uint32_t group)
     return lwip_setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &membership, sizeof(membership));
 }
 
+/**
+ * @brief Send one UDP datagram to the supplied destination; return zero on success.
+ */
 int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf, size_t len)
 {
     struct sockaddr_in to;
@@ -301,6 +362,9 @@ int net_port_udp_send(int sock, uint32_t addr, uint16_t port, const uint8_t *buf
     return lwip_sendto(sock, buf, len, 0, (struct sockaddr *)&to, sizeof(to)) == (int)len ? 0 : -1;
 }
 
+/**
+ * @brief Receive the next UDP datagram without waiting, truncating to the caller's capacity.
+ */
 int net_port_udp_recv(int sock, uint8_t *buf, size_t len, uint32_t *addr, uint16_t *port)
 {
     struct sockaddr_in from;
@@ -315,6 +379,10 @@ int net_port_udp_recv(int sock, uint8_t *buf, size_t len, uint32_t *addr, uint16
     return n;
 }
 
+/**
+ * @brief Perform one ICMP echo exchange and return RTT milliseconds or the documented negative
+ * error.
+ */
 int net_port_ping(uint32_t addr, uint8_t ttl, uint16_t seq, uint32_t timeout_ms)
 {
     uint8_t pkt[sizeof(struct icmp_echo_hdr) + PING_DATA];

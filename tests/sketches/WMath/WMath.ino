@@ -1,12 +1,18 @@
-// random、randomSeed 检查：同一种子得到同一序列，random(n) 落在 [0, n)，random(a, b) 落在 [a, b)，
-// 边界情况同官方 Core（上限 0 返回 0，下限不小于上限返回下限）。每秒输出一行 "WMATH <失败项数> <样本>"，0 为通过
+// Check repeatable randomSeed sequences and random(n) in [0,n), random(a,b) in [a,b).
+// Match official boundary behavior: zero upper bound returns zero; an empty interval returns its lower bound. Print "WMATH <failures> <sample>" each second; zero means pass.
 static int failures;
 
+/**
+ * @brief Count and report a failed sketch expectation.
+ */
 static void expect(bool ok)
 {
     failures += ok ? 0 : 1;
 }
 
+/**
+ * @brief Validate the selected artifact or fixture and raise an error on a failed invariant.
+ */
 static void check()
 {
     long first[8];
@@ -36,11 +42,17 @@ static void check()
     expect(random(9, 3) == 9);
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     check();

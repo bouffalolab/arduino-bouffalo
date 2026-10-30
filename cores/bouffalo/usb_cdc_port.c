@@ -1,15 +1,13 @@
 /*
- * USB CDC ACM 设备，用底层包中的 CherryUSB。描述符与端点回调参照
- * bouffalo_sdk examples/cherryusb/cherryusb_cli/device_demo/cdc_acm_template.c（Apache-2.0）。
- *
- * CherryUSB 的端点与类请求回调都在 USB 中断里执行。收发缓冲为单生产者单消费者环形缓冲，
- * 下标只增不减，长度为 2 的幂；任务侧启动传输时关中断，与中断互斥。
- * 接收：只在缓冲空余至少一个包时挂接收，否则让主机等待（NAK），读走数据后再挂，不丢数据。
- * 发送：每次传输最多一个包；传输以整包结束且没有后续数据时补零长度包。
- * 1200 bps touch：主机以 1200 波特率打开再关闭端口（DTR 变无效）后，延时让控制请求完成，再复位进下载模式；
- * 延时期间波特率改变或 DTR 重新有效则取消。应用可以关闭 touch。
- * 线路变化回调：中断里对每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求通知一次线路任务，由它调用应用的回调，
- * 回调可以阻塞（如 delay()）；不用定时器任务，因为它优先级最高且 Wi-Fi 协议栈也用它。
+ * USB CDC ACM device built on package CherryUSB, with descriptors and callbacks based on the
+ * Apache-2.0 SDK cdc_acm_template.c example. Endpoint/class callbacks run in USB interrupt
+ * context. Power-of-two SPSC rings use monotonic indices; task-side transfer setup masks
+ * interrupts. RX is armed only with at least one packet of free space, otherwise NAK until the
+ * reader frees space. TX sends one packet at a time and appends a zero-length packet when needed.
+ * On 1200 bps close, defer reset until the control request completes; a baud change or DTR
+ * reassertion cancels it, and applications may disable touch. Each line-control request wakes a
+ * separate line task so callbacks may block. Do not use the highest-priority timer task, which is
+ * also used by Wi-Fi.
  */
 #if defined(USB_VID)
 
@@ -42,13 +40,13 @@
 #define CDC_MAX_MPS 64
 #endif
 
-#define RX_RING_SIZE      1024 /* 2 的幂，至少两个包 */
-#define TX_RING_SIZE      1024 /* 2 的幂 */
+#define RX_RING_SIZE      1024 /* Power of two, at least two packets. */
+#define TX_RING_SIZE      1024 /* Power of two. */
 #define TX_TIMEOUT_MS     100
 #define TOUCH_BAUD        1200
 #define TOUCH_DELAY_MS    100
-#define LINE_TASK_STACK_SIZE 4096 /* 字节 */
-#define LINE_TASK_PRIORITY   2    /* 高于 loop 任务（1），请求到达后尽快调用回调 */
+#define LINE_TASK_STACK_SIZE 4096 /* Bytes. */
+#define LINE_TASK_PRIORITY   2    /* Above loop priority (1), to deliver line requests promptly. */
 
 #define USB_CONFIG_SIZE (9 + CDC_ACM_DESCRIPTOR_LEN)
 
@@ -68,7 +66,7 @@ static const uint8_t device_quality_descriptor[] = {
     0x0a, USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER, 0x00, 0x02, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
 };
 
-static char serial_string[17]; /* 芯片 ID 的十六进制 */
+static char serial_string[17]; /* Chip ID encoded as hexadecimal. */
 
 static const char *const string_descriptors[] = {
     (const char[]){ 0x09, 0x04 },
@@ -77,24 +75,36 @@ static const char *const string_descriptors[] = {
     serial_string,
 };
 
+/**
+ * @brief Return the USB device descriptor for the requested bus speed.
+ */
 static const uint8_t *device_descriptor_callback(uint8_t speed)
 {
     (void)speed;
     return device_descriptor;
 }
 
+/**
+ * @brief Return the USB configuration descriptor for the requested bus speed.
+ */
 static const uint8_t *config_descriptor_callback(uint8_t speed)
 {
     (void)speed;
     return active_config_descriptor;
 }
 
+/**
+ * @brief Report the absence of a USB device-qualifier descriptor.
+ */
 static const uint8_t *device_quality_descriptor_callback(uint8_t speed)
 {
     (void)speed;
     return device_quality_descriptor;
 }
 
+/**
+ * @brief Return the requested USB string descriptor, including the chip-derived serial number.
+ */
 static const char *string_descriptor_callback(uint8_t speed, uint8_t index)
 {
     (void)speed;
@@ -112,14 +122,14 @@ static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t rx_packet[CDC_MAX_MPS];
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t tx_packet[CDC_MAX_MPS];
 
 static uint8_t rx_ring[RX_RING_SIZE];
-static volatile size_t rx_head; /* 中断写 */
-static volatile size_t rx_tail; /* 读者写 */
+static volatile size_t rx_head; /* Written by the interrupt handler. */
+static volatile size_t rx_tail; /* Written by the reader. */
 static volatile bool rx_armed;
 
 static uint8_t tx_ring[TX_RING_SIZE];
-static volatile size_t tx_head; /* 写者写 */
-static volatile size_t tx_tail; /* 启动传输时写（关中断或在中断中） */
-static volatile size_t tx_inflight; /* 正在传输的字节数 */
+static volatile size_t tx_head; /* Written by the producer. */
+static volatile size_t tx_tail; /* Written when starting a transfer, in interrupt context or with interrupts masked. */
+static volatile size_t tx_inflight; /* Number of bytes currently in flight. */
 static volatile bool tx_busy;
 
 static volatile bool configured;
@@ -131,19 +141,26 @@ static volatile bool touch_enabled = true;
 static TaskHandle_t volatile line_task;
 static void (*volatile line_callback)(void);
 
+/**
+ * @brief Return unused capacity in the USB CDC receive ring.
+ */
 static size_t rx_free(void)
 {
     return RX_RING_SIZE - (rx_head - rx_tail);
 }
 
-/* 调用方保证不在接收中，且与中断互斥 */
+/**
+ * @brief The caller must ensure RX is idle and exclude the interrupt handler.
+ */
 static void rx_arm(void)
 {
     rx_armed = true;
     usbd_ep_start_read(0, CDC_OUT_EP, rx_packet, CDC_MAX_MPS);
 }
 
-/* 在中断中或关中断时调用 */
+/**
+ * @brief Call in interrupt context or with interrupts masked.
+ */
 static void tx_kick(void)
 {
     if (tx_busy || !configured) {
@@ -165,6 +182,9 @@ static void tx_kick(void)
     usbd_ep_start_write(0, CDC_IN_EP, tx_packet, n);
 }
 
+/**
+ * @brief Publish a completed USB OUT packet and rearm reception when space permits.
+ */
 static void bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
@@ -172,7 +192,7 @@ static void bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
     for (uint32_t i = 0; i < nbytes; i++) {
         rx_ring[(rx_head + i) & (RX_RING_SIZE - 1)] = rx_packet[i];
     }
-    __atomic_signal_fence(__ATOMIC_RELEASE); /* 先写数据再发布 head */
+    __atomic_signal_fence(__ATOMIC_RELEASE); /* Store data before publishing head. */
     rx_head += nbytes;
     rx_armed = false;
     if (rx_free() >= CDC_MAX_MPS) {
@@ -180,6 +200,9 @@ static void bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
     }
 }
 
+/**
+ * @brief Advance completed USB IN output and schedule the next packet.
+ */
 static void bulk_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
@@ -189,13 +212,16 @@ static void bulk_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
     tx_inflight = 0;
     tx_busy = false;
     if (full_packet && tx_head == tx_tail) {
-        tx_busy = true; /* 零长度包结束本次传输 */
+        tx_busy = true; /* A zero-length packet terminates this transfer. */
         usbd_ep_start_write(0, CDC_IN_EP, NULL, 0);
         return;
     }
     tx_kick();
 }
 
+/**
+ * @brief Update CDC state and transfers for USB device lifecycle events.
+ */
 static void event_handler(uint8_t busid, uint8_t event)
 {
     (void)busid;
@@ -216,13 +242,16 @@ static void event_handler(uint8_t busid, uint8_t event)
             rx_armed = false;
             tx_busy = false;
             tx_inflight = 0;
-            tx_tail = tx_head; /* 未发出的数据不再有接收方 */
+            tx_tail = tx_head; /* There is no longer a receiver for queued output. */
             break;
         default:
             break;
     }
 }
 
+/**
+ * @brief Perform a deferred ROM reset only if the 1200 bps close request is still valid.
+ */
 static void touch_reboot(void *arg, uint32_t unused)
 {
     (void)arg;
@@ -233,7 +262,9 @@ static void touch_reboot(void *arg, uint32_t unused)
     }
 }
 
-/* 在中断中调用 */
+/**
+ * @brief Called from interrupt context.
+ */
 static void touch_check(void)
 {
     bool touch = touch_enabled && line_coding.dwDTERate == TOUCH_BAUD && !line_dtr;
@@ -243,13 +274,15 @@ static void touch_check(void)
     }
     if (!touch_pending) {
         BaseType_t woken = pdFALSE;
-        /* 定时器队列满时放弃本次 touch，下次 touch 仍能触发 */
+        /* If the timer queue is full, abandon this touch request; a later touch can still trigger reset. */
         touch_pending = xTimerPendFunctionCallFromISR(touch_reboot, NULL, 0, &woken) == pdPASS;
         portYIELD_FROM_ISR(woken);
     }
 }
 
-/* 在中断中调用，每个线路请求一次 */
+/**
+ * @brief Called once per line request from interrupt context.
+ */
 static void line_notify(void)
 {
     TaskHandle_t task = line_task;
@@ -261,6 +294,9 @@ static void line_notify(void)
     portYIELD_FROM_ISR(woken);
 }
 
+/**
+ * @brief Store host line coding and notify the line task from the USB class callback.
+ */
 void usbd_cdc_acm_set_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_coding *coding)
 {
     (void)busid;
@@ -270,6 +306,9 @@ void usbd_cdc_acm_set_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_c
     line_notify();
 }
 
+/**
+ * @brief Copy the current line coding into the USB control-request response.
+ */
 void usbd_cdc_acm_get_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_coding *coding)
 {
     (void)busid;
@@ -277,6 +316,9 @@ void usbd_cdc_acm_get_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_c
     memcpy(coding, &line_coding, sizeof(line_coding));
 }
 
+/**
+ * @brief Store the host DTR signal and evaluate touch-reset eligibility.
+ */
 void usbd_cdc_acm_set_dtr(uint8_t busid, uint8_t intf, bool dtr)
 {
     (void)busid;
@@ -285,12 +327,15 @@ void usbd_cdc_acm_set_dtr(uint8_t busid, uint8_t intf, bool dtr)
     touch_check();
 }
 
+/**
+ * @brief Store RTS and notify once after the paired DTR/RTS class callbacks.
+ */
 void usbd_cdc_acm_set_rts(uint8_t busid, uint8_t intf, bool rts)
 {
     (void)busid;
     (void)intf;
     line_rts = rts;
-    line_notify(); /* CherryUSB 对每个 SET_CONTROL_LINE_STATE 先调 set_dtr 再调 set_rts，在这里通知一次 */
+    line_notify(); /* CherryUSB calls set_dtr then set_rts for each SET_CONTROL_LINE_STATE request; notify once here. */
 }
 
 static struct usbd_endpoint out_ep = { .ep_addr = CDC_OUT_EP, .ep_cb = bulk_out };
@@ -298,6 +343,9 @@ static struct usbd_endpoint in_ep = { .ep_addr = CDC_IN_EP, .ep_cb = bulk_in };
 static struct usbd_interface intf0;
 static struct usbd_interface intf1;
 
+/**
+ * @brief Register selected USB interfaces and start the device after scheduler startup.
+ */
 void usb_cdc_port_init(void)
 {
     uint8_t id[8] = { 0 };
@@ -323,19 +371,25 @@ void usb_cdc_port_init(void)
     usbd_initialize(0, 0, event_handler);
 }
 
+/**
+ * @brief Enable touch-reset handling or cancel an outstanding request when disabling it.
+ */
 void usb_cdc_port_set_touch_reset(bool enable)
 {
     touch_enabled = enable;
     if (!enable) {
-        touch_pending = false; /* 取消已安排、尚未执行的 touch */
+        touch_pending = false; /* Cancel a scheduled touch that has not executed yet. */
     }
 }
 
+/**
+ * @brief Deliver pending host line requests serially in the dedicated callback task.
+ */
 static void line_task_main(void *arg)
 {
     (void)arg;
     for (;;) {
-        ulTaskNotifyTake(pdFALSE, portMAX_DELAY); /* 每次取一个请求 */
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY); /* Consume one pending request at a time. */
         void (*callback)(void) = line_callback;
         if (callback != NULL) {
             callback();
@@ -343,6 +397,9 @@ static void line_task_main(void *arg)
     }
 }
 
+/**
+ * @brief Register a line callback and create its task on first use; NULL unregisters it.
+ */
 bool usb_cdc_port_on_line_change(void (*callback)(void))
 {
     line_callback = callback;
@@ -359,11 +416,17 @@ bool usb_cdc_port_on_line_change(void (*callback)(void))
     return true;
 }
 
+/**
+ * @brief Return whether USB is configured and the host has asserted DTR.
+ */
 bool usb_cdc_port_connected(void)
 {
     return configured && line_dtr;
 }
 
+/**
+ * @brief Copy the host CDC settings and control signals into the caller's structure.
+ */
 void usb_cdc_port_get_line(struct usb_cdc_port_line *line)
 {
     taskENTER_CRITICAL();
@@ -376,20 +439,29 @@ void usb_cdc_port_get_line(struct usb_cdc_port_line *line)
     taskEXIT_CRITICAL();
 }
 
+/**
+ * @brief Return the number of unread bytes in the CDC RX ring.
+ */
 size_t usb_cdc_port_rx_count(void)
 {
     return rx_head - rx_tail;
 }
 
+/**
+ * @brief Return the next CDC input byte without consuming it, or -1 if empty.
+ */
 int usb_cdc_port_peek(void)
 {
     if (rx_head == rx_tail) {
         return -1;
     }
-    __atomic_signal_fence(__ATOMIC_ACQUIRE); /* 读到 head 之后再读数据 */
+    __atomic_signal_fence(__ATOMIC_ACQUIRE); /* Read head before accessing the corresponding data. */
     return rx_ring[rx_tail & (RX_RING_SIZE - 1)];
 }
 
+/**
+ * @brief Consume the next CDC input byte, or return -1 if empty.
+ */
 int usb_cdc_port_read(void)
 {
     if (rx_head == rx_tail) {
@@ -397,7 +469,7 @@ int usb_cdc_port_read(void)
     }
     __atomic_signal_fence(__ATOMIC_ACQUIRE);
     uint8_t c = rx_ring[rx_tail & (RX_RING_SIZE - 1)];
-    __atomic_signal_fence(__ATOMIC_RELEASE); /* 读完数据再让出这个位置 */
+    __atomic_signal_fence(__ATOMIC_RELEASE); /* Release the slot after reading its data. */
     rx_tail = rx_tail + 1;
     if (!rx_armed && configured && rx_free() >= CDC_MAX_MPS) {
         taskENTER_CRITICAL();
@@ -409,11 +481,17 @@ int usb_cdc_port_read(void)
     return c;
 }
 
+/**
+ * @brief Return currently available CDC transmit-ring capacity.
+ */
 size_t usb_cdc_port_tx_space(void)
 {
     return TX_RING_SIZE - (tx_head - tx_tail);
 }
 
+/**
+ * @brief Queue CDC bytes with bounded progress waits; return the accepted byte count.
+ */
 size_t usb_cdc_port_write(const uint8_t *buf, size_t len)
 {
     size_t done = 0;
@@ -443,6 +521,9 @@ size_t usb_cdc_port_write(const uint8_t *buf, size_t len)
     return done;
 }
 
+/**
+ * @brief Wait for queued CDC output until drained, disconnected or stalled for 100 ms.
+ */
 void usb_cdc_port_flush(void)
 {
     TickType_t progress = xTaskGetTickCount();

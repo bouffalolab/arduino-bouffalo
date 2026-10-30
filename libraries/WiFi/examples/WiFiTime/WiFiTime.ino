@@ -1,6 +1,9 @@
 #include <WiFi.h>
 #include "arduino_secrets.h"
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -8,6 +11,9 @@ void setup()
     WiFi.begin(SECRET_SSID, SECRET_PASS);
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     unsigned long now = WiFi.getTime();

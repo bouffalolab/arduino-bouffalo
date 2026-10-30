@@ -1,8 +1,9 @@
 #pragma once
 
 /*
- * USB CDC ACM 设备（Serial 的底层）。板卡在 boards.txt 中给出 USB_VID、USB_PID、USB_MANUFACTURER、
- * USB_PRODUCT 时启用；描述符、收发缓冲、1200 bps touch 和线路变化回调都在 usb_cdc_port.c。
+ * USB CDC ACM backend for Serial. Enable when boards.txt supplies USB_VID, USB_PID,
+ * USB_MANUFACTURER and USB_PRODUCT. usb_cdc_port.c owns descriptors, buffers, touch reset and line
+ * callbacks.
  */
 #include <stdbool.h>
 #include <stddef.h>
@@ -12,39 +13,70 @@
 extern "C" {
 #endif
 
-/* 主机设置的线路参数，取值同 CDC SET_LINE_CODING */
+/* Host line settings, using CDC SET_LINE_CODING values. */
 struct usb_cdc_port_line {
     uint32_t baud;
-    uint8_t stop_bits; /* 0：1 位，1：1.5 位，2：2 位 */
-    uint8_t parity;    /* 0 无，1 奇，2 偶，3 mark，4 space */
+    uint8_t stop_bits; /* 0: one stop bit; 1: one and a half; 2: two. */
+    uint8_t parity;    /* 0: none; 1: odd; 2: even; 3: mark; 4: space. */
     uint8_t data_bits;
     bool dtr;
     bool rts;
 };
 
-/* 注册描述符并启动 USB 设备；调度器运行后调用一次 */
+/**
+ * @brief Register descriptors and start USB once after the scheduler starts.
+ */
 void usb_cdc_port_init(void);
 
-/* 设备已配置且主机置 DTR（端口已打开） */
+/**
+ * @brief True when configured and the host has asserted DTR to open the port.
+ */
 bool usb_cdc_port_connected(void);
+/**
+ * @brief Copy the host CDC settings and control signals into the caller's structure.
+ */
 void usb_cdc_port_get_line(struct usb_cdc_port_line *line);
 
-/* 是否响应 1200 bps touch，默认是；关闭时取消已安排、尚未执行的 touch */
+/**
+ * @brief Enable 1200 bps touch by default; disabling cancels a scheduled reset that has not
+ * executed.
+ */
 void usb_cdc_port_set_touch_reset(bool enable);
-/*
- * 每个 SET_LINE_CODING、SET_CONTROL_LINE_STATE 请求之后，在线路任务中调用一次 callback；NULL 取消。
- * 注册之前的请求不补调。首次注册时创建线路任务，失败返回 false。
+/**
+ * @brief Deliver each line/control request once in the line task; NULL unregisters. Do not
+ * replay requests predating registration. Create the task on first registration and return
+ * false if creation fails.
+ *
+ * @param callback Task-context callback, or NULL to unregister. The callback may block.
+ * @return true on registration/unregistration; false if the line task cannot be created.
  */
 bool usb_cdc_port_on_line_change(void (*callback)(void));
 
+/**
+ * @brief Return the number of unread bytes in the CDC RX ring.
+ */
 size_t usb_cdc_port_rx_count(void);
+/**
+ * @brief Return the next CDC input byte without consuming it, or -1 if empty.
+ */
 int usb_cdc_port_peek(void);
+/**
+ * @brief Consume the next CDC input byte, or return -1 if empty.
+ */
 int usb_cdc_port_read(void);
 
-/* 写入发送缓冲。端口未打开时丢弃并返回 0；缓冲满时等待，100 ms 无进展则返回已写入的字节数 */
+/**
+ * @brief Queue output bytes. Return zero and discard if closed. Wait for space when full;
+ * return the accepted byte count after 100 ms without progress.
+ */
 size_t usb_cdc_port_write(const uint8_t *buf, size_t len);
+/**
+ * @brief Return currently available CDC transmit-ring capacity.
+ */
 size_t usb_cdc_port_tx_space(void);
-/* 等待已写入的数据发出；端口未打开或 100 ms 无进展时返回 */
+/**
+ * @brief Drain queued output; return if the port closes or no progress occurs for 100 ms.
+ */
 void usb_cdc_port_flush(void);
 
 #ifdef __cplusplus

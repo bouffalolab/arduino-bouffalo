@@ -5,41 +5,86 @@
 
 #include "WiFiClient.h"
 
-#define WIFI_SERVER_MAX_CLIENTS 4 /* available() 保留的连接数 */
+#define WIFI_SERVER_MAX_CLIENTS 4 /* Maximum connections retained by available(). */
 
 /*
- * TCP 服务端，接口同 Arduino 官方 WiFi 库（WiFiS3）的 WiFiServer。
- * available() 接受新连接并保留在服务端（最多 WIFI_SERVER_MAX_CLIENTS 个），返回其中一个有数据可读的连接，没有时返回无效的
- * WiFiClient；同一连接可以多次返回。对端关闭且数据读完后服务端关闭它；调用者 stop() 后服务端不再管它。
- * accept() 只把每个新连接返回一次，之后由调用者管理（用完 stop()），不进入 available() 的连接。
- * write() 发给 available() 保留的所有连接。未连上网络时 begin() 失败，operator bool 为 false。
- * lwIP 共 8 个 socket，监听与每个连接各占一个。对象不能复制；同一对象只在一个任务中使用。
+ * WiFiS3-compatible TCP server. available() accepts and retains up to WIFI_SERVER_MAX_CLIENTS
+ * connections, returning one with readable data or an invalid WiFiClient. It may return the same
+ * connection repeatedly. Close a peer-closed connection once drained; relinquish one explicitly
+ * stopped by the caller. accept() transfers each new connection once to the caller and does not
+ * retain it. write() broadcasts to retained connections. begin fails without a network and
+ * operator bool then returns false. The eight lwIP sockets are shared by the listener and clients.
+ * Noncopyable; use each instance from one task.
  */
 class WiFiServer : public arduino::Server {
 public:
+    /**
+     * @brief Construct an inactive TCP listener for the requested port.
+     */
     WiFiServer(uint16_t port = 80);
+    /**
+     * @brief Close the listener and its retained connections.
+     */
     ~WiFiServer();
+    /**
+     * @brief Disallow copying this uniquely owned socket resource.
+     */
     WiFiServer(const WiFiServer &) = delete;
+    /**
+     * @brief Disallow copying this uniquely owned socket resource.
+     */
     WiFiServer &operator=(const WiFiServer &) = delete;
 
+    /**
+     * @brief Start the TCP listener on the selected port only when a network interface is
+     * usable.
+     */
     void begin() override;
-    /* 改用 port 监听；已在监听时先 end() */
+    /**
+     * @brief Switch the listening port, calling end() first if already listening.
+     */
     void begin(uint16_t port);
+    /**
+     * @brief Return a retained client with readable data, or an invalid client when none is
+     * ready.
+     */
     WiFiClient available();
+    /**
+     * @brief Transfer one new TCP client to the caller, which must stop it when finished.
+     *
+     * @return A new client, or an invalid client if none is pending. The caller must call
+     *   stop().
+     */
     WiFiClient accept();
-    /* 返回各连接都写出的字节数（取最少的）；没有连接时返回 0 */
+    /**
+     * @brief Return the smallest byte count written to any retained client, or zero with no
+     * clients.
+     */
     size_t write(uint8_t b) override;
+    /**
+     * @brief Broadcast to retained clients and return the smallest accepted count, or zero
+     * when none are connected.
+     */
     size_t write(const uint8_t *buf, size_t size) override;
     using Print::write;
-    /* 停止监听，并关闭 available() 保留的连接 */
+    /**
+     * @brief Stop listening and close connections retained by available().
+     */
     void end();
+    /**
+     * @brief Report whether this object currently refers to a usable resource.
+     */
     explicit operator bool();
 
 private:
+    /**
+     * @brief Reclaim completed retained clients and accept new connections into free server
+     * slots.
+     */
     void refresh();
 
     uint16_t port_;
     int sock_ = -1;
     int conns_[WIFI_SERVER_MAX_CLIENTS];
-    uint32_t closes_[WIFI_SERVER_MAX_CLIENTS]; /* 接入时的 net_port_close_count */
+    uint32_t closes_[WIFI_SERVER_MAX_CLIENTS]; /* net_port_close_count captured when this connection was accepted. */
 };

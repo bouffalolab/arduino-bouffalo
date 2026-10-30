@@ -1,10 +1,13 @@
-// WiFi 库检查：连接、地址查询、重复 begin、ping 网关 20 次、DNS、TCP（网关 80 端口）、错误密码、
-// 不存在的 SSID、断开与重连。结果经 USB 串口逐行输出 "<项> <值>..."，最后一行 "DONE"。
-// 网络名与密码在 arduino_secrets.h（仓库中为空，只能编译检查）。
+// WiFi checks cover connection/addresses, repeated begin, 20 gateway pings, DNS, gateway TCP port 80 and an invalid passphrase.
+// Also check missing SSID, disconnect and reconnect. Print "<item> <values>..." per result, then "DONE".
+// Tracked arduino_secrets.h has empty credentials for compilation only.
 #include <WiFi.h>
 
 #include "arduino_secrets.h"
 
+/**
+ * @brief Print a tagged test result and its numeric fields.
+ */
 static void line(const char *item, long a, long b = 0, long c = 0)
 {
     Serial.print(item);
@@ -16,6 +19,9 @@ static void line(const char *item, long a, long b = 0, long c = 0)
     Serial.println(c);
 }
 
+/**
+ * @brief Print a tagged test IPv4 address.
+ */
 static void addr(const char *item, IPAddress ip)
 {
     Serial.print(item);
@@ -23,7 +29,9 @@ static void addr(const char *item, IPAddress ip)
     Serial.println(ip);
 }
 
-// begin 超时后连接仍在后台进行，等它出结果
+/**
+ * @brief A timed-out begin can still connect in the background; wait for its result.
+ */
 static int settle(int st)
 {
     unsigned long start = millis();
@@ -34,7 +42,9 @@ static int settle(int st)
     return st;
 }
 
-// begin 并输出 "<项> 状态 原因码 耗时ms"
+/**
+ * @brief Call begin and print "<item> <status> <reason> <elapsed-ms>".
+ */
 static int connect(const char *item, const char *ssid, const char *pass)
 {
     unsigned long start = millis();
@@ -45,6 +55,9 @@ static int connect(const char *item, const char *ssid, const char *pass)
     return st;
 }
 
+/**
+ * @brief Exercise TCP communication with the configured gateway test endpoint.
+ */
 static void tcpGateway()
 {
     WiFiClient client;
@@ -74,6 +87,9 @@ static void tcpGateway()
     Serial.println(first);
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -130,8 +146,8 @@ void setup()
         line("PING2", WiFi.ping(WiFi.gatewayIP(), 128, 3));
     }
 
-    // 连接进行中调用 disconnect()：连接比断开的等待（3 s）更晚完成时，也不能变成已连接；之后能正常再连。
-    // 输出 "DISCMID <15 s 后状态> <期间是否出现过 WL_CONNECTED> <disconnect 耗时ms>"
+    // Disconnect during association must remain disconnected even if association finishes after its 3 s wait; a later connection must still work.
+    // Print "DISCMID <status-after-15s> <ever-connected> <disconnect-ms>".
     WiFi.disconnect();
     WiFi.setTimeout(0);
     WiFi.begin(SECRET_SSID, SECRET_PASS);
@@ -151,6 +167,9 @@ void setup()
     Serial.println("DONE");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     delay(5000);

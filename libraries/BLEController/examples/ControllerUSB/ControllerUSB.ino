@@ -7,6 +7,9 @@
 static uint8_t pending[128];
 static size_t count, offset;
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
   Serial.begin(115200);
@@ -15,6 +18,9 @@ void setup()
   }
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
   if (offset == count) {

@@ -8,4 +8,4 @@ H4解析保留上游UART HCI引擎，通过配套头文件的UART完成回调接
 
 原始USB示例见 `examples/ControllerUSB`。源码来源、配套头库和配置记录在底层包manifest：上游 `libbtblecontroller_bl616cl_uarthci.a`，固定SDK提交 `1cd1fd514df7ed0dfc1221be871f5aae03f31bbc`，原归档SHA-256 `307b72a88fd2a1a9875b283de959972a53851d0085079fa2c5d69c60e0128bab`。库字符串1.6.212；上游`btble_controller_get_lib_ver()`实际返回文本`NULL`，因此版本/能力通过真实HCI查询验收，不包装该接口。SDK根目录Apache-2.0文本随包保存，产品完整再分发审核仍归ARDUINO-54。
 
-实机证据入口：[ARDUINO-43任务](../../../.tasks/2026-10-26-arduino-43-ble-controller/STATUS.md)。软件构建/链接检查另列，不代替实机验收。当前不声明完整ArduinoBLE官方示例、配对/加密、ISO、两条并发连接或长期稳定性已通过。
+实机证据入口：[ARDUINO-43任务](../../../.tasks/2026-10-26-arduino-43-ble-controller/STATUS.md)。软件构建/链接检查另列，不代替实机验收。后续ARDUINO-44已完成7个官方示例及公共地址/RAM密钥配对加密，5例缺配件未验收；ARDUINO-53补齐BlueZ显式RA补丁绑定重连。原版ArduinoBLE的该BlueZ场景仍有限制，见bridge兼容补丁说明。ISO、两条并发连接、RPA与掉电密钥保存未验收；历史证据不自动归入新固件。

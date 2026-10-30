@@ -2,6 +2,9 @@
 
 #include "pin_keep.h"
 
+/**
+ * @brief Release low-power retention for the selected chip GPIO.
+ */
 void pin_release_keep(uint8_t pin)
 {
     pm_disable_gpio_keep(pin);

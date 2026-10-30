@@ -1,46 +1,46 @@
-# Arduino BL 平台的板卡
-# 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/#boardstxt
+# Boards for the Arduino BL platform.
+# Specification: https://arduino.github.io/arduino-cli/latest/platform-specification/#boardstxt
 
 menu.debuglog=Debug log
 menu.PartitionScheme=Partition Scheme
 
-# UNO R4 WiFi，协处理器换成 BL616CL 模组；本板卡编译的固件运行在 BL616CL 上
+# UNO R4 WiFi with a BL616CL coprocessor; sketches selected for this board run on BL616CL.
 unor4wifi_bl616cl.name=UNO R4 WiFi (BL616CL coprocessor)
 unor4wifi_bl616cl.build.core=bouffalo
 unor4wifi_bl616cl.build.variant=unor4wifi_bl616cl
 unor4wifi_bl616cl.build.board=UNOR4WIFI_BL616CL
 unor4wifi_bl616cl.build.mcu=bl616cl
-# CPU 主频：底层包的 system_clock_init 选 WIFIPLL 320 MHz
+# CPU clock: the dependency package selects the 320 MHz WIFIPLL in system_clock_init.
 unor4wifi_bl616cl.build.f_cpu=320000000L
 unor4wifi_bl616cl.build.extra_flags={build.usb_flags} {build.debug_log_flags}
-# Serial（USB CDC）报给主机的设备身份
+# USB CDC identity reported by Serial.
 unor4wifi_bl616cl.build.vid=0x349B
 unor4wifi_bl616cl.build.pid=0x0011
 unor4wifi_bl616cl.build.usb_manufacturer="Bouffalolab"
 unor4wifi_bl616cl.build.usb_product="BL616CL Arduino UNO WiFi R4 CMSIS-DAP"
-# 端口发现据此认出本板
+# Identify this board during port discovery.
 unor4wifi_bl616cl.upload_port.0.vid=0x349B
 unor4wifi_bl616cl.upload_port.0.pid=0x0011
-# 芯片的预编译底层包
+# Precompiled dependency package for the selected chip.
 unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
-# 镜像后处理使用的底层包资源（包内 boot/）。dts 是 SDK 开发板的工厂参数，替换模组的晶振与 RF 参数未确认
+# Image resources come from the package boot/ directory. The DTS uses SDK development-board factory parameters; crystal and RF parameters for the replacement module remain unverified.
 unor4wifi_bl616cl.build.bl_boot2=boot2_bl616cl_isp_release_v8.2.1.bin
 unor4wifi_bl616cl.build.bl_partition=partition_cfg_4M_lfs_v1.toml
 unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
-# FW 分区 1.5 MiB；双槽连续等大；FW1 后 416 KiB 独立 littlefs；RAM 为链接脚本中的 ram 区域 223 KB
+# Two adjacent 1.5 MiB firmware slots, then 416 KiB littlefs. The linker ram region contains 223 KiB.
 unor4wifi_bl616cl.upload.maximum_size=1572864
 unor4wifi_bl616cl.upload.maximum_data_size=228352
-# 经板上 USB 口烧录：选 Serial 的 USB 串口上传，1200 bps touch 让固件复位进入下载模式，
-# 再用 ROM 在同一 USB 口上提供的下载串口烧录；已在下载模式时直接选该串口
+# Upload over the onboard USB port: select the running Serial port; 1200 bps touch resets into ROM download mode.
+# The ROM exposes its download port at the same USB location. Select that port directly when already in ROM mode.
 unor4wifi_bl616cl.upload.tool.serial=bl_flash
 unor4wifi_bl616cl.upload.protocol=serial
 unor4wifi_bl616cl.upload.speed=2000000
 unor4wifi_bl616cl.upload.use_1200bps_touch=true
 unor4wifi_bl616cl.upload.wait_for_upload_port=true
-# 烧录地址取自 partition_cfg_4M_lfs_v1.toml：分区表 0xE000，FW 0x10000；boot2 固定在 0x0
+# Addresses from partition_cfg_4M_lfs_v1.toml: partition table 0xE000, firmware 0x10000; boot2 is fixed at 0x0.
 unor4wifi_bl616cl.upload.bl_partition_address=0xE000
 unor4wifi_bl616cl.upload.bl_fw_address=0x10000
-# 调试日志：默认关，printf 与 SDK 日志被丢弃；打开时从 uart2 输出（引脚见 variant 的 PIN_DEBUG_LOG_TX/RX），发布固件保持关闭
+# Debug logging defaults to off, discarding printf and SDK output. When enabled, use uart2 and the variant PIN_DEBUG_LOG_TX/RX pins at 2000000 baud. Keep release logging off.
 unor4wifi_bl616cl.menu.debuglog.off=Off
 unor4wifi_bl616cl.menu.debuglog.off.build.debug_log_flags=
 unor4wifi_bl616cl.menu.debuglog.uart2=uart2 (J6 IO41 TX, IO42 RX, 2000000 baud)

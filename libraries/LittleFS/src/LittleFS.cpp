@@ -15,10 +15,15 @@ struct fs::File::Handle {
     bool open = false;
     int error = 0;
     int flags = 0;
+    /**
+     * @brief Initialize the shared open-file handle and its ownership state.
+     */
     explicit Handle(LittleFSClass *fs) : owner(fs) {}
 };
 
-// This is a partition-scoped NOR adapter, not an SDK MTD/VFS or a public device API.
+/**
+ * @brief This is a partition-scoped NOR adapter, not an SDK MTD/VFS or a public device API.
+ */
 static int filesystemPartition(uint32_t &address, uint32_t &capacity) {
     address = capacity = 0;
     if (bflb_boot2_init() != 0) return LFS_ERR_IO;
@@ -51,21 +56,30 @@ static int filesystemPartition(uint32_t &address, uint32_t &capacity) {
     return 0;
 }
 
+/**
+ * @brief Validate littlefs block bounds and page alignment before a Flash operation.
+ */
 static bool validAccess(const lfs_config *c, lfs_block_t b, lfs_off_t o, lfs_size_t n) {
     return b < c->block_count && o < c->block_size && n &&
            n <= c->block_size - o && o % c->prog_size == 0 && n % c->prog_size == 0;
 }
 
+/**
+ * @brief Load the selected partition geometry and configure partition-scoped littlefs
+ * callbacks.
+ */
 bool LittleFSClass::configure() {
     _error = filesystemPartition(_address, _capacity);
     if (_error) return false;
     _config = {};
     _config.context = &_address;
+    /** @brief Read validated partition-relative bytes through the blocking vendor Flash API. */
     _config.read = [](const lfs_config *c, lfs_block_t b, lfs_off_t o, void *p, lfs_size_t n) -> int {
         if (!p || !validAccess(c, b, o, n)) return LFS_ERR_INVAL;
         uint32_t address = *static_cast<const uint32_t *>(c->context) + b * c->block_size + o;
         return bflb_flash_read(address, static_cast<uint8_t *>(p), n) ? LFS_ERR_IO : 0;
     };
+    /** @brief Program partition-relative pages using a fixed 256-byte stack copy to avoid XIP source reads. */
     _config.prog = [](const lfs_config *c, lfs_block_t b, lfs_off_t o, const void *p, lfs_size_t n) -> int {
         if (!p || !validAccess(c, b, o, n)) return LFS_ERR_INVAL;
         uint32_t address = *static_cast<const uint32_t *>(c->context) + b * c->block_size + o;
@@ -77,12 +91,13 @@ bool LittleFSClass::configure() {
         }
         return 0;
     };
+    /** @brief Erase one validated filesystem block without touching other partitions. */
     _config.erase = [](const lfs_config *c, lfs_block_t b) -> int {
         if (b >= c->block_count) return LFS_ERR_INVAL;
         uint32_t address = *static_cast<const uint32_t *>(c->context) + b * c->block_size;
         return bflb_flash_erase(address, c->block_size) ? LFS_ERR_IO : 0;
     };
-    // SDK operations block until complete and restore XIP before returning.
+    /** @brief Finish synchronously: vendor Flash operations already complete and restore XIP before returning. */
     _config.sync = [](const lfs_config *) { return 0; };
     _config.read_size = _config.prog_size = _config.cache_size = 256;
     _config.block_size = 4096;
@@ -92,6 +107,9 @@ bool LittleFSClass::configure() {
     return true;
 }
 
+/**
+ * @brief Mount the validated littlefs partition without formatting on failure.
+ */
 bool LittleFSClass::begin() {
     if (_mounted) { _error = 0; return true; }
     if (!configure()) return false;
@@ -100,6 +118,10 @@ bool LittleFSClass::begin() {
     return _mounted;
 }
 
+/**
+ * @brief Format the validated littlefs partition only while unmounted; return false on
+ * failure.
+ */
 bool LittleFSClass::format() {
     if (_mounted) { _error = LFS_ERR_BADF; return false; }
     if (!configure()) return false;
@@ -107,6 +129,9 @@ bool LittleFSClass::format() {
     return _error == 0;
 }
 
+/**
+ * @brief Unmount littlefs only after all File handles are closed.
+ */
 bool LittleFSClass::end() {
     if (_openFiles) { _error = LFS_ERR_BADF; return false; }
     _error = _mounted ? lfs_unmount(&_fs) : 0;
@@ -116,6 +141,9 @@ bool LittleFSClass::end() {
     return true;
 }
 
+/**
+ * @brief Require a mounted filesystem and an absolute path without parent traversal.
+ */
 bool LittleFSClass::pathValid(const char *p) {
     _error = 0;
     if (!_mounted) { _error = LFS_ERR_BADF; return false; }
@@ -130,6 +158,9 @@ bool LittleFSClass::pathValid(const char *p) {
     return true;
 }
 
+/**
+ * @brief Open an absolute path with a supported mode, returning an invalid File on failure.
+ */
 File LittleFSClass::open(const char *path, const char *mode) {
     File result;
     if (!pathValid(path)) return result;
@@ -153,12 +184,18 @@ File LittleFSClass::open(const char *path, const char *mode) {
     return result;
 }
 
+/**
+ * @brief Report whether the supplied path exists in the mounted filesystem.
+ */
 bool LittleFSClass::exists(const char *path) {
     if (!pathValid(path)) return false;
     lfs_info info;
     _error = lfs_stat(&_fs, path, &info);
     return _error == 0;
 }
+/**
+ * @brief Remove a regular file, refusing directories and recording filesystem errors.
+ */
 bool LittleFSClass::remove(const char *path) {
     if (!pathValid(path)) return false;
     lfs_info info;
@@ -168,6 +205,9 @@ bool LittleFSClass::remove(const char *path) {
     _error = lfs_remove(&_fs, path);
     return _error == 0;
 }
+/**
+ * @brief Remove an empty directory, recording the filesystem error on failure.
+ */
 bool LittleFSClass::rmdir(const char *path) {
     if (!pathValid(path)) return false;
     lfs_info info;
@@ -177,17 +217,29 @@ bool LittleFSClass::rmdir(const char *path) {
     _error = lfs_remove(&_fs, path);
     return _error == 0;
 }
+/**
+ * @brief Rename a filesystem entry within the mounted partition; return false on failure.
+ */
 bool LittleFSClass::rename(const char *from, const char *to) {
     if (!pathValid(from) || !pathValid(to)) return false;
     _error = lfs_rename(&_fs, from, to);
     return _error == 0;
 }
+/**
+ * @brief Create a directory in the mounted filesystem; return false on failure.
+ */
 bool LittleFSClass::mkdir(const char *path) {
     if (!pathValid(path)) return false;
     _error = lfs_mkdir(&_fs, path);
     return _error == 0;
 }
+/**
+ * @brief Return the mounted filesystem capacity, or zero while unmounted.
+ */
 size_t LittleFSClass::totalBytes() const { return _mounted ? _capacity : 0; }
+/**
+ * @brief Return allocated filesystem block bytes, recording littlefs errors separately.
+ */
 size_t LittleFSClass::usedBytes() {
     if (!_mounted) { _error = LFS_ERR_BADF; return 0; }
     lfs_ssize_t n = lfs_fs_size(&_fs);
@@ -195,18 +247,40 @@ size_t LittleFSClass::usedBytes() {
     return n < 0 ? 0 : n * _config.block_size;
 }
 
+/**
+ * @brief Construct a File reference; copies share the underlying open handle.
+ */
 fs::File::File(const File &other) : _handle(other._handle) { if (_handle) ++_handle->refs; }
+/**
+ * @brief Replace this File reference while maintaining shared-handle ownership.
+ */
 fs::File &fs::File::operator=(const File &other) {
     if (this != &other) { release(); _handle = other._handle; if (_handle) ++_handle->refs; }
     return *this;
 }
+/**
+ * @brief Release this reference, closing the handle when its final reference disappears.
+ */
 fs::File::~File() { release(); }
+/**
+ * @brief Release this File reference and close/delete its shared handle when the last
+ * reference disappears.
+ */
 void fs::File::release() {
     if (_handle && --_handle->refs == 0) { close(); delete _handle; }
     _handle = nullptr;
 }
+/**
+ * @brief Report whether this object currently refers to a usable resource.
+ */
 fs::File::operator bool() const { return _handle && _handle->open; }
+/**
+ * @brief Return the most recent operation error for this object.
+ */
 int fs::File::lastError() const { return _handle ? _handle->error : LFS_ERR_BADF; }
+/**
+ * @brief Close the shared open file and report synchronization/close errors.
+ */
 bool fs::File::close() {
     if (!_handle) return false;
     if (!_handle->open) return _handle->error == 0;
@@ -216,12 +290,19 @@ bool fs::File::close() {
     --_handle->owner->_openFiles;
     return _handle->error == 0;
 }
+/**
+ * @brief Commit pending file data and metadata; return false and record a littlefs error on
+ * failure.
+ */
 bool fs::File::sync() {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return false; }
     _handle->error = lfs_file_sync(&_handle->owner->_fs, &_handle->file);
     _handle->owner->_error = _handle->error;
     return _handle->error == 0;
 }
+/**
+ * @brief Write the supplied byte or buffer and return the accepted byte count.
+ */
 size_t fs::File::write(const uint8_t *data, size_t size) {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return 0; }
     if (!(_handle->flags & LFS_O_WRONLY)) { _handle->error = LFS_ERR_BADF; return 0; }
@@ -230,6 +311,10 @@ size_t fs::File::write(const uint8_t *data, size_t size) {
     _handle->owner->_error = _handle->error;
     return n < 0 ? 0 : n;
 }
+/**
+ * @brief Read from the open file; buffer reads return a count (zero at EOF) or -1 on error;
+ * single-byte reads return -1 at EOF or on error.
+ */
 int fs::File::read(uint8_t *data, size_t size) {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return -1; }
     if (!(_handle->flags & LFS_O_RDONLY)) { _handle->error = LFS_ERR_BADF; return -1; }
@@ -238,19 +323,33 @@ int fs::File::read(uint8_t *data, size_t size) {
     _handle->owner->_error = _handle->error;
     return n < 0 ? -1 : n;
 }
+/**
+ * @brief Read from the open file; buffer reads return a count (zero at EOF) or -1 on error;
+ * single-byte reads return -1 at EOF or on error.
+ */
 int fs::File::read() { uint8_t b; return read(&b, 1) == 1 ? b : -1; }
+/**
+ * @brief Return the file's logical length, or zero on failure.
+ */
 size_t fs::File::size() {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return 0; }
     lfs_soff_t n = lfs_file_size(&_handle->owner->_fs, &_handle->file);
     _handle->error = n < 0 ? n : 0;
     return n < 0 ? 0 : n;
 }
+/**
+ * @brief Return the open file's current byte offset, or zero on failure.
+ */
 size_t fs::File::position() {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return 0; }
     lfs_soff_t n = lfs_file_tell(&_handle->owner->_fs, &_handle->file);
     _handle->error = n < 0 ? n : 0;
     return n < 0 ? 0 : n;
 }
+/**
+ * @brief Move an open file to an absolute byte offset within the supported signed offset
+ * range.
+ */
 bool fs::File::seek(uint32_t position) {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return false; }
     lfs_soff_t n = position > 0x7fffffff ? LFS_ERR_INVAL :
@@ -258,11 +357,17 @@ bool fs::File::seek(uint32_t position) {
     _handle->error = n < 0 ? n : 0;
     return n >= 0;
 }
+/**
+ * @brief Return the currently readable byte count without consuming input.
+ */
 int fs::File::available() {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return 0; }
     size_t end = size(), pos = position();
     return end > pos ? static_cast<int>(end - pos) : 0;
 }
+/**
+ * @brief Return the next input byte without consuming it, or -1 when none is available.
+ */
 int fs::File::peek() {
     if (!*this) { if (_handle) _handle->error = LFS_ERR_BADF; return -1; }
     size_t p = position();

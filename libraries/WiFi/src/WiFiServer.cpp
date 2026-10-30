@@ -1,9 +1,12 @@
-/* WiFiServer：socket 操作在 net_port.c */
+/* WiFiServer delegates socket operations to net_port.c. */
 #include "WiFiServer.h"
 
 #include "net_port.h"
 #include "wifi_port.h"
 
+/**
+ * @brief Construct an inactive TCP listener for the requested port.
+ */
 WiFiServer::WiFiServer(uint16_t port) : port_(port)
 {
     for (int &c : conns_) {
@@ -11,17 +14,26 @@ WiFiServer::WiFiServer(uint16_t port) : port_(port)
     }
 }
 
+/**
+ * @brief Close the listener and its retained connections.
+ */
 WiFiServer::~WiFiServer()
 {
     end();
 }
 
+/**
+ * @brief Start the TCP listener on the selected port only when a network interface is usable.
+ */
 void WiFiServer::begin()
 {
     begin(port_);
 }
 
-/* 未连上网络且 AP 未运行时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
+/**
+ * @brief Fail without a network or active AP: the lwIP tcpip thread does not exist before Wi-
+ * Fi initialization.
+ */
 void WiFiServer::begin(uint16_t port)
 {
     end();
@@ -31,7 +43,10 @@ void WiFiServer::begin(uint16_t port)
     }
 }
 
-/* 丢掉调用者已 stop() 的连接，关闭对端已关闭且数据读完的连接，再把新连接收进空位 */
+/**
+ * @brief Forget explicitly stopped connections, close drained peer-closed connections, then
+ * accept new ones into free slots.
+ */
 void WiFiServer::refresh()
 {
     for (int i = 0; i < WIFI_SERVER_MAX_CLIENTS; i++) {
@@ -57,6 +72,9 @@ void WiFiServer::refresh()
     }
 }
 
+/**
+ * @brief Return a retained client with readable data, or an invalid client when none is ready.
+ */
 WiFiClient WiFiServer::available()
 {
     if (sock_ < 0) {
@@ -71,17 +89,28 @@ WiFiClient WiFiServer::available()
     return WiFiClient();
 }
 
+/**
+ * @brief Transfer one new TCP client to the caller, which must stop it when finished.
+ */
 WiFiClient WiFiServer::accept()
 {
     int s = sock_ >= 0 ? net_port_tcp_accept(sock_) : -1;
     return s >= 0 ? WiFiClient(s) : WiFiClient();
 }
 
+/**
+ * @brief Broadcast to retained clients and return the smallest accepted count, or zero when
+ * none are connected.
+ */
 size_t WiFiServer::write(uint8_t b)
 {
     return write(&b, 1);
 }
 
+/**
+ * @brief Broadcast to retained clients and return the smallest accepted count, or zero when
+ * none are connected.
+ */
 size_t WiFiServer::write(const uint8_t *buf, size_t size)
 {
     size_t least = size;
@@ -104,7 +133,10 @@ size_t WiFiServer::write(const uint8_t *buf, size_t size)
     return any ? least : 0;
 }
 
-/* 调用者已 stop() 的连接号可能已给了别的连接，不能再关 */
+/**
+ * @brief An explicitly stopped socket number may have been reused by another connection; do
+ * not close it again.
+ */
 void WiFiServer::end()
 {
     for (int i = 0; i < WIFI_SERVER_MAX_CLIENTS; i++) {
@@ -119,6 +151,9 @@ void WiFiServer::end()
     }
 }
 
+/**
+ * @brief Report whether this object currently refers to a usable resource.
+ */
 WiFiServer::operator bool()
 {
     return sock_ >= 0;

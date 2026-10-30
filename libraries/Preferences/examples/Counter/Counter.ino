@@ -2,6 +2,9 @@
 
 Preferences preferences;
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup() {
   Serial.begin(115200);
   delay(1500);
@@ -28,4 +31,7 @@ void setup() {
   preferences.end();
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop() {}

@@ -1,4 +1,4 @@
-/* TLS 客户端，接口说明见 tls_port.h */
+/* TLS client backend; see tls_port.h. */
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,17 +20,19 @@
 
 #define CLOSE_NOTIFY_TIMEOUT_MS 1000
 /*
- * 新连接要求的 OCRAM 空闲量。mbedTLS 的 calloc 先用 OCRAM 再用 WRAM，实测一次握手峰值约 43–52 KB、之后常驻约 38 KB；
- * FreeRTOS 的 pvPortMalloc 只从 OCRAM 分配，失败即 abort。低于此值时拒绝连接，握手峰值后 OCRAM 仍约留 4 KB 以上
+ * Minimum free OCRAM for a new connection. mbedTLS calloc uses OCRAM before WRAM; measured
+ * handshake peak is about 43-52 KiB and steady usage about 38 KiB. FreeRTOS pvPortMalloc uses only
+ * OCRAM and aborts on failure. Reject below this threshold to retain about 4 KiB or more after the
+ * handshake peak.
  */
 #define TLS_OCRAM_MIN (56 * 1024)
 
 struct tls_conn {
     int sock;
-    bool wait;         /* 握手时读等到 deadline；之后读不等待 */
-    uint32_t deadline; /* tick 换算的毫秒 */
-    bool eof;          /* 对端关闭或连接出错 */
-    int peeked;        /* available() 预读的 1 字节，没有时为 -1 */
+    bool wait;         /* Read until the deadline during handshake; read without waiting afterward. */
+    uint32_t deadline; /* Milliseconds converted from ticks. */
+    bool eof;          /* The peer closed or the connection failed. */
+    int peeked;        /* One byte prefetched by available(), or -1 when empty. */
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
     mbedtls_ctr_drbg_context drbg;
@@ -40,27 +42,39 @@ struct tls_conn {
     mbedtls_pk_context client_key;
 };
 
-/* 按 socket 号索引，同 net_port.c */
+/* Index by socket number, matching net_port.c. */
 static struct tls_conn *conns[MEMP_NUM_NETCONN];
 static bool bundle_ready;
 
+/**
+ * @brief Find the TLS connection state associated with a socket descriptor.
+ */
 static struct tls_conn *conn_of(int sock)
 {
     int i = sock - LWIP_SOCKET_OFFSET;
     return i >= 0 && i < MEMP_NUM_NETCONN ? conns[i] : NULL;
 }
 
+/**
+ * @brief Return monotonic time in milliseconds for bounded I/O waits.
+ */
 static uint32_t now_ms(void)
 {
     return xTaskGetTickCount() * portTICK_PERIOD_MS;
 }
 
+/**
+ * @brief Update the socket timeout used by the TLS write callback.
+ */
 static void set_send_timeout(int sock, uint32_t ms)
 {
     struct timeval tv = { .tv_sec = ms / 1000, .tv_usec = (ms % 1000) * 1000 };
     lwip_setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 }
 
+/**
+ * @brief Adapt a socket write to mbedTLS return and retry/error conventions.
+ */
 static int bio_send(void *ctx, const unsigned char *buf, size_t len)
 {
     struct tls_conn *t = ctx;
@@ -71,6 +85,9 @@ static int bio_send(void *ctx, const unsigned char *buf, size_t len)
     return errno == EWOULDBLOCK || errno == EAGAIN ? MBEDTLS_ERR_SSL_TIMEOUT : MBEDTLS_ERR_NET_SEND_FAILED;
 }
 
+/**
+ * @brief Adapt bounded handshake or nonblocking application reads to mbedTLS conventions.
+ */
 static int bio_recv(void *ctx, unsigned char *buf, size_t len)
 {
     struct tls_conn *t = ctx;
@@ -90,11 +107,14 @@ static int bio_recv(void *ctx, unsigned char *buf, size_t len)
     }
     int n = lwip_recv(t->sock, buf, len, MSG_DONTWAIT);
     if (n >= 0) {
-        return n; /* 0 为对端关闭 */
+        return n; /* Zero indicates peer closure. */
     }
     return errno == EWOULDBLOCK || errno == EAGAIN ? MBEDTLS_ERR_SSL_WANT_READ : MBEDTLS_ERR_NET_RECV_FAILED;
 }
 
+/**
+ * @brief Free all mbedTLS state owned by a connection slot.
+ */
 static void free_conn(struct tls_conn *t)
 {
     mbedtls_ssl_free(&t->ssl);
@@ -107,12 +127,15 @@ static void free_conn(struct tls_conn *t)
     free(t);
 }
 
-/* SDK 的校验回调（bl_crt_bundle.c，只读），按签发者名查根证书；头文件未导出 */
+/**
+ * @brief Read-only SDK callback in bl_crt_bundle.c; finds roots by issuer name. Its header is
+ * not exported.
+ */
 int bl_crt_verify_callback(void *buf, mbedtls_x509_crt *crt, int depth, uint32_t *flags);
 
-/*
- * 束内根证书的布局同 bl_crt_bundle.c：2 字节证书数（大端），之后每张为 2 字节名称长、2 字节公钥长、名称（subject DER）、
- * 公钥（SPKI DER）
+/**
+ * @brief Bundle format from bl_crt_bundle.c: big-endian 16-bit certificate count, then per
+ * certificate a 16-bit name length, 16-bit public-key length, subject-name DER and SPKI DER.
  */
 static bool is_bundle_root(const mbedtls_x509_crt *crt)
 {
@@ -136,9 +159,12 @@ static bool is_bundle_root(const mbedtls_x509_crt *crt)
     return false;
 }
 
-/*
- * 链顶证书本身就是束内根（名称与公钥都相同）时信任它。典型情况是服务器只发 COMODO RSA CA 的 AddTrust 交叉签发版本，
- * 这时签发者 AddTrust 不在束内，SDK 的回调失败；本机 OpenSSL 按同一规则接受。有效期仍不检查（没有时间源）
+/**
+ * @brief Trust a chain-top certificate when both its subject name and public key match a
+ * bundled root. A server may send only the COMODO RSA CA cross-signed by AddTrust, whose
+ * issuer is absent from the bundle; the SDK issuer lookup then fails. Local OpenSSL accepts
+ * the same root-equivalence rule. Certificate date checks remain disabled by the current
+ * policy.
  */
 static int verify_bundle(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags)
 {
@@ -151,7 +177,10 @@ static int verify_bundle(void *data, mbedtls_x509_crt *crt, int depth, uint32_t 
     return ret;
 }
 
-/* 给定 PEM 时只信任它，否则用包内根证书束（签发者查找由 bl_crt_bundle 完成，束内根本身由 verify_bundle 补充） */
+/**
+ * @brief Trust only the supplied PEM when present; otherwise use the package bundle.
+ * bl_crt_bundle resolves issuers and verify_bundle handles matching root certificates.
+ */
 static int set_trust(struct tls_conn *t, const char *ca_pem)
 {
     if (ca_pem != NULL) {
@@ -175,6 +204,10 @@ static int set_trust(struct tls_conn *t, const char *ca_pem)
     return 0;
 }
 
+/**
+ * @brief Handshake on an existing TCP socket within one deadline, releasing TLS state on
+ * failure.
+ */
 int tls_port_open(int sock, const char *host, const char *ca_pem,
                   const char *client_cert_pem, const char *client_key_pem,
                   uint32_t timeout_ms)
@@ -240,6 +273,9 @@ fail:
     return -1;
 }
 
+/**
+ * @brief Encrypt and transmit plaintext bytes with a bounded send wait.
+ */
 int tls_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms)
 {
     struct tls_conn *t = conn_of(sock);
@@ -260,7 +296,10 @@ int tls_port_send(int sock, const uint8_t *buf, size_t len, uint32_t timeout_ms)
     return done > 0 || len == 0 ? (int)done : -1;
 }
 
-/* 不等待地取已解密或已到达的数据；返回字节数，暂无数据返回 0，连接已关闭或出错返回 -1 */
+/**
+ * @brief Read available decrypted/arrived data without waiting. Return bytes, zero for no
+ * data, or -1 on closure/error.
+ */
 static int read_some(struct tls_conn *t, uint8_t *buf, size_t len)
 {
     if (t->eof) {
@@ -273,11 +312,14 @@ static int read_some(struct tls_conn *t, uint8_t *buf, size_t len)
     if (n == MBEDTLS_ERR_SSL_WANT_READ || n == MBEDTLS_ERR_SSL_WANT_WRITE) {
         return 0;
     }
-    t->eof = true; /* 0、close_notify、对端断开或出错 */
+    t->eof = true; /* Zero, close_notify, peer disconnect or other error. */
     return -1;
 }
 
-/* 先预读 1 字节确认有数据，再加上当前记录中已解密的部分 */
+/**
+ * @brief Prefetch one byte to confirm availability, then add decrypted bytes remaining in the
+ * current record.
+ */
 int tls_port_available(int sock)
 {
     struct tls_conn *t = conn_of(sock);
@@ -296,6 +338,9 @@ int tls_port_available(int sock)
     return 1 + (int)mbedtls_ssl_get_bytes_avail(&t->ssl);
 }
 
+/**
+ * @brief Read or peek decrypted data without waiting.
+ */
 int tls_port_recv(int sock, uint8_t *buf, size_t len, bool peek)
 {
     int n = tls_port_available(sock);
@@ -312,11 +357,17 @@ int tls_port_recv(int sock, uint8_t *buf, size_t len, bool peek)
     return 1 + (m > 0 ? m : 0);
 }
 
+/**
+ * @brief Report whether a TLS session remains usable or has unread data.
+ */
 bool tls_port_connected(int sock)
 {
     return tls_port_available(sock) >= 0;
 }
 
+/**
+ * @brief Attempt bounded close_notify, free TLS state and close the underlying socket.
+ */
 void tls_port_close(int sock)
 {
     struct tls_conn *t = conn_of(sock);

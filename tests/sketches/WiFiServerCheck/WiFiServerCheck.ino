@@ -1,7 +1,7 @@
-// WiFiServer 检查：连网后在 5558 端口用 available()、在 5559 端口用 accept() 服务，由电脑上的脚本作客户端。
-// 5558 按行处理：普通行回大写的原文；"bc" 用 server.write 发 "all\n" 给所有连接；"stop" 回 "bye\n" 后 stop()。
-// 5559：accept() 到的连接先收到 "hi\n"，回一行后被 stop()。经 USB 串口输出 "IP <地址>"、"READY"，
-// 之后每处理一行输出 "LINE <端口> <内容>"。网络名与密码在 arduino_secrets.h（仓库中为空，只能编译检查）。
+// WiFiServer check: available() serves port 5558 and accept() serves 5559; a host script provides clients.
+// Port 5558 uppercases normal lines; "bc" broadcasts "all\\n" and "stop" replies "bye\\n" before stop().
+// Port 5559 sends "hi\\n" after accept(), echoes a line then stops. USB reports "IP <address>" and "READY".
+// Print "LINE <port> <content>" per handled line. Tracked arduino_secrets.h has empty credentials for compilation only.
 #include <WiFi.h>
 
 #include "arduino_secrets.h"
@@ -9,7 +9,9 @@
 WiFiServer server(5558);
 WiFiServer acceptor(5559);
 
-// 读一行（不含 '\n'），最多等 1 s
+/**
+ * @brief Read a line without its newline, waiting at most 1 s.
+ */
 static bool readLine(WiFiClient &c, String &line)
 {
     unsigned long start = millis();
@@ -27,6 +29,9 @@ static bool readLine(WiFiClient &c, String &line)
     return false;
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -46,6 +51,9 @@ void setup()
     Serial.println("READY");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     String line;

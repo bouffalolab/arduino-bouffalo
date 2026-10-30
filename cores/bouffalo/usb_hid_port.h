@@ -17,19 +17,32 @@ struct usb_hid_port_config {
     void (*set_feature)(const uint8_t *data, uint16_t size);
 };
 
-/* Register once, before Core starts USB (e.g. from a global constructor).
- * config and its descriptor must remain valid for the lifetime of USB.
- * Interface 2, no report IDs, 64-byte input/output/feature reports.
+/**
+ * @brief Register once, before Core starts USB (e.g. from a global constructor). config and
+ * its descriptor must remain valid for the lifetime of USB. Interface 2, no report IDs,
+ * 64-byte input/output/feature reports.
+ *
+ * @note Register before USB starts; Feature callbacks execute in interrupt context and must
+ *   not block.
  */
 void usb_hid_port_register(const struct usb_hid_port_config *config);
-/* Task context, one reader/writer. read returns 0 when no packet is ready.
- * write queues 64 bytes; false on disconnect, driver error, or 100 ms timeout.
+/**
+ * @brief Task context, one reader/writer. read returns 0 when no packet is ready. write queues
+ * 64 bytes; false on disconnect, driver error, or 100 ms timeout.
  */
 int usb_hid_port_read(uint8_t data[USB_HID_PORT_PACKET_SIZE]);
+/**
+ * @brief Submit one fixed-size HID packet when the endpoint is ready.
+ */
 bool usb_hid_port_write(const uint8_t data[USB_HID_PORT_PACKET_SIZE]);
 
-/* Core USB integration; returns the 32-byte interface descriptor, or NULL. */
+/**
+ * @brief Core USB integration; returns the 32-byte interface descriptor, or NULL.
+ */
 const uint8_t *usb_hid_port_init(void);
+/**
+ * @brief Update optional HID endpoint state on USB lifecycle events.
+ */
 void usb_hid_port_event(uint8_t event);
 
 #ifdef __cplusplus

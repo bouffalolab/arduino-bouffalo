@@ -28,6 +28,9 @@ struct ReadRequest {
     void *arg;
 };
 
+/**
+ * @brief Complete queued external-Host H4 reads in the dedicated transport task.
+ */
 static void transport(void *)
 {
     ReadRequest request;
@@ -42,6 +45,9 @@ static void transport(void *)
     }
 }
 
+/**
+ * @brief Queue an upstream Controller H4 read request and its completion callback.
+ */
 extern "C" void btble_uart_read(uint8_t *data, uint32_t size,
                                 void (*done)(void *, uint8_t), void *arg)
 {
@@ -49,6 +55,10 @@ extern "C" void btble_uart_read(uint8_t *data, uint32_t size,
     xQueueSend(reads, &request, portMAX_DELAY);
 }
 
+/**
+ * @brief Transfer upstream Controller H4 output into the Host receive stream, then complete
+ * the request.
+ */
 extern "C" void btble_uart_write(const uint8_t *data, uint32_t size,
                                  void (*done)(void *, uint8_t), void *arg)
 {
@@ -60,10 +70,23 @@ extern "C" void btble_uart_write(const uint8_t *data, uint32_t size,
 }
 
 /* The in-memory H4 stream has no physical UART to pause or drain. */
+/**
+ * @brief Provide the upstream flow-on hook; the memory transport has no physical UART.
+ */
 extern "C" void btble_uart_flow_on(void) {}
+/**
+ * @brief Accept flow-off for the memory transport, which has no UART hardware to pause.
+ */
 extern "C" bool btble_uart_flow_off(void) { return true; }
+/**
+ * @brief Provide the upstream drain hook for the in-memory H4 transport.
+ */
 extern "C" void btble_uart_finish_transfers(void) {}
 
+/**
+ * @brief Initialize the upstream Controller and H4 worker resources; the external Host must
+ * then issue HCI Reset.
+ */
 bool BLEControllerClass::begin()
 {
     if (running) {
@@ -88,6 +111,9 @@ bool BLEControllerClass::begin()
     return true;
 }
 
+/**
+ * @brief Stop Controller worker resources after the Host has stopped all traffic.
+ */
 void BLEControllerClass::end()
 {
     if (!running) return;
@@ -99,22 +125,36 @@ void BLEControllerClass::end()
     running = false;
 }
 
+/**
+ * @brief Return the currently readable byte count without consuming input.
+ */
 int BLEControllerClass::available()
 {
     return running ? xStreamBufferBytesAvailable(host_rx) : 0;
 }
 
+/**
+ * @brief Consume available raw H4 bytes without waiting; return the byte/count or -1 for an
+ * empty single-byte read.
+ */
 int BLEControllerClass::read()
 {
     uint8_t data;
     return read(&data, 1) ? data : -1;
 }
 
+/**
+ * @brief Consume available raw H4 bytes without waiting; return the byte/count or -1 for an
+ * empty single-byte read.
+ */
 size_t BLEControllerClass::read(uint8_t *data, size_t size)
 {
     return running ? xStreamBufferReceive(host_rx, data, size, 0) : 0;
 }
 
+/**
+ * @brief Queue raw H4 bytes for the Controller and return the accepted byte count.
+ */
 size_t BLEControllerClass::write(const uint8_t *data, size_t size)
 {
     return running ? xStreamBufferSend(host_tx, data, size, 0) : 0;

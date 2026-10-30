@@ -1,2 +1,3 @@
-arduino-cli 只在 precompiled=true 且 src/<build.mcu>/ 非空时加入 library.properties 的 ldflags（Wi-Fi 链接组），
-本文件让该目录非空；库的源码仍照常编译。
+Arduino CLI 1.5.1 applies ldflags with precompiled=true only when src/<build.mcu>/ is nonempty.
+This marker enables the fixed dependency-package Wi-Fi link group; library sources still compile.
+This directory gate is CLI implementation behavior, not the documented bundled-binary layout.

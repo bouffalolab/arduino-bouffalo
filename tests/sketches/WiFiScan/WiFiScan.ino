@@ -1,8 +1,11 @@
-// WiFi 扫描检查：未连接时扫描 3 次，结果经 USB 串口输出。每次一行 "SCAN <个数> <耗时ms>"，
-// 再每个网络一行 "AP <序号>|<ssid>|<bssid>|<rssi>|<信道>|<加密>"；之后一行越界序号的结果
-// "OOR <ssid 长度> <rssi> <信道> <加密>"，最后一行 "DONE"。
+// Scan three times while disconnected. Print "SCAN <count> <elapsed-ms>" for each scan.
+// Print each result as "AP <index>|<ssid>|<bssid>|<rssi>|<channel>|<encryption>", then an out-of-range query.
+// Finish with "OOR <ssid-length> <rssi> <channel> <encryption>" and "DONE".
 #include <WiFi.h>
 
+/**
+ * @brief Print the Wi-Fi scan results used by this test sketch.
+ */
 static void scan()
 {
     unsigned long start = millis();
@@ -22,6 +25,9 @@ static void scan()
     }
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -42,6 +48,9 @@ void setup()
     Serial.println("DONE");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
 }

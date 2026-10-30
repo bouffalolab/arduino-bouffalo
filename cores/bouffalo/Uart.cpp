@@ -1,7 +1,8 @@
 /*
- * UART 的 Arduino 实现。接收：RX FIFO 达到阈值或接收超时（RTO）时进中断，
- * 把 FIFO 中的字节搬进环形缓冲；缓冲只有中断写、读者读，单生产者单消费者，无需加锁。
- * 发送：逐字节写 FIFO，FIFO 满时等待（lhal 每字节最多等 100 ms）。
+ * Arduino UART implementation. RX threshold and receive-timeout interrupts move FIFO bytes into a
+ * single-producer/single-consumer ring: only the ISR writes, only the reader consumes, so no lock
+ * is needed. TX writes one byte at a time, waiting for FIFO space; lhal waits up to 100 ms per
+ * byte.
  */
 #include <stdlib.h>
 
@@ -15,24 +16,35 @@
 
 #include "Arduino.h"
 
-/* 接收超时，单位为位时间：线路空闲约 4 个字符后把不足阈值的字节取走 */
+/* Receive timeout in bit periods: drain a partial FIFO after roughly four idle character times. */
 #define UART_RX_TIMEOUT_BITS 40
 
-/* 底层包的 board_init 只打开 uart0、uart1 的时钟 */
+/* Package board_init enables clocks only for uart0 and uart1. */
 static const char *const uart_names[] = { "uart0", "uart1" };
 static const uint8_t uart_tx_funcs[] = { GPIO_UART_FUNC_UART0_TX, GPIO_UART_FUNC_UART1_TX };
 static const uint8_t uart_rx_funcs[] = { GPIO_UART_FUNC_UART0_RX, GPIO_UART_FUNC_UART1_RX };
 
+/**
+ * @brief Bind a UART object to its controller and variant TX/RX pins without starting the
+ * peripheral.
+ */
 Uart::Uart(uint8_t index, pin_size_t tx_pin, pin_size_t rx_pin)
     : index_(index), tx_pin_(tx_pin), rx_pin_(rx_pin)
 {
 }
 
+/**
+ * @brief Configure the selected UART framing and RX ring, claiming the variant pins on
+ * success.
+ */
 void Uart::begin(unsigned long baudrate)
 {
     begin(baudrate, SERIAL_8N1);
 }
 
+/**
+ * @brief Validate and translate Arduino UART framing to the supported lhal configuration.
+ */
 static bool to_lhal_config(uint16_t config, struct bflb_uart_config_s *cfg)
 {
     switch (config & SERIAL_DATA_MASK) {
@@ -46,7 +58,10 @@ static bool to_lhal_config(uint16_t config, struct bflb_uart_config_s *cfg)
         case SERIAL_PARITY_NONE: cfg->parity = UART_PARITY_NONE; break;
         case SERIAL_PARITY_ODD: cfg->parity = UART_PARITY_ODD; break;
         case SERIAL_PARITY_EVEN: cfg->parity = UART_PARITY_EVEN; break;
-        default: return false; /* MARK、SPACE：bflb_uart_init 不支持，会保留原来的校验设置 */
+        default: return false; /*
+ * bflb_uart_init does not support MARK or SPACE parity and would leave the previous parity
+ * unchanged.
+ */
     }
     switch (config & SERIAL_STOP_BIT_MASK) {
         case SERIAL_STOP_BIT_1: cfg->stop_bits = UART_STOP_BITS_1; break;
@@ -57,7 +72,10 @@ static bool to_lhal_config(uint16_t config, struct bflb_uart_config_s *cfg)
     return true;
 }
 
-/* 参数无效（UART 序号、不可用的引脚、帧格式、分频器放不下的波特率）时不打开串口，operator bool 为 false。 */
+/**
+ * @brief Reject invalid UART indices, reserved pins, frame formats or unrepresentable baud
+ * divisors. The UART remains closed and operator bool returns false.
+ */
 void Uart::begin(unsigned long baudrate, uint16_t config)
 {
     struct bflb_uart_config_s cfg = {};
@@ -74,7 +92,10 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
     if (dev == nullptr || gpio == nullptr) {
         return;
     }
-    /* bflb_uart_init 按 时钟/波特率 取整得到分频值，有效范围 1 到 0xfffe，越界时不报错 */
+    /*
+ * bflb_uart_init truncates clock/baud to a divisor in 1..0xfffe; it does not report an out-of-
+ * range value.
+ */
     uint32_t clk = bflb_clk_get_peripheral_clock(BFLB_DEVICE_TYPE_UART, dev->idx);
     uint64_t div = ((uint64_t)clk * 10 / baudrate + 5) / 10;
     if (div < 1 || div >= 0xffff) {
@@ -89,8 +110,11 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
     rx_head_ = rx_tail_ = 0;
     rx_overflow_ = 0;
 
-    /* warm reset（如烧录工具结束时）不复位外设：ROM 下载模式期间收着数据时，接收器会停在忙状态
-       （UART_STATUS 的 URX_BUS_BUSY 为 1），bflb_uart_init 不清除它，之后收不到数据。先复位控制器 */
+    /*
+ * Warm reset, including the uploader reset, does not reset peripherals. Incoming data during ROM
+ * download can leave URX_BUS_BUSY set; bflb_uart_init does not clear it and subsequent RX stops.
+ * Reset the controller first.
+ */
     uart_reset(index_);
     pin_release_keep(tx_gpio);
     pin_release_keep(rx_gpio);
@@ -111,6 +135,9 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
     bflb_irq_enable(dev->irq_num);
 }
 
+/**
+ * @brief Disable UART receive interrupts and release its RX ring.
+ */
 void Uart::end()
 {
     if (dev_ == nullptr) {
@@ -124,6 +151,9 @@ void Uart::end()
     dev_ = nullptr;
 }
 
+/**
+ * @brief Change RX ring capacity before begin; reject changes while the UART is active.
+ */
 bool Uart::setRxBufferSize(size_t size)
 {
     if (dev_ != nullptr || size < 2) {
@@ -135,12 +165,18 @@ bool Uart::setRxBufferSize(size_t size)
     return true;
 }
 
+/**
+ * @brief Return the number of RX bytes dropped since the latest begin.
+ */
 uint32_t Uart::rxOverflowCount(void) const
 {
     return rx_overflow_;
 }
 
-/* 环形缓冲留一个空位区分满和空，可存 rx_size_ - 1 字节 */
+/**
+ * @brief Reserve one slot to distinguish full from empty; usable capacity is rx_size_ - 1
+ * bytes.
+ */
 void Uart::drain_rx_fifo(void)
 {
     while (bflb_uart_rxavailable(dev_)) {
@@ -151,18 +187,24 @@ void Uart::drain_rx_fifo(void)
             continue;
         }
         rx_buf_[rx_head_] = c;
-        __atomic_signal_fence(__ATOMIC_RELEASE); /* 先写数据再发布 head */
+        __atomic_signal_fence(__ATOMIC_RELEASE); /* Store data before publishing head. */
         rx_head_ = next;
     }
 }
 
+/**
+ * @brief Service UART receive interrupts and drain newly available FIFO bytes.
+ */
 void Uart::isr(int irq, void *arg)
 {
     (void)irq;
     Uart *self = static_cast<Uart *>(arg);
     uint32_t status = bflb_uart_get_intstatus(self->dev_);
 
-    /* 与 SDK 示例相同，先清 RTO 再读 FIFO：读空之后到达的字节会重新触发 RTO */
+    /*
+ * Clear RTO before draining the FIFO, as in SDK examples, so bytes arriving afterward can trigger
+ * a new timeout.
+ */
     if (status & UART_INTSTS_RTO) {
         bflb_uart_int_clear(self->dev_, UART_INTCLR_RTO);
     }
@@ -171,6 +213,9 @@ void Uart::isr(int irq, void *arg)
     }
 }
 
+/**
+ * @brief Return the currently readable byte count without consuming input.
+ */
 int Uart::available(void)
 {
     if (dev_ == nullptr) {
@@ -179,15 +224,22 @@ int Uart::available(void)
     return (int)((rx_head_ + rx_size_ - rx_tail_) % rx_size_);
 }
 
+/**
+ * @brief Return the next input byte without consuming it, or -1 when none is available.
+ */
 int Uart::peek(void)
 {
     if (available() == 0) {
         return -1;
     }
-    __atomic_signal_fence(__ATOMIC_ACQUIRE); /* 读到 head 之后再读数据 */
+    __atomic_signal_fence(__ATOMIC_ACQUIRE); /* Read head before reading the corresponding data. */
     return rx_buf_[rx_tail_];
 }
 
+/**
+ * @brief Consume available input bytes; return the byte/count or the interface-specific
+ * empty/error value.
+ */
 int Uart::read(void)
 {
     if (available() == 0) {
@@ -195,11 +247,14 @@ int Uart::read(void)
     }
     __atomic_signal_fence(__ATOMIC_ACQUIRE);
     uint8_t c = rx_buf_[rx_tail_];
-    __atomic_signal_fence(__ATOMIC_RELEASE); /* 读完数据再让出这个位置 */
+    __atomic_signal_fence(__ATOMIC_RELEASE); /* Release the slot only after consuming its data. */
     rx_tail_ = (rx_tail_ + 1) % rx_size_;
     return c;
 }
 
+/**
+ * @brief Wait until the UART transmitter has drained.
+ */
 void Uart::flush(void)
 {
     if (dev_ != nullptr) {
@@ -207,7 +262,9 @@ void Uart::flush(void)
     }
 }
 
-/* TX FIFO 的空位数 */
+/**
+ * @brief Number of free TX FIFO slots.
+ */
 int Uart::availableForWrite(void)
 {
     if (dev_ == nullptr) {
@@ -216,11 +273,17 @@ int Uart::availableForWrite(void)
     return bflb_uart_feature_control(dev_, UART_CMD_GET_TX_FIFO_CNT, 0);
 }
 
+/**
+ * @brief Write the supplied byte or buffer and return the accepted byte count.
+ */
 size_t Uart::write(uint8_t c)
 {
     return write(&c, 1);
 }
 
+/**
+ * @brief Write the supplied byte or buffer and return the accepted byte count.
+ */
 size_t Uart::write(const uint8_t *buffer, size_t size)
 {
     if (dev_ == nullptr) {
@@ -235,6 +298,9 @@ size_t Uart::write(const uint8_t *buffer, size_t size)
     return size;
 }
 
+/**
+ * @brief Report whether this object currently refers to a usable resource.
+ */
 Uart::operator bool()
 {
     return dev_ != nullptr;

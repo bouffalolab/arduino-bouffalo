@@ -1,11 +1,15 @@
 /*
- * random、randomSeed：api/Common.h 只有声明。语义同官方 Core（SAMD、renesas 的 WMath.cpp）：
- * 用 C 库 rand/srand，种子为 0 时不改种子，上限为 0 或下限不小于上限时直接返回。
+ * random/randomSeed are only declared by api/Common.h. Match the official SAMD/Renesas cores using
+ * rand/srand: zero seed leaves the seed unchanged; zero upper bound or an empty interval returns
+ * immediately.
  */
 #include <stdlib.h>
 
 #include "Arduino.h"
 
+/**
+ * @brief Seed the C random generator unless seed is zero, matching Arduino behavior.
+ */
 void randomSeed(unsigned long seed)
 {
     if (seed != 0) {
@@ -13,6 +17,10 @@ void randomSeed(unsigned long seed)
     }
 }
 
+/**
+ * @brief Return a pseudorandom value in the requested half-open interval, preserving Arduino
+ * empty-range behavior.
+ */
 long random(long howbig)
 {
     if (howbig == 0) {
@@ -21,6 +29,10 @@ long random(long howbig)
     return rand() % howbig;
 }
 
+/**
+ * @brief Return a pseudorandom value in the requested half-open interval, preserving Arduino
+ * empty-range behavior.
+ */
 long random(long howsmall, long howbig)
 {
     if (howsmall >= howbig) {

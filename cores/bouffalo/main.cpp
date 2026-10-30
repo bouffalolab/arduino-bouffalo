@@ -1,10 +1,9 @@
 /*
- * 固件唯一入口。初始化归属：
- * - 底层包：__start、SystemInit、时钟、flash、中断、堆（board_init()，由 init() 调用）；不初始化控制台。
- * - Core：板卡菜单打开调试日志时，在 init() 中把 SDK 控制台设到 uart2。
- * - Core：C++ 全局构造、setup/loop 任务、FreeRTOS 调度器；板卡启用 USB 时在 setup() 之前启动 USB 串口。
- * - 网络栈由 WiFi 库在首次使用时初始化，不在这里。
- * 顺序与官方 Core 相同：init()、initVariant()，再 setup()/loop()。
+ * Unique firmware entry point. The dependency package owns __start, SystemInit, clocks, Flash,
+ * interrupts and heap through board_init(), called by init(); it does not start a console. The
+ * Core optionally selects uart2 for debug output, runs global constructors, creates the setup/loop
+ * task and starts FreeRTOS. USB starts before setup() when enabled. WiFi initializes networking
+ * lazily. Follow the Arduino sequence init(), initVariant(), then setup()/loop().
  */
 #include <errno.h>
 #include <reent.h>
@@ -21,17 +20,20 @@
 #include "wiring_time.h"
 
 #ifndef ARDUINO_LOOP_STACK_SIZE
-#define ARDUINO_LOOP_STACK_SIZE 8192 /* 字节 */
+#define ARDUINO_LOOP_STACK_SIZE 8192 /* Bytes. */
 #endif
 #ifndef ARDUINO_LOOP_PRIORITY
 #define ARDUINO_LOOP_PRIORITY 1
 #endif
 
+/**
+ * @brief Run the linked C/C++ initialization arrays before starting the sketch task.
+ */
 extern "C" void __libc_init_array(void);
 
-/*
- * ArduinoCore-API 声明的芯片初始化；全局构造要用堆，所以在构造之前调用。
- * 烧录工具经 1200 bps touch 上传后用 warm reset 启动新固件，“进入下载模式”的请求仍在，这里清除。
+/**
+ * @brief Initialize the chip before global constructors, which require the heap. Clear the
+ * retained download request left by the uploader warm reset after 1200 bps touch.
  */
 void init(void)
 {
@@ -43,16 +45,34 @@ void init(void)
 #endif
 }
 
+/**
+ * @brief Provide the weak board-specific initialization hook after global constructors.
+ */
 void initVariant(void) __attribute__((weak));
+/**
+ * @brief Provide the weak board-specific initialization hook after global constructors.
+ */
 void initVariant(void)
 {
 }
 
-/* serialEvent()、serialEvent1()、serialEvent2()：sketch 定义时，每次 loop() 之后若对应串口有数据就调用 */
+/**
+ * @brief After each loop(), call sketch-defined serialEvent/serialEvent1/serialEvent2 when the
+ * corresponding port has data.
+ */
 void serialEvent(void) __attribute__((weak));
+/**
+ * @brief Provide the optional weak callback for pending Serial1 input.
+ */
 void serialEvent1(void) __attribute__((weak));
+/**
+ * @brief Provide the optional weak callback for pending Serial2 input.
+ */
 void serialEvent2(void) __attribute__((weak));
 
+/**
+ * @brief Dispatch sketch serial-event hooks for ports with pending input.
+ */
 void arduino::serialEventRun(void)
 {
 #if defined(USB_VID) || defined(PIN_SERIAL_TX)
@@ -72,11 +92,14 @@ void arduino::serialEventRun(void)
 #endif
 }
 
+/**
+ * @brief Start USB when selected, then execute setup once and loop with serial-event dispatch.
+ */
 static void loop_task(void *arg)
 {
     (void)arg;
 #if defined(USB_VID)
-    usb_cdc_port_init(); /* 中断回调要用定时器任务，所以在调度器运行后启动 */
+    usb_cdc_port_init(); /* USB interrupt callbacks require the timer task, so start USB after the scheduler. */
 #endif
     setup();
     for (;;) {
@@ -88,8 +111,13 @@ static void loop_task(void *arg)
 }
 
 /*
- * 调试日志关闭时 Core 不开 SDK 控制台，printf 的输出被 SDK 丢弃。SDK 的 _read_r（弱定义）会用控制台句柄读 UART，
- * 所以 stdin 在这里明确失败，getchar/scanf 返回 EOF。放在 main.cpp 以保证随入口一起链入。
+ * With debug logging disabled, no SDK console is opened and printf output is discarded. The weak
+ * SDK _read_r would read a console UART; explicitly fail stdin here so getchar/scanf return EOF.
+ * Keep this definition with main to ensure it is linked.
+ */
+/**
+ * @brief Reject unsupported stdin reads with EBADF instead of using an uninitialized SDK
+ * console.
  */
 extern "C" _ssize_t _read_r(struct _reent *r, int fd, void *buf, size_t size)
 {
@@ -101,10 +129,14 @@ extern "C" _ssize_t _read_r(struct _reent *r, int fd, void *buf, size_t size)
     return -1;
 }
 
+/**
+ * @brief Initialize the Core and C++ runtime, create the sketch task and start the FreeRTOS
+ * scheduler.
+ */
 int main(void)
 {
     init();
-    cxx_runtime_init(); /* 构造函数里的局部静态变量要用 guard 锁 */
+    cxx_runtime_init(); /* Local-static initialization inside constructors requires the guard lock. */
     __libc_init_array();
     initVariant();
 
@@ -113,5 +145,5 @@ int main(void)
         abort();
     }
     vTaskStartScheduler();
-    abort(); /* 调度器不会返回 */
+    abort(); /* The scheduler must not return. */
 }

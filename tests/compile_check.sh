@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# 平台编译检查：在 SDK 不可访问的环境中用 arduino-cli 编译测试 sketch，并检查 map 与镜像。
-# 用法：tests/compile_check.sh <底层包目录> <工具链目录> <烧录工具包目录> [隐藏路径...]
+# Compile platform test sketches with arduino-cli while SDK paths are inaccessible; check maps and images.
+# Usage: tests/compile_check.sh <libs-package> <toolchain> <flash-tools> [hidden-path...]
 #
-# 1. 平台复制到临时 sketchbook 的 hardware/bouffalolab/bl，arduino-cli 配置与数据目录都在临时目录；
-# 2. 底层包、工具链与烧录工具包经 --build-property 指定（本地包索引安装在后续步骤验证）；
-# 3. 在 bubblewrap 中把隐藏路径（SDK 检出、SDK 构建目录等）换成空目录后编译；
-# 4. 每个 sketch 用 tests/check_map.py 检查 map（包含 WiFi.h 的 sketch 允许 Wi-Fi 组），用 tests/check_image.py 检查后处理产物。
+# 1. Copy the platform into a temporary sketchbook hardware/bouffalolab/bl; keep CLI config/data temporary too.
+# 2. Select dependency/toolchain/flash packages with --build-property; index installation is tested separately.
+# 3. In bubblewrap replace hidden SDK checkout/build paths with empty directories before compilation.
+# 4. Check each sketch's map and post-processed image; sketches including WiFi.h may use the Wi-Fi link group.
 set -euo pipefail
 
 PKG=$(realpath -e "$1")
@@ -14,7 +14,7 @@ FT=$(realpath -e "$3")
 shift 3
 HIDE=()
 for h in "$@"; do
-    HIDE+=("$(realpath -e "$h")")  # 路径写错时 bwrap 不报错，隔离会静默失效
+    HIDE+=("$(realpath -e "$h")")  # bwrap accepts nonexistent paths silently, so reject misspellings before isolation.
 done
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -48,7 +48,7 @@ for sketch in "$ROOT"/tests/sketches/*/; do
         grep -E '^(Sketch uses|Global variables|Flash )' "$TMP/$name.log" | sed 's/^/  /'
         allow=()
         if grep -q '^#include <WiFi.h>' "$sketch"/*.ino; then
-            allow=(--allow-group wifi)  # WiFi 库经 library.properties 的 ldflags 链入 Wi-Fi 组
+            allow=(--allow-group wifi)  # WiFi selects its link group through library.properties ldflags.
         fi
         python3 -I "$ROOT/tests/check_map.py" "$PKG/manifest.json" "$out/$name.ino.map" "${allow[@]}" >"$TMP/$name.map.txt" || fail=1
         sed 's/^/  /' "$TMP/$name.map.txt"

@@ -2,9 +2,9 @@
 #include "pin_map.h"
 
 /*
- * 引脚号即 GPIO 号。板上固定功能占用的 GPIO 不给 sketch 使用：32 kHz 晶振（GPIO4/5）、
- * USB D+/D-（GPIO32/33）、bootstrap（GPIO36，复位时为高电平进入下载模式）。
- * 这几个在模组 1V0、1V1 上相同；内封 flash 走专用接口，不占 GPIO。
+ * Arduino pin numbers equal GPIO numbers. Reserve GPIO4/5 for the 32 kHz crystal, GPIO32/33 for
+ * USB and GPIO36 for bootstrap (high on reset enters ROM). These assignments match 1V0/1V1;
+ * internal Flash uses a dedicated interface, not GPIOs.
  */
 static constexpr uint8_t NA = PIN_MAP_UNUSED;
 

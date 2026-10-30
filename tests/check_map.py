@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-"""检查 Arduino 编译产物的 GNU ld map。
+"""Check the Arduino GNU ld map. Usage: check_map.py <package-manifest.json> <map>
 
-  check_map.py <底层包 manifest.json> <map> [--allow-group <组>]...
-
-检查三项，任一不满足时退出码为 1：
-1. 未链入底层包链接组（manifest 的 link.groups）的归档成员，--allow-group 列出的组除外；
-2. _malloc_r 来自 SDK libc 移植层（libforce_base.a 中的 liblibc.a@port_memory.c.obj），
-   不是 newlib 的 sbrk 堆；
-3. main 来自 Core 的 main.cpp。
-
-不依赖 ld 输出语言：内存映射部分从第一行 LOAD 开始。
+[--allow-group <group>]... Fail with status 1 if an unapproved manifest link group is
+included, _malloc_r does not come from the SDK TLSF libc port in libforce_base.a, or
+main does not come from Core main.cpp. Start parsing at the first LOAD line rather than
+depending on linker output language.
 """
 
 import fnmatch
@@ -24,7 +19,10 @@ NAME_LINE = re.compile(r"^ (\S+)$")
 
 
 def input_sections(text):
-    """返回 [(段名, 大小, 输入文件)]，只含内存映射部分中非零、非调试的输入段。"""
+    """Return (section, size, input-file) tuples for nonzero, non-debug input sections in
+
+    the memory map.
+    """
     start = text.find("\nLOAD ")
     if start < 0:
         raise ValueError("not a GNU ld map file: no LOAD line")
@@ -33,7 +31,7 @@ def input_sections(text):
     for line in text[start:].splitlines():
         m = NAME_LINE.match(line)
         if m:
-            section = m.group(1)  # 段名过长时，地址和大小在下一行
+            section = m.group(1)  # Long section names put address and size on the next line.
             continue
         m = INPUT_LINE.match(line)
         name, section = (m.group(1) or section, None) if m else (None, None)
@@ -44,7 +42,10 @@ def input_sections(text):
 
 
 def archive_member(path):
-    """'/x/libfoo.a(bar.o)' -> ('libfoo.a', 'bar.o')；libforce_* 的成员还原为原归档。"""
+    """Split '/x/libfoo.a(bar.o)' into ('libfoo.a', 'bar.o'); restore original archive
+
+    names for libforce_* members.
+    """
     m = re.match(r"(.*\.a)\(([^)]+)\)$", path)
     if not m:
         return None
@@ -55,6 +56,7 @@ def archive_member(path):
 
 
 def main(argv):
+    """Parse options and run the check map validation or packaging command."""
     allowed = []
     args = []
     i = 0
@@ -85,6 +87,7 @@ def main(argv):
         ok = ok and not bad
 
     def origin(section_name):
+        """Classify a map section's owning component for duplicate-owner verification."""
         return [src for name, _, src in sections if name == section_name]
 
     malloc_src = origin(".text._malloc_r")

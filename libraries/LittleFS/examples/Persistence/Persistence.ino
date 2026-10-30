@@ -1,5 +1,8 @@
 #include <LittleFS.h>
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
@@ -35,4 +38,7 @@ void setup() {
   Serial.print("Committed boot count: ");
   Serial.println(count);
 }
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop() { delay(100); }

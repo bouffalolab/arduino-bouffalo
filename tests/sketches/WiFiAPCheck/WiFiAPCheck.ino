@@ -1,16 +1,16 @@
-// AP 检查：经 USB 串口输出 "READY" 后按命令执行，由电脑上的脚本驱动。
-//   AP <ssid> <密码|-> [<信道>]           按参数调用 WiFi.beginAP 的对应重载（- 为不给密码），输出 "AP <返回> <状态> <毫秒>"
-//   CFG <地址> [<DNS> [<网关> [<掩码>]]]  按参数个数调用 WiFi.config 的对应重载，输出 "CFG"
-//   ADDR                                  输出 "ADDR <状态> <地址> <掩码> <网关> <softAPIP> <MAC>"
-//   SSID                                  输出 "SSID <SSID()>|<softAPSSID()>"
-//   SRV <端口>                            启动 TCP 服务端：之后每个连接读一行、回同一行再关闭，并输出 "SRVLINE <行>"；
-//                                         输出 "SRV <1/0>"
-//   UDP <端口>                            打开 UDP：之后把收到的数据报原样发回，并输出 "UDPLINE <长度>"；输出 "UDP <1/0>"
-//   PING <地址>                           WiFi.ping(IPAddress)，输出 "PING <结果>"
-//   BEGIN                                 WiFi.begin（arduino_secrets.h 的网络），输出 "BEGIN <状态> <毫秒>"
-//   DISC                                  WiFi.disconnect，输出 "DISC <状态>"
-//   END                                   WiFi.end，输出 "END <状态>"
-// 网络名与密码在 arduino_secrets.h（仓库中为空，只能编译检查）。
+// AP check driven by host USB commands after "READY".
+// AP <ssid> <pass|-> [channel]: select the corresponding beginAP overload; '-' omits the passphrase. Reply "AP <result> <status> <ms>".
+// CFG <address> [DNS [gateway [mask]]]: select config by argument count; reply "CFG".
+// ADDR: reply "ADDR <status> <address> <mask> <gateway> <softAPIP> <MAC>".
+// SSID: reply "SSID <SSID()>|<softAPSSID()>".
+// SRV <port>: start TCP; echo each received line and close, printing "SRVLINE <line>".
+// Reply "SRV <1/0>".
+// UDP <port>: echo incoming datagrams, print "UDPLINE <length>" and reply "UDP <1/0>".
+// PING <address>: call WiFi.ping(IPAddress); reply "PING <result>".
+// BEGIN: use the arduino_secrets.h network; reply "BEGIN <status> <ms>".
+// DISC: call WiFi.disconnect; reply "DISC <status>".
+// END: call WiFi.end; reply "END <status>".
+// Network credentials are empty in tracked arduino_secrets.h; this copy supports compilation only.
 #include <WiFi.h>
 
 #include "arduino_secrets.h"
@@ -19,6 +19,9 @@ static WiFiServer server(80);
 static bool serving;
 static WiFiUDP udp;
 
+/**
+ * @brief Parse a test-command IPv4 argument into an IPAddress.
+ */
 static IPAddress ip_arg(const char *s)
 {
     IPAddress a;
@@ -26,6 +29,9 @@ static IPAddress ip_arg(const char *s)
     return a;
 }
 
+/**
+ * @brief Start the test AP with command-supplied association options.
+ */
 static void cmd_ap(char **args, int n)
 {
     const char *pass = strcmp(args[1], "-") == 0 ? nullptr : args[1];
@@ -45,6 +51,9 @@ static void cmd_ap(char **args, int n)
     Serial.println(millis() - start);
 }
 
+/**
+ * @brief Apply test-command IPv4 configuration and report the result.
+ */
 static void cmd_cfg(char **args, int n)
 {
     if (n == 1) {
@@ -59,6 +68,9 @@ static void cmd_cfg(char **args, int n)
     Serial.println("CFG");
 }
 
+/**
+ * @brief Print the network addresses used by the test sketch.
+ */
 static void cmd_addr()
 {
     uint8_t mac[6];
@@ -79,7 +91,9 @@ static void cmd_addr()
     Serial.println(m);
 }
 
-// 一个连接读一行（最多等 5 s）、回同一行再关闭
+/**
+ * @brief Read one client line with a 5 s bound, echo it, then close.
+ */
 static void serve()
 {
     WiFiClient c = server.available();
@@ -104,6 +118,9 @@ static void serve()
     Serial.println(text);
 }
 
+/**
+ * @brief Echo received UDP data through the test socket.
+ */
 static void echo_udp()
 {
     int n = udp.parsePacket();
@@ -119,6 +136,9 @@ static void echo_udp()
     Serial.println(got);
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -127,6 +147,9 @@ void setup()
     Serial.println("READY");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     static String line;

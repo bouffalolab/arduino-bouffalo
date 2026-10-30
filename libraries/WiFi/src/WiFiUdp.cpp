@@ -1,4 +1,4 @@
-/* WiFiUDP：socket 操作在 net_port.c */
+/* WiFiUDP delegates socket operations to net_port.c. */
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,12 +7,18 @@
 #include "net_port.h"
 #include "wifi_port.h"
 
+/**
+ * @brief Close the UDP socket and release packet state.
+ */
 WiFiUDP::~WiFiUDP()
 {
     stop();
 }
 
-/* 未连上网络且 AP 未运行时直接失败：Wi-Fi 未初始化时 lwIP 的 tcpip 线程还不存在，不能调用 socket */
+/**
+ * @brief Fail without a network or active AP: lwIP tcpip does not exist before Wi-Fi
+ * initialization.
+ */
 bool WiFiUDP::open(uint32_t addr, uint16_t port)
 {
     stop();
@@ -32,16 +38,25 @@ bool WiFiUDP::open(uint32_t addr, uint16_t port)
     return true;
 }
 
+/**
+ * @brief Bind a UDP socket to the requested local address and port; return 1 on success.
+ */
 uint8_t WiFiUDP::begin(uint16_t port)
 {
     return open(0, port) ? 1 : 0;
 }
 
+/**
+ * @brief Bind a UDP socket to the requested local address and port; return 1 on success.
+ */
 uint8_t WiFiUDP::begin(IPAddress ip, uint16_t port)
 {
     return open((uint32_t)ip, port) ? 1 : 0;
 }
 
+/**
+ * @brief Bind a nonzero UDP port and join the specified IPv4 multicast group.
+ */
 uint8_t WiFiUDP::beginMulticast(IPAddress ip, uint16_t port)
 {
     /* lwIP's implicit all-hosts group cannot be joined explicitly (SDK asserts). */
@@ -57,11 +72,17 @@ uint8_t WiFiUDP::beginMulticast(IPAddress ip, uint16_t port)
     return 1;
 }
 
+/**
+ * @brief Select this socket's joined multicast group as the pending destination.
+ */
 int WiFiUDP::beginMulticastPacket()
 {
     return multicast_port_ != 0 ? beginPacket(IPAddress(multicast_addr_), multicast_port_) : 0;
 }
 
+/**
+ * @brief Close the UDP socket and release both packet buffers and destination state.
+ */
 void WiFiUDP::stop()
 {
     if (sock_ >= 0) {
@@ -79,6 +100,10 @@ void WiFiUDP::stop()
     tx_port_ = multicast_port_ = 0;
 }
 
+/**
+ * @brief Select a datagram destination, reusing the most recent one when no address is
+ * supplied.
+ */
 int WiFiUDP::beginPacket()
 {
     if (sock_ < 0 || tx_port_ == 0) {
@@ -89,16 +114,24 @@ int WiFiUDP::beginPacket()
     return 1;
 }
 
+/**
+ * @brief Select a datagram destination, reusing the most recent one when no address is
+ * supplied.
+ */
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 {
     if (port == 0 || (sock_ < 0 && !open(0, 0))) {
         return 0;
     }
-    tx_addr_ = (uint32_t)ip; /* IPAddress 按网络字节序保存 */
+    tx_addr_ = (uint32_t)ip; /* IPAddress stores bytes in network order. */
     tx_port_ = port;
     return beginPacket();
 }
 
+/**
+ * @brief Select a datagram destination, reusing the most recent one when no address is
+ * supplied.
+ */
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
 {
     uint32_t addr;
@@ -109,6 +142,9 @@ int WiFiUDP::beginPacket(const char *host, uint16_t port)
     return beginPacket(IPAddress(addr), port);
 }
 
+/**
+ * @brief Send the buffered datagram and report whether transmission was accepted.
+ */
 int WiFiUDP::endPacket()
 {
     if (!tx_open_) {
@@ -118,11 +154,17 @@ int WiFiUDP::endPacket()
     return net_port_udp_send(sock_, tx_addr_, tx_port_, tx_, tx_len_) == 0 ? 1 : 0;
 }
 
+/**
+ * @brief Append bytes to the bounded pending datagram and return the accepted count.
+ */
 size_t WiFiUDP::write(uint8_t b)
 {
     return write(&b, 1);
 }
 
+/**
+ * @brief Append bytes to the bounded pending datagram and return the accepted count.
+ */
 size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
 {
     if (!tx_open_) {
@@ -138,6 +180,10 @@ size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
     return n;
 }
 
+/**
+ * @brief Fetch the next datagram without waiting, discarding unread data from the previous
+ * one.
+ */
 int WiFiUDP::parsePacket()
 {
     uint32_t addr;
@@ -159,16 +205,25 @@ int WiFiUDP::parsePacket()
     return n;
 }
 
+/**
+ * @brief Return the currently readable byte count without consuming input.
+ */
 int WiFiUDP::available()
 {
     return (int)(rx_len_ - rx_pos_);
 }
 
+/**
+ * @brief Consume unread bytes from the current datagram without waiting.
+ */
 int WiFiUDP::read()
 {
     return rx_pos_ < rx_len_ ? rx_[rx_pos_++] : -1;
 }
 
+/**
+ * @brief Consume unread bytes from the current datagram without waiting.
+ */
 int WiFiUDP::read(unsigned char *buffer, size_t len)
 {
     size_t n = min(len, rx_len_ - rx_pos_);
@@ -179,26 +234,41 @@ int WiFiUDP::read(unsigned char *buffer, size_t len)
     return (int)n;
 }
 
+/**
+ * @brief Consume unread bytes from the current datagram without waiting.
+ */
 int WiFiUDP::read(char *buffer, size_t len)
 {
     return read(reinterpret_cast<unsigned char *>(buffer), len);
 }
 
+/**
+ * @brief Return the next input byte without consuming it, or -1 when none is available.
+ */
 int WiFiUDP::peek()
 {
     return rx_pos_ < rx_len_ ? rx_[rx_pos_] : -1;
 }
 
+/**
+ * @brief Discard the unread part of the current received datagram.
+ */
 void WiFiUDP::flush()
 {
     rx_pos_ = rx_len_;
 }
 
+/**
+ * @brief Return the connected peer or current datagram source address.
+ */
 IPAddress WiFiUDP::remoteIP()
 {
     return IPAddress(rx_addr_);
 }
 
+/**
+ * @brief Return the connected peer or current datagram source port.
+ */
 uint16_t WiFiUDP::remotePort()
 {
     return rx_port_;

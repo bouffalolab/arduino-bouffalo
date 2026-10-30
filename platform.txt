@@ -1,14 +1,14 @@
-# Arduino BL 平台
-# 规范：https://arduino.github.io/arduino-cli/latest/platform-specification/
+# Arduino BL platform.
+# Specification: https://arduino.github.io/arduino-cli/latest/platform-specification/
 #
-# 编译、链接参数与库全部来自板卡所选的预编译底层包（boards.txt 的 build.bl_libs），
-# 平台不调用 SDK 构建。包内 flags/ 下的文件以 gcc @file 方式传入；头文件路径用
-# -iprefix 加包内相对路径，包可以安装到任意位置。
+# Compile/link flags and libraries come from the board-selected precompiled package (boards.txt build.bl_libs).
+# Ordinary platform builds never invoke SDK builds. Pass package flags/ files as GCC response files.
+# Use -iprefix with package-relative include paths so installation roots remain relocatable.
 
 name=Bouffalo Lab BL boards
 version=0.1.0
 
-# 工具链：Xuantie GCC 10.2.0 V2.6.1
+# Toolchain: Xuantie GCC 10.2.0 V2.6.1.
 compiler.path={runtime.tools.xuantie-gcc-riscv.path}/bin/
 compiler.prefix=riscv64-unknown-elf-
 compiler.c.cmd={compiler.prefix}gcc
@@ -25,13 +25,13 @@ compiler.warning_flags.default=
 compiler.warning_flags.more=-Wall
 compiler.warning_flags.all=-Wall -Wextra
 
-# 底层包：配置宏、头文件路径、强制包含的 autoconfig.h
+# Package configuration defines, include paths and forced autoconfig.h.
 compiler.bl.sdk="@{build.bl_libs}/flags/defines" -iprefix "{build.bl_libs}/include/" "@{build.bl_libs}/flags/includes" -include "{build.bl_libs}/include/build/generated/autoconfig.h"
-# 板卡的 USB 设备身份，带 USB 串口的板卡在 build.extra_flags 中引用（写法同官方 AVR 平台）
+# Board USB identity, included through build.extra_flags for USB boards, following the official AVR platform.
 build.usb_flags=-DUSB_VID={build.vid} -DUSB_PID={build.pid} '-DUSB_MANUFACTURER={build.usb_manufacturer}' '-DUSB_PRODUCT={build.usb_product}'
 compiler.bl.arduino=-DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} {build.extra_flags}
 
-# 底层包的 c_flags 带 -Os -g；放在其后的优化参数覆盖它。IDE 的"为调试优化"或 --optimize-for-debug 选用 debug
+# Package c_flags contain -Os -g; later optimization flags override them. IDE debug optimization or --optimize-for-debug selects debug.
 compiler.optimization_flags=-Os
 compiler.optimization_flags.release=-Os
 compiler.optimization_flags.debug=-Og -g3
@@ -45,7 +45,7 @@ compiler.cpp.extra_flags=
 compiler.S.extra_flags=
 compiler.ar.extra_flags=
 compiler.c.elf.extra_flags=
-# 由用到的库（library.properties 的 ldflags）填入，例如 WiFi 库带入 flags/ld_libs_wifi
+# Populated by library.properties ldflags, such as WiFi's flags/ld_libs_wifi.
 compiler.libraries.ldflags=
 
 recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} {compiler.c.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
@@ -53,34 +53,34 @@ recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} {c
 recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {compiler.S.extra_flags} {compiler.bl.arduino} {includes} {compiler.bl.sdk} "{source_file}" -o "{object_file}"
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
 
-# 不使用 --whole-archive：ld_libs 已整体链入只靠整库链接才生效的成员（libforce_base.a）
+# Do not whole-archive every library: ld_libs already retains the required-only-as-a-whole members via libforce_base.a.
 recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.path}/layout.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
 
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 
-# 镜像后处理：bflb_fw_post_proc 原地改写 .bin 的启动头（长度、CRC、dts 中的参数），并在同一目录
-# 生成 partition.bin，供上传使用。工具包只有 Linux 版本。
-# 不传 --boot2file：它会连同只读权限复制包内 boot2 再原地处理，安装目录只读时失败；
-# 处理后的 boot2 与包内原件逐字节相同，上传直接使用包内文件。
+# bflb_fw_post_proc updates the binary boot header (length, CRC and DTS parameters) in place.
+# It also generates partition.bin beside the image for upload. Tools currently support Linux only.
+# Do not pass --boot2file: it copies package boot2 with read-only permissions, then modifies the copy and fails.
+# Processed boot2 is byte-identical to the packaged file; upload the package copy directly.
 recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.bl-flash-tools.path}/bl-layout" finalize --build "{build.path}" --project "{build.project_name}" --libs "{build.bl_libs}" --tools "{runtime.tools.bl-flash-tools.path}" --dts "{build.bl_dts}"
 
 recipe.output.tmp_file={build.project_name}.bin
 recipe.output.save_file={build.project_name}.{build.variant}.bin
 
-# 闪存：从 flash 加载的段（含复制到 RAM 的代码与数据的初值）；RAM：ram 区域中的段
+# Flash counts loaded sections, including initial values copied to RAM. RAM counts sections in the ram region.
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
 recipe.size.regex=^(?:\.fw_header|\.init|\.rftlv\.tool|\.ver|\.init_code|rom_text|rom_rodata|\.last_section|tcm_text|tcm_rodata|tcm_data|ram_data|ram_nocache_data)\s+([0-9]+).*
 recipe.size.regex.data=^(?:tcm_text|tcm_rodata|tcm_data|ram_data|ram_bss|ram_noinit|ram_nocache_data|ram_nocache_noinit)\s+([0-9]+).*
 
-# 端口发现与串口监视：上传与 Serial 都经串口
+# Serial discovery and monitor: uploads and Serial both use serial ports.
 pluggable_discovery.required.0=builtin:serial-discovery
 pluggable_monitor.required.serial=builtin:serial-monitor
 
-# 上传：BLFlashCommand 把 boot2、分区表和固件分别写到各自地址。BL616CL 进入下载模式后，
-# ROM 在 USB 上提供串口，仍用 --interface=uart；波特率对 USB 串口无实际作用。
-# --warm_reset：写完后热复位直接运行新固件。经 1200 bps touch 进入下载模式时，下载请求保存在 HBN 域，
-# 普通复位（--reset）会再次进入下载模式；新固件启动时由 Core 清除该请求。
-# BLFlashCommand 改写自身目录；bl-layout 将其复制到构建目录的 flash-runner 后运行，安装目录可只读。
+# BLFlashCommand writes boot2, partition table and firmware at their selected addresses.
+# ROM download exposes USB CDC; retain --interface=uart, although baud rate has no physical effect on USB.
+# --warm_reset starts the new application. A 1200 bps touch request remains in the HBN domain.
+# A normal --reset would reenter ROM; Core startup clears the retained request.
+# BLFlashCommand modifies its directory. bl-layout runs a build-local flash-runner copy, preserving read-only installations.
 tools.bl_flash.path={runtime.tools.bl-flash-tools.path}/bouffalo_flash_cube
 tools.bl_flash.cmd=BLFlashCommand-ubuntu
 tools.bl_flash.upload.params.verbose=

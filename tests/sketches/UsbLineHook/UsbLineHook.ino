@@ -1,8 +1,8 @@
-// USB 串口线路接口检查：Serial.setTouchReset()、Serial.onLineChange()、resetToBootloader()。
-// 检查过程中 USB 串口会被反复打开关闭，所以结果与命令都走 Serial1（115200）。
-// 回调先读线路状态再 delay(20)，每次记录一条；loop 逐条输出 "CB <序号> <波特率> <DTR> <RTS> <delay 实测 ms>"。
-// Serial1 命令：'0'/'1' 关闭/打开 touch（回 "TOUCH 0/1"），'D' 回 "BOOT" 后进下载模式，
-// '?' 输出 "STAT <回调次数> <touch>"。启动时关闭 touch。
+// Check Serial.setTouchReset(), Serial.onLineChange() and resetToBootloader().
+// USB is repeatedly opened/closed during the check; use Serial1 at 115200 for commands and results.
+// Read line state, delay(20), then record one callback. loop prints "CB <sequence> <baud> <DTR> <RTS> <measured-delay-ms>".
+// Serial1 commands '0'/'1' disable/enable touch and reply "TOUCH 0/1"; 'D' replies "BOOT" and enters ROM.
+// '?' replies "STAT <callback-count> <touch>". Touch is disabled at startup.
 struct Entry {
     uint32_t seq;
     uint32_t baud;
@@ -12,11 +12,14 @@ struct Entry {
 };
 
 static Entry ring[64];
-static volatile uint32_t head; // 回调写
-static uint32_t tail;          // loop 写
+static volatile uint32_t head; // Written by the callback.
+static uint32_t tail;          // Written by loop.
 static volatile uint32_t dropped;
 static bool touch;
 
+/**
+ * @brief Print the observed USB host line settings from the test callback.
+ */
 static void onLine()
 {
     Entry e;
@@ -35,12 +38,18 @@ static void onLine()
     head = head + 1;
 }
 
+/**
+ * @brief Toggle touch-reset handling and report the selected test policy.
+ */
 static void setTouch(bool enable)
 {
     touch = enable;
     Serial.setTouchReset(enable);
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial1.begin(115200);
@@ -50,6 +59,9 @@ void setup()
     Serial1.println(hooked ? 1 : 0);
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     while (tail != head) {

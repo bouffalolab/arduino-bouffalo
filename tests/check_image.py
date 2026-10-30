@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""检查编译目录中的镜像后处理产物，上传配方直接使用这些文件。
+"""Check post-processed build images consumed directly by the upload recipe. Usage:
 
-  check_image.py <编译目录> <project_name>
-
-未经后处理的 .bin 启动头保留链接时的占位值（CRC 为 0xDEADBEEF），ROM 不会引导；
-partition.bin 由后处理生成，缺少时上传会失败。任一项不满足时退出码为 1。
+check_image.py <build-directory> <project_name>. An unprocessed boot header retains
+linker placeholders (CRC 0xDEADBEEF) and will not boot. Post-processing must create
+partition.bin; missing or invalid outputs cause exit status 1.
 """
 
 import struct
@@ -16,6 +15,7 @@ PLACEHOLDER_CRC = 0xDEADBEEF
 
 
 def check(build, project):
+    """Validate the selected artifact or fixture and raise an error on a failed invariant."""
     results = []
     img = (build / (project + ".bin")).read_bytes()
     length, = struct.unpack_from("<I", img, 0x84)
@@ -29,6 +29,7 @@ def check(build, project):
 
 
 def main(argv):
+    """Parse options and run the check image validation or packaging command."""
     if len(argv) != 2:
         print(__doc__, file=sys.stderr)
         return 2

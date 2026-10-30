@@ -1,12 +1,12 @@
 /*
- * wl80211/wifi_mgmr 封装，接口说明见 wifi_port.h。
- * 状态由 wifi_mgmr 的 EV_WIFI 事件驱动：CONNECTED（4-way 完成）、GOT_IP（DHCP 取得地址，DHCP 15 s 超时由
- * wifi_mgmr 自行断开）、DISCONNECT（连接失败与连上后断开都是它，原因要在事件到达时读状态码）；扫描完成是 SCAN_DONE。
- * 状态码 12（WLAN_FW_SCAN_NO_BSSID_AND_CHANNEL）表示扫描不到该 SSID。
- * AP：AP_STARTED 之后 wifi_mgmr 另起任务设地址、启动 DHCP 服务；AP_STA_ADD、AP_STA_DEL 增减已连上的设备数。
- * 静态地址：连接时不启动 DHCP；wifi_mgmr 在 CONNECTED 事件之后另起任务把 STA 链路 up，之后由调用库的任务设置地址并
- * 置为已连接（地址与上次相同时 lwIP 不报 GOT_IP）。静态地址时 GOT_IP 0 只来自本文件停止 DHCP，不作断开处理。
- * 本文件不含 lwip/sockets.h：它与 wl80211.h 都定义 struct iovec（socket 在 net_port.c）。
+ * wl80211/wifi_mgmr adapter; see wifi_port.h. EV_WIFI events drive CONNECTED after four-way
+ * authentication, GOT_IP after DHCP (wifi_mgmr disconnects on its 15 s DHCP timeout), and
+ * DISCONNECT on either failure or later loss; capture the reason when the event arrives. SCAN_DONE
+ * completes scans. AP_STARTED precedes a task that sets addresses/starts DHCP; AP_STA_ADD/DEL
+ * maintain client count. With static IP, wait for a task to bring the STA link up after CONNECTED,
+ * then set addresses and connected state in the calling task; unchanged addresses need not emit
+ * GOT_IP. A static-mode GOT_IP zero from stopping DHCP is not a disconnect. Keep sockets.h
+ * separate because it conflicts with wl80211.h over struct iovec.
  */
 #include <stdlib.h>
 #include <string.h>
@@ -31,35 +31,37 @@
 
 #define STATUS_NO_SSID     12
 #define INIT_TIMEOUT_MS    5000
-#define INIT_TASK_STACK    1024 /* 字 */
+#define INIT_TASK_STACK    1024 /* Words. */
 #define INIT_TASK_PRIORITY 10
 #define PENDING_DISCONNECT_TIMEOUT_MS 3000
-#define AP_POOL_SIZE       10 /* DHCP 地址池大小，同上游 ESP32 固件 */
+#define AP_POOL_SIZE       10 /* DHCP pool size, matching the upstream ESP32 firmware. */
 
-/* wl80211 lwip.c 的 netif 表（底层包 libwl80211_plat，SDK 头文件未声明）：静态地址要看 STA 链路并停止、启动 DHCP；
-   AP 的地址从它读 */
+/*
+ * wl80211 lwip.c netif table from libwl80211_plat; not declared in exported SDK headers. Static
+ * configuration needs STA link/DHCP control; AP addresses are read from this table.
+ */
 extern struct netif vif2netif[WL80211_VIF_MAX];
 #define STA_NETIF (&vif2netif[WL80211_VIF_STA])
 #define AP_NETIF  (&vif2netif[WL80211_VIF_AP])
 
-static int init_result = 1; /* 1 未初始化，0 成功，-1 失败 */
+static int init_result = 1; /* 1: uninitialized; 0: initialized; -1: failed. */
 static volatile bool init_task_done;
 
 static volatile enum wifi_port_state state = WIFI_PORT_IDLE;
 static volatile bool connecting;
 static volatile bool got_ip;
 static volatile bool user_disconnect;
-static volatile bool pending_disconnect; /* 断开之后连接才完成，要补发断开 */
+static volatile bool pending_disconnect; /* Connection completed after cancellation; issue the deferred disconnect. */
 static volatile uint16_t last_status;
 static volatile uint16_t last_reason;
 static volatile uint32_t disconnect_events;
 static volatile uint32_t scan_done_events;
-static uint32_t cfg_ip, cfg_mask, cfg_gw, cfg_dns[2]; /* cfg_ip 为 0 时用 DHCP */
+static uint32_t cfg_ip, cfg_mask, cfg_gw, cfg_dns[2]; /* Use DHCP when cfg_ip is zero. */
 static uint32_t ap_ip, ap_mask, ap_gw;
 static bool auto_reconnect = true;
 static bool reconnect_armed; /* Only after this explicit begin acquired an IP. */
-static volatile bool static_pending; /* 已关联，等链路 up 后设置静态地址 */
-static volatile bool ap_up;            /* AP_STARTED 之后、AP_STOPPED 之前 */
+static volatile bool static_pending; /* Associated; wait for link-up before applying static addresses. */
+static volatile bool ap_up;            /* Between AP_STARTED and AP_STOPPED. */
 static volatile bool ap_failed;
 static volatile uint8_t ap_stations;
 static volatile uint32_t ap_stopped_events;
@@ -71,6 +73,9 @@ static char time_server[254] = "pool.ntp.org";
 static const char *pending_hostname;
 static const char *pending_time_server;
 
+/**
+ * @brief Restart SNTP in the lwIP callback context after a server/configuration change.
+ */
 static void restart_sntp(void *arg)
 {
     (void)arg;
@@ -78,12 +83,18 @@ static void restart_sntp(void *arg)
     sntp_init();
 }
 
+/**
+ * @brief Apply the current RAM hostname to the selected lwIP interface.
+ */
 static void apply_hostname(struct netif *netif)
 {
     memmove(hostname, pending_hostname, strlen(pending_hostname) + 1);
     netif_set_hostname(netif, hostname);
 }
 
+/**
+ * @brief Configure time synchronization when the selected network interface becomes usable.
+ */
 static void configure_sntp(struct netif *netif)
 {
     (void)netif;
@@ -93,9 +104,9 @@ static void configure_sntp(struct netif *netif)
     sntp_init();
 }
 
-/*
- * EV_WIFI 回调。async_event_loop 在定时器任务中、调度器挂起时运行（同 macsw_bare），这里只更新状态，
- * 不调用会阻塞的接口。
+/**
+ * @brief EV_WIFI callback. Like macsw_bare, async_event_loop runs in the timer task with the
+ * scheduler suspended. Update state only; do not call blocking interfaces.
  */
 static void wifi_event(async_input_event_t ev, void *priv)
 {
@@ -109,7 +120,10 @@ static void wifi_event(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_GOT_IP:
             if (ev->value && user_disconnect) {
-                /* 应用断开时连接还没出结果（等待超时），之后连接才完成：不报告已连接，下一次调用接口时补发断开 */
+                /*
+ * The application timed out while disconnecting a pending connection, which completed later.
+ * Suppress connected status and perform the deferred disconnect on the next interface call.
+ */
                 pending_disconnect = true;
                 connecting = false;
             } else if (ev->value) {
@@ -127,7 +141,7 @@ static void wifi_event(async_input_event_t ev, void *priv)
             break;
         case CODE_WIFI_ON_CONNECTED:
             if (cfg_ip != 0 && user_disconnect) {
-                pending_disconnect = true; /* 同 GOT_IP 时的处理 */
+                pending_disconnect = true; /* Handle as in GOT_IP. */
                 connecting = false;
             } else if (cfg_ip != 0) {
                 static_pending = true;
@@ -172,6 +186,9 @@ static void wifi_event(async_input_event_t ev, void *priv)
     }
 }
 
+/**
+ * @brief Drain deferred radio events while preserving the SDK scheduler exclusion convention.
+ */
 static void async_event_handler(void *arg1, uint32_t arg2)
 {
     (void)arg1;
@@ -181,6 +198,9 @@ static void async_event_handler(void *arg1, uint32_t arg2)
     xTaskResumeAll();
 }
 
+/**
+ * @brief Schedule deferred async-event processing with a timer-task-safe wait policy.
+ */
 static void async_event_loop_wake(void)
 {
     TickType_t wait = portMAX_DELAY;
@@ -191,6 +211,10 @@ static void async_event_loop_wake(void)
     xTimerPendFunctionCall(async_event_handler, NULL, 0, wait);
 }
 
+/**
+ * @brief Start firmware initialization from task context and signal completion through
+ * platform state.
+ */
 static void wifi_init_task(void *arg)
 {
     (void)arg;
@@ -203,6 +227,9 @@ static void wifi_init_task(void *arg)
     vTaskDelete(NULL);
 }
 
+/**
+ * @brief Initialize the radio and Wi-Fi management once, reporting initialization failure.
+ */
 int wifi_port_init(void)
 {
     if (init_result != 1) {
@@ -236,7 +263,9 @@ int wifi_port_init(void)
     return init_result;
 }
 
-/* 发起断开并等断开事件，最多 timeout_ms */
+/**
+ * @brief Request disconnect and wait for its event, bounded by timeout_ms.
+ */
 static void sta_disconnect_wait(uint32_t timeout_ms)
 {
     uint32_t events = disconnect_events;
@@ -246,6 +275,9 @@ static void sta_disconnect_wait(uint32_t timeout_ms)
     }
 }
 
+/**
+ * @brief Apply the selected STA static address and DNS policy to lwIP.
+ */
 static void apply_static_ip(void)
 {
     ip4_addr_t ip, mask, gw;
@@ -263,7 +295,9 @@ static void apply_static_ip(void)
     netifapi_netif_set_default(STA_NETIF);
 }
 
-/* 静态地址在 STA 链路 up 之后设置（在调用库的任务中） */
+/**
+ * @brief Set static addresses after STA link-up, in the library caller's task.
+ */
 static void finish_static_ip(void)
 {
     if (static_pending && netif_is_link_up(STA_NETIF)) {
@@ -278,7 +312,10 @@ static void finish_static_ip(void)
     }
 }
 
-/* 事件回调中不能调用会阻塞的接口，补发的断开在这里做（在调用库的任务中） */
+/**
+ * @brief Event callbacks cannot block; perform the deferred disconnect here in the library
+ * caller's task.
+ */
 static void finish_pending_disconnect(void)
 {
     if (pending_disconnect) {
@@ -287,6 +324,9 @@ static void finish_pending_disconnect(void)
     }
 }
 
+/**
+ * @brief Start a STA connection using the supplied SSID and optional passphrase.
+ */
 int wifi_port_connect(const char *ssid, const char *pass)
 {
     wifi_mgmr_sta_connect_params_t p;
@@ -298,7 +338,7 @@ int wifi_port_connect(const char *ssid, const char *pass)
     if (pass != NULL) {
         strncpy(p.key, pass, sizeof(p.key) - 1);
     }
-    p.pmf_cfg = 1; /* PMF 可选；SDK 默认 0 连不上要求 PMF 的 AP（WPA3，reason 31） */
+    p.pmf_cfg = 1; /* PMF optional: SDK default zero cannot connect to PMF-required WPA3 APs (reason 31). */
     p.use_dhcp = cfg_ip == 0;
 
     user_disconnect = false;
@@ -318,6 +358,9 @@ int wifi_port_connect(const char *ssid, const char *pass)
     return ret;
 }
 
+/**
+ * @brief Wait for a state flag to reach its requested value or a monotonic timeout.
+ */
 static void wait_until(volatile bool *flag, bool value, uint32_t timeout_ms)
 {
     for (uint32_t waited = 0; *flag != value && waited < timeout_ms; waited += 10) {
@@ -326,7 +369,10 @@ static void wait_until(volatile bool *flag, bool value, uint32_t timeout_ms)
     }
 }
 
-/* wifi_mgmr_sta_disconnect 只对已关联的连接有效，所以先等进行中的连接出结果 */
+/**
+ * @brief wifi_mgmr_sta_disconnect only affects associated stations, so wait for a pending
+ * association to finish first.
+ */
 void wifi_port_disconnect(uint32_t timeout_ms)
 {
     /* An explicit disconnect must not trigger wifi_mgmr's automatic retry. */
@@ -343,6 +389,9 @@ void wifi_port_disconnect(uint32_t timeout_ms)
     state = WIFI_PORT_DISCONNECTED;
 }
 
+/**
+ * @brief Return AP state while AP is active, otherwise the STA state.
+ */
 enum wifi_port_state wifi_port_state(void)
 {
     finish_pending_disconnect();
@@ -356,6 +405,9 @@ enum wifi_port_state wifi_port_state(void)
     return ap_failed ? WIFI_PORT_AP_FAILED : state;
 }
 
+/**
+ * @brief Return STA state independently of AP activity.
+ */
 enum wifi_port_state wifi_port_sta_state(void)
 {
     finish_pending_disconnect();
@@ -363,11 +415,17 @@ enum wifi_port_state wifi_port_sta_state(void)
     return init_result == -1 ? WIFI_PORT_NO_MODULE : state;
 }
 
+/**
+ * @brief Report whether the AP interface is active.
+ */
 bool wifi_port_ap_running(void)
 {
     return ap_up;
 }
 
+/**
+ * @brief Set reconnect policy for unexpected STA disconnections.
+ */
 int wifi_port_set_auto_reconnect(bool enable)
 {
     if (init_result == 0) {
@@ -380,35 +438,52 @@ int wifi_port_set_auto_reconnect(bool enable)
     return 0;
 }
 
+/**
+ * @brief Return the current unexpected-disconnect reconnect policy.
+ */
 bool wifi_port_get_auto_reconnect(void)
 {
     return auto_reconnect;
 }
 
+/**
+ * @brief Return UTC epoch seconds, or zero before synchronization.
+ */
 unsigned long wifi_port_time(void)
 {
     time_t now = time(NULL);
     return now >= 946684800 ? (unsigned long)now : 0;
 }
 
+/**
+ * @brief Return the current RAM-resident hostname.
+ */
 const char *wifi_port_hostname(void)
 {
     return hostname;
 }
 
+/**
+ * @brief Validate and update the DHCP hostname; return zero on success.
+ */
 int wifi_port_set_hostname(const char *name)
 {
     pending_hostname = name;
     return netifapi_netif_common(STA_NETIF, apply_hostname, NULL);
 }
 
+/**
+ * @brief Select the SNTP server and schedule synchronization when networking is ready.
+ */
 int wifi_port_config_time(const char *server)
 {
     pending_time_server = server;
     return netifapi_netif_common(STA_NETIF, configure_sntp, NULL);
 }
 
-/* These run in the TCP/IP thread through netifapi, like other netif changes. */
+/**
+ * @brief These run in the TCP/IP thread through netifapi, like other netif changes.
+ */
 static void enable_ipv6(struct netif *netif)
 {
     if (ip6_addr_isinvalid(netif_ip6_addr_state(netif, 0))) {
@@ -416,11 +491,17 @@ static void enable_ipv6(struct netif *netif)
     }
 }
 
+/**
+ * @brief Enable supported STA link-local IPv6 addressing.
+ */
 int wifi_port_enable_ipv6(void)
 {
     return init_result == 0 ? netifapi_netif_common(STA_NETIF, enable_ipv6, NULL) : -1;
 }
 
+/**
+ * @brief Write the STA link-local IPv6 address as bounded text.
+ */
 void wifi_port_ipv6(char *address, uint32_t size)
 {
     strncpy(address, "::", size);
@@ -434,25 +515,36 @@ void wifi_port_ipv6(char *address, uint32_t size)
     UNLOCK_TCPIP_CORE();
 }
 
+/**
+ * @brief Report whether STA or AP can provide network services.
+ */
 bool wifi_port_net_up(void)
 {
     enum wifi_port_state s = wifi_port_state();
     return s == WIFI_PORT_CONNECTED || s == WIFI_PORT_AP_LISTENING || s == WIFI_PORT_AP_CONNECTED;
 }
 
+/**
+ * @brief Report whether a STA connection attempt is in progress.
+ */
 bool wifi_port_connecting(void)
 {
     finish_static_ip();
     return connecting;
 }
 
+/**
+ * @brief Copy the latest connection status and reason into optional output pointers.
+ */
 void wifi_port_last_error(uint16_t *status, uint16_t *reason)
 {
     *status = last_status;
     *reason = last_reason;
 }
 
-/* 断开事件到达时 netif 可能还留着旧地址，所以只在已连接时读 */
+/**
+ * @brief A disconnect event may leave the old netif address; read it only while connected.
+ */
 void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
 {
     if (ap_up) {
@@ -462,6 +554,9 @@ void wifi_port_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
     }
 }
 
+/**
+ * @brief Copy STA IPv4 address, mask and gateway in network byte order.
+ */
 void wifi_port_sta_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
 {
     uint32_t dns;
@@ -471,6 +566,9 @@ void wifi_port_sta_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
     }
 }
 
+/**
+ * @brief Copy AP IPv4 address, mask and gateway in network byte order.
+ */
 void wifi_port_ap_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
 {
     *ip = *mask = *gw = 0;
@@ -481,9 +579,14 @@ void wifi_port_ap_ip(uint32_t *ip, uint32_t *mask, uint32_t *gw)
     }
 }
 
-/* SDK's wl80211 lwIP port exports this helper, but not in a public header. */
+/**
+ * @brief SDK's wl80211 lwIP port exports this helper, but not in a public header.
+ */
 extern void _wifi_mgmr_ap_start_dhcpd(bool use_ipcfg, bool use_dhcpd, int start, int limit, uint32_t ip, uint32_t mask);
 
+/**
+ * @brief Apply supported AP addressing and refresh DHCP when AP is running.
+ */
 int wifi_port_ap_config(uint32_t ip, uint32_t mask, uint32_t gw)
 {
     /* dhcpd's address pool uses the final octet; support /24 networks. */
@@ -507,6 +610,9 @@ int wifi_port_ap_config(uint32_t ip, uint32_t mask, uint32_t gw)
     return 0;
 }
 
+/**
+ * @brief Store STA addressing; a zero IP restores DHCP behavior.
+ */
 void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2)
 {
     bool was_static = cfg_ip != 0;
@@ -520,7 +626,7 @@ void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1,
     }
     if (ip != 0) {
         if (!was_static) {
-            netifapi_dhcp_stop(STA_NETIF); /* 地址清零后的 GOT_IP 0 在静态地址时不作断开 */
+            netifapi_dhcp_stop(STA_NETIF); /* Do not treat GOT_IP zero after clearing an address as a disconnect in static mode. */
         }
         apply_static_ip();
     } else if (was_static) {
@@ -528,6 +634,9 @@ void wifi_port_ip_config(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1,
     }
 }
 
+/**
+ * @brief Apply nonzero DNS entries while respecting DHCP/static policy.
+ */
 void wifi_port_set_dns(uint32_t dns1, uint32_t dns2)
 {
     if (cfg_ip == 0) {
@@ -549,6 +658,9 @@ void wifi_port_set_dns(uint32_t dns1, uint32_t dns2)
     }
 }
 
+/**
+ * @brief Return a DNS server in network byte order, or zero for an invalid index.
+ */
 uint32_t wifi_port_dns(int index)
 {
     if (state != WIFI_PORT_CONNECTED || index < 0 || index >= DNS_MAX_SERVERS) {
@@ -558,6 +670,9 @@ uint32_t wifi_port_dns(int index)
     return dns != NULL ? ip4_addr_get_u32(ip_2_ip4(dns)) : 0;
 }
 
+/**
+ * @brief Return current signal strength in dBm.
+ */
 int32_t wifi_port_rssi(void)
 {
     int rssi = 0;
@@ -568,6 +683,9 @@ int32_t wifi_port_rssi(void)
     return rssi;
 }
 
+/**
+ * @brief Copy the AP MAC while AP is running, otherwise query the STA MAC.
+ */
 int wifi_port_mac(uint8_t mac[6])
 {
     if (ap_up) {
@@ -577,14 +695,19 @@ int wifi_port_mac(uint8_t mac[6])
     return wifi_mgmr_sta_mac_get(mac);
 }
 
+/**
+ * @brief Copy the connected access point BSSID, reporting failure when unavailable.
+ */
 int wifi_port_bssid(uint8_t bssid[6])
 {
     memset(bssid, 0, 6);
     return state == WIFI_PORT_CONNECTED ? wifi_mgmr_sta_get_bssid(bssid) : -1;
 }
 
-/* WiFiS3 对上游各加密方式的归类：WPA/WPA2 混合算 WPA2，WPA2/WPA3 混合算 WPA3。
-   wifi_mgmr 不看 privacy 位，WEP 网络会归为开放 */
+/**
+ * @brief Match WiFiS3 encryption categories: WPA/WPA2 maps to WPA2, WPA2/WPA3 maps to WPA3.
+ * wifi_mgmr ignores the privacy bit, so WEP appears open.
+ */
 static uint8_t to_enc(uint8_t auth)
 {
     switch (auth) {
@@ -600,6 +723,9 @@ static uint8_t to_enc(uint8_t auth)
     }
 }
 
+/**
+ * @brief Run a bounded scan and copy up to max retained access points into aps.
+ */
 int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
 {
     wifi_mgmr_scan_params_t p;
@@ -609,7 +735,7 @@ int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
     }
     finish_pending_disconnect();
     wait_until(&connecting, false, timeout_ms);
-    wifi_mgmr_sta_scanlist_free(); /* 结果表跨次累积，同 SDK 的 wifi_scan 命令先清空 */
+    wifi_mgmr_sta_scanlist_free(); /* Scan results accumulate between scans; clear the table first, as the SDK wifi_scan command does. */
     memset(&p, 0, sizeof(p));
     uint32_t events = scan_done_events;
     if (wifi_mgmr_sta_scan(&p) != 0) {
@@ -625,7 +751,7 @@ int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
     if (items == NULL) {
         return -1;
     }
-    int n = (int)wifi_mgmr_sta_scanlist_dump(items, max); /* 按 RSSI 从强到弱 */
+    int n = (int)wifi_mgmr_sta_scanlist_dump(items, max); /* Sort by descending RSSI. */
     for (int i = 0; i < n; i++) {
         memcpy(aps[i].ssid, items[i].ssid, 32);
         aps[i].ssid[32] = '\0';
@@ -638,7 +764,9 @@ int wifi_port_scan(struct wifi_port_ap *aps, int max, uint32_t timeout_ms)
     return n;
 }
 
-/* 发起停止并等停止事件；AP 尚未报告启动时不等 */
+/**
+ * @brief Request AP stop and wait for its event, unless AP startup has not yet been reported.
+ */
 static void ap_stop_wait(uint32_t timeout_ms)
 {
     uint32_t events = ap_stopped_events;
@@ -650,6 +778,10 @@ static void ap_stop_wait(uint32_t timeout_ms)
     ap_stations = 0;
 }
 
+/**
+ * @brief Start AP with validated credentials and association options, waiting up to
+ * timeout_ms.
+ */
 int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool hidden, uint8_t max_connections, uint32_t timeout_ms)
 {
     wifi_mgmr_ap_params_t p;
@@ -662,7 +794,7 @@ int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool
     uint8_t host = ip4_addr4(&ip);
     memset(&p, 0, sizeof(p));
     p.ssid = (char *)ssid;
-    p.key = pass != NULL && pass[0] != '\0' ? (char *)pass : NULL; /* 有密码时 wl80211 用 WPA2-PSK */
+    p.key = pass != NULL && pass[0] != '\0' ? (char *)pass : NULL; /* Use WPA2-PSK when a passphrase is supplied. */
     p.channel = channel;
     p.hidden_ssid = hidden;
     /* The pinned wl80211 has four association slots. A requested ceiling of
@@ -670,14 +802,17 @@ int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool
     wifi_mgmr_conf_max_sta(max_connections > 4 ? 4 : max_connections);
     p.use_ipcfg = true;
     p.use_dhcpd = true;
-    /* dhcpd_start 只在给出地址池时保留已设的地址（否则改为 192.168.169.1），池在地址的最后一段前后 */
+    /*
+ * dhcpd_start preserves the configured address only with an explicit pool; otherwise it changes to
+ * 192.168.169.1. The pool lies around the last address octet.
+ */
     p.start = host <= 254 - AP_POOL_SIZE ? host + 1 : host - AP_POOL_SIZE;
     p.limit = AP_POOL_SIZE;
     p.ap_ipaddr = ip4_addr_get_u32(&ip);
     p.ap_mask = ap_ip != 0 ? ap_mask : PP_HTONL(LWIP_MAKEU32(255, 255, 255, 0));
     ap_failed = false;
     ap_stations = 0;
-    /* 清掉上次的地址，下面才能按地址判断这次的设置已完成 */
+    /* Clear the previous address so the following wait can detect completion of this configuration. */
     ip4_addr_set_zero(&zero);
     netifapi_netif_set_addr(AP_NETIF, &zero, &zero, &zero);
     if (wifi_mgmr_ap_start(&p) != 0) {
@@ -701,6 +836,9 @@ int wifi_port_ap_start(const char *ssid, const char *pass, uint8_t channel, bool
     return -1;
 }
 
+/**
+ * @brief Stop AP and its DHCP service within the supplied timeout.
+ */
 void wifi_port_ap_stop(uint32_t timeout_ms)
 {
     ap_failed = false;

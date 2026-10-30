@@ -1,7 +1,10 @@
-// 回显串口收到的字节；每秒打印一次运行时间，用于确认 millis() 与发送
-// Serial 是 USB 串口时，等主机打开端口后再输出（官方原生 USB 板卡的写法）
+// Echo serial input and print uptime each second to check millis() and TX.
+// For native USB Serial, wait until the host opens the port before printing, as official USB-board examples do.
 static unsigned long last;
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -10,6 +13,9 @@ void setup()
     Serial.println("SerialEcho ready");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     while (Serial.available() > 0) {

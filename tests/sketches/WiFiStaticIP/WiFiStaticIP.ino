@@ -1,17 +1,20 @@
-// 静态地址检查：经 USB 串口输出 "READY" 后按命令执行，由电脑上的脚本驱动。
-//   CFG <地址> [<DNS> [<网关> [<掩码>]]]  按参数个数调用 WiFi.config 的对应重载，输出 "CFG"
-//   DNS <DNS1> [<DNS2>]                   WiFi.setDNS，输出 "DNS"
-//   BEGIN                                 WiFi.begin，输出 "BEGIN <状态> <毫秒>"
-//   DISC                                  WiFi.disconnect，输出 "DISC"
-//   ADDR                                  输出 "ADDR <状态> <地址> <掩码> <网关> <DNS0> <DNS1>"
-//   PING <主机>                           WiFi.ping，输出 "PING <结果>"
-//   RESOLVE <主机>                        WiFi.hostByName，输出 "RESOLVE <1/0> <地址>"
-//   TCP <主机> <端口> <文本>              WiFiClient 发一行读回一行，输出 "TCP <连接成功 1/0> <读回的行>"；文本不含空格
-// 网络名与密码在 arduino_secrets.h（仓库中为空，只能编译检查）。
+// Static-IP check driven by host USB commands after "READY".
+// CFG <address> [DNS [gateway [mask]]]: choose the config overload; reply "CFG".
+// DNS <DNS1> [DNS2]: call setDNS; reply "DNS".
+// BEGIN: call begin; reply "BEGIN <status> <ms>".
+// DISC: call disconnect; reply "DISC".
+// ADDR: reply "ADDR <status> <address> <mask> <gateway> <DNS0> <DNS1>".
+// PING <host>: reply "PING <result>".
+// RESOLVE <host>: call hostByName; reply "RESOLVE <1/0> <address>".
+// TCP <host> <port> <text>: send/read one line; reply "TCP <connected-1/0> <line>". Text contains no spaces.
+// Tracked arduino_secrets.h has empty credentials for compilation only.
 #include <WiFi.h>
 
 #include "arduino_secrets.h"
 
+/**
+ * @brief Parse a test-command IPv4 argument into an IPAddress.
+ */
 static IPAddress ip_arg(const char *s)
 {
     IPAddress a;
@@ -19,6 +22,9 @@ static IPAddress ip_arg(const char *s)
     return a;
 }
 
+/**
+ * @brief Apply test-command IPv4 configuration and report the result.
+ */
 static void cmd_cfg(char **args, int n)
 {
     if (n == 1) {
@@ -33,6 +39,9 @@ static void cmd_cfg(char **args, int n)
     Serial.println("CFG");
 }
 
+/**
+ * @brief Print the network addresses used by the test sketch.
+ */
 static void cmd_addr()
 {
     Serial.print("ADDR ");
@@ -49,6 +58,9 @@ static void cmd_addr()
     Serial.println(WiFi.dnsIP(1));
 }
 
+/**
+ * @brief Exchange a supplied test payload with the selected TCP peer.
+ */
 static void cmd_tcp(const char *host, uint16_t port, const char *text)
 {
     WiFiClient c;
@@ -75,6 +87,9 @@ static void cmd_tcp(const char *host, uint16_t port, const char *text)
     Serial.println(back);
 }
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
@@ -83,6 +98,9 @@ void setup()
     Serial.println("READY");
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     static String line;

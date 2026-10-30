@@ -1,6 +1,6 @@
 /*
- * Arduino API 入口。通用接口来自 ArduinoCore-API（api/，原样复制，见 README.md），
- * BL 芯片的实现在本目录，板卡差异在 variants/。
+ * Arduino API entry point. Generic interfaces come from the unmodified ArduinoCore-API in api/
+ * (see README.md). Chip implementations live here; board differences belong in variants/.
  */
 #ifndef Arduino_h
 #define Arduino_h
@@ -16,7 +16,10 @@ using namespace arduino;
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* BL616CL 软件复位进入 ROM 下载模式（UART 与 USB），不等待未发出的串口数据，不返回；实现在 isp_boot.c */
+/**
+ * @brief Reset BL616CL into ROM download mode over UART or USB. Pending serial output is not
+ * drained. Does not return; implemented in isp_boot.c.
+ */
 void resetToBootloader(void) __attribute__((noreturn));
 #ifdef __cplusplus
 }

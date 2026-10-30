@@ -5,9 +5,18 @@
 #include <string.h>
 
 static const char directory[] = "/.preferences";
+/**
+ * @brief Validate a bounded Preferences namespace or key component.
+ */
 static bool validName(const char *name) { return name && *name && strlen(name) <= 15; }
+/**
+ * @brief Decode an unsigned little-endian 16-bit value.
+ */
 static uint16_t le16(const uint8_t *p) { return p[0] | uint16_t(p[1]) << 8; }
 
+/**
+ * @brief Identify the private Preferences path subtree protected from file AT operations.
+ */
 bool Preferences::isStoragePath(const char *path) {
     if (!path || *path != '/') return false;
     for (;;) {
@@ -19,6 +28,9 @@ bool Preferences::isStoragePath(const char *path) {
            !strncmp(path, directory + 1, sizeof(directory) - 2);
 }
 
+/**
+ * @brief Read and validate one serialized Preferences record header.
+ */
 bool Preferences::record(File &file, Record &entry) {
     uint8_t header[20];
     if (file.read(header, sizeof(header)) != sizeof(header)) { _error = LFS_ERR_CORRUPT; return false; }
@@ -31,6 +43,9 @@ bool Preferences::record(File &file, Record &entry) {
     return true;
 }
 
+/**
+ * @brief Open and validate the namespace store header and record count.
+ */
 bool Preferences::load(File &file, uint16_t &count) {
     file = LittleFS.open(_path);
     if (!file) { _error = LittleFS.lastError(); return false; }
@@ -53,6 +68,10 @@ bool Preferences::load(File &file, uint16_t &count) {
     return true;
 }
 
+/**
+ * @brief Open a bounded namespace on littlefs; create a missing writable namespace without
+ * formatting storage.
+ */
 bool Preferences::begin(const char *name, bool readOnly, const char *partition) {
     if (_started || !validName(name) || (partition && *partition && strcmp(partition, "lfs"))) {
         _error = LFS_ERR_INVAL; return false;
@@ -79,8 +98,14 @@ bool Preferences::begin(const char *name, bool readOnly, const char *partition) 
     return true;
 }
 
+/**
+ * @brief Release the active namespace state without unmounting shared littlefs.
+ */
 void Preferences::end() { _started = false; _readOnly = false; _path[0] = 0; _error = 0; }
 
+/**
+ * @brief Locate a key record in an open namespace store.
+ */
 bool Preferences::find(const char *key, File &file, Record &entry) {
     if (!_started) { _error = LFS_ERR_BADF; return false; }
     if (!validName(key)) { _error = LFS_ERR_INVAL; return false; }
@@ -95,6 +120,10 @@ bool Preferences::find(const char *key, File &file, Record &entry) {
     return false;
 }
 
+/**
+ * @brief Rewrite the namespace through a temporary file, committing the replacement only after
+ * success.
+ */
 bool Preferences::change(const char *key, PreferenceType type, const uint8_t *value, size_t size) {
     if (!_started || _readOnly) { _error = LFS_ERR_BADF; return false; }
     if (key && !validName(key)) { _error = LFS_ERR_INVAL; return false; }
@@ -145,18 +174,31 @@ bool Preferences::change(const char *key, PreferenceType type, const uint8_t *va
     return true;
 }
 
+/**
+ * @brief Validate and store a typed key value; return stored bytes or zero on failure.
+ */
 size_t Preferences::put(const char *key, PreferenceType type, const void *value, size_t size) {
     if (!validName(key) || type >= PT_INVALID || size > MAX_VALUE_SIZE || (size && !value)) { _error = LFS_ERR_INVAL; return 0; }
     return change(key, type, static_cast<const uint8_t *>(value), size) ? size : 0;
 }
+/**
+ * @brief Store a NUL-terminated string, excluding its terminator from the serialized value.
+ */
 size_t Preferences::putString(const char *key, const char *value) {
     if (!value) { _error = LFS_ERR_INVAL; return 0; }
     return put(key, PT_STR, value, strlen(value));
 }
+/**
+ * @brief Store an opaque byte value within the configured Preferences value limit.
+ */
 size_t Preferences::putBytes(const char *key, const void *value, size_t size) {
     if (!size) { _error = LFS_ERR_INVAL; return 0; }
     return put(key, PT_BLOB, value, size);
 }
+/**
+ * @brief Read a matching typed key into the caller's bounded buffer, recording type/size
+ * errors.
+ */
 size_t Preferences::get(const char *key, PreferenceType type, void *value, size_t maxLen) {
     File file; Record r;
     if (!find(key, file, r)) return 0;
@@ -165,18 +207,33 @@ size_t Preferences::get(const char *key, PreferenceType type, void *value, size_
     _error = 0;
     return r.size;
 }
+/**
+ * @brief Return the stored key type, or PT_INVALID when absent or invalid.
+ */
 PreferenceType Preferences::getType(const char *key) { File file; Record r; return find(key, file, r) ? r.type : PT_INVALID; }
+/**
+ * @brief Report whether the current namespace contains a valid record for the key.
+ */
 bool Preferences::isKey(const char *key) { return getType(key) != PT_INVALID; }
+/**
+ * @brief Return a stored blob's byte length, or zero on failure.
+ */
 size_t Preferences::getBytesLength(const char *key) {
     File file; Record r;
     if (!find(key, file, r)) return 0;
     if (r.type != PT_BLOB) { _error = LFS_ERR_INVAL; return 0; }
     return r.size;
 }
+/**
+ * @brief Copy a stored blob into a sufficiently large caller buffer.
+ */
 size_t Preferences::getBytes(const char *key, void *value, size_t maxLen) {
     if (!value || !maxLen) return getBytesLength(key);
     return get(key, PT_BLOB, value, maxLen);
 }
+/**
+ * @brief Read a stored string with termination, or return the caller's fallback on failure.
+ */
 size_t Preferences::getString(const char *key, char *value, size_t maxLen) {
     if (!value || !maxLen) { _error = LFS_ERR_INVAL; return 0; }
     size_t n = get(key, PT_STR, value, maxLen - 1);
@@ -184,6 +241,9 @@ size_t Preferences::getString(const char *key, char *value, size_t maxLen) {
     value[n] = 0;
     return n + 1;
 }
+/**
+ * @brief Read a stored string with termination, or return the caller's fallback on failure.
+ */
 String Preferences::getString(const char *key, String fallback) {
     File file; Record r;
     if (!find(key, file, r)) return fallback;
@@ -198,11 +258,20 @@ String Preferences::getString(const char *key, String fallback) {
     _error = 0;
     return result;
 }
+/**
+ * @brief Remove one validated key from the writable namespace through a replacement file.
+ */
 bool Preferences::remove(const char *key) {
     if (!validName(key)) { _error = LFS_ERR_INVAL; return false; }
     return change(key, PT_INVALID, nullptr, 0);
 }
+/**
+ * @brief Replace the writable namespace with an empty store.
+ */
 bool Preferences::clear() { return change(nullptr, PT_INVALID, nullptr, 0); }
+/**
+ * @brief Return remaining logical key slots in the current namespace, not free Flash bytes.
+ */
 size_t Preferences::freeEntries() {
     if (!_started) { _error = LFS_ERR_BADF; return 0; }
     File file; uint16_t count;

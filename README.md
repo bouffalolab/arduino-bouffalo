@@ -2,13 +2,13 @@
 
 通用 Bouffalo Arduino 平台仓库，从 BL616CL 起步，后续逐步支持多芯片。
 
-当前阶段：最小平台骨架。Core 与第一块板卡可以用 arduino-cli 编译、生成镜像，经板上 USB 口一键上传；`Serial` 是 USB 串口，`Serial1`、`Serial2` 是硬件 UART。
+当前阶段：初版本地候选，已完成平台与 bridge 所需功能的分项验收及 ARDUINO-52～55 发布门槛；最终放行仍保留。Core 与第一块板卡可以用 arduino-cli 编译、生成镜像，经板上 USB 口上传；`Serial` 是 USB 串口，`Serial1`、`Serial2` 是硬件 UART。
 
 普通用户的目标体验是通过 Boards Manager / Arduino CLI 安装后直接编译上传，无需完整 Bouffalo SDK。底层依赖由独立构建器发布。
 
 当前平台需要 `bl616cl-libs` 0.9.0 和 `bl-flash-tools` 0.2.0（IPv4 IGMP 组播与配套 netif ABI，保留 SNTP、DHCP hostname、IPv6、隐藏 AP、littlefs 及 HID/BLE）；平台与依赖包应一起更新。
 
-本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件目前位于非 Git 的父工作区，独立分发文档的方式待确定。
+本地共享入口：[文档](../docs/README.md)、[开发规范](../AGENTS.md)、[已确认验收](../docs/project/charter.md)。这些文件位于非 Git 的父工作区；ARDUINO-55/56 已按候选清单保存交付快照，提交本仓库不会保存共享文档，后续变更需另存快照。
 
 ## 目录
 
@@ -77,11 +77,13 @@ arduino-lint --project-type platform --compliance strict .
 
 ## 功能状态
 
+下面保留分项验收时的依赖版本，不能视为全部由当前源码重新构建。2026-10-30 的冻结候选与范围见[候选状态](../docs/reference/bridge-release-candidate.md)；ARDUINO-59 仅改注释和文档，没有生成新固件或新增实机验收。
+
 只有编译链接证据、没有实机运行证据的功能标为 experimental。未另注版本的表中证据针对板卡 `unor4wifi_bl616cl`（UNO R4 WiFi，BL616CL 模组 1V0）与 `bl616cl-libs` 0.4.0（0.4.0 上复验了编译检查与安装链，TLS 的实机证据来自 0.4.0，其余实机证据来自 0.3.2 至 0.3.5），主机为 Linux x86_64；Windows、macOS 未测。
 
 | 功能 | 状态 | 构建证据 | 实机证据或说明 |
 | --- | --- | --- | --- |
-| `BLEController` external-host原始H4命令/事件/ACL、关闭再初始化（BL端无Host） | experimental | 0.5.0：13个普通sketch构建/map/镜像辅助检查不含Controller，另编译ControllerUSB；均不计实机验收 | Linux x86_64、1V0 + AX200：HCI查询、真实广告/central扫描、peripheral连接与双向ACL，1/20/21/100/244字节通知及Wi-Fi TCP/USB CDC并发、关闭重启通过；官方ArduinoBLE示例尚无实机结果。见BLEController README和ARDUINO-43任务。 |
+| `BLEController` external-host原始H4命令/事件/ACL、关闭再初始化（BL端无Host） | experimental | 0.5.0：13个普通sketch构建/map/镜像辅助检查不含Controller，另编译ControllerUSB；均不计实机验收 | Linux x86_64、1V0 + AX200：HCI查询、真实广告/central扫描、peripheral连接与双向ACL，1/20/21/100/244字节通知及Wi-Fi TCP/USB CDC并发、关闭重启通过；ARDUINO-44 已补齐7个官方示例与公共地址/RAM密钥安全实机证据，5例缺配件未验收；统一候选与BlueZ显式RA补丁边界见ARDUINO-53及bridge README。此行0.5.0证据仍保留原固件身份。 |
 | 可选 raw HID（`usb_hid_port.h`），与 CDC 组成三接口 USB 设备 | experimental | 0.4.1：13 个 sketch 编译/map/镜像检查通过；完整 bridge 编译通过 | Linux x86_64、1V0、bridge：64 字节 HID 连续收发、Feature、真实 RA4M1 SWD 读写/编程/调试；与 CDC 并发回显 50 B–64 KB。未注册 HID 的 sketch 仍仅有 CDC；上层 DAP 证据在 bridge 任务。 |
 | 编译链接（`unor4wifi_bl616cl`，`bl616cl-libs` 0.4.0） | experimental | Blink、CxxStd、DebugLog、SerialEcho、Serial1Echo、UsbLineHook、WiFiScan、WiFiServerCheck、WiFiSSLCheck、WiFiStaticIP、WiFiStation、WMath 通过 `compile_check.sh` | 首块板上 Blink、UsbAlive、SerialEcho、Serial1Echo 烧录后运行 |
 | `setup`/`loop` 任务（FreeRTOS，栈 8 KB，优先级 1）、`serialEvent`、`serialEvent1`、`serialEvent2` | experimental | 同上 | UsbAlive 的 `setup`/`loop` 持续运行；`serialEvent*` 未测 |

@@ -1,12 +1,18 @@
-// 调试日志检查：每 500 ms 用 printf 输出 "LOG <n>"，用 Serial（USB）输出 "USB <n>"。
-// 板卡菜单 Debug log 打开时 LOG 行只出现在 uart2（J6 IO41），关闭时被丢弃；两种情况下 USB 上都只有 USB 行
+// Every 500 ms print "LOG <n>" with printf and "USB <n>" with USB Serial.
+// With Debug log enabled, LOG appears only on uart2 (J6 IO41); otherwise it is discarded. USB carries only USB lines in both modes.
 #include <stdio.h>
 
+/**
+ * @brief Initialize the resources used by this example or validation sketch.
+ */
 void setup()
 {
     Serial.begin(115200);
 }
 
+/**
+ * @brief Service the example or validation scenario on each Arduino loop iteration.
+ */
 void loop()
 {
     static unsigned long n;

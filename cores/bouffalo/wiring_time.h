@@ -1,4 +1,6 @@
 #pragma once
 
-/* 记录 millis()/micros() 的起点；在 init() 中调用一次。 */
+/**
+ * @brief Capture the millis()/micros() origin once during init().
+ */
 void wiring_time_init(void);
