@@ -1,0 +1,28 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -635,6 +635,7 @@
+     char *p = NULL;
+     int offset = 0;
+     int res = -1;
++    bool bridge_ap_add_network;
+ 
+     if ((fhost_vif_idx < FHOST_WPA_GLOBAL_VIF) &&
+         (!wpa_vif || (wpa_vif->state == FHOST_WPA_STATE_STOPPED))) {
+@@ -642,7 +643,17 @@
+         return -1;
+     }
+ 
++    bridge_ap_add_network = fhost_vif_idx == MGMR_VIF_AP &&
++        strcmp(fmt, "ADD_NETWORK") == 0;
++    if (bridge_ap_add_network) {
++        fhost_bridge_ap_start_progress(151, 0);
++        fhost_bridge_ap_start_heap_before_allocate(600);
++    }
+     req = rtos_malloc(600);
++    if (bridge_ap_add_network) {
++        fhost_bridge_ap_start_heap_after_allocate((uint32_t)(uintptr_t)req);
++        fhost_bridge_ap_start_progress(152, req ? 0 : -1);
++    }
+     if (!req) {
+         fhost_printf("alloc msg buf failed\r\n");
+         assert(0);

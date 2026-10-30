@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "description": "Non-secret ESP32-S3 Wi-Fi AT transcript capture plan. Each case records raw bytes and timing; it does not define a BL616CL expected response.",
+  "cases": [
+    {
+      "id": "wifi_scan",
+      "classification": "hardware-capture-required",
+      "summary": "Capture scan framing, terminal response, and the immediate post-scan status with the ambient radio environment recorded as metadata.",
+      "preconditions": [
+        "UNO R4 WiFi is running the ESP32-S3 baseline bridge firmware.",
+        "RA4M1 is running examples/ra4-at-transcript-proxy at 115200 baud.",
+        "Do not rely on the SSID, BSSID, RSSI, channel, or encryption rows being stable.",
+        "Keep the raw capture outside the repository because scan rows contain SSIDs and BSSIDs."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+WIFISCAN\r\n",
+      "follow_up_requests_ascii": [
+        "AT+GETSTATUS?\r\n"
+      ],
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 20000,
+        "quiet_ms": 150
+      }
+    },
+    {
+      "id": "wifi_status",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the current Wi-Fi status code without changing the radio state.",
+      "preconditions": [
+        "Record the connection state and the preceding test case in capture metadata."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+GETSTATUS?\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "wifi_mode_read",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the runtime Wi-Fi mode readback.",
+      "preconditions": [
+        "Record the current STA/AP connection state in capture metadata."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+WIFIMODE?\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "beginsta_empty_ssid",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the malformed STA connection error path without exposing a network credential.",
+      "preconditions": [
+        "No network credential is required or allowed in this capture."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+BEGINSTA=\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "wifi_mode_invalid",
+      "classification": "hardware-capture-required",
+      "summary": "Capture invalid mode argument framing.",
+      "preconditions": [
+        "No radio state is changed by an invalid mode value."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+WIFIMODE=4\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "reconnect_read",
+      "classification": "hardware-capture-required",
+      "summary": "Capture current automatic-reconnect state without modifying it.",
+      "preconditions": [
+        "Record the current setting in the output; do not change it in this case."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+RECONNECT?\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "autoconnect_read",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the deprecated automatic-connect readback; ESP32-S3 0.6.0 source statically returns false.",
+      "preconditions": [
+        "This read is expected to be a deprecated ESP32 Arduino Core no-op on the 0.6.0 baseline."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+AUTOCONNECT?\r\n",
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "autoconnect_write_enable",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the deprecated automatic-connect enable write; ESP32-S3 0.6.0 source statically makes no persistent change.",
+      "preconditions": [
+        "The ESP32-S3 baseline must be firmware 0.6.0 or a source-equivalent Arduino Core revision.",
+        "Do not reuse this case as evidence for another ESP32 core version without checking its WiFiSTA implementation."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+AUTOCONNECT=1\r\n",
+      "follow_up_requests_ascii": [
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    },
+    {
+      "id": "autoconnect_write_disable",
+      "classification": "hardware-capture-required",
+      "summary": "Capture the deprecated automatic-connect disable write; ESP32-S3 0.6.0 source statically makes no persistent change.",
+      "preconditions": [
+        "The ESP32-S3 baseline must be firmware 0.6.0 or a source-equivalent Arduino Core revision.",
+        "Do not reuse this case as evidence for another ESP32 core version without checking its WiFiSTA implementation."
+      ],
+      "state_change": "none",
+      "request_ascii": "AT+AUTOCONNECT=0\r\n",
+      "follow_up_requests_ascii": [
+        "AT+AUTOCONNECT?\r\n"
+      ],
+      "completion": {
+        "type": "terminal-line",
+        "terminal_ascii": [
+          "OK\r\n",
+          "ERROR\r\n"
+        ],
+        "timeout_ms": 3000,
+        "quiet_ms": 100
+      }
+    }
+  ]
+}

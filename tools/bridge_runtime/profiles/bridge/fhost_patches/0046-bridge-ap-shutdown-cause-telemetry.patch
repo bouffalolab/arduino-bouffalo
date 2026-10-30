@@ -1,0 +1,86 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -921,11 +921,19 @@
+ 		fhost_bridge_ap_start_wpa_event_path(
+ 			1, 1, 0xff, 0xff, -1, -1, -1,
+ 			wpa_s->ap_iface->state, 0xff);
++	if (bridge_ap)
++		fhost_bridge_ap_start_hostapd_lifecycle(
++			32, 0, wpa_s->ap_iface->state, 0,
++			wpa_s->wpa_state, 0);
+ 	if (wpa_s->ap_iface->state == HAPD_IFACE_DISABLED) {
+ 		if (bridge_ap)
+ 			fhost_bridge_ap_start_wpa_event_path(
+ 				2, 1, 0xff, 0xff, -1, -1, -1,
+ 				-1, 0xff);
++		if (bridge_ap)
++			fhost_bridge_ap_start_hostapd_lifecycle(
++				33, 0, wpa_s->ap_iface->state, 0,
++				wpa_s->wpa_state, 0);
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return;
+ 	}
+@@ -1234,6 +1242,13 @@
+ 
+ void wpa_supplicant_ap_deinit(struct wpa_supplicant *wpa_s)
+ {
++	const int bridge_ap = wpa_s->ap_iface &&
++		os_strcmp(wpa_s->ifname, "wl2") == 0;
++
++	if (bridge_ap)
++		fhost_bridge_ap_start_hostapd_lifecycle(
++			34, 0, wpa_s->ap_iface->state, 0, wpa_s->wpa_state, 0);
++
+ #ifdef CONFIG_WPS
+ 	eloop_cancel_timeout(wpas_wps_ap_pin_timeout, wpa_s, NULL);
+ #endif /* CONFIG_WPS */
+@@ -1248,6 +1263,10 @@
+ 	wpa_s->ap_iface->driver_ap_teardown =
+ 		!!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_hostapd_lifecycle(
++			35, 0, wpa_s->ap_iface->state, 0, wpa_s->wpa_state,
++			wpa_s->ap_iface->driver_ap_teardown);
+ 	hostapd_interface_deinit(wpa_s->ap_iface);
+ 	hostapd_interface_free(wpa_s->ap_iface);
+ 	wpa_s->ap_iface = NULL;
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c
+@@ -50,6 +50,7 @@
+ #include "mesh_mpm.h"
+ #include "wmm_ac.h"
+ #include "dpp_supplicant.h"
++#include "fhost.h"
+ #include "bl_fw_api.h"
+ 
+ 
+@@ -295,6 +296,11 @@
+ #endif /* CONFIG_IBSS_RSN */
+ 
+ #ifdef CONFIG_AP
++	if (wpa_s->ap_iface &&
++	    os_strcmp(wpa_s->ifname, "wl2") == 0)
++		fhost_bridge_ap_start_hostapd_lifecycle(
++			38, 0, wpa_s->ap_iface->state, 0,
++			wpa_s->wpa_state, 0);
+ 	wpa_supplicant_ap_deinit(wpa_s);
+ #endif /* CONFIG_AP */
+ 
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c
+@@ -2517,6 +2517,7 @@
+ 	if (iface == NULL)
+ 		return;
+ 
++	bridge_ap_start_hostapd(iface, 36, 0, 0, 0);
+ 	hostapd_set_state(iface, HAPD_IFACE_DISABLED);
+ 
+ 	eloop_cancel_timeout(channel_list_update_timeout, iface, NULL);
+@@ -2888,6 +2889,7 @@
+ 	if (hapd_iface == NULL)
+ 		return -1;
+ 
++	bridge_ap_start_hostapd(hapd_iface, 37, 0, 0, 0);
+ 	if (hapd_iface->disable_iface_cb)
+ 		return hapd_iface->disable_iface_cb(hapd_iface);

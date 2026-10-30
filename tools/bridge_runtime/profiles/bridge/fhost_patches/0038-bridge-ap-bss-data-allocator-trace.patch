@@ -1,0 +1,17 @@
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -1141,10 +1141,15 @@
+ 		if (bridge_ap)
+ 			fhost_bridge_ap_start_create_ap(
+ 				9, 0, wpa_s->wpa_state, i);
++		if (bridge_ap)
++			fhost_bridge_ap_start_progress(250, 0);
+ 		hapd_iface->bss[i] =
+ 			hostapd_alloc_bss_data(hapd_iface, conf,
+ 					       conf->bss[i]);
++		if (bridge_ap)
++			fhost_bridge_ap_start_progress(
++				251, hapd_iface->bss[i] ? 0 : -1);
+ 		if (bridge_ap)
+ 			fhost_bridge_ap_start_create_ap(
+ 				10, hapd_iface->bss[i] ? 0 : -1, wpa_s->wpa_state, i);

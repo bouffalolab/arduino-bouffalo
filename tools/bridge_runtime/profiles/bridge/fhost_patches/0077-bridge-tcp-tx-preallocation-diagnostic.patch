@@ -1,0 +1,27 @@
+--- a/components/net/lwip/lwip/src/core/tcp_out.c
++++ b/components/net/lwip/lwip/src/core/tcp_out.c
+@@ -221,6 +221,9 @@
+  * @param first_seg true when this pbuf will be used in the first enqueued segment.
+  */
+ #if TCP_OVERSIZE
++/* Optional fixed application policy; no callback keeps the native TX heuristic.
++ * Retains the single-pbuf contract and all MAC/DMA headroom. */
++extern unsigned bridge_tcp_tx_extra_bytes(void) __attribute__((weak));
+ static struct pbuf *
+ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
+                   u16_t *oversize, const struct tcp_pcb *pcb, u8_t apiflags,
+@@ -260,6 +263,14 @@
+     }
+   }
+ #endif /* LWIP_NETIF_TX_SINGLE_PBUF */
++  if (bridge_tcp_tx_extra_bytes) {
++    unsigned extra = bridge_tcp_tx_extra_bytes();
++    if (extra <= TCP_OVERSIZE) {
++      /* Use a wide sum: an oversized/near-u16 length must never wrap. */
++      u32_t capped = (u32_t)length + extra;
++      if (alloc > capped) alloc = (u16_t)capped;
++    }
++  }
+   p = pbuf_alloc(layer, alloc, PBUF_RAM);
+   if (p == NULL) {
+     return NULL;

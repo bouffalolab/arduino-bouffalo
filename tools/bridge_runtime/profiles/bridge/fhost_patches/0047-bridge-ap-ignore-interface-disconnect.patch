@@ -1,0 +1,17 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -838,6 +838,14 @@
+ 		drv->ssid_len = 0;
+ 	}
+ 
++	/*
++	 * Hostapd owns AP lifecycle. MACSW reports this interface-level status
++	 * while enabling the AP VIF; treating it as a station disassociation
++	 * makes the generic WPA path tear down the just-created hostapd iface.
++	 */
++	if (event.fhost_vif_idx == MGMR_VIF_AP)
++		return;
++
+ 	wpa_supplicant_event(drv->ctx, EVENT_DISASSOC, &data);
+ }
+ 

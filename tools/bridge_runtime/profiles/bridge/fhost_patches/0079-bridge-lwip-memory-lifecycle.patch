@@ -1,0 +1,57 @@
+--- a/components/net/lwip/lwip/src/core/mem.c
++++ b/components/net/lwip/lwip/src/core/mem.c
+@@ -607,6 +607,14 @@
+ }
+ #endif /* MEM_SANITY_CHECK */
+ 
++/* Optional native allocation lifecycle. Called under the heap lock, never
++ * from a refcount decrement that leaves the allocation alive. A consumer must
++ * not allocate, log, acquire the TCP core lock, or call back into this heap.
++ * Charges include allocator headers and unsplittable slack, not payload bytes.
++ * No callbacks exist for libc/pool allocators: the bridge uses the native heap. */
++extern void bridge_lwip_mem_lifecycle(void *allocation, unsigned before,
++    unsigned after) __attribute__((weak));
++
+ /**
+  * Put a struct mem back on the heap
+  *
+@@ -676,6 +684,10 @@
+ 
+   MEM_STATS_DEC_USED(used, mem->next - (mem_size_t)(((u8_t *)mem - ram)));
+ 
++  if (bridge_lwip_mem_lifecycle) {
++    bridge_lwip_mem_lifecycle(rmem, mem->next - mem_to_ptr(mem), 0);
++  }
++
+   /* finally, see if prev or next are free also */
+   plug_holes(mem);
+   MEM_SANITY();
+@@ -750,6 +762,7 @@
+   /* protect the heap from concurrent access */
+   LWIP_MEM_FREE_PROTECT();
+ 
++  const unsigned bridge_old_charge = mem->next - ptr;
+   mem2 = ptr_to_mem(mem->next);
+   if (mem2->used == 0) {
+     /* The next struct is unused, we can simply move it at little */
+@@ -815,6 +828,9 @@
+ #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
+   mem_free_count = 1;
+ #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
++  if (bridge_lwip_mem_lifecycle && bridge_old_charge != mem->next - ptr) {
++    bridge_lwip_mem_lifecycle(rmem, bridge_old_charge, mem->next - ptr);
++  }
+   LWIP_MEM_FREE_UNPROTECT();
+   return rmem;
+ }
+@@ -959,6 +975,10 @@
+            */
+           mem->used = 1;
+           MEM_STATS_INC_USED(used, mem->next - mem_to_ptr(mem));
++        }
++        if (bridge_lwip_mem_lifecycle) {
++          bridge_lwip_mem_lifecycle((u8_t *)mem + SIZEOF_STRUCT_MEM + MEM_SANITY_OFFSET,
++                                   0, mem->next - mem_to_ptr(mem));
+         }
+ #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
+ mem_malloc_adjust_lfree:

@@ -1,0 +1,627 @@
+#include <ArduinoBLE.h>
+#include <Modem.h>
+#include <WiFiS3.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace {
+
+constexpr size_t kCommandCapacity = 256U;
+constexpr unsigned long kWifiTimeoutMs = 30000UL;
+constexpr unsigned long kBleObserveBeforeTlsMs = 4000UL;
+constexpr unsigned long kBleObserveAfterTlsMs = 2000UL;
+constexpr unsigned long kTlsTimeoutMs = @TLS_TIMEOUT_MS@UL;
+constexpr bool kEnableTcpProbe = @ENABLE_TCP_PROBE@;
+constexpr bool kReducedScanDuty = @REDUCED_SCAN_DUTY@;
+constexpr bool kScanStopRecovery = @SCAN_STOP_RECOVERY@;
+constexpr uint16_t kScanWindow = @SCAN_WINDOW@;
+constexpr unsigned long kReadTimeoutMs = 10000UL;
+constexpr unsigned long kUsbEchoTimeoutMs = 5000UL;
+constexpr unsigned long kDisconnectTimeoutMs = 5000UL;
+constexpr unsigned long kReadyRepeatIntervalMs = 1000UL;
+constexpr size_t kMaxRounds = 20U;
+constexpr char kTlsRequest[] = "bl616cl-tls-ping";
+constexpr char kTlsReply[] = "bl616cl-tls-echo";
+
+class DiagnosticTlsClient : public WiFiSSLClient {
+ public:
+  int socket() const { return _sock; }
+};
+
+const char kTestCa[] =
+@TLS_TEST_CA_LITERAL@;
+
+char command[kCommandCapacity] = {};
+size_t command_size = 0U;
+bool completed = false;
+bool ble_began = false;
+bool scan_active = false;
+unsigned long next_ready_announcement_ms = 0UL;
+
+void cleanup() {
+  if (scan_active) {
+    BLE.stopScan();
+    scan_active = false;
+  }
+  if (ble_began) {
+    BLE.end();
+    ble_began = false;
+  }
+  WiFi.disconnect();
+}
+
+void fail(const char *reason) {
+  cleanup();
+  Serial.print("RA4_COEX:RESULT=FAIL:");
+  Serial.println(reason);
+  completed = true;
+}
+
+void print_tls_diagnostics(int socket) {
+  Serial.print("RA4_COEX:TLS_SOCKET=");
+  Serial.println(socket);
+  if (socket < 2000 || socket > 2007) return;
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTDIAG:",
+          response,
+          "AT+SSLCLIENTDIAG=%d\r\n",
+          socket)) {
+    Serial.print("RA4_COEX:TLS_DIAG=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_COEX:TLS_DIAG=UNAVAILABLE");
+  }
+
+  response.clear();
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTVERIFYFLAGS:",
+          response,
+          "AT+SSLCLIENTVERIFYFLAGS=%d\r\n",
+          socket)) {
+    Serial.print("RA4_COEX:TLS_VERIFY_FLAGS=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_COEX:TLS_VERIFY_FLAGS=UNAVAILABLE");
+  }
+
+  response.clear();
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTENDPOINT:",
+          response,
+          "AT+SSLCLIENTENDPOINT=%d\r\n",
+          socket)) {
+    Serial.print("RA4_COEX:TLS_ENDPOINT=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("RA4_COEX:TLS_ENDPOINT=UNAVAILABLE");
+  }
+}
+
+void print_tls_heap_snapshot(int socket, size_t round) {
+  std::string response;
+  modem.begin();
+  if (!modem.write(
+          "+SSLCLIENTDIAG:",
+          response,
+          "AT+SSLCLIENTDIAG=%d\r\n",
+          socket)) {
+    return;
+  }
+  Serial.print("RA4_COEX:TLS_HEAP_SNAPSHOT=");
+  Serial.print(round);
+  Serial.print(',');
+  Serial.println(response.c_str());
+}
+
+bool read_command_line() {
+  while (Serial.available() > 0) {
+    const int value = Serial.read();
+    if (value < 0) {
+      return false;
+    }
+    if (value == '\r') {
+      continue;
+    }
+    if (value == '\n') {
+      command[command_size] = '\0';
+      command_size = 0U;
+      return true;
+    }
+    if (command_size + 1U >= sizeof(command)) {
+      command_size = 0U;
+      fail("COMMAND");
+      return false;
+    }
+    command[command_size++] = static_cast<char>(value);
+  }
+  return false;
+}
+
+int hex_value(char value) {
+  if (value >= '0' && value <= '9') {
+    return value - '0';
+  }
+  if (value >= 'a' && value <= 'f') {
+    return value - 'a' + 10;
+  }
+  if (value >= 'A' && value <= 'F') {
+    return value - 'A' + 10;
+  }
+  return -1;
+}
+
+bool decode_hex(char *encoded) {
+  const size_t encoded_size = strlen(encoded);
+  if ((encoded_size & 1U) != 0U) {
+    return false;
+  }
+  const size_t decoded_size = encoded_size / 2U;
+  for (size_t index = 0U; index < decoded_size; ++index) {
+    const int high = hex_value(encoded[index * 2U]);
+    const int low = hex_value(encoded[index * 2U + 1U]);
+    if (high < 0 || low < 0) {
+      return false;
+    }
+    encoded[index] = static_cast<char>((high << 4U) | low);
+  }
+  encoded[decoded_size] = '\0';
+  return decoded_size != 0U;
+}
+
+bool parse_start(
+    char *&ssid,
+    char *&password,
+    IPAddress &endpoint,
+    uint16_t &port,
+    bool &stop_scan_before_tls,
+    size_t &rounds) {
+  constexpr char kPrefix[] = "START ";
+  if (strncmp(command, kPrefix, sizeof(kPrefix) - 1U) != 0) {
+    return false;
+  }
+  char *fields[6] = {};
+  fields[0] = command + sizeof(kPrefix) - 1U;
+  size_t field_count = 1U;
+  while (field_count < sizeof(fields) / sizeof(fields[0])) {
+    const size_t previous = field_count - 1U;
+    fields[field_count] = strchr(fields[previous], ' ');
+    if (fields[field_count] == nullptr) {
+      break;
+    }
+    *fields[field_count]++ = '\0';
+    ++field_count;
+  }
+  if (field_count != 5U && field_count != 6U) {
+    return false;
+  }
+  if (strchr(fields[field_count - 1U], ' ') != nullptr) {
+    return false;
+  }
+  const unsigned long parsed_port = strtoul(fields[3], nullptr, 10);
+  const unsigned long parsed_stop_scan = strtoul(fields[4], nullptr, 10);
+  const unsigned long parsed_rounds =
+      field_count == 6U ? strtoul(fields[5], nullptr, 10) : 1U;
+  ssid = fields[0];
+  password = fields[1];
+  return decode_hex(ssid) &&
+      decode_hex(password) &&
+      endpoint.fromString(fields[2]) &&
+      parsed_port > 0U &&
+      parsed_port <= 65535U &&
+      parsed_stop_scan <= 1U &&
+      parsed_rounds > 0U &&
+      parsed_rounds <= kMaxRounds &&
+      (stop_scan_before_tls = parsed_stop_scan != 0U, true) &&
+      (rounds = static_cast<size_t>(parsed_rounds), true) &&
+      (port = static_cast<uint16_t>(parsed_port), true);
+}
+
+bool disconnect_station() {
+  if (WiFi.disconnect() != 1) {
+    return false;
+  }
+  const unsigned long started_at = millis();
+  while (WiFi.status() == WL_CONNECTED) {
+    if (millis() - started_at >= kDisconnectTimeoutMs) {
+      return false;
+    }
+    delay(20);
+  }
+  return true;
+}
+
+void stop_ble() {
+  if (scan_active) {
+    BLE.stopScan();
+    scan_active = false;
+  }
+  if (ble_began) {
+    BLE.end();
+    ble_began = false;
+  }
+}
+
+bool wait_for_station();
+void collect_ble_reports(unsigned long duration_ms, unsigned long &report_count);
+bool wait_for_tls_reply(WiFiSSLClient &client, unsigned long &report_count);
+bool wait_for_usb_echo(unsigned long &report_count);
+
+bool read_tls_at_response(const char* request, char* response, size_t capacity) {
+  size_t size = 0;
+  response[0] = '\0';
+  while (Serial2.available()) (void)Serial2.read();
+  Serial2.print(request);
+  Serial2.flush();
+  const unsigned long started = millis();
+  while (millis() - started < 5000) {
+    while (Serial2.available()) {
+      const int value = Serial2.read();
+      if (value < 0) continue;
+      if (size + 1 >= capacity) return false;
+      response[size++] = static_cast<char>(value);
+      response[size] = '\0';
+      if (size >= 4 && strcmp(response + size - 4, "OK\r\n") == 0) return true;
+      if (size >= 7 && strcmp(response + size - 7, "ERROR\r\n") == 0) return false;
+    }
+    delay(1);
+  }
+  return false;
+}
+
+bool check_tls_address_api(int socket, const IPAddress& endpoint, uint16_t port) {
+  const String local = WiFi.localIP().toString();
+  const String remote = endpoint.toString();
+  char request[64] = {};
+  char response[160] = {};
+  char expected[128] = {};
+  snprintf(request, sizeof(request), "AT+SSLIPCLIENT=%d\r\n", socket);
+  snprintf(expected, sizeof(expected), "+SSLIPCLIENT: %s\r\n\r\nOK\r\n", local.c_str());
+  if (!read_tls_at_response(request, response, sizeof(response)) ||
+      strcmp(response, expected) != 0) return false;
+  snprintf(request, sizeof(request), "AT+SSLCLIENTSTATE=%d\r\n", socket);
+  snprintf(expected, sizeof(expected), "+SSLCLIENTSTATE: %s,%u,",
+           remote.c_str(), static_cast<unsigned>(port));
+  if (!read_tls_at_response(request, response, sizeof(response)) ||
+      strncmp(response, expected, strlen(expected)) != 0) return false;
+  const char* cursor = response + strlen(expected);
+  if (*cursor < '0' || *cursor > '9') return false;
+  char* end = nullptr;
+  const unsigned long local_port = strtoul(cursor, &end, 10);
+  return local_port > 0 && local_port <= 65535 &&
+      strcmp(end, "\r\n\r\nOK\r\n") == 0;
+}
+
+void print_coex_snapshot(const char *stage) {
+  std::string response;
+  modem.begin();
+  Serial.print("RA4_COEX:COEX_SNAPSHOT=");
+  Serial.print(stage);
+  Serial.print(',');
+  if (modem.write("+COEXDIAG:", response, "AT+COEXDIAG?\r\n")) {
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("UNAVAILABLE");
+  }
+}
+
+void scan_stop_tls_probe(const IPAddress &endpoint, uint16_t port,
+                         unsigned long &report_count) {
+  if (!kScanStopRecovery) return;
+  BLE.stopScan();
+  scan_active = false;
+  print_coex_snapshot("SCAN_STOPPED");
+  DiagnosticTlsClient probe;
+  probe.setCACert(kTestCa);
+  probe.setConnectionTimeout(kTlsTimeoutMs);
+  const bool connected = probe.connect(endpoint, port) == 1;
+  Serial.print("RA4_COEX:SCAN_STOP_TLS_CONNECT=");
+  Serial.println(connected ? "PASS" : "FAIL");
+  if (connected) {
+    const bool exchanged = probe.write(
+        reinterpret_cast<const uint8_t *>(kTlsRequest), sizeof(kTlsRequest) - 1U) ==
+        sizeof(kTlsRequest) - 1U && wait_for_tls_reply(probe, report_count);
+    Serial.print("RA4_COEX:SCAN_STOP_TLS_EXCHANGE=");
+    Serial.println(exchanged ? "PASS" : "FAIL");
+  } else {
+    print_tls_diagnostics(probe.socket());
+  }
+  print_coex_snapshot("RECOVERY_END");
+  probe.stop();
+}
+
+bool run_round(
+    const char *ssid,
+    const char *password,
+    const IPAddress &endpoint,
+    uint16_t port,
+    bool stop_scan_before_tls,
+    size_t round) {
+  Serial.print("RA4_COEX:ROUND_START=");
+  Serial.println(round);
+  const unsigned long round_started_at = millis();
+
+  const int wifi_begin_result = WiFi.begin(ssid, password);
+  Serial.print("RA4_COEX:WIFI_BEGIN_RESULT=");
+  Serial.println(wifi_begin_result);
+  if (wifi_begin_result != WL_CONNECTED && !wait_for_station()) {
+    fail("WIFI_CONNECT");
+    return false;
+  }
+  Serial.println("RA4_COEX:WIFI_CONNECTED");
+  print_coex_snapshot("BEFORE_BLE");
+
+  ble_began = BLE.begin();
+  if (!ble_began) {
+    fail("BLE_BEGIN");
+    return false;
+  }
+  Serial.println("RA4_COEX:BLE_BEGIN_PASS");
+  if (kReducedScanDuty && !BLE.setScanParameters(0x0040, kScanWindow)) {
+    fail("BLE_SCAN_DUTY");
+    return false;
+  }
+  scan_active = BLE.scan() != 0;
+  if (!scan_active) {
+    fail("BLE_SCAN_START");
+    return false;
+  }
+  Serial.println("RA4_COEX:BLE_SCAN_START_PASS");
+  if (kReducedScanDuty) {
+    Serial.println("RA4_COEX:BLE_SCAN_PARAMETERS_CUSTOM");
+    Serial.print("RA4_COEX:BLE_SCAN_WINDOW=");
+    Serial.println(kScanWindow);
+  }
+
+  unsigned long report_count = 0UL;
+  collect_ble_reports(kBleObserveBeforeTlsMs, report_count);
+  Serial.print("RA4_COEX:BLE_REPORTS_BEFORE_TLS=");
+  Serial.println(report_count);
+  if (report_count == 0U) {
+    fail("BLE_REPORTS_BEFORE_TLS");
+    return false;
+  }
+  print_coex_snapshot("SCAN_READY");
+
+  if (kEnableTcpProbe) {
+    WiFiClient tcp_probe;
+    if (tcp_probe.connect(endpoint, port) != 1) {
+      tcp_probe.stop();
+      print_coex_snapshot("TCP_FAILED");
+      scan_stop_tls_probe(endpoint, port, report_count);
+      fail("TCP_PROBE");
+      return false;
+    }
+    tcp_probe.stop();
+    Serial.println("RA4_COEX:TCP_PROBE_PASS");
+  } else {
+    Serial.println("RA4_COEX:TCP_PROBE_SKIPPED");
+  }
+
+  if (stop_scan_before_tls) {
+    BLE.stopScan();
+    scan_active = false;
+    Serial.println("RA4_COEX:BLE_SCAN_STOP_BEFORE_TLS");
+  } else {
+    Serial.println("RA4_COEX:BLE_SCAN_ACTIVE_DURING_TLS");
+  }
+
+  DiagnosticTlsClient client;
+  client.setCACert(kTestCa);
+  client.setConnectionTimeout(kTlsTimeoutMs);
+  modem.timeout(kTlsTimeoutMs + 5000UL);
+  if (client.connect(endpoint, port) != 1) {
+    print_tls_diagnostics(client.socket());
+    print_coex_snapshot("TLS_CONNECT_FAILED");
+    client.stop();
+    scan_stop_tls_probe(endpoint, port, report_count);
+    fail("TLS_CONNECT");
+    return false;
+  }
+  Serial.println("RA4_COEX:TLS_CONNECT_PASS");
+  print_coex_snapshot("TLS_CONNECTED");
+  if (!check_tls_address_api(client.socket(), endpoint, port)) {
+    client.stop();
+    fail("TLS_ADDRESS_API");
+    return false;
+  }
+  Serial.print("RA4_COEX:TLS_ADDRESS_API_PASS=");
+  Serial.println(round);
+  if (client.write(
+          reinterpret_cast<const uint8_t *>(kTlsRequest),
+          sizeof(kTlsRequest) - 1U) != sizeof(kTlsRequest) - 1U) {
+    client.stop();
+    fail("TLS_WRITE");
+    return false;
+  }
+  Serial.println("RA4_COEX:TLS_WRITE_PASS");
+  if (!wait_for_tls_reply(client, report_count)) {
+    print_tls_diagnostics(client.socket());
+    print_coex_snapshot("TLS_READ_FAILED");
+    if (kScanStopRecovery) {
+      BLE.stopScan();
+      scan_active = false;
+      print_coex_snapshot("SCAN_STOPPED");
+      // Preserve this SSL/TCP session to distinguish delayed receive from
+      // successful allocation/connection on a fresh socket.
+      const bool recovered = wait_for_tls_reply(client, report_count);
+      Serial.print("RA4_COEX:SAME_TLS_READ_AFTER_SCAN_STOP=");
+      Serial.println(recovered ? "PASS" : "FAIL");
+      print_coex_snapshot("RECOVERY_END");
+    }
+    client.stop();
+    fail("TLS_READ");
+    return false;
+  }
+  Serial.println("RA4_COEX:TLS_READ_PASS");
+
+  Serial.println("RA4_COEX:USB_ECHO_REQUEST");
+  if (!wait_for_usb_echo(report_count)) {
+    client.stop();
+    fail("USB_ECHO");
+    return false;
+  }
+  Serial.println("RA4_COEX:USB_ECHO_PASS");
+  const unsigned long reports_before_resume_check = report_count;
+  collect_ble_reports(kBleObserveAfterTlsMs, report_count);
+  if (!stop_scan_before_tls && report_count == reports_before_resume_check) {
+    client.stop();
+    fail("BLE_REPORTS_AFTER_TLS");
+    return false;
+  }
+  Serial.print("RA4_COEX:BLE_REPORTS_AFTER_TLS=");
+  Serial.println(report_count - reports_before_resume_check);
+  Serial.print("RA4_COEX:BLE_REPORTS_TOTAL=");
+  Serial.println(report_count);
+
+  print_tls_heap_snapshot(client.socket(), round);
+  client.stop();
+  Serial.println("RA4_COEX:TLS_CLOSE_PASS");
+  stop_ble();
+  Serial.println("RA4_COEX:BLE_SCAN_STOP_PASS");
+  Serial.println("RA4_COEX:BLE_END_CALLED");
+  if (!disconnect_station()) {
+    fail("WIFI_DISCONNECT");
+    return false;
+  }
+  Serial.println("RA4_COEX:WIFI_DISCONNECT_PASS");
+  Serial.print("RA4_COEX:ROUND_ELAPSED_MS=");
+  Serial.print(round);
+  Serial.print(',');
+  Serial.println(millis() - round_started_at);
+  Serial.print("RA4_COEX:ROUND_PASS=");
+  Serial.println(round);
+  return true;
+}
+
+bool wait_for_station() {
+  const unsigned long started_at = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) {
+      return false;
+    }
+    delay(20);
+  }
+  return true;
+}
+
+void collect_ble_reports(unsigned long duration_ms, unsigned long &report_count) {
+  const unsigned long started_at = millis();
+  while (millis() - started_at < duration_ms) {
+    BLEDevice peripheral = BLE.available();
+    if (peripheral) {
+      ++report_count;
+    }
+    delay(10);
+  }
+}
+
+bool wait_for_tls_reply(WiFiSSLClient &client, unsigned long &report_count) {
+  char received[sizeof(kTlsReply)] = {};
+  size_t received_size = 0U;
+  const unsigned long started_at = millis();
+  const auto read_failure = [&](const char *reason) {
+    Serial.print("RA4_COEX:TLS_READ_FAILURE=");
+    Serial.println(reason);
+    Serial.print("RA4_COEX:TLS_READ_BYTES=");
+    Serial.println(received_size);
+    Serial.print("RA4_COEX:TLS_READ_ELAPSED_MS=");
+    Serial.println(millis() - started_at);
+    return false;
+  };
+  while (received_size + 1U < sizeof(received) &&
+         millis() - started_at < kReadTimeoutMs) {
+    BLEDevice peripheral = BLE.available();
+    if (peripheral) {
+      ++report_count;
+    }
+    if (client.available() <= 0) {
+      delay(10);
+      continue;
+    }
+    const int value = client.read();
+    if (value < 0) {
+      return read_failure("READ_ERROR");
+    }
+    received[received_size++] = static_cast<char>(value);
+  }
+  received[received_size] = '\0';
+  if (strcmp(received, kTlsReply) == 0) return true;
+  return read_failure(received_size + 1U < sizeof(received)
+      ? "TIMEOUT" : "PAYLOAD_MISMATCH");
+}
+
+bool wait_for_usb_echo(unsigned long &report_count) {
+  const unsigned long started_at = millis();
+  while (millis() - started_at < kUsbEchoTimeoutMs) {
+    BLEDevice peripheral = BLE.available();
+    if (peripheral) {
+      ++report_count;
+    }
+    if (read_command_line()) {
+      return strcmp(command, "ECHO") == 0;
+    }
+    delay(10);
+  }
+  return false;
+}
+
+void run_gate() {
+  char *ssid = nullptr;
+  char *password = nullptr;
+  IPAddress endpoint;
+  uint16_t port = 0U;
+  bool stop_scan_before_tls = false;
+  size_t rounds = 0U;
+  if (!parse_start(
+          ssid,
+          password,
+          endpoint,
+          port,
+          stop_scan_before_tls,
+          rounds)) {
+    fail("START");
+    return;
+  }
+
+  WiFi.setTimeout(kWifiTimeoutMs);
+  for (size_t round = 1U; round <= rounds; ++round) {
+    if (!run_round(
+            ssid,
+            password,
+            endpoint,
+            port,
+            stop_scan_before_tls,
+            round)) {
+      return;
+    }
+  }
+  Serial.println("RA4_COEX:RESULT=PASS");
+  completed = true;
+}
+
+} // namespace
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("RA4_COEX:READY");
+  next_ready_announcement_ms = millis() + kReadyRepeatIntervalMs;
+}
+
+void loop() {
+  if (completed) {
+    delay(10);
+    return;
+  }
+  if (static_cast<long>(millis() - next_ready_announcement_ms) >= 0) {
+    Serial.println("RA4_COEX:READY");
+    next_ready_announcement_ms += kReadyRepeatIntervalMs;
+  }
+  if (read_command_line()) {
+    Serial.println("RA4_COEX:START_RECEIVED");
+    run_gate();
+  }
+}

@@ -1,0 +1,40 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -425,9 +425,13 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(225, 0);
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(234, 0);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(2, (uint32_t)(uintptr_t)msg->done, 0,
+                                rtos_semaphore_get_count(msg->done));
+   signal_result = rtos_semaphore_signal(msg->done, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(235, signal_result);
+   if (bridge_ap_enable_network) {
+     fhost_bridge_ap_start_sync(3, (uint32_t)(uintptr_t)msg->done,
+                                signal_result, 0);
+@@ -490,10 +494,14 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(219, ret);
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(233, 0);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
+                                rtos_semaphore_get_count(data->done));
+   wait_result = rtos_semaphore_wait(data->done, timeout_ms);
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(237, wait_result);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(5, (uint32_t)(uintptr_t)data->done,
+                                wait_result, rtos_semaphore_get_count(data->done));
+   if (bridge_ap_set_sae_pwe)
+@@ -600,6 +608,8 @@
+   if (evreq->done) evreq->done(evreq->body);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(232, 0);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_progress(236, 0);
+   os_free(evreq);
+ 
+   goto retry;

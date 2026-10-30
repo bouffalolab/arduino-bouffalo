@@ -1,0 +1,61 @@
+--- a/components/mm/mm.c
++++ b/components/mm/mm.c
+@@ -14,6 +14,12 @@
+ #include "bflb_core.h"
+ #include <string.h>
+ #include <errno.h>
++
++/* Optional callbacks execute under the MM lock and must never allocate. */
++extern int fhost_bridge_heap_policy_active(void) __attribute__((weak));
++extern uint32_t fhost_bridge_heap_preference(
++    size_t size, uint32_t flags, size_t ocram_free, size_t wram_free)
++    __attribute__((weak));
+ 
+ extern void fhost_bridge_ap_start_allocator_event(
+     uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
+@@ -438,8 +444,44 @@
+         /* Automatic selection mode: follow configured heap priority order. */
+         const bool trace_allocator =
+             fhost_bridge_ap_start_allocator_trace_active() != 0;
++        /* Explicit heap requests and existing realloc keep their paths. */
++        uint32_t preferred_index = CONFIG_MM_HEAP_COUNT;
++        if (fhost_bridge_heap_policy_active && fhost_bridge_heap_preference &&
++            fhost_bridge_heap_policy_active() && !(flags & MM_FLAG_PROP_DMA)) {
++            size_t free_size[2] = {0, 0};
++            uint32_t present = 0;
++            for (uint32_t i = 0; i < CONFIG_MM_HEAP_COUNT; ++i) {
++                uint32_t id = manager->heap_alloc_order[i];
++                if (id != MM_HEAP_OCRAM_0 && id != MM_HEAP_WRAM_0) continue;
++                heap = manager->heaps[id];
++                if (!heap || !heap->is_active) continue;
++                allocator = manager->allocators[heap->allocator_id];
++                if (!allocator || !allocator->get_free_size) continue;
++                uint32_t slot = id == MM_HEAP_OCRAM_0 ? 0 : 1;
++                free_size[slot] = allocator->get_free_size(heap);
++                present |= 1U << slot;
++            }
++            if (present == 3) {
++                uint32_t preferred = fhost_bridge_heap_preference(size, flags, free_size[0], free_size[1]);
++                if (preferred == MM_HEAP_OCRAM_0 || preferred == MM_HEAP_WRAM_0) {
++                    for (uint32_t i = 0; i < CONFIG_MM_HEAP_COUNT; ++i) {
++                        if (manager->heap_alloc_order[i] == preferred) {
++                            preferred_index = i;
++                            break;
++                        }
++                    }
++                }
++            }
++        }
++        /* Preferred heap first, then all other allowed entries once in their
++         * original order. The global allocation list is never modified. */
+         for (uint32_t order_idx = 0; order_idx < CONFIG_MM_HEAP_COUNT; order_idx++) {
+-            uint32_t ordered_heap_id = manager->heap_alloc_order[order_idx];
++            uint32_t index = order_idx;
++            if (preferred_index < CONFIG_MM_HEAP_COUNT) {
++                index = order_idx == 0 ? preferred_index :
++                    order_idx <= preferred_index ? order_idx - 1 : order_idx;
++            }
++            uint32_t ordered_heap_id = manager->heap_alloc_order[index];
+             if (ordered_heap_id == 0) {
+                 continue;
+             }

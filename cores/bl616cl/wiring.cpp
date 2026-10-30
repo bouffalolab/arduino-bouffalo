@@ -10,7 +10,9 @@ extern "C" void init(void)
      * the scheduler starts, matching the SDK examples' main() (see
      * examples/wifi/sta/smartconfig_ble/main.c calling rfparam_init()).
      * The WiFi/BLE stacks themselves still start lazily from their users. */
+#if !defined(BL616CL_BRIDGE_PROVISIONAL)
     bl_wireless_init();
+#endif
 }
 
 extern "C" unsigned long millis(void)

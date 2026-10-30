@@ -1,0 +1,167 @@
+--- a/components/mm/mm.c
++++ b/components/mm/mm.c
+@@ -15,6 +15,9 @@
+ #include <string.h>
+ #include <errno.h>
+ 
++extern void fhost_bridge_ap_start_allocator_event(
++    uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
++
+ #if IS_ENABLED(CONFIG_MM_ENABLE_TRACKING)
+ #include "mm_track.h"
+ #endif
+@@ -381,6 +384,7 @@ void *kmalloc(size_t size, uint32_t flags)
+     uint32_t heap_id;
+     uintptr_t irq_flags;
+ 
++    fhost_bridge_ap_start_allocator_event(8, size, flags, 0);
+     if (size == 0) {
+         return NULL;
+     }
+@@ -398,6 +402,7 @@ void *kmalloc(size_t size, uint32_t flags)
+     }
+ 
+     irq_flags = mm_lock_save();
++    fhost_bridge_ap_start_allocator_event(9, size, flags, irq_flags);
+ 
+ #if IS_ENABLED(CONFIG_MM_ENABLE_TRACKING)
+     if (size + MM_TRACK_SLOT_BYTES < size) {
+@@ -411,6 +416,7 @@ void *kmalloc(size_t size, uint32_t flags)
+     }
+ #endif
+ 
++    fhost_bridge_ap_start_allocator_event(10, size, flags, heap_id);
+     if (heap_id != MM_FLAG_HEAP_ANY) {
+         heap = manager->heaps[heap_id];
+         if (heap && heap->is_active) {
+@@ -454,6 +460,8 @@ void *kmalloc(size_t size, uint32_t flags)
+         }
+     }
+ 
++    fhost_bridge_ap_start_allocator_event(
++        11, (uint32_t)(uintptr_t)ptr, size, flags);
+     /* Update statistics */
+ #if IS_ENABLED(CONFIG_MM_ENABLE_STATISTICS)
+     if (ptr) {
+@@ -472,6 +480,8 @@ void *kmalloc(size_t size, uint32_t flags)
+ #endif
+ 
+     mm_unlock_restore(irq_flags);
++    fhost_bridge_ap_start_allocator_event(
++        12, (uint32_t)(uintptr_t)ptr, size, flags);
+ 
+     if (ptr) {
+         LOG_D("Allocated %zu bytes at %p\r\n", size, ptr);
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/os_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/os_macsw.c
+@@ -12,6 +12,9 @@
+ //#include <bl_sec.h>
+ #include <bflb_sec_trng.h>
+ 
++extern void fhost_bridge_ap_start_allocator_event(
++    uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
++
+ void os_sleep(os_time_t sec, os_time_t usec)
+ {
+ 	uint32_t delay;
+@@ -121,10 +124,15 @@ int os_fdatasync(FILE *stream)
+ 
+ void * os_zalloc(size_t size)
+ {
++	fhost_bridge_ap_start_allocator_event(1, size, 0, 0);
+ 	void * ptr = os_malloc(size);
+ 	if (ptr) {
++		fhost_bridge_ap_start_allocator_event(17, (uint32_t)(uintptr_t)ptr,
++						      size, 0);
+ 		os_memset(ptr, 0, size);
+ 	}
++	fhost_bridge_ap_start_allocator_event(18, (uint32_t)(uintptr_t)ptr,
++					      size, 0);
+ 	return ptr;
+ }
+ 
+@@ -133,11 +141,15 @@ void * os_zalloc(size_t size)
+ void * os_malloc(size_t size)
+ {
+     void *ptr;
++    fhost_bridge_ap_start_allocator_event(2, size, 0, 0);
+     if (0 == size) {
+         size = 16;
+     }
+ 
++	fhost_bridge_ap_start_allocator_event(3, size, 0, 0);
+ 	ptr = rtos_malloc(size);
++	fhost_bridge_ap_start_allocator_event(4, (uint32_t)(uintptr_t)ptr,
++					      size, 0);
+     if (NULL == ptr) {
+         abort();
+     }
+--- a/components/wireless/wifi6/macsw_os_adapter/src/platform_bouffalo_sdk.c
++++ b/components/wireless/wifi6/macsw_os_adapter/src/platform_bouffalo_sdk.c
+@@ -15,6 +15,9 @@
+ #include <bflb_sec_trng.h>
+ #include "mm.h"
+ 
++extern void fhost_bridge_ap_start_allocator_event(
++    uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
++
+ #if defined(BL616)
+ #include <bl616_mfg_media.h>
+ #elif defined(BL616CL)
+@@ -64,7 +67,11 @@ void *rtos_malloc(uint32_t size)
+ {
+     void *ptr;
+ 
++    fhost_bridge_ap_start_allocator_event(5, size, 0, 0);
++    fhost_bridge_ap_start_allocator_event(6, size, 0, 0);
+     ptr = kmalloc(size, 0);
++    fhost_bridge_ap_start_allocator_event(7, (uint32_t)(uintptr_t)ptr,
++                                          size, 0);
+     if (NULL == ptr) {
+         abort();
+     }
+--- a/components/mm/tlsf/tlsf_allocator.c
++++ b/components/mm/tlsf/tlsf_allocator.c
+@@ -13,6 +13,9 @@
+ #include "../mm.h" /* Include framework header for all type definitions */
+ #include "../mm_config.h"
+ #include "tlsf.h"
++
++extern void fhost_bridge_ap_start_allocator_event(
++    uint8_t stage, uint32_t value0, uint32_t value1, uint32_t value2);
+ #include <string.h>
+ 
+ #define DBG_TAG "MM_TLSF"
+@@ -93,6 +96,8 @@ static void tlsf_allocator_deinit(struct mm_heap *heap)
+ static void *tlsf_allocator_malloc(struct mm_heap *heap, size_t size, uint32_t flags)
+ {
+     tlsf_t tlsf_handle = (tlsf_t)heap->allocator_priv;
++    fhost_bridge_ap_start_allocator_event(
++        13, size, flags, heap ? heap->heap_id : 0);
+     if (!tlsf_handle) {
+         LOG_E("TLSF handle is NULL for heap %u\r\n", heap->heap_id);
+         return NULL;
+@@ -104,6 +109,8 @@ static void *tlsf_allocator_malloc(struct mm_heap *heap, size_t size, uint32_t f
+     /* Parse alignment requirements */
+     uint32_t align_flags = flags & MM_FLAG_ALIGN_MASK;
+ 
++    fhost_bridge_ap_start_allocator_event(
++        14, size, align_flags, (uint32_t)(uintptr_t)tlsf_handle);
+     if (align_flags <= MM_FLAG_ALIGN_PTR) {
+         /* Default alignment: use tlsf_malloc for better performance */
+         ptr = tlsf_malloc(tlsf_handle, size);
+@@ -134,10 +141,14 @@ static void *tlsf_allocator_malloc(struct mm_heap *heap, size_t size, uint32_t f
+         ptr = tlsf_memalign(tlsf_handle, alignment, size);
+     }
+ 
++    fhost_bridge_ap_start_allocator_event(
++        15, (uint32_t)(uintptr_t)ptr, size, flags);
+     /* Zero memory if required */
+     if (ptr != NULL && (flags & MM_FLAG_PROP_ZERO)) {
+         memset(ptr, 0, size);
+     }
++    fhost_bridge_ap_start_allocator_event(
++        16, (uint32_t)(uintptr_t)ptr, size, flags);
+ 
+     /* Update heap-level statistics - optional */
+ #if IS_ENABLED(CONFIG_MM_ENABLE_STATISTICS)

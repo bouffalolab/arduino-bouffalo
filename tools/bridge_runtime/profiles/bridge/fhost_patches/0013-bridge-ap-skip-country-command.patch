@@ -1,0 +1,21 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -995,11 +995,16 @@
+             fhost_bridge_ap_start_progress(43, 0);
+     }
+ 
+-    if (country_code && country_code[0]) {
++    /*
++     * This is an A/B diagnostic bypass, not the final regulatory-domain
++     * behavior: the global radio country domain remains active, while the
++     * AP-specific WPA/hostapd command is intentionally omitted.
++     */
++    if (country_code && country_code[0] && fhost_vif_idx != MGMR_VIF_AP) {
+         res_len = sizeof(res) - 1;
+         if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET country %s", country_code))
+             goto end;
+     }
+ 
+     if (wifiMgmr.non_pref_chan_list_valid) {
+         // MBO config
+         res_len = sizeof(res) - 1;

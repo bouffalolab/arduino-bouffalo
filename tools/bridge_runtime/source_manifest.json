@@ -1,0 +1,220 @@
+{
+  "archives": [
+    {
+      "archive": "lib/libfreertos.a",
+      "classification": "source",
+      "cmake_files": ["components/os/freertos/CMakeLists.txt"],
+      "license": "MIT (FreeRTOS kernel; include component notices in release SBOM)",
+      "public_apis": ["FreeRTOS scheduler, tasks, queues, timers"],
+      "source_paths": ["components/os/freertos"]
+    },
+    {
+      "archive": "lib/liblhal.a",
+      "classification": "source",
+      "cmake_files": ["drivers/lhal/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["bflb_gpio_*, bflb_uart_*, bflb_sec_*"],
+      "source_paths": ["drivers/lhal"]
+    },
+    {
+      "archive": "lib/liblibc.a",
+      "classification": "source",
+      "cmake_files": ["components/libc/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["SDK libc wrappers and formatted I/O"],
+      "source_paths": ["components/libc"]
+    },
+    {
+      "archive": "lib/libmm.a",
+      "classification": "source",
+      "cmake_files": ["components/mm/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["SDK heap allocator"],
+      "source_paths": ["components/mm"]
+    },
+    {
+      "archive": "lib/libstd.a",
+      "classification": "source",
+      "cmake_files": ["drivers/soc/bl616cl/std/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["BL616CL startup, interrupt vectors, ROM API stubs"],
+      "source_paths": ["drivers/soc/bl616cl/std"]
+    },
+    {
+      "archive": "lib/libsys.a",
+      "classification": "source",
+      "cmake_files": ["drivers/sys/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["BL616CL power, low-power and XIP recovery support"],
+      "source_paths": ["drivers/sys"]
+    },
+    {
+      "archive": "lib/libsysinit.a",
+      "classification": "source",
+      "cmake_files": ["components/sysinit/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["sysinit_run_all"],
+      "source_paths": ["components/sysinit"]
+    },
+    {
+      "archive": "lib/libutils.a",
+      "classification": "source",
+      "cmake_files": ["components/utils/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["partition, MTD, async_event, ring buffer utilities"],
+      "source_paths": ["components/utils"]
+    },
+    {
+      "archive": "lib/libcherryusb.a",
+      "classification": "source",
+      "cmake_files": ["components/usb/cherryusb/CMakeLists.txt"],
+      "license": "Apache-2.0 (CherryUSB)",
+      "public_apis": ["usbd_initialize, CDC ACM, HID endpoints"],
+      "source_paths": ["components/usb/cherryusb"]
+    },
+    {
+      "archive": "lib/libdebug.a",
+      "classification": "source",
+      "cmake_files": ["components/debug/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["backtrace support"],
+      "source_paths": ["components/debug"]
+    },
+    {
+      "archive": "lib/libfhost_bl616cl_default.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/wifi6/fhost/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["fhost_api.h, wifi_mgmr.h, Wi-Fi station and AP control"],
+      "source_paths": ["components/wireless/wifi6/fhost"]
+    },
+    {
+      "archive": "lib/libfhost_config.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/wifi6/fhost_config/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["FHOST buffer and task configuration"],
+      "source_paths": ["components/wireless/wifi6/fhost_config"]
+    },
+    {
+      "archive": "lib/liblittlefs.a",
+      "classification": "source",
+      "cmake_files": ["components/fs/littlefs/CMakeLists.txt"],
+      "license": "BSD-3-Clause (LittleFS) plus Apache-2.0 SDK port",
+      "public_apis": ["LittleFS and EasyFlash key-value port"],
+      "source_paths": ["components/fs/littlefs"]
+    },
+    {
+      "archive": "lib/liblwip.a",
+      "classification": "source",
+      "cmake_files": ["components/net/lwip/CMakeLists.txt", "components/net/lwip/lwip/CMakeLists.txt"],
+      "license": "BSD-3-Clause (lwIP)",
+      "public_apis": ["BSD sockets, netif, DNS, TCP, UDP"],
+      "source_paths": ["components/net/lwip"]
+    },
+    {
+      "archive": "lib/libmacsw_bl616cl.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/macsw/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["MACSW firmware host interface"],
+      "source_paths": ["components/wireless/macsw"]
+    },
+    {
+      "archive": "lib/libmacsw_config_bl616cl_default.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/macsw/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["MACSW default configuration"],
+      "source_paths": ["components/wireless/macsw"]
+    },
+    {
+      "archive": "lib/libmacsw_os_adapter.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/wifi6/macsw_os_adapter/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["MACSW FreeRTOS adapter"],
+      "source_paths": ["components/wireless/wifi6/macsw_os_adapter"]
+    },
+    {
+      "archive": "lib/libmacsw_plat.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["MACSW platform hooks"],
+      "source_paths": ["components/wireless"]
+    },
+    {
+      "archive": "lib/libmbedtls.a",
+      "classification": "source",
+      "cmake_files": ["components/crypto/mbedtls/CMakeLists.txt"],
+      "license": "Apache-2.0 OR GPL-2.0-or-later (Mbed TLS v3; release selects Apache-2.0)",
+      "public_apis": ["mbedtls_ssl_*, mbedtls_x509_*, mbedtls_ctr_drbg_*"],
+      "source_paths": ["components/crypto/mbedtls"]
+    },
+    {
+      "archive": "lib/libping.a",
+      "classification": "source",
+      "cmake_files": ["components/net/lwip/lwip_apps/ping/CMakeLists.txt"],
+      "license": "BSD-3-Clause (lwIP applications)",
+      "public_apis": ["lwip_ping_send, lwip_ping_recv"],
+      "source_paths": ["components/net/lwip/lwip_apps/ping"]
+    },
+    {
+      "archive": "lib/librfparam.a",
+      "classification": "source",
+      "cmake_files": ["drivers/rfparam/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["rfparam_cfg_get and RF parameter TLV support"],
+      "source_paths": ["drivers/rfparam"]
+    },
+    {
+      "archive": "lib/libwifi6_lwip_adapter.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/wifi6/wifi6_lwip_adapter/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["Wi-Fi netif/lwIP adapter"],
+      "source_paths": ["components/wireless/wifi6/wifi6_lwip_adapter"]
+    },
+    {
+      "archive": "lib/libwpa_supplicant.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/wifi6/wpa_supplicant/CMakeLists.txt"],
+      "license": "BSD-3-Clause (wpa_supplicant/hostapd) plus SDK port code",
+      "public_apis": ["WPA2/WPA3 station and AP authentication"],
+      "source_paths": ["components/wireless/wifi6/wpa_supplicant"]
+    },
+    {
+      "archive": "lib/libblestack.a",
+      "classification": "source",
+      "cmake_files": ["components/wireless/bluetooth/blestack/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root; component notices pending final SBOM)",
+      "public_apis": ["Bluetooth host, raw HCI and on-chip HCI driver"],
+      "source_paths": ["components/wireless/bluetooth/blestack"]
+    },
+    {
+      "archive": "lib/libbtblecontroller_bl616cl_m2s1.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/bluetooth/btblecontroller/CMakeLists.txt",
+        "components/wireless/bluetooth/ble_common.cmake"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root; BLE controller/RF ABI review remains required)",
+      "public_apis": ["btble_controller_*, on-chip controller and Link Layer"],
+      "source_paths": ["components/wireless/bluetooth/btblecontroller"]
+    },
+    {
+      "archive": "lib_board/libapp.a",
+      "classification": "source",
+      "cmake_files": ["bsp/board/bl616cldk/CMakeLists.txt"],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": ["board initialization, RF board data, generated firmware header"],
+      "source_paths": ["bsp/board/bl616cldk"]
+    }
+  ],
+  "chip": "bl616cl",
+  "profile": "bridge",
+  "schema": 1,
+  "scope": "bl616cl-bridge-source-inputs",
+  "sdk_commit": "240ff49ba0189ebeba92e6d5c42533f63d90a161"
+}

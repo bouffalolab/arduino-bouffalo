@@ -1,0 +1,59 @@
+--- a/components/net/lwip/lwip/src/core/mem.c
++++ b/components/net/lwip/lwip/src/core/mem.c
+@@ -827,6 +827,12 @@
+  *
+  * Note that the returned value will always be aligned (as defined by MEM_ALIGNMENT).
+  */
++/* Optional failure-only observer. Called under the existing heap lock: it must
++ * only copy integers, never allocate, print, or call back into lwIP. */
++extern void bridge_lwip_mem_failure(unsigned requested, unsigned aligned,
++    unsigned free_bytes, unsigned largest, unsigned holes, unsigned valid,
++    unsigned used, unsigned errors, unsigned long caller) __attribute__((weak));
++
+ void *
+ mem_malloc(mem_size_t size_in)
+ {
+@@ -969,6 +975,43 @@
+   } while (local_mem_free_count != 0);
+ #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
+   MEM_STATS_INC(err);
++  if (bridge_lwip_mem_failure) {
++    /* Offsets strictly increase and are checked before dereferencing. The
++     * sentinel is excluded; free payload excludes allocator headers. */
++    mem_size_t walk = 0;
++    unsigned free_bytes = 0, largest = 0, holes = 0, valid = 1;
++    unsigned used = 0, errors = 0;
++    while (walk < MEM_SIZE_ALIGNED) {
++      struct mem *block;
++      mem_size_t next;
++      unsigned available;
++      if ((walk % MEM_ALIGNMENT) ||
++          (MEM_SIZE_ALIGNED - walk < SIZEOF_STRUCT_MEM)) {
++        valid = 0;
++        break;
++      }
++      block = ptr_to_mem(walk);
++      next = block->next;
++      if (next > MEM_SIZE_ALIGNED || next <= walk ||
++          (next % MEM_ALIGNMENT) || next - walk < SIZEOF_STRUCT_MEM) {
++        valid = 0;
++        break;
++      }
++      available = next - walk - SIZEOF_STRUCT_MEM;
++      if (!block->used) {
++        free_bytes += available;
++        if (available > largest) largest = available;
++        ++holes;
++      }
++      walk = next;
++    }
++#if LWIP_STATS && MEM_STATS
++    used = lwip_stats.mem.used;
++    errors = lwip_stats.mem.err;
++#endif
++    bridge_lwip_mem_failure(size_in, size, free_bytes, largest, holes, valid,
++        used, errors, (unsigned long)__builtin_return_address(0));
++  }
+   LWIP_MEM_ALLOC_UNPROTECT();
+   sys_mutex_unlock(&mem_mutex);
+   LWIP_DEBUGF(MEM_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("mem_malloc: could not allocate %"S16_F" bytes\n", (s16_t)size));

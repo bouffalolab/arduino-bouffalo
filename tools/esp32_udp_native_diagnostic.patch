@@ -1,0 +1,117 @@
+--- a/at_handler.cpp
++++ b/at_handler.cpp
+@@ -1,3 +1,5 @@
++#include "udp_native_diagnostic.h"
++#include "udp_txdone_diagnostic.h"
+ 
+ 
+ #include "at_handler.h"
+@@ -146,6 +148,34 @@
+   add_cmds_wifi_SSL();
+   add_cmds_wifi_netif();
+   add_cmds_wifi_udp();
++  command_table["+UDPNATIVESEND"] = [](auto &srv, auto &parser) {
++    if (parser.cmd_mode != chAT::CommandMode::Write || parser.args.size()!=4) return chAT::CommandStatus::ERROR;
++    int result = udp_native_send(parser.args[0].c_str(), atoi(parser.args[1].c_str()),
++                                 atoi(parser.args[2].c_str()), atoi(parser.args[3].c_str()));
++    if (result < 0) return chAT::CommandStatus::ERROR;
++    srv.write_response_prompt();srv.write_str(String(result).c_str());srv.write_line_end();
++    return chAT::CommandStatus::OK;
++  };
++  command_table["+UDPNATIVETXREPORT"] = [](auto &srv, auto &parser) {
++    if (!udp_tx_registered) {
++      if (esp_wifi_set_tx_done_cb(udp_tx_observe) != ESP_OK) return chAT::CommandStatus::ERROR;
++      udp_tx_registered = true;
++    }
++    uint32_t values[9];
++    portENTER_CRITICAL(&udp_tx_mux);
++    memcpy(values, udp_tx_values, sizeof(values));
++    portEXIT_CRITICAL(&udp_tx_mux);
++    srv.write_response_prompt();
++    for (unsigned i=0;i<9;++i) { if(i)srv.write_str(",");srv.write_str(String(values[i]).c_str()); }
++    srv.write_line_end();return chAT::CommandStatus::OK;
++  };
++  command_table["+UDPNATIVEACK"] = [](auto &srv, auto &parser) {
++    int result = udp_native_ack();
++    if (result < 0) return chAT::CommandStatus::ERROR;
++    srv.write_response_prompt();srv.write_str(String(result).c_str());srv.write_line_end();
++    return chAT::CommandStatus::OK;
++  };
++
+   add_cmds_ble_bridge();
+   add_cmds_ota();
+   add_cmds_preferences();
+--- a/udp_native_diagnostic.h
++++ b/udp_native_diagnostic.h
+@@ -0,0 +1,33 @@
++#pragma once
++#include <Arduino.h>
++#include <lwip/sockets.h>
++#include <lwip/inet.h>
++#include <fcntl.h>
++#include <errno.h>
++static int udp_native_socket = -1;
++static unsigned udp_native_sequence;
++static int udp_native_send(const char *host, int port, int length, unsigned sequence) {
++ if (length < 1 || length > 16384 || port < 1 || port > 65535) return -1;
++ if (udp_native_socket < 0) {
++  udp_native_socket = socket(AF_INET,SOCK_DGRAM,0);
++  if (udp_native_socket < 0) return -1;
++  sockaddr_in local = {};local.sin_family=AF_INET;local.sin_port=htons(18465);
++  if(bind(udp_native_socket,(sockaddr*)&local,sizeof(local))<0)return -1;
++  fcntl(udp_native_socket,F_SETFL,O_NONBLOCK);
++ }
++ sockaddr_in remote={};remote.sin_family=AF_INET;remote.sin_port=htons(port);
++ if(inet_pton(AF_INET,host,&remote.sin_addr)!=1)return -1;
++ uint8_t *data=(uint8_t*)malloc(length);if(!data)return -1;
++ for(int i=0;i<length;++i)data[i]=(i*17+sequence*29)%251;
++ udp_native_sequence=sequence;
++ int result=sendto(udp_native_socket,data,length,0,(sockaddr*)&remote,sizeof(remote));
++ free(data);return result;
++}
++static int udp_native_ack() {
++ if(udp_native_socket<0)return -1;
++ uint8_t data[33];int n=recv(udp_native_socket,data,sizeof(data),MSG_DONTWAIT);
++ if(n<0)return errno==EAGAIN || errno==EWOULDBLOCK ? 0 : -1;
++ if(n!=32)return -1;
++ for(unsigned i=0;i<32;++i)if(data[i]!=(i*17+udp_native_sequence*29)%251)return -1;
++ return 32;
++}
+--- a/udp_txdone_diagnostic.h
++++ b/udp_txdone_diagnostic.h
+@@ -0,0 +1,35 @@
++#pragma once
++#include <esp_private/wifi.h>
++static portMUX_TYPE udp_tx_mux = portMUX_INITIALIZER_UNLOCKED;
++static bool udp_tx_registered;
++// callbacks, IPv4 fragments, latest ID/count, success/failure masks, format,
++// unrecognized callbacks, latest failed fragment offset. No packet data retained.
++static uint32_t udp_tx_values[9];
++static void udp_tx_observe(uint8_t ifidx, uint8_t *data, uint16_t *length, bool success) {
++ if(ifidx!=WIFI_IF_AP || !data || !length)return;
++ const unsigned n=*length; const uint8_t *ip=nullptr;unsigned format=0;
++ if(n>=34 && data[12]==8 && data[13]==0) { ip=data+14;format=1; }
++ else if(n>=20 && (data[0]>>4)==4) { ip=data;format=2; }
++ else for(unsigned i=0;i+28<=n && i<48;++i) {
++  if(data[i]==0xaa && data[i+1]==0xaa && data[i+2]==3 &&
++     data[i+3]==0 && data[i+4]==0 && data[i+5]==0 && data[i+6]==8 && data[i+7]==0) {
++    ip=data+i+8;format=3;break;
++  }
++ }
++ portENTER_CRITICAL(&udp_tx_mux);
++ ++udp_tx_values[0];
++ if(!ip)++udp_tx_values[7];
++ else if((ip[0]>>4)==4 && (ip[0]&15)>=5 && ip[9]==17) {
++  const unsigned flags=(unsigned(ip[6])<<8)|ip[7];
++  if(flags&0x3fffU) {
++   const unsigned id=(unsigned(ip[4])<<8)|ip[5], offset=flags&0x1fffU;
++   if(!udp_tx_values[1] || udp_tx_values[2]!=id) {
++    udp_tx_values[2]=id;udp_tx_values[3]=udp_tx_values[4]=udp_tx_values[5]=0;
++   }
++   ++udp_tx_values[1];++udp_tx_values[3];udp_tx_values[6]=format;
++   if(offset%185==0 && offset/185<12)udp_tx_values[success?4:5]|=1U<<(offset/185);
++   if(!success)udp_tx_values[8]=offset;
++  }
++ }
++ portEXIT_CRITICAL(&udp_tx_mux);
++}

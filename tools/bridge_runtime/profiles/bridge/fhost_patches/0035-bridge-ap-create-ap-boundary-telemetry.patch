@@ -1,0 +1,134 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -77,6 +77,8 @@
+     uint8_t phase, int fhost_vif_idx, uint8_t event, uint8_t fhost_wpa_state,
+     int operstate, int old_wpa_state, int new_wpa_state, int result,
+     uint8_t callback_slot);
++extern void fhost_bridge_ap_start_create_ap(
++    uint8_t phase, int result, uint8_t wpa_state, uint32_t detail);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
++++ b/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c
+@@ -960,7 +960,13 @@
+ 	struct hostapd_iface *hapd_iface;
+ 	struct hostapd_config *conf;
+ 	size_t i;
++	int associate_result;
++	int configure_result;
++	int setup_result;
++	const int bridge_ap = os_strcmp(wpa_s->ifname, "wl2") == 0;
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(1, 0, wpa_s->wpa_state, ssid->mode);
+ 	if (ssid->ssid == NULL || ssid->ssid_len == 0) {
+ 		wpa_printf(MSG_ERROR, "No SSID configured for AP mode");
+ 		return -1;
+@@ -968,6 +974,9 @@
+ 
+ 	wpa_supplicant_ap_deinit(wpa_s);
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(2, 0, wpa_s->wpa_state, ssid->ssid_len);
++
+ 	wpa_printf(MSG_DEBUG, "Setting up AP (SSID='%s')",
+ 		   wpa_ssid_txt(ssid->ssid, ssid->ssid_len));
+ 
+@@ -1047,12 +1056,26 @@
+ 	else
+ 		wpa_drv_get_ext_capa(wpa_s, WPA_IF_AP_BSS);
+ 
+-	if (wpa_drv_associate(wpa_s, &params) < 0) {
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			3, 0, wpa_s->wpa_state, params.freq.freq);
++	associate_result = wpa_drv_associate(wpa_s, &params);
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			4, associate_result, wpa_s->wpa_state, params.freq.freq);
++	if (associate_result < 0) {
+ 		wpa_msg(wpa_s, MSG_INFO, "Failed to start AP functionality");
+ 		return -1;
+ 	}
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_progress(248, 0);
+-	wpa_s->ap_iface = hapd_iface = hostapd_alloc_iface();
++	wpa_s->ap_iface = hapd_iface = hostapd_alloc_iface();
++	if (bridge_ap)
++		fhost_bridge_ap_start_progress(249, hapd_iface ? 0 : -1);
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			5, hapd_iface ? 0 : -1, wpa_s->wpa_state, 0);
+ 	if (hapd_iface == NULL)
+ 		return -1;
+ 	hapd_iface->owner = wpa_s;
+@@ -1063,6 +1082,9 @@
+ 	hapd_iface->extended_capa_len = wpa_s->extended_capa_len;
+ 
+ 	wpa_s->ap_iface->conf = conf = hostapd_config_defaults();
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			6, conf ? 0 : -1, wpa_s->wpa_state, conf ? conf->num_bss : 0);
+ 	if (conf == NULL) {
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return -1;
+@@ -1080,7 +1102,11 @@
+ 		conf->bss[0]->wmm_uapsd = !ssid->disable_wmm;
+ 	}
+ 
+-	if (wpa_supplicant_conf_ap(wpa_s, ssid, conf)) {
++	configure_result = wpa_supplicant_conf_ap(wpa_s, ssid, conf);
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(
++			7, configure_result, wpa_s->wpa_state, conf->num_bss);
++	if (configure_result) {
+ 		wpa_printf(MSG_ERROR, "Failed to create AP configuration");
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return -1;
+@@ -1098,9 +1124,14 @@
+ 	hapd_iface->bss = os_calloc(conf->num_bss,
+ 				    sizeof(struct hostapd_data *));
+ 	if (hapd_iface->bss == NULL) {
++		if (bridge_ap)
++			fhost_bridge_ap_start_create_ap(
++				8, -1, wpa_s->wpa_state, conf->num_bss);
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return -1;
+ 	}
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(8, 0, wpa_s->wpa_state, conf->num_bss);
+ 
+ 	for (i = 0; i < conf->num_bss; i++) {
+ 		hapd_iface->bss[i] =
+@@ -1140,6 +1171,9 @@
+ #endif /* CONFIG_TESTING_OPTIONS */
+ 	}
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(9, 0, wpa_s->wpa_state, conf->num_bss);
++
+ 	os_memcpy(hapd_iface->bss[0]->own_addr, wpa_s->own_addr, ETH_ALEN);
+ 	hapd_iface->bss[0]->driver = wpa_s->driver;
+ 	hapd_iface->bss[0]->drv_priv = wpa_s->drv_priv;
+@@ -1159,12 +1193,19 @@
+ 	}
+ #endif /* CONFIG_P2P && CONFIG_ACS */
+ 
+-	if (hostapd_setup_interface(wpa_s->ap_iface)) {
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(10, 0, wpa_s->wpa_state, 0);
++	setup_result = hostapd_setup_interface(wpa_s->ap_iface);
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(11, setup_result, wpa_s->wpa_state, 0);
++	if (setup_result) {
+ 		wpa_printf(MSG_ERROR, "Failed to initialize AP interface");
+ 		wpa_supplicant_ap_deinit(wpa_s);
+ 		return -1;
+ 	}
+ 
++	if (bridge_ap)
++		fhost_bridge_ap_start_create_ap(12, 0, wpa_s->wpa_state, 0);
+ 	return 0;
+ }

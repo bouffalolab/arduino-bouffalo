@@ -1,0 +1,20 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -427,6 +427,8 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(234, 0);
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_pointer(8, (uint32_t)(uintptr_t)msg->done);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(2, (uint32_t)(uintptr_t)msg->done, 0,
+                                rtos_semaphore_get_count(msg->done));
+   signal_result = rtos_semaphore_signal(msg->done, 0);
+@@ -496,6 +498,8 @@
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(233, 0);
+   if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_pointer(7, (uint32_t)(uintptr_t)data->done);
++  if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_sync(1, (uint32_t)(uintptr_t)data->done, 0,
+                                rtos_semaphore_get_count(data->done));
+   wait_result = rtos_semaphore_wait(data->done, timeout_ms);

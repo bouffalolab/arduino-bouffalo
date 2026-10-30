@@ -1,0 +1,27 @@
+--- a/components/wireless/macsw/ip/umac/src/rxu/rxu_cntrl.c
++++ b/components/wireless/macsw/ip/umac/src/rxu/rxu_cntrl.c
+@@ -354,6 +354,7 @@
+         return true;
+     }
+ 
++    BRIDGE_RX_EVENT(17, tid, 0, 0);
+     return false;
+ }
+ 
+@@ -1461,6 +1462,7 @@
+         upload = true;
+     } while (0);
+ 
++    if (!upload) BRIDGE_RX_EVENT(18, qos, rxu_cntrl_env.rx_status.sn, rxu_cntrl_env.rx_status.tid);
+     PROF_RX_DUPLI_CHECK_CLR();
+ 
+     return (upload);
+@@ -2818,6 +2820,8 @@
+     do
+     {
+         BRIDGE_RX_EVENT(0, frame_cntl, statinfo, 0);
++        if ((frame_cntl & MAC_FCTRL_TYPE_MASK) == MAC_FCTRL_DATA_T)
++            BRIDGE_RX_EVENT(16, !!(frame_cntl & MAC_FCTRL_RETRY), !!(statinfo & RX_HD_KEYIDV), !!(statinfo & RX_HD_SUCCESS));
+         if (!(statinfo & RX_HD_SUCCESS)) {
+             BRIDGE_RX_EVENT(1, frame_cntl, statinfo, 0);
+             break;

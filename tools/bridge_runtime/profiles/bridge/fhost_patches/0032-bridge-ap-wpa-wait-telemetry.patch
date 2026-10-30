@@ -1,0 +1,170 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -69,6 +69,10 @@
+ extern void fhost_bridge_ap_start_notification_ab(
+     uint8_t phase, uint32_t message, uint32_t waiting_task,
+     uint8_t request_matches, uint8_t use_task_notification, int result);
++extern void fhost_bridge_ap_start_wpa_wait(
++    uint8_t phase, int fhost_vif_idx, uint8_t expected_event,
++    uint8_t observed_event, uint32_t target, uint32_t waiting_task,
++    uint32_t callback_task, int result, uint8_t wpa_state);
+ 
+ /*
+  * The bridge reserves UART0 for RA4M1 user traffic. Keep FHOST diagnostics
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -234,7 +234,18 @@
+                                  void *event_param, void *arg)
+ {
+     struct fhost_wpa_target_event *target = arg;
+-
++    struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
++    const bool bridge_ap_wait =
++        fhost_vif_idx == MGMR_VIF_AP &&
++        target != NULL &&
++        target->event == FHOST_WPA_CONNECTED;
++
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            7, fhost_vif_idx, target->event, event,
++            (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
++            (uint32_t)(uintptr_t)rtos_get_task_handle(), 0,
++            wpa_vif ? wpa_vif->state : 0xff);
+ 
+     if (MGMR_VIF_STA == fhost_vif_idx) {
+         switch (event) {
+@@ -258,8 +269,33 @@
+         }
+     }
+ 
+-    fhost_wpa_cb_unregister(fhost_vif_idx, fhost_wpa_wait_event);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            8, fhost_vif_idx, target->event, event,
++            (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
++            (uint32_t)(uintptr_t)rtos_get_task_handle(), 0,
++            wpa_vif ? wpa_vif->state : 0xff);
++    const int unregister_result =
++        fhost_wpa_cb_unregister(fhost_vif_idx, fhost_wpa_wait_event);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            9, fhost_vif_idx, target->event, event,
++            (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
++            (uint32_t)(uintptr_t)rtos_get_task_handle(), unregister_result,
++            wpa_vif ? wpa_vif->state : 0xff);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            10, fhost_vif_idx, target->event, event,
++            (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
++            (uint32_t)(uintptr_t)rtos_get_task_handle(), 0,
++            wpa_vif ? wpa_vif->state : 0xff);
+     rtos_task_notify(target->task, false);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            11, fhost_vif_idx, target->event, event,
++            (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
++            (uint32_t)(uintptr_t)rtos_get_task_handle(), 0,
++            wpa_vif ? wpa_vif->state : 0xff);
+ }
+ 
+ /**
+@@ -285,18 +321,40 @@
+ static int fhost_wpa_wait_event_register(int fhost_vif_idx, enum fhost_wpa_event event,
+                                          struct fhost_wpa_target_event *target)
+ {
++    int result;
++    const bool bridge_ap_wait =
++        fhost_vif_idx == MGMR_VIF_AP && event == FHOST_WPA_CONNECTED;
++
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            1, fhost_vif_idx, event, 0xff, (uint32_t)(uintptr_t)target, 0, 0,
++            0, 0xff);
+     target->event = event;
+     target->task = rtos_get_task_handle();
+ 
+-    if (rtos_task_init_notification(target->task))
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            2, fhost_vif_idx, event, 0xff, (uint32_t)(uintptr_t)target,
++            (uint32_t)(uintptr_t)target->task, 0, 0, 0xff);
++    if (rtos_task_init_notification(target->task)) {
++        if (bridge_ap_wait)
++            fhost_bridge_ap_start_wpa_wait(
++                3, fhost_vif_idx, event, 0xff, (uint32_t)(uintptr_t)target,
++                (uint32_t)(uintptr_t)target->task, 0, -1, 0xff);
+         return -1;
++    }
+ 
+-    return fhost_wpa_cb_register(fhost_vif_idx,
+-                                 CO_BIT(FHOST_WPA_CONNECTED) |
+-                                 CO_BIT(FHOST_WPA_DISCONNECTED) |
+-                                 CO_BIT(FHOST_WPA_EXIT) |
+-                                 CO_BIT(FHOST_WPA_INTERFACE_REMOVED),
+-                                 fhost_wpa_wait_event, target);
++    result = fhost_wpa_cb_register(fhost_vif_idx,
++                                   CO_BIT(FHOST_WPA_CONNECTED) |
++                                   CO_BIT(FHOST_WPA_DISCONNECTED) |
++                                   CO_BIT(FHOST_WPA_EXIT) |
++                                   CO_BIT(FHOST_WPA_INTERFACE_REMOVED),
++                                   fhost_wpa_wait_event, target);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            3, fhost_vif_idx, event, 0xff, (uint32_t)(uintptr_t)target,
++            (uint32_t)(uintptr_t)target->task, 0, result, 0xff);
++    return result;
+ }
+ 
+ /**
+@@ -1085,6 +1143,8 @@
+     struct fhost_wpa_target_event target;
+     struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
+     int wait_timeout_ms = -1;
++    int wait_result;
++    const bool bridge_ap_wait = fhost_vif_idx == MGMR_VIF_AP;
+ 
+     if (!wpa_vif || (wpa_vif->network_id < 0))
+         return -1;
+@@ -1104,15 +1164,41 @@
+     if (fhost_wpa_wait_event_register(fhost_vif_idx, FHOST_WPA_CONNECTED, &target))
+         return -1;
+ 
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            4, fhost_vif_idx, target.event, 0xff,
++            (uint32_t)(uintptr_t)&target, (uint32_t)(uintptr_t)target.task, 0,
++            0, wpa_vif->state);
+     if (fhost_wpa_execute_cmd(fhost_vif_idx, NULL, NULL, "ENABLE_NETWORK %d ",
+                               wpa_vif->network_id))
+     {
++        if (bridge_ap_wait)
++            fhost_bridge_ap_start_wpa_wait(
++                5, fhost_vif_idx, target.event, 0xff,
++                (uint32_t)(uintptr_t)&target,
++                (uint32_t)(uintptr_t)target.task, 0, -1, wpa_vif->state);
+         fhost_wpa_wait_event_unregister(fhost_vif_idx);
+         return -1;
+     }
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            5, fhost_vif_idx, target.event, 0xff,
++            (uint32_t)(uintptr_t)&target, (uint32_t)(uintptr_t)target.task, 0,
++            0, wpa_vif->state);
+ 
+     // Wait until connection is completed or failed.
+-    if (rtos_task_wait_notification(wait_timeout_ms) == 0)
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            6, fhost_vif_idx, target.event, 0xff,
++            (uint32_t)(uintptr_t)&target, (uint32_t)(uintptr_t)target.task, 0,
++            0, wpa_vif->state);
++    wait_result = rtos_task_wait_notification(wait_timeout_ms);
++    if (bridge_ap_wait)
++        fhost_bridge_ap_start_wpa_wait(
++            12, fhost_vif_idx, target.event, 0xff,
++            (uint32_t)(uintptr_t)&target, (uint32_t)(uintptr_t)target.task, 0,
++            wait_result, wpa_vif->state);
++    if (wait_result == 0)
+     {
+         fhost_wpa_wait_event_unregister(fhost_vif_idx);
+         return -1;

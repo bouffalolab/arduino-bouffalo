@@ -1,0 +1,29 @@
+--- a/components/wireless/macsw/ip/umac/src/rxu/rxu_cntrl.c
++++ b/components/wireless/macsw/ip/umac/src/rxu/rxu_cntrl.c
+@@ -22,6 +22,7 @@
+  */
+ 
+ // standard includes
++extern void bridge_udp_mac_fragment_observe(const void *, unsigned, unsigned) __attribute__((weak));
+ extern void fhost_bridge_rx_event(unsigned event, unsigned value0, unsigned value1, unsigned value2) __attribute__((weak));
+ #define BRIDGE_RX_EVENT(e,a,b,c) do { if (fhost_bridge_rx_event) fhost_bridge_rx_event((e),(a),(b),(c)); } while (0)
+ 
+@@ -3016,6 +3017,18 @@
+                 if (frame_cntl & MAC_NODATA_ST_BIT)
+                     break;
+ 
++                // Header-only observer before duplicate/reorder/host transfer.
++                // Never read past the first DMA payload descriptor.
++                if (bridge_udp_mac_fragment_observe &&
++                    vif_info_tab[rx_status->vif_idx].type == VIF_STA &&
++                    pd->dataendptr >= pd->datastartptr) {
++                    unsigned contiguous = pd->dataendptr - pd->datastartptr + 1;
++                    if (contiguous > rhd->frmlen) contiguous = rhd->frmlen;
++                    if (contiguous > rx_status->machdr_len)
++                        bridge_udp_mac_fragment_observe(frame + rx_status->machdr_len,
++                            contiguous - rx_status->machdr_len, rx_status->sn);
++                }
++
+                 rxu_cntrl_eapol_packet_dump(rxdesc, sta_idx);
+ 
+                 if (!rxu_special_data_check(rx_status, frame))

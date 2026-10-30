@@ -1,0 +1,39 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -887,20 +887,24 @@
+     res[res_len] = '\0';
+     wpa_vif->network_id = atoi(res);
+ 
+-#if 1
+-    // Enable H2E
+-    res_len = sizeof(res) - 1;
+-    if (fhost_vif_idx == MGMR_VIF_AP)
+-        fhost_bridge_ap_start_progress(43, 0);
+-    if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET sae_pwe 2"))
+-    {
++    /*
++     * H2E applies only to SAE (WPA3) networks. The upstream path sends this
++     * command for every AP configuration, including WPA2-PSK. Keep it for
++     * SAE-capable profiles, but do not enter that control path for WPA2.
++     */
++    if (strstr(net_cfg, "SAE") != NULL) {
++        res_len = sizeof(res) - 1;
++        if (fhost_vif_idx == MGMR_VIF_AP)
++            fhost_bridge_ap_start_progress(43, 0);
++        if (fhost_wpa_execute_cmd(fhost_vif_idx, res, &res_len, "SET sae_pwe 2"))
++        {
++            if (fhost_vif_idx == MGMR_VIF_AP)
++                fhost_bridge_ap_start_progress(43, -1);
++            goto end;
++        }
+         if (fhost_vif_idx == MGMR_VIF_AP)
+-            fhost_bridge_ap_start_progress(43, -1);
+-        goto end;
++            fhost_bridge_ap_start_progress(43, 0);
+     }
+-    if (fhost_vif_idx == MGMR_VIF_AP)
+-        fhost_bridge_ap_start_progress(43, 0);
+-#endif
+ 
+     if (country_code && country_code[0]) {
+         res_len = sizeof(res) - 1;

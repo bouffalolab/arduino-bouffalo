@@ -21,3 +21,11 @@ build/
 .DS_Store
 Thumbs.db
 *~
+
+# Local Arduino runner configuration; generated build workspace has its own config.
+/arduino-cli.yaml
+
+# Internal migration and bench evidence must stay local.
+/docs/migration/
+/docs/bridge/
+/docs/项目进展.md

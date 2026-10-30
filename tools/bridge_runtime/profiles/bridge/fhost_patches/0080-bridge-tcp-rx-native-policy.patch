@@ -1,0 +1,162 @@
+--- a/components/net/lwip/lwip/src/core/tcp.c
++++ b/components/net/lwip/lwip/src/core/tcp.c
+@@ -222,6 +222,7 @@
+ #if LWIP_TCP_PCB_NUM_EXT_ARGS
+   tcp_ext_arg_invoke_callbacks_destroyed(pcb->ext_args);
+ #endif
++  if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.close(pcb);
+   memp_free(MEMP_TCP_PCB, pcb);
+ }
+ 
+@@ -948,7 +949,7 @@
+   LWIP_ASSERT("tcp_update_rcv_ann_wnd: invalid pcb", pcb != NULL);
+   new_right_edge = pcb->rcv_nxt + pcb->rcv_wnd;
+ 
+-  if (TCP_SEQ_GEQ(new_right_edge, pcb->rcv_ann_right_edge + LWIP_MIN((BRIDGE_TCP_RECEIVE_WINDOW() / 2), pcb->mss))) {
++  if (TCP_SEQ_GEQ(new_right_edge, pcb->rcv_ann_right_edge + LWIP_MAX(1U, LWIP_MIN((BRIDGE_TCP_PCB_WINDOW(pcb) / 2), pcb->mss)))) {
+     /* we can advertise more window */
+     pcb->rcv_ann_wnd = pcb->rcv_wnd;
+     return new_right_edge - pcb->rcv_ann_right_edge;
+@@ -991,6 +992,11 @@
+   /* pcb->state LISTEN not allowed here */
+   LWIP_ASSERT("don't call tcp_recved for listen-pcbs",
+               pcb->state != LISTEN);
++
++  if (&bridge_tcp_rx_policy) {
++    bridge_tcp_rx_policy.recved(pcb, len);
++    return;
++  }
+ 
+   rcv_wnd = (tcpwnd_size_t)(pcb->rcv_wnd + len);
+   if ((rcv_wnd > TCP_WND_MAX(pcb)) || (rcv_wnd < pcb->rcv_wnd)) {
+@@ -1163,7 +1169,7 @@
+   pcb->snd_lbb = iss - 1;
+   /* Start with a window that does not need scaling. When window scaling is
+      enabled and used, the window is enlarged when both sides agree on scaling. */
+-  pcb->rcv_wnd = pcb->rcv_ann_wnd = TCPWND_MIN16(BRIDGE_TCP_RECEIVE_WINDOW());
++  pcb->rcv_wnd = pcb->rcv_ann_wnd = TCPWND_MIN16(BRIDGE_TCP_PCB_WINDOW(pcb));
+   pcb->rcv_ann_right_edge = pcb->rcv_nxt;
+   pcb->snd_wnd = TCP_WND;
+   /* As initial send MSS, we use TCP_MSS but limit it to 536.
+@@ -1742,7 +1748,9 @@
+          ) {
+         /* correct rcv_wnd as the application won't call tcp_recved()
+            for the FIN's seqno */
+-        if (pcb->rcv_wnd != TCP_WND_MAX(pcb)) {
++        if (&bridge_tcp_rx_policy) {
++          bridge_tcp_rx_policy.recved(pcb, 1);
++        } else if (pcb->rcv_wnd != TCP_WND_MAX(pcb)) {
+           pcb->rcv_wnd++;
+         }
+         TCP_EVENT_CLOSED(pcb, err);
+@@ -1815,6 +1823,7 @@
+ tcp_setprio(struct tcp_pcb *pcb, u8_t prio)
+ {
+   LWIP_ASSERT_CORE_LOCKED();
++  if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.poll();
+ 
+   LWIP_ERROR("tcp_setprio: invalid pcb", pcb != NULL, return);
+ 
+@@ -2108,6 +2117,13 @@
+     pcb->keep_intvl = TCP_KEEPINTVL_DEFAULT;
+     pcb->keep_cnt   = TCP_KEEPCNT_DEFAULT;
+ #endif /* LWIP_TCP_KEEPALIVE */
++    if (&bridge_tcp_rx_policy) {
++      if (!bridge_tcp_rx_policy.open(pcb)) {
++        tcp_free(pcb);
++        return NULL;
++      }
++      pcb->rcv_wnd = pcb->rcv_ann_wnd = TCPWND_MIN16(BRIDGE_TCP_PCB_WINDOW(pcb));
++    }
+   }
+   return pcb;
+ }
+--- a/components/net/lwip/lwip/src/core/tcp_in.c
++++ b/components/net/lwip/lwip/src/core/tcp_in.c
+@@ -564,7 +564,9 @@
+           } else {
+             /* correct rcv_wnd as the application won't call tcp_recved()
+                for the FIN's seqno */
+-            if (pcb->rcv_wnd != TCP_WND_MAX(pcb)) {
++            if (&bridge_tcp_rx_policy) {
++              bridge_tcp_rx_policy.recved(pcb, 1);
++            } else if (pcb->rcv_wnd != TCP_WND_MAX(pcb)) {
+               pcb->rcv_wnd++;
+             }
+             TCP_EVENT_CLOSED(pcb, err);
+@@ -1630,6 +1632,7 @@
+         /* Update the receiver's (our) window. */
+         LWIP_ASSERT("tcp_receive: tcplen > rcv_wnd\n", pcb->rcv_wnd >= tcplen);
+         pcb->rcv_wnd -= tcplen;
++        if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.received(pcb, tcplen);
+ 
+         tcp_update_rcv_ann_wnd(pcb);
+ 
+@@ -1667,6 +1670,7 @@
+           LWIP_ASSERT("tcp_receive: ooseq tcplen > rcv_wnd\n",
+                       pcb->rcv_wnd >= TCP_TCPLEN(cseg));
+           pcb->rcv_wnd -= TCP_TCPLEN(cseg);
++          if (&bridge_tcp_rx_policy) bridge_tcp_rx_policy.received(pcb, TCP_TCPLEN(cseg));
+ 
+           tcp_update_rcv_ann_wnd(pcb);
+ 
+@@ -2050,9 +2054,9 @@
+             pcb->rcv_scale = TCP_RCV_SCALE;
+             tcp_set_flags(pcb, TF_WND_SCALE);
+             /* window scaling is enabled, we can use the full receive window */
+-            LWIP_ASSERT("window not at default value", pcb->rcv_wnd == TCPWND_MIN16(BRIDGE_TCP_RECEIVE_WINDOW()));
+-            LWIP_ASSERT("window not at default value", pcb->rcv_ann_wnd == TCPWND_MIN16(BRIDGE_TCP_RECEIVE_WINDOW()));
+-            pcb->rcv_wnd = pcb->rcv_ann_wnd = BRIDGE_TCP_RECEIVE_WINDOW();
++            LWIP_ASSERT("window not at default value", pcb->rcv_wnd == TCPWND_MIN16(BRIDGE_TCP_PCB_WINDOW(pcb)));
++            LWIP_ASSERT("window not at default value", pcb->rcv_ann_wnd == TCPWND_MIN16(BRIDGE_TCP_PCB_WINDOW(pcb)));
++            pcb->rcv_wnd = pcb->rcv_ann_wnd = BRIDGE_TCP_PCB_WINDOW(pcb);
+           }
+           break;
+ #endif /* LWIP_WND_SCALE */
+--- a/components/net/lwip/lwip/src/include/lwip/tcp.h
++++ b/components/net/lwip/lwip/src/include/lwip/tcp.h
+@@ -155,16 +155,42 @@
+ }
+ #define BRIDGE_TCP_RECEIVE_WINDOW() bridge_tcp_receive_window_limit()
+ 
++/* Optional core-lock-owned receive policy. The immutable table must provide
++ * every callback. With no table, the fixed diagnostic/stock window is kept.
++ * open runs after initialization and before any SYN; close runs at tcp_free,
++ * including listen conversion, reaping, abort and failed-open cleanup.
++ * received counts unique in-order sequence bytes, including FIN. recved owns
++ * replenishment entirely; it must never retract accepted/announced credit. */
++struct bridge_tcp_rx_policy_hooks {
++  int (*open)(struct tcp_pcb *);
++  void (*close)(struct tcp_pcb *);
++  unsigned (*window)(const struct tcp_pcb *);
++  void (*received)(struct tcp_pcb *, unsigned);
++  void (*recved)(struct tcp_pcb *, unsigned);
++  void (*poll)(void);
++};
++extern const struct bridge_tcp_rx_policy_hooks bridge_tcp_rx_policy
++    __attribute__((weak));
++static inline tcpwnd_size_t bridge_tcp_pcb_receive_window(const struct tcp_pcb *pcb)
++{
++  if (&bridge_tcp_rx_policy) {
++    unsigned value = bridge_tcp_rx_policy.window(pcb);
++    return value <= TCP_WND ? (tcpwnd_size_t)value : 0;
++  }
++  return BRIDGE_TCP_RECEIVE_WINDOW();
++}
++#define BRIDGE_TCP_PCB_WINDOW(pcb) bridge_tcp_pcb_receive_window(pcb)
++
+ #if LWIP_WND_SCALE
+ #define RCV_WND_SCALE(pcb, wnd) (((wnd) >> (pcb)->rcv_scale))
+ #define SND_WND_SCALE(pcb, wnd) (((wnd) << (pcb)->snd_scale))
+ #define TCPWND16(x)             ((u16_t)LWIP_MIN((x), 0xFFFF))
+-#define TCP_WND_MAX(pcb)        ((tcpwnd_size_t)(((pcb)->flags & TF_WND_SCALE) ? BRIDGE_TCP_RECEIVE_WINDOW() : TCPWND16(BRIDGE_TCP_RECEIVE_WINDOW())))
++#define TCP_WND_MAX(pcb)        ((tcpwnd_size_t)(((pcb)->flags & TF_WND_SCALE) ? BRIDGE_TCP_PCB_WINDOW(pcb) : TCPWND16(BRIDGE_TCP_PCB_WINDOW(pcb))))
+ #else
+ #define RCV_WND_SCALE(pcb, wnd) (wnd)
+ #define SND_WND_SCALE(pcb, wnd) (wnd)
+ #define TCPWND16(x)             (x)
+-#define TCP_WND_MAX(pcb)        BRIDGE_TCP_RECEIVE_WINDOW()
++#define TCP_WND_MAX(pcb)        BRIDGE_TCP_PCB_WINDOW(pcb)
+ #endif
+ /* Increments a tcpwnd_size_t and holds at max value rather than rollover */
+ #define TCP_WND_INC(wnd, inc)   do { \

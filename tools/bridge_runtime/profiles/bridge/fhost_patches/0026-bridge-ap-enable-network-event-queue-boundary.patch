@@ -1,0 +1,54 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -430,13 +430,13 @@
+     fhost_bridge_ap_start_progress(225, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_notification_ab(
+-        4, (uint32_t)(uintptr_t)msg,
++        5, (uint32_t)(uintptr_t)msg,
+         (uint32_t)(uintptr_t)msg->waiting_task,
+         1, msg->use_task_notification, 0);
+   if (msg->use_task_notification) {
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_notification_ab(
+-          5, (uint32_t)(uintptr_t)msg,
++          6, (uint32_t)(uintptr_t)msg,
+           (uint32_t)(uintptr_t)msg->waiting_task, 1, 1, 0);
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_trace(5, (uint32_t)(uintptr_t)msg->waiting_task,
+@@ -455,7 +455,7 @@
+   }
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_notification_ab(
+-        6, (uint32_t)(uintptr_t)msg,
++        7, (uint32_t)(uintptr_t)msg,
+         (uint32_t)(uintptr_t)msg->waiting_task, 1, 0, 0);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(234, 0);
+@@ -552,10 +552,16 @@
+   data->resp = resp;
+   data->resp_len = resp_len;
+ 
+-  ret = eloop_post_event(type, sizeof(struct event_sync_msg) + req_len, data, event_commit_sync_done);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_notification_ab(
+         3, (uint32_t)(uintptr_t)data,
++        (uint32_t)(uintptr_t)data->waiting_task,
++        1, data->use_task_notification, 0);
++
++  ret = eloop_post_event(type, sizeof(struct event_sync_msg) + req_len, data, event_commit_sync_done);
++  if (bridge_ap_enable_network)
++    fhost_bridge_ap_start_notification_ab(
++        4, (uint32_t)(uintptr_t)data,
+         (uint32_t)(uintptr_t)data->waiting_task,
+         1, data->use_task_notification, ret);
+   if (ret) {
+@@ -578,7 +584,7 @@
+   if (data->use_task_notification) {
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_notification_ab(
+-          7, (uint32_t)(uintptr_t)data,
++          8, (uint32_t)(uintptr_t)data,
+           (uint32_t)(uintptr_t)data->waiting_task, 1, 1, 0);
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_trace(7,

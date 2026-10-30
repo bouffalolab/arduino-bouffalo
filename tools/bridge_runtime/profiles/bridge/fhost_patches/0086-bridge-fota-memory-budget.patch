@@ -1,0 +1,20 @@
+--- a/components/fota/ota/ota.c
++++ b/components/fota/ota/ota.c
+@@ -28,7 +28,7 @@
+ #define OTA_DEBUG_IMG 0
+ #define OTA_ERASE_BLOCK_SIZE (4*1024)
+ 
+-#if defined(BL602)
++#if defined(BL602) || defined(BL616CL)
+ static ATTR_WIFI_RAM_SECTION __attribute__((aligned(32))) struct bflb_sha256_link_ctx_s _sha_ctx;
+ #else
+ static ATTR_NOCACHE_NOINIT_RAM_SECTION __attribute__((aligned(32))) struct bflb_sha256_link_ctx_s _sha_ctx;
+@@ -312,7 +312,7 @@
+     pt_table_set_flash_operation(bflb_flash_erase, bflb_flash_write, bflb_flash_read);
+ #endif
+ 
+-    ota_handle->active_id = pt_table_get_active_partition_from_ram(ota_handle->pt_table_stuff);
++    ota_handle->active_id = pt_table_get_active_partition_need_lock(ota_handle->pt_table_stuff);
+     if (PT_TABLE_ID_INVALID == ota_handle->active_id) {
+         LOG_E("No valid PT\r\n");
+         goto _fail;

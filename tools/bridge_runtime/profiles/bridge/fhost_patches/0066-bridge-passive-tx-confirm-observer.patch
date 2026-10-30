@@ -1,0 +1,21 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_tx.c
++++ b/components/wireless/wifi6/fhost/src/fhost_tx.c
+@@ -596,10 +596,18 @@
+  * @param[in] buf_rx      Rx Buffer to release
+  ****************************************************************************************
+  */
++/* Optional read-only bridge observer; buffer ownership and callbacks stay
++ * with FHOST. Invoke before release so the observer can inspect L2 headers. */
++extern void bridge_wifi_tx_release_observer(uintptr_t buffer,
++    uint32_t acknowledged, uint32_t discarded) __attribute__((weak));
++
+ void fhost_tx_release_buf(net_al_tx_t net_buf, uint32_t tx_status,
+                                  cb_fhost_tx cfm_cb, void *cfm_cb_arg,
+                                  struct fhost_rx_buf_tag *buf_rx )
+ {
++    if (bridge_wifi_tx_release_observer)
++        bridge_wifi_tx_release_observer((uintptr_t)net_buf,
++            (tx_status & TX_STATUS_ACKNOWLEDGED) != 0, tx_status == 0);
+     if (cfm_cb)
+         cfm_cb((uintptr_t)net_buf, tx_status & TX_STATUS_ACKNOWLEDGED, cfm_cb_arg);
+     net_buf_tx_free(net_buf);

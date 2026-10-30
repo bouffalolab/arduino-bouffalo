@@ -1,0 +1,526 @@
+{
+  "schema": 1,
+  "sdk_commit": "240ff49ba0189ebeba92e6d5c42533f63d90a161",
+  "components": [
+    {
+      "archive": "lib/libfreertos.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/os/freertos/CMakeLists.txt"
+      ],
+      "license": "MIT (FreeRTOS kernel; include component notices in release SBOM)",
+      "public_apis": [
+        "FreeRTOS scheduler, tasks, queues, timers"
+      ],
+      "source_paths": [
+        "components/os/freertos"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/liblhal.a",
+      "classification": "source",
+      "cmake_files": [
+        "drivers/lhal/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "bflb_gpio_*, bflb_uart_*, bflb_sec_*"
+      ],
+      "source_paths": [
+        "drivers/lhal"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/liblibc.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/libc/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "SDK libc wrappers and formatted I/O"
+      ],
+      "source_paths": [
+        "components/libc"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmm.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/mm/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "SDK heap allocator"
+      ],
+      "source_paths": [
+        "components/mm"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libstd.a",
+      "classification": "source",
+      "cmake_files": [
+        "drivers/soc/bl616cl/std/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "BL616CL startup, interrupt vectors, ROM API stubs"
+      ],
+      "source_paths": [
+        "drivers/soc/bl616cl/std"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libsys.a",
+      "classification": "source",
+      "cmake_files": [
+        "drivers/sys/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "BL616CL power, low-power and XIP recovery support"
+      ],
+      "source_paths": [
+        "drivers/sys"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libsysinit.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/sysinit/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "sysinit_run_all"
+      ],
+      "source_paths": [
+        "components/sysinit"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libutils.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/utils/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "partition, MTD, async_event, ring buffer utilities"
+      ],
+      "source_paths": [
+        "components/utils"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libcherryusb.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/usb/cherryusb/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (CherryUSB)",
+      "public_apis": [
+        "usbd_initialize, CDC ACM, HID endpoints"
+      ],
+      "source_paths": [
+        "components/usb/cherryusb"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libdebug.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/debug/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "backtrace support"
+      ],
+      "source_paths": [
+        "components/debug"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libfhost_bl616cl_default.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/wifi6/fhost/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "fhost_api.h, wifi_mgmr.h, Wi-Fi station and AP control"
+      ],
+      "source_paths": [
+        "components/wireless/wifi6/fhost"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libfhost_config.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/wifi6/fhost_config/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "FHOST buffer and task configuration"
+      ],
+      "source_paths": [
+        "components/wireless/wifi6/fhost_config"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/liblittlefs.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/fs/littlefs/CMakeLists.txt"
+      ],
+      "license": "BSD-3-Clause (LittleFS) plus Apache-2.0 SDK port",
+      "public_apis": [
+        "LittleFS and EasyFlash key-value port"
+      ],
+      "source_paths": [
+        "components/fs/littlefs"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/liblwip.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/net/lwip/CMakeLists.txt",
+        "components/net/lwip/lwip/CMakeLists.txt"
+      ],
+      "license": "BSD-3-Clause (lwIP)",
+      "public_apis": [
+        "BSD sockets, netif, DNS, TCP, UDP"
+      ],
+      "source_paths": [
+        "components/net/lwip"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmacsw_bl616cl.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/macsw/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "MACSW firmware host interface"
+      ],
+      "source_paths": [
+        "components/wireless/macsw"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmacsw_config_bl616cl_default.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/macsw/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "MACSW default configuration"
+      ],
+      "source_paths": [
+        "components/wireless/macsw"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmacsw_os_adapter.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/wifi6/macsw_os_adapter/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "MACSW FreeRTOS adapter"
+      ],
+      "source_paths": [
+        "components/wireless/wifi6/macsw_os_adapter"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmacsw_plat.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "MACSW platform hooks"
+      ],
+      "source_paths": [
+        "components/wireless"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libmbedtls.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/crypto/mbedtls/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 OR GPL-2.0-or-later (Mbed TLS v3; release selects Apache-2.0)",
+      "public_apis": [
+        "mbedtls_ssl_*, mbedtls_x509_*, mbedtls_ctr_drbg_*"
+      ],
+      "source_paths": [
+        "components/crypto/mbedtls"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libping.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/net/lwip/lwip_apps/ping/CMakeLists.txt"
+      ],
+      "license": "BSD-3-Clause (lwIP applications)",
+      "public_apis": [
+        "lwip_ping_send, lwip_ping_recv"
+      ],
+      "source_paths": [
+        "components/net/lwip/lwip_apps/ping"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/librfparam.a",
+      "classification": "source",
+      "cmake_files": [
+        "drivers/rfparam/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "rfparam_cfg_get and RF parameter TLV support"
+      ],
+      "source_paths": [
+        "drivers/rfparam"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libwifi6_lwip_adapter.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/wifi6/wifi6_lwip_adapter/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "Wi-Fi netif/lwIP adapter"
+      ],
+      "source_paths": [
+        "components/wireless/wifi6/wifi6_lwip_adapter"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libwpa_supplicant.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/wifi6/wpa_supplicant/CMakeLists.txt"
+      ],
+      "license": "BSD-3-Clause (wpa_supplicant/hostapd) plus SDK port code",
+      "public_apis": [
+        "WPA2/WPA3 station and AP authentication"
+      ],
+      "source_paths": [
+        "components/wireless/wifi6/wpa_supplicant"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libblestack.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/bluetooth/blestack/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root; component notices pending final SBOM)",
+      "public_apis": [
+        "Bluetooth host, raw HCI and on-chip HCI driver"
+      ],
+      "source_paths": [
+        "components/wireless/bluetooth/blestack"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libbtblecontroller_bl616cl_m2s1.a",
+      "classification": "source",
+      "cmake_files": [
+        "components/wireless/bluetooth/btblecontroller/CMakeLists.txt",
+        "components/wireless/bluetooth/ble_common.cmake"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root; BLE controller/RF ABI review remains required)",
+      "public_apis": [
+        "btble_controller_*, on-chip controller and Link Layer"
+      ],
+      "source_paths": [
+        "components/wireless/bluetooth/btblecontroller"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib_board/libapp.a",
+      "classification": "source",
+      "cmake_files": [
+        "bsp/board/bl616cldk/CMakeLists.txt"
+      ],
+      "license": "Apache-2.0 (Bouffalo SDK root)",
+      "public_apis": [
+        "board initialization, RF board data, generated firmware header"
+      ],
+      "source_paths": [
+        "bsp/board/bl616cldk"
+      ],
+      "license_assessment": "declared component summary; per-file exceptions apply"
+    },
+    {
+      "archive": "lib/libbl616cl_phyrf.a",
+      "classification": "supplier-prebuilt",
+      "license_status": "Bouffalo SDK root is Apache-2.0; PHY/RF artifact-specific redistribution notice requires supplier confirmation before release.",
+      "reason": "The BL616CL PHY/RF implementation is explicitly imported as a static archive by the SDK and is required by Wi-Fi and BLE coexistence.",
+      "sdk_source_path": "drivers/soc/bl616cl/phyrf/lib-gcc_10.2.0-toolchain_V2.6.1/libbl616cl_phyrf.a",
+      "sha256": "4136fb7b2666e595a51d84007bfad0e08a06a2d349880d43788ae88a69e943df"
+    },
+    {
+      "archive": "lib/libpka_bl616cl.a",
+      "classification": "supplier-prebuilt",
+      "license_status": "Bouffalo SDK root is Apache-2.0; PKA artifact-specific redistribution notice requires supplier confirmation before release.",
+      "reason": "The SDK links the BL616CL hardware PKA accelerator implementation as a static archive for the mbedTLS hardware-acceleration path.",
+      "sdk_source_path": "drivers/lhal/src/pka/libpka_bl616cl.a",
+      "sha256": "da06e6bf980e14bae0d2898f1c2b9e41c21dead4702d1cd3e0e9f43ec8f69269"
+    },
+    {
+      "classification": "chip-rom-abi",
+      "name": "BL616CL ROM API",
+      "reason": "The bridge profile sets CONFIG_ROMAPI=y. libstd is built from source, but its ROM API stubs bind to the BL616CL mask-ROM ABI and cannot be replaced independently of the silicon ROM version.",
+      "source_paths": [
+        "drivers/soc/bl616cl/std/CMakeLists.txt",
+        "drivers/soc/bl616cl/std/src/bl616cl_romapi_e907.c",
+        "drivers/soc/bl616cl/std/src/bl616cl_romapi_patch.c"
+      ]
+    }
+  ],
+  "notices": {
+    "Bouffalo-Apache-2.0.txt": {
+      "origin": "bouffalo_sdk/LICENSE",
+      "source_sha256": "454ec1d833e9da63aaa6f4d3f880c1c0f9ea6b8c77de1e441876f9e2cbf70615",
+      "notice_sha256": "454ec1d833e9da63aaa6f4d3f880c1c0f9ea6b8c77de1e441876f9e2cbf70615"
+    },
+    "MbedTLS-LICENSE.txt": {
+      "origin": "bouffalo_sdk/components/crypto/mbedtls/mbedtls_v3/LICENSE",
+      "source_sha256": "9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b",
+      "notice_sha256": "9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b"
+    },
+    "MbedTLS-framework-LICENSE.txt": {
+      "origin": "bouffalo_sdk/components/crypto/mbedtls/mbedtls_v3/framework/LICENSE",
+      "source_sha256": "11402351e38392230bb8934ba1095c0c0049a296c0f8821f76e4672dff54b490",
+      "notice_sha256": "11402351e38392230bb8934ba1095c0c0049a296c0f8821f76e4672dff54b490"
+    },
+    "LittleFS-LICENSE.txt": {
+      "origin": "bouffalo_sdk/components/fs/littlefs/littlefs/LICENSE.md",
+      "source_sha256": "0cb4ff1daf5fdc1359c6a6ee3116092f08fc100c9d58b1b77ab17bfd801f856d",
+      "notice_sha256": "0cb4ff1daf5fdc1359c6a6ee3116092f08fc100c9d58b1b77ab17bfd801f856d"
+    },
+    "lwIP-COPYING.txt": {
+      "origin": "bouffalo_sdk/components/net/lwip/lwip/COPYING",
+      "source_sha256": "8fb15ebdb19eb669e1d37fcd8e57a44c477fcc0e93a9ab0d181760965f94d5ed",
+      "notice_sha256": "8fb15ebdb19eb669e1d37fcd8e57a44c477fcc0e93a9ab0d181760965f94d5ed"
+    },
+    "WPA-COPYING.txt": {
+      "origin": "bouffalo_sdk/components/wireless/wifi6/wpa_supplicant/COPYING",
+      "source_sha256": "a87ac4e333d0f120408a9d814e40c3672cd27f365af89b4f2f6631f7a9338953",
+      "notice_sha256": "a87ac4e333d0f120408a9d814e40c3672cd27f365af89b4f2f6631f7a9338953"
+    },
+    "WPA-README.txt": {
+      "origin": "bouffalo_sdk/components/wireless/wifi6/wpa_supplicant/README",
+      "source_sha256": "af01e1d1ee065a1054d20ebe8a78a016f1fb1133b73e6a9d50801b165bb280c7",
+      "notice_sha256": "af01e1d1ee065a1054d20ebe8a78a016f1fb1133b73e6a9d50801b165bb280c7"
+    },
+    "FreeRTOS-header.txt": {
+      "origin": "bouffalo_sdk/components/os/freertos/include/FreeRTOS.h",
+      "source_sha256": "ee71217a0fb4d1c846ee053d3f53f364e221e7f212e42c729b3a4aec77d7c5b4",
+      "notice_sha256": "5e18e40097a87476417b4664cadb5a491799db3f63c0b1d80752430c99d84f98"
+    },
+    "TLSF-header.txt": {
+      "origin": "bouffalo_sdk/components/mm/tlsf/tlsf.h",
+      "source_sha256": "87e6212908ce22f63f7b21c0fc655bb9dec50fc814ef24ddfac482912100bb3d",
+      "notice_sha256": "b079944aee1a693811f305286af25dd2fcaf00cc5f6b4a3b35210edc3edbaa6a"
+    },
+    "TinyCrypt-header.txt": {
+      "origin": "bouffalo_sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/include/tinycrypt/aes.h",
+      "source_sha256": "bd9e1ea99ec9717aa68f8c2b9b8844c11a7557017dde19c0ea7ca9599ce28c8e",
+      "notice_sha256": "8aef2c4ed1661ccd051c18128e0cd22ccdf022ed0c763e60bfbcf0fbd65785b0"
+    },
+    "CherryUSB-header.txt": {
+      "origin": "bouffalo_sdk/components/usb/cherryusb/core/usbd_core.c",
+      "source_sha256": "409b74d21a58335d67c19e01cab99447c05443d408b94aad72d3627e34793f56",
+      "notice_sha256": "aa4a2859e0d8e5969e21dac997bd617c709ce1e344c44c0fcabec7cb433369fd"
+    },
+    "BLE-host-header.txt": {
+      "origin": "bouffalo_sdk/components/wireless/bluetooth/blestack/src/host/hci_core.c",
+      "source_sha256": "e3ae3a752624705296fc6a1166a93d60378caff15a30f42dcbc8f7026325e891",
+      "notice_sha256": "3bfa9d0d29b26d33a8a1d133a5cc48561b7ee9637e89e7c3bafbacfcdf2037b0"
+    },
+    "BLE-controller-header.txt": {
+      "origin": "bouffalo_sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_swdiag.c",
+      "source_sha256": "0537562d455d451ed8ee4121935f63cf0d3f379749fb18b90a8b5677d5328139",
+      "notice_sha256": "2b0be6b32c518a08e6b6f8cbcf2c1b0cdaacdce2ff18a3a8a758030ff7492134"
+    },
+    "NuttX-header.txt": {
+      "origin": "bouffalo_sdk/components/libc/nuttx/libc/string/lib_strcasecmp.c",
+      "source_sha256": "bd7f25d493b39c70f8f99de903997d986868054b121406b3223ede8f7f5ae6cc",
+      "notice_sha256": "fe844e402db85ed9a4b6aa1c35d1ede72d658e2a2100385186cb2e36549f5367"
+    },
+    "FreeDAP-freedap.c.txt": {
+      "origin": "UNOR4BL616CLBridge/freedap.c",
+      "source_sha256": "77fe0b7dd6c28177537c557f35189bd40ae0444e25a48a865025f15f07112e0e",
+      "notice_sha256": "34af6c9c8395ec9dc478b6201fa936d93e2aea0bcec18fde4475710185793233"
+    },
+    "FreeDAP-freedap.h.txt": {
+      "origin": "UNOR4BL616CLBridge/freedap.h",
+      "source_sha256": "3c35445e249a0f1cffb7e38b671c76311363c255c3dbd8952573a9dcd6535460",
+      "notice_sha256": "227e9c5015e1517690f0d17f6d02dc2b5b16b2c90c0a3b7e83034a80acf0b31e"
+    },
+    "FreeDAP-dap_config_bl616cl.h.txt": {
+      "origin": "UNOR4BL616CLBridge/dap_config_bl616cl.h",
+      "source_sha256": "ce87143372536fe92ad6859f32f94be3619ca7ab6edca6e313834e4053910abc",
+      "notice_sha256": "ce87143372536fe92ad6859f32f94be3619ca7ab6edca6e313834e4053910abc"
+    }
+  },
+  "additional_component_licenses": {
+    "TLSF": "BSD-3-Clause (Matthew Conte)",
+    "TinyCrypt": "BSD-3-Clause (Intel)",
+    "FreeDAP": "BSD-3-Clause (Alex Taradov)",
+    "NuttX SDK libc files": "Apache-2.0; ASF NOTICE referenced but absent from this SDK subset"
+  },
+  "unresolved": [
+    "Project bridge/platform source has no repository-wide LICENSE grant; preserve file notices and confirm project licensing before external distribution.",
+    "PHY/RF and PKA artifact-specific redistribution terms require supplier confirmation.",
+    "BLE controller includes RivieraWaves copyright-only files; SDK root Apache text alone does not resolve file-specific terms.",
+    "NuttX-derived SDK libc files refer to ASF NOTICE not present in the pinned subset; obtain the matching notice.",
+    "Supplier boot2, firmware postprocessor/FlashCube and compiler toolchain redistribution terms are not established by the SDK root license.",
+    "GCC/libgcc/libstdc++ runtime exceptions and newlib/libgloss license closure require the matching toolchain distribution notices."
+  ],
+  "scope": "source/build component inventory and preserved evidence; not a blanket redistribution authorization or final per-file legal clearance"
+}

@@ -1,0 +1,22 @@
+--- a/components/net/lwip/lwip/src/core/ipv4/ip4_frag.c
++++ b/components/net/lwip/lwip/src/core/ipv4/ip4_frag.c
+@@ -904,7 +904,18 @@
+     /* No need for separate header pbuf - we allowed room for it in rambuf
+      * when allocated.
+      */
+-    netif->output(netif, rambuf, dest);
++    /* A rejected fragment makes the datagram incomplete. Preserve the
++     * backend error instead of reporting a successful UDP send. Earlier
++     * fragments may already be queued, so never restart the datagram. */
++    {
++      err_t output_error = netif->output(netif, rambuf, dest);
++      if (output_error != ERR_OK) {
++        pbuf_free(rambuf);
++        IPFRAG_STATS_INC(ip_frag.err);
++        MIB2_STATS_INC(mib2.ipfragfails);
++        return output_error;
++      }
++    }
+     IPFRAG_STATS_INC(ip_frag.xmit);
+ 
+     /* Unfortunately we can't reuse rambuf - the hardware may still be

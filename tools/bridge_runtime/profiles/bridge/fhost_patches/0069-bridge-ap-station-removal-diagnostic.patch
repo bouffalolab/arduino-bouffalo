@@ -1,0 +1,67 @@
+--- a/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c
+@@ -2533,8 +2533,12 @@
+ 	return 0;
+ }
+ 
++extern void bridge_ap_sta_remove_observer(uintptr_t site) __attribute__((weak));
++
+ static int wpa_macsw_driver_sta_remove(void *priv, const u8 *addr)
+ {
++	if (bridge_ap_sta_remove_observer)
++		bridge_ap_sta_remove_observer((uintptr_t)__builtin_return_address(0));
+ 	struct wpa_macsw_driver_itf_data *drv = priv;
+ 	struct cfgmacsw_sta_remove cmd;
+ 	struct cfgmacsw_resp resp;
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/sta_info.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/sta_info.c
+@@ -187,8 +187,14 @@
+ 
+ #endif /* CONFIG_PASN */
+ 
++extern void bridge_ap_sta_free_observer(uintptr_t site, unsigned timeout_next,
++                                        unsigned flags) __attribute__((weak));
++
+ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
+ {
++	if (bridge_ap_sta_free_observer)
++		bridge_ap_sta_free_observer((uintptr_t)__builtin_return_address(0),
++			(unsigned)sta->timeout_next, sta->flags);
+ 	int set_beacon = 0;
+ 
+ 	accounting_sta_stop(hapd, sta);
+--- a/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11.c
+@@ -5860,6 +5860,10 @@
+ }
+ 
+ 
++/* Passive receipt evidence only, after frame validation and known-STA lookup. */
++extern void bridge_ap_sta_rx_leave_observer(unsigned kind, unsigned reason)
++    __attribute__((weak));
++
+ static void handle_disassoc(struct hostapd_data *hapd,
+ 			    const struct ieee80211_mgmt *mgmt, size_t len)
+ {
+@@ -5881,6 +5885,10 @@
+ 			   MAC2STR(mgmt->sa));
+ 		return;
+ 	}
++
++	if (bridge_ap_sta_rx_leave_observer)
++		bridge_ap_sta_rx_leave_observer(1,
++			le_to_host16(mgmt->u.disassoc.reason_code));
+ 
+ 	ap_sta_set_authorized(hapd, sta, 0);
+ 	sta->last_seq_ctrl = WLAN_INVALID_MGMT_SEQ;
+@@ -5950,6 +5958,10 @@
+ 			MAC2STR(mgmt->sa));
+ 		return;
+ 	}
++
++	if (bridge_ap_sta_rx_leave_observer)
++		bridge_ap_sta_rx_leave_observer(2,
++			le_to_host16(mgmt->u.deauth.reason_code));
+ 
+ 	ap_sta_set_authorized(hapd, sta, 0);
+ 	sta->last_seq_ctrl = WLAN_INVALID_MGMT_SEQ;

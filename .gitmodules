@@ -1,3 +1,6 @@
 [submodule "tools/sdk/bouffalo_sdk"]
 	path = tools/sdk/bouffalo_sdk
 	url = git@github.com:bouffalolab/bouffalo_sdk.git
+[submodule "third_party/bouffalo_sdk"]
+	path = third_party/bouffalo_sdk
+	url = ssh://gerrit.bouffalolab.com:29418/bouffalo/bouffalo_sdk.git

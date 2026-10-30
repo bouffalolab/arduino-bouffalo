@@ -1,0 +1,27 @@
+--- a/components/net/lwip/lwip/src/include/lwip/sockets.h
++++ b/components/net/lwip/lwip/src/include/lwip/sockets.h
+@@ -264,6 +264,8 @@
+ #define MSG_DONTWAIT   0x08    /* Nonblocking i/o for this operation only */
+ #define MSG_MORE       0x10    /* Sender will send more */
+ #define MSG_NOSIGNAL   0x20    /* Uninmplemented: Requests not to send the SIGPIPE signal if an attempt to send is made on a stream-oriented socket that is no longer connected. */
++/* BL616CL bridge: reference the caller's stable UDP payload until sendto returns. */
++#define MSG_BL616CL_UDP_REF 0x40
+ 
+ 
+ /*
+--- a/components/net/lwip/lwip/src/api/sockets.c
++++ b/components/net/lwip/lwip/src/api/sockets.c
+@@ -1643,7 +1643,11 @@
+   /* make the buffer point to the data that should be sent */
+ #if LWIP_NETIF_TX_SINGLE_PBUF || LWIP_TCPIP_FORCE_TX_COPY
+-  /* Allocate a new netbuf and copy the data into it. */
+-  if (netbuf_alloc(&buf, short_size) == NULL) {
++  /* Large bridge UDP packets are fragmented into copied, single-pbuf frames.
++   * Keep their source stable only for the synchronous netconn_send call. */
++  if ((flags & MSG_BL616CL_UDP_REF) &&
++      NETCONNTYPE_GROUP(netconn_type(sock->conn)) == NETCONN_UDP) {
++    err = netbuf_ref(&buf, data, short_size);
++  } else if (netbuf_alloc(&buf, short_size) == NULL) {
+     err = ERR_MEM;
+   } else {
+ #if LWIP_CHECKSUM_ON_COPY

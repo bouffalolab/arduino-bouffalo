@@ -1,0 +1,11 @@
+--- a/components/net/lwip/lwip/src/core/tcp.c
++++ b/components/net/lwip/lwip/src/core/tcp.c
+@@ -949,7 +949,7 @@
+   LWIP_ASSERT("tcp_update_rcv_ann_wnd: invalid pcb", pcb != NULL);
+   new_right_edge = pcb->rcv_nxt + pcb->rcv_wnd;
+ 
+-  if (TCP_SEQ_GEQ(new_right_edge, pcb->rcv_ann_right_edge + LWIP_MAX(1U, LWIP_MIN((BRIDGE_TCP_PCB_WINDOW(pcb) / 2), pcb->mss)))) {
++  if (TCP_SEQ_GEQ(new_right_edge, pcb->rcv_ann_right_edge + (&bridge_tcp_rx_policy ? 1U : LWIP_MAX(1U, LWIP_MIN((BRIDGE_TCP_PCB_WINDOW(pcb) / 2), pcb->mss))))) {
+     /* we can advertise more window */
+     pcb->rcv_ann_wnd = pcb->rcv_wnd;
+     return new_right_edge - pcb->rcv_ann_right_edge;

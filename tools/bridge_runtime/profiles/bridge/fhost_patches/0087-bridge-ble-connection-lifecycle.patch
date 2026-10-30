@@ -1,0 +1,51 @@
+--- a/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_con.c
++++ b/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_con.c
+@@ -42,6 +42,15 @@
+ 
+ #include "lld.h"                       // link driver API
+ #include "lld_int.h"                   // link layer driver internal
++
++/* Optional bridge observer: numeric lifecycle fields only, no peer or payload.
++ * The normal application does not define this weak symbol. Observers must not
++ * allocate, print, or change scheduler/controller state (may run in IRQ context).
++ * Event 1=start, 2=first synchronization, 3=cleanup. Clock is in half-slots.
++ */
++extern void bridge_ble_link_observe(unsigned event, unsigned clock,
++    unsigned link, unsigned role, unsigned interval, unsigned events,
++    unsigned flags, unsigned reason) __attribute__((weak));
+ 
+ #include "dbg.h"
+ 
+@@ -995,6 +1004,10 @@
+     {
+         // Point to parameters
+         struct lld_con_env_tag* con_par = lld_con_env[link_id];
++        if (bridge_ble_link_observe)
++            bridge_ble_link_observe(3, lld_read_clock(), link_id,
++                GETF(con_par->link_info, LLD_CON_ROLE), con_par->interval,
++                con_par->evt_cnt, con_par->link_info, reason);
+         #if (BL_BLE_REPORT_NB_CMP_PKTS_EVT_FOR_ACL_PACKETS_IN_TX_QUEUE_WHEN_DISCONNECTED)
+         uint8_t num = 0;
+         #endif
+@@ -1811,6 +1824,10 @@
+                 // If connection not yet established
+                 if (!GETB(con_par->link_info, LLD_CON_ESTABLISHED))
+                 {
++                    if (bridge_ble_link_observe)
++                        bridge_ble_link_observe(2, con_par->last_sync_ts, link_id,
++                            GETF(con_par->link_info, LLD_CON_ROLE), con_par->interval,
++                            con_par->evt_cnt, con_par->link_info, 0);
+                     // The connection is considered established at this point
+                     SETB(con_par->link_info, LLD_CON_ESTABLISHED, true);
+                 }
+@@ -3344,6 +3361,10 @@
+             evt->time.hus = con_par->next_bit_off;
+ 
+             GLOBAL_INT_DISABLE();
++            if (bridge_ble_link_observe)
++                bridge_ble_link_observe(1, clock, link_id,
++                    GETF(con_par->link_info, LLD_CON_ROLE), con_par->interval,
++                    con_par->evt_cnt, con_par->link_info, 0);
+             // Schedule connection
+             lld_con_sched(link_id, clock, true);
+ 

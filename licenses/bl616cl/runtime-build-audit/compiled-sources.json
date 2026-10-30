@@ -1,0 +1,4026 @@
+{
+  "schema": 1,
+  "scope": "runtime CMake compilation units, not final linker reachability",
+  "files": {
+    "profile/board_gpio_overlay.c": {
+      "sha256": "841303e81d628f4fe28e4308a3dbf8fd836d0a28b0d87ff4201338fd5ef72e78",
+      "spdx": [],
+      "header_present": false
+    },
+    "profile/board_overlay.c": {
+      "sha256": "d5b31758bf74c953113a89abba1b8dca9fcae26d89fc96457e26d9fd249bfd25",
+      "spdx": [],
+      "header_present": false
+    },
+    "profile/main.c": {
+      "sha256": "6b83b1f4a472596dede8c4f906eac26d25855323d79bc71637f301b2428864a2",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/board.c": {
+      "sha256": "6f7822d14f062d90dca4290ae77f19985ce26f15f9c5576018160db67bddbf57",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/board_flash_psram.c": {
+      "sha256": "a5837eb4bf655a9daf7dbef8630be58adfaf7a4ebd76a4e1ed95b71e35316c32",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/board_gpio.c": {
+      "sha256": "d19ec29a465ccec72381a3fd2eabad285f3a524b4748d7e85c185feb4e3fc672",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/board_rf.c": {
+      "sha256": "cbe050c045fac203746211a822dea48a7a934dd07f08c720aa78469c1b8bf0cd",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/fw_header.c": {
+      "sha256": "0063e63dfd00e2e0d44f13a03179f693a10cb9cab0e8b625ebef501ed93680f3",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/wireless_regdb.c": {
+      "sha256": "b067e69213491dff88286af39247c99129830a10635c0c742f6ba7948dca755d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/board/bl616cldk/wireless_spur.c": {
+      "sha256": "9e09554eb2dcf7e9664022b566b0773ea061fa68000778fd34fa4516f1bc1daf",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/bsp/sdk_version.c": {
+      "sha256": "7837b0b225cf76cc544db7aa243f6858297a139baf850c743ee24afa0eee144d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/aes.c": {
+      "sha256": "f30e6b7139527b41c32f68cc5430ceafa213e7fdf7a39bf4981f6a20cd0e77a1",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/aesce.c": {
+      "sha256": "3fd51700dd1edf4b3968328ebd9180fefc36bb6c80003789d2e4ea70041f2b17",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/aesni.c": {
+      "sha256": "a49c2513f08b692dcdfc612cbbb520a009d7b3bd22f9e1a00c5c4f2d54057770",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/aria.c": {
+      "sha256": "df4a23f6139064aad80e0a284ead99a2e1b68698da4006b4eb7eb98fdaf020ad",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/asn1parse.c": {
+      "sha256": "d7d4ab84977626f3cb741ec6d606591f1665defad6d8c17e1c957022803d3ded",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/asn1write.c": {
+      "sha256": "96813aec0001d0b4b212ffe834178e96a793e3157d4b987021d59d89ef47d8d2",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/base64.c": {
+      "sha256": "08e3a87568b8e2be42d64a4be405aa80f9583fcfc045fe8ce706a31fb66e0fe8",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/bignum_core.c": {
+      "sha256": "0881aacce52499184aa33641c24ca6075bf533b31f61c5358923a655490bcfa6",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/bignum_mod.c": {
+      "sha256": "de6608fc08ed5e61d22ac11f2369484c5a837ac4e1f58d450befc51d3674e68e",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/bignum_mod_raw.c": {
+      "sha256": "77d7b5fa4fe55d982d5a7be330fb0ca2de9bb254736c2a3e7716029fec49d118",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/block_cipher.c": {
+      "sha256": "90d8a053a836d747d5ead61890e711f7150987017912fafc00c4ba08d6a80796",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/camellia.c": {
+      "sha256": "956e808ff56d48b52b35e73722be61f0c42e575676c9cbd224d04a1ceb40f685",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ccm.c": {
+      "sha256": "e22b7dfb7af45b3ecc66545b867b9448a6535a4aa45c5f993b102bbda945169c",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/chacha20.c": {
+      "sha256": "53300418d833bda5c999a3dce3d174d19ebeb1908c4ee1f94c63afe4439a9abd",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/chachapoly.c": {
+      "sha256": "c1c7770ea6098bd480eae14094215d0df3cd05c3cbdd7f4386822b3d3cb5b30a",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/cipher.c": {
+      "sha256": "e9e81deb2e31bfed80278428959b0a115de4cd454a13ecffb913748fd9937eff",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/cipher_wrap.c": {
+      "sha256": "fb742e7fd4e2c7a8dbf67206e554ec20095a2f6cab3f4d38d1cc846466fea673",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/cmac.c": {
+      "sha256": "62b3ae25e4e63f9ad75db1d6bcc03bc98cc44e05315adce421975fe59d80be94",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/constant_time.c": {
+      "sha256": "64fcbb48a6486f5c069bdbd29359749719169bd97028cf6fe3d3ab39045746a3",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ctr_drbg.c": {
+      "sha256": "0f3b643202ce9e83be2c0fdd7a365b8e9233405023d2119cad900838fa24c0ba",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/debug.c": {
+      "sha256": "932d956700aadc742da066798eeed9f820d5f5f5feb83e3cb9e631e4153a6669",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/des.c": {
+      "sha256": "b3d91e02055fc05f0d28f820e8731445eeeb73a6708bbafc3c988bf631a243b0",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/dhm.c": {
+      "sha256": "6fbee2acfc4c7e732ff784d8db8355e976cb579eace3e0238b04cc34f9bcdb20",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecdh.c": {
+      "sha256": "85439414902f8421db8921c69a0be771ed69a7c69f0722127298f41a1d330ba8",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecdsa.c": {
+      "sha256": "9c02115727714c0d6fff5cc47ca01c5f375b0e8eda54f935b0c16d23e45b0325",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecjpake.c": {
+      "sha256": "e6d2bf5a93d7cdb77910335a1058c3d3264643778ebacaefad6314958cc95ba5",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecp.c": {
+      "sha256": "3315c116ed0cbfe621dd265feb92ee421cf151122b4050175c760c81927291e6",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecp_curves.c": {
+      "sha256": "29329ed2ecad6e68f615b1b5a3e7c592a0b625c4d1a1090280e305fa9afb51d3",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ecp_curves_new.c": {
+      "sha256": "1f96d89ed053fc46185a4af91f68b47666d2ecaee2542da2602c7b6d486c4bed",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/entropy.c": {
+      "sha256": "2d3240fc621027ec74805b32b73dba246584494a96bfb2f509e26b96a3672c5f",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/entropy_poll.c": {
+      "sha256": "c7ba57fb7c53ebb51aaf5e1bba1ac10512eaaa22b0f0e1cb362bc5aeec701d20",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/error.c": {
+      "sha256": "3d8e0b0e49a3bf0d0d323ec16fadc79e145b772a11bb5fbb924a3729b34488c5",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/gcm.c": {
+      "sha256": "202ac639d0c3ce4d34025c68614023c1ac9381e80f0b210acf3204ff4a97f8b3",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/hkdf.c": {
+      "sha256": "c23ddf951e5037cf279a8974a6b228711ecdc0e7ada33b0eb3937f540079391c",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/hmac_drbg.c": {
+      "sha256": "725a868f8f33e8d89c9a6632a7aad820e6d6da8780bb3f91630d8bd8b5867efc",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/lmots.c": {
+      "sha256": "4441aef3dfdf080a23034a79252c68ef101af1617001c45c1733f31cf1b24818",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/lms.c": {
+      "sha256": "1a0c98c39bb79535b837cb0531f40396860f99c3384bbe2cb8123e9e176d750e",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/md.c": {
+      "sha256": "5ba79d51ff85951cb4001a22b2428568e4bc1072b367222808f3eac1ad91884d",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/md5.c": {
+      "sha256": "887eca6a51f8dfd8c3fd1a9dab6ff083e1795644e88b39c87640b56fcd33503b",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/memory_buffer_alloc.c": {
+      "sha256": "fe4fe1c8b2767d7f66c4b8d470c7db913c200b96cf78076aa74569746908e2f4",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/mps_reader.c": {
+      "sha256": "b54dd060387dd4e01b993b3d579c64f36b125c8ab694f686aa727be8673266fd",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/mps_trace.c": {
+      "sha256": "c66424d20cb5371e6881eac9943252b74b13ba45d59a0e3485c27c3231ca7e7a",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/nist_kw.c": {
+      "sha256": "2d0bb3b6309609888d3ab58fe391e276adba0ae6e23f53c6b3c90970d77d5d00",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/oid.c": {
+      "sha256": "6e279e9f6c4d036588da7729b1fd432992d3bc1ad36d852eca76286c015ccf4d",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/padlock.c": {
+      "sha256": "05fbf8168e6bff3d578e066776280dca143f9579f3c2d6af4e33dec26f6f383b",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pem.c": {
+      "sha256": "a44cefb9ceec63aedf056fb3eca93ade2a420a658c994dfe2269db1b3b079ae7",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pk.c": {
+      "sha256": "e6ac11c8e66d69187658465ad64cfa7fda13986ca9e20727ff71a6c255d6d6c8",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pk_ecc.c": {
+      "sha256": "19ba6ca1251a610a53e3654a7727ba881c358a29d46f4586ab3c7e07c846b5bf",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pk_wrap.c": {
+      "sha256": "2e862818f9fc4aa8c10570f8aab67228270635edd03110cf3fb49bd931666732",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pkcs12.c": {
+      "sha256": "3c29c70011f35acc5aa46413f5a3d343fa57f8db85115ff896dcd94a3d415174",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pkcs5.c": {
+      "sha256": "1d29edc77054f108a204b7358eb039dbc506ed485871708dc35857d7836eee07",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pkcs7.c": {
+      "sha256": "a9f0e00801ffe1d4d40bcd656829ed6f6aa21ae8b23ec5f316740deadbd32566",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pkparse.c": {
+      "sha256": "36c0590c516a1b4ad99bfefc213da1a19a2e27638ee3f267ea3365cc738ecf17",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/pkwrite.c": {
+      "sha256": "d4bc68637ca49b40831a166cfdb47e38251f0ed8898148ecf32037f23fff36cf",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/platform.c": {
+      "sha256": "69f5e0c95478d792ac5654af56817c8272a68c322010e342afacc90e6d57524d",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/platform_util.c": {
+      "sha256": "5e195c161ebf03afc4640fb0c8f8aa1a962390fc447a02cd91f7545b5d224a4b",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/poly1305.c": {
+      "sha256": "0b75e7bad92aef2248529d89c1e2bcec1b62058e02b29e49232a244b063d8d86",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto.c": {
+      "sha256": "631c518f2b01a9794cc1aef6c320f5e192365de41e20845f9f7d232880456d4b",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_aead.c": {
+      "sha256": "85cf113b01e1cd1f1640a8e363c51fcbbce2561f2c782ce189f8ec7ee041ee23",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_cipher.c": {
+      "sha256": "fd8c2c86aa35de230a7943df7d1b5c0d83f68c2b37344f856796622450ed4b3e",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_client.c": {
+      "sha256": "0c20995c1aae03b39467c4f453fa551f7baf4f01af023fa66ba4d79f81fd52d9",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_driver_wrappers_no_static.c": {
+      "sha256": "dfedab7df2e48f8222d0c037328d16a852e9b94a3231251b7765a8155f641b86",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_ecp.c": {
+      "sha256": "b90d1fabe0e4aa6c61267b89b6dc7af1394ac70faa0345fbabb0a20421dc3d71",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_ffdh.c": {
+      "sha256": "7ebed3a238383923ed749a840fb4a2a0655a4a2481912028a9ef17fd5fed93ce",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_hash.c": {
+      "sha256": "1ef65e3222fa93db85259ef2b3284e14da987144b309c630629e5550a748c6c4",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_mac.c": {
+      "sha256": "b39fb752fd3d27342144496aa109038bf8acfed0ffee2009c7bbd481e3f7b95f",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_pake.c": {
+      "sha256": "16633b0e5292913a51d895c2f017cb4820dba24c90ea628dce37d30c17b570b2",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_rsa.c": {
+      "sha256": "ceda58f9e62de76ce977e8a92fbe9b14e3d7d5f4b60957b5ff4788ccb38f2fbe",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_se.c": {
+      "sha256": "9b8b2a6a24b1ff34fe4787e256707b9e3a9b62d1619bf0d8fd76f91c09931ec2",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_slot_management.c": {
+      "sha256": "126a6b86fe35ac135a385d36334f7249e2bba3ebc754ebe0ce2cde01193283ac",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_crypto_storage.c": {
+      "sha256": "55ef84fcc6148d416d334cebba87c758c5e02f46757344189de098e5bffa131e",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_its_file.c": {
+      "sha256": "6ac463382b8c578d43e59b43b78d0e947b3358df4c24a94215575050d59b575c",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/psa_util.c": {
+      "sha256": "60b3ac409cb132eb13c3fe6e003477311e124e636bfe5797ea2ef40fab5d5e9c",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ripemd160.c": {
+      "sha256": "b65eed58592fec5be5880d4a737607cedcee548ba39261f0509cb565911734f4",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/rsa.c": {
+      "sha256": "170e5bf9c633c1e33052bc0941f1ff8b932c6875929b0dda38344ec23b9c49ba",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/rsa_alt_helpers.c": {
+      "sha256": "84b96ed0f6e5e61cb7878724eb44710346690fe6239818dbe5d4baf93cddb5e8",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/sha1.c": {
+      "sha256": "277b7499fe8315a46442c39c762e8768056114e3694215e4e2cadbd1ebfbce12",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/sha256.c": {
+      "sha256": "4f928e5dcc0a2baf08634fc759309a3dbda52bb69ead14ff6c2dccafd8267453",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/sha3.c": {
+      "sha256": "466adf0180fd971413a6ff120bae953e4b52f9e8bd6c93a155d3d05c6816b692",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/sha512.c": {
+      "sha256": "d159aa2b96324e63eb8071dcef5670539a763d4bc9b0f055703469452d4e6fd2",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_cache.c": {
+      "sha256": "e317a52b5ac69c280d8d8a2c5ac190f71a8827fc4a9ab1557a207fc3d864e171",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_ciphersuites.c": {
+      "sha256": "c1ea9c74805e037bc1f67eca7aecfcc4e9151bd5dfc944ecbc688c2b0c624ca7",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_client.c": {
+      "sha256": "04e1817be5846b22afb175748f04df396092f657d8a18b249ca7f0becba050b3",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_cookie.c": {
+      "sha256": "574d9592d590d17d8fe0b189418180544f7fd27b76f9621aa57ed7c0d6e38552",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_debug_helpers_generated.c": {
+      "sha256": "b8dfb4bb9945b420f48d7f429db27eda6ab4f8a7d3dd43c91c54ff306fc509d2",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_msg.c": {
+      "sha256": "9d288efe8911e4678bc4e3a0d3716ff18a6d0bcc1d8b0fa8be7f3f24f5b45a21",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_ticket.c": {
+      "sha256": "2efcf8b2e5dac0df0fbc26d80bcd50cc3e00580230dace64dfa608c550c33f48",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls.c": {
+      "sha256": "4ac9a54599bcb1e96880b37aec0ca631ccf0c12d658b17e75450492f03a651f1",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls12_client.c": {
+      "sha256": "364b2628b58cc2ccb59c23f96bc9f779c9ecef5891c35b867445847d6899ab62",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls12_server.c": {
+      "sha256": "592984742a343cb8f134cd8433816a9ece0d51041fb65aa2e3c0be36b9a5f8b6",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls13_client.c": {
+      "sha256": "79a1bf57e262571832b1ac3a1442e900d8f533f494409d7aab188b7701c61de5",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls13_generic.c": {
+      "sha256": "26901c2aaf7b584c991836ed36448f88f616028ad2086de5b880d53f73cb648d",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls13_keys.c": {
+      "sha256": "9a38abaa2bd372fca190f018786a1001c831e8db31010c6a88e2987f66125a68",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/ssl_tls13_server.c": {
+      "sha256": "56ba8ca0f571c08a185e5abc143781a90dc1772d262fa44db964392e6c8cc8ef",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/threading.c": {
+      "sha256": "72444bd4f8c10d3f4281bdf30d3e1368f5d865ff40237063c561daddd8980fef",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/timing.c": {
+      "sha256": "fa9dcf24378b7a3ca5b1fba7a9b655023e296f7e6b0436c984b0ac4ea7557ed3",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/version.c": {
+      "sha256": "8a76e2b4647b9d26eaa49a9f297f245c99b2a2f05a29e30227cfa9fc6a95cadc",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509.c": {
+      "sha256": "cdd67a9f53f3029c712cfd843038ffaf25dc477f9de215f55e585a15bc164995",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509_create.c": {
+      "sha256": "55edce5b8fcb039a404b84ea830f06d018128b155dfbf0d74d26b17247b546c6",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509_crl.c": {
+      "sha256": "e984b69328f499eaf9b354a4b8010713641aff05d16848ed519b55d3721e477b",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509_crt.c": {
+      "sha256": "799f6993d323d9158bf832967f404e9c63b0d76c0a72023be7a80c42630020fd",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509_csr.c": {
+      "sha256": "5b9919f0c54f1125c9f031908da61d674d6c70d49a47bddc8c3c60fb2d5e32a7",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509write.c": {
+      "sha256": "a8f6a9606a9984b1dc6fb6eef25195a58edf546b47db58ec7b641da268c87f76",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509write_crt.c": {
+      "sha256": "abe7e21079f1fe73e4a2673456a802ca74e4dc2c6417e1b220d457258801f378",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/mbedtls_v3/library/x509write_csr.c": {
+      "sha256": "22ec5af466127fecf2e935b25f50af5a1ac1076e8c702650a574b03b541df3ae",
+      "spdx": [
+        "Apache-2.0 OR GPL-2.0-or-later"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/alt_timing.c": {
+      "sha256": "ebe841378d1fa6c24d40b08eef6b9a9d486d567eb43b1f85eb31f1430bc1699c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/crypto/mbedtls/port/bignum.c": {
+      "sha256": "934c2cb4d39137473b1f080a093ac6499f5380dc8de12af67417d1a1c996e80f",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/entropy_poll_alt.c": {
+      "sha256": "03d381c315adf36aaaf4f1da03cf1d85999c26126c202becf4528faae3be12d0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/aes_alt.c": {
+      "sha256": "c11bbcd3194470f0e65654768255f30868bdb6c13fb712f5f92cfeeab13944b2",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/bignum_alt.c": {
+      "sha256": "c4b7ef1e46f2bc5db85a3c0230ace32cf7f426a0daf9291720880f3e1c4d5ecf",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/bignum_ext.c": {
+      "sha256": "a4f5b0e18a78684e4d0f960bfb7c895d30426c00cad67115cf14eddd5819f5bd",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/ecp_alt.c": {
+      "sha256": "830b050badaf8ef8cb1ca4e459e8269423813e2d25fdebb2d5d44b4e49e1af44",
+      "spdx": [
+        "Apache-2.0",
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/ecp_curves_alt.c": {
+      "sha256": "9bf48d5686e97ad53cb10334894f5e070fd2ea8f7d9597d0c674591e5f1a130d",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/sha1_alt.c": {
+      "sha256": "f28eca23bdb8adadd04bf404f635154902c4f6d77d0548e0c749787a6d7c9015",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/sha256_alt.c": {
+      "sha256": "39a628ec758b2fec55f48454f158d3bf1b1584ad8987d54a61f076de8078835f",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/hw_acc/sha512_alt.c": {
+      "sha256": "355ceab2947de4e269a2b895d27eb6b61b389dcbc61d5a6b4dea5e9614c5fc39",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/crypto/mbedtls/port/net_sockets.c": {
+      "sha256": "74e7db22aba79b7d573c3c2b8f6e6f59f7b810134cff9eae950c0a8bf99a7f0d",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/debug/src/backtrace.c": {
+      "sha256": "5df1c6fc58b104a4b1f6246c9c87b08828476cf1218bea0681a45c4dbedba04f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/debug/src/unwind_6byte.c": {
+      "sha256": "b89981987aa783d004e20045bd87d6e4d4adf8761aa9bcdc816ea4d763e19ee8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/fota/compat/bflb_ota.c": {
+      "sha256": "59813ad43af0d51e7ce3d5f63af7b494f5778c39ab9b66ba1f1c78559100ab78",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/fota/ota/ota.c": {
+      "sha256": "731d0b2e751c55add1e85612bdbe265473e7f7eeba3302104d006884bb6461b4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/fota/tcp/tcp_fota.c": {
+      "sha256": "531859ea47cf0366abba9b06d8a781ee64d7379ee4f71653a7fed7ad6fc9d338",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/fs/littlefs/easyflash_port/lfs_easyflash.c": {
+      "sha256": "ea3d3912ff5f6e19ada624b2b7cb77bc6c289f631267555cc0d107e11c936c47",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/fs/littlefs/littlefs/lfs.c": {
+      "sha256": "3f39db1eb7f8927fb99e722a820a125ccd9f2f73898115d0ca5e882e0ff9f606",
+      "spdx": [
+        "BSD-3-Clause"
+      ],
+      "header_present": true
+    },
+    "sdk/components/fs/littlefs/littlefs/lfs_util.c": {
+      "sha256": "8e1376a90e923a2897388a54ebaa756ad3ea07a0e2a87e73c0045515c0a82685",
+      "spdx": [
+        "BSD-3-Clause"
+      ],
+      "header_present": true
+    },
+    "sdk/components/fs/littlefs/port/lfs_xip_flash.c": {
+      "sha256": "fb79aa213e4d7b3a1e8d062fae0964a95fe101e0d2d1b82a6264277ef1ed19a5",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/assert.c": {
+      "sha256": "b00d5361367bb3b30ac46580b99190ea460cc4370665e8da4e5191d5ba9bbfb7",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/port_file_nosys.c": {
+      "sha256": "0433b871e5b27eb8acce70522f1bc894df899c69f8cb796a4366014d4d7bc0eb",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/port_init_fini.c": {
+      "sha256": "daab95d8ab4abb8e3ee22bbbc29f9cd2b777121d1c16706c1a74245a155e0c39",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/port_memory.c": {
+      "sha256": "3125d735b83c076c40d73e8ae375e26c9585698506af0b70118b255de116ef91",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/port_time.c": {
+      "sha256": "55827aada49ed8669b5ecb64f3d1c0a23b61709b19926d5f97baacc7e3e13ffc",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/syscalls_nosys.c": {
+      "sha256": "b2d305d5419009909789465b3f839623e5b34375a8e7fd7fbae836fea70dfdc9",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/newlib/syscalls_simple_io.c": {
+      "sha256": "bc083fa9f428884f64ccae136f6d2f6ed24c3e5b8aeb6a99fa94b4e9e11c4645",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_abs.c": {
+      "sha256": "3c443f110512fdabe4e15e53f893098b5e49205a4f335ca5e5fceef33456d84b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_atof.c": {
+      "sha256": "64a56df8f6a4bf958fda88ec4b9ca9a91be51190548a5c8d57c9c8c6a0de275f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_atoi.c": {
+      "sha256": "40c4fad5c5bd588001598c81e7ca5924d156e88a5106434e94da535fa72a1f98",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_atol.c": {
+      "sha256": "0243eb9b02faf5ee41474a89b384bf7990f752a3285a172039b659fbca456318",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_atoll.c": {
+      "sha256": "58cd8a5b640d26acd11e34fe01599477694eec79a0f6f6c0fb527d8f54c3734d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_bsearch.c": {
+      "sha256": "dbcace69403d743a458f3c88f6fbfd8c90171c0d2f9817f2bd171242322fd274",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_checkbase.c": {
+      "sha256": "acf7090aab04379b07a8a5ce366a84611e4cdafc494aba70557812103abd807b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_itoa.c": {
+      "sha256": "cfe0462c9d6e51fc17e6c0318f167a82cecba28c013e036e617fc6d0ff5af34a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_llabs.c": {
+      "sha256": "39d0eef36ec8006968bff54b260f98b69713f50ee9de3005458e2d7cda4f3ab4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_lldiv.c": {
+      "sha256": "85fb5dc43de398aac7296eb8b030afea04ed112c9140b2b474f44eeb9ee21494",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_qsort.c": {
+      "sha256": "18e5e01d95b8a08b14696c7619bea7138649f24c49cf5fb586cb9fe31f6a2009",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/stdlib/lib_strtod.c": {
+      "sha256": "1623d2915d7aed2812800cb965a2f829a482dc60c3570b65dd6e7f8990ae2c29",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_ffs.c": {
+      "sha256": "d79778a87ce251fd39c63b371554d2802fe7ccba6b576475832d7b63e7e335b1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_ffsl.c": {
+      "sha256": "a9dd43397041642686ade07c3fbb6073bb2ad7740fa14be04b8fb6aa7f0534ee",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_ffsll.c": {
+      "sha256": "681bfab2240062bee6955797d44e8e9483ad16ad77196fca9230254e83d28840",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_fls.c": {
+      "sha256": "90ef5bf78d72d92a06231c00fd8c93117170b523e44cc45efc9b6dccacb6c893",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_flsl.c": {
+      "sha256": "6e4920f75c39355a41c63e0ae28f2325672b782e919a85eca7693abef548dd02",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_flsll.c": {
+      "sha256": "4039fa14f438269bf5c105238a81f242e25fa5932d3d32068628ebbb3c1e037d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_index.c": {
+      "sha256": "ac96a1250d5b57ebcaa8734bfe9ba8c6cae6c70cd73dbd8481ad0001755a1836",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memccpy.c": {
+      "sha256": "ead66e6b19c17fbd9d72e6268adf1883f563f57717b8322cb3818d20b20c1ec2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memchr.c": {
+      "sha256": "b7467bfa1bc7b0117ba220ffa83ca233bf21fc67b8180feda330cb4e23d5e576",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memcmp.c": {
+      "sha256": "d72b80fa19af3c5abcd86392b79b9f49c1cafec7def886243084212d21aac584",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memmove.c": {
+      "sha256": "06c6b2519d5f93c22f8c63b44e4d678294e6a96a6a79927513cb4984508a948c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memrchr.c": {
+      "sha256": "af7d495b7d9491d573407e031e19f945060b9f8ef1bbc2994a95292646cf9ab0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_memset.c": {
+      "sha256": "09150ec87c71ca7643e38b0b5eca9585b1ae0c68bec5cf55bf86cbbcf0d1229f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_stpcpy.c": {
+      "sha256": "816f99b2a75aacf18b8183190f16e9b02707598ff3f600b4064c440a04ee6a97",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_stpncpy.c": {
+      "sha256": "65a11f4557e14ed857191aa35371488a8e3f52c2844b23ea22c586c206770aa0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strcasecmp.c": {
+      "sha256": "bd7f25d493b39c70f8f99de903997d986868054b121406b3223ede8f7f5ae6cc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strcasestr.c": {
+      "sha256": "ac3af3416fe534fc55e5cf249ebf81abb987c601f845b2022ed3e93a74adb5c4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strcat.c": {
+      "sha256": "3b9b06d659448744c8774c28b72d9cffcc4d416e652841e75fdf6f1155016636",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strchr.c": {
+      "sha256": "274b595a1300821d2e9c7fee5f037c50f8ff5a3a2eab189e5a181b888a72de54",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strcmp.c": {
+      "sha256": "200856a36cd81bfb083c3e92c350f268b01c87086b51de572ce15d75f691b6fd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strcspn.c": {
+      "sha256": "636451ac7fa94947b90a8f58c2772762bed79ae45572313b28cbf9cc521d9266",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strdup.c": {
+      "sha256": "d2dda0299ec792fab362aa009f32a3a5e4ffb6e15e0f7e639a5d49507d482561",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strnlen.c": {
+      "sha256": "d860a3095d2a3649e310af00dd403a3ccd3af9d13fdc4e2e6b3b94554761b7fd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strpbrk.c": {
+      "sha256": "d7cf4cc1b4cfdf51c283789a5cd5cd270c6c12cf03295841b78935e94094766b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strrchr.c": {
+      "sha256": "6d22e73b800b21b31913fb402f67bb2edbbb617f02e5098f45cda0a345fb552f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strsep.c": {
+      "sha256": "08584e0c9d80e50b834685179193db0c553b98057a97309d0781015affed2a12",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strspn.c": {
+      "sha256": "8763e0d4e1c45baa145eee695abf9dfced7bcc34b4886bdd0634743494630ce2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strstr.c": {
+      "sha256": "73066d32a5b0e2170ce7d8f34056467626805d15ca789cae505c58e303f01a4a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strtok.c": {
+      "sha256": "0e3fcbfd3576e6fa91c0dda05950a3ff2262ada76ef4e9d126d03bd683264d4a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_strtokr.c": {
+      "sha256": "1c68abce2ee2ab15ce363fbe11c70633142ed973a21e4c297a29fc559a5c76f5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/nuttx/libc/string/lib_vikmemcpy.c": {
+      "sha256": "4852f771ca6339e0a17500b0cd4e60371681a99d4c022ad07a84096abfddf418",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/printf.c": {
+      "sha256": "337f12c417e14786b00232d54a6308da2b455978312d19a1b39779decdef5313",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/snprintf.c": {
+      "sha256": "401717565a19cb16eeda14f4d557b1c8fea57470f33b3e0713100e9372a92d49",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/sprintf.c": {
+      "sha256": "1c9ce5ba480c996338b80a336ff0668f965ae95d098d3f34ed3efee344235a4f",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/vprintf.c": {
+      "sha256": "bee32fcb050bca65de26657cb01ce9a6babea9796262530e1fa0d1a1554eb040",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/libc/vsnprintf.c": {
+      "sha256": "a7d2b6584f8beef2aab3feb6eb6657af878eeacd45867910698d44c986ddc130",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/libc/vsprintf.c": {
+      "sha256": "a8af715749a8ba1162d30f98993f65c98b398d44315fc58591880978a764bc8d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/mm/mm.c": {
+      "sha256": "93e1ca96ea8ee67540ab8c8c4c3f45767911d412960b487f77b0ed3359357152",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/mm/mm_debug.c": {
+      "sha256": "cb7c7464c45ab7c8e542c13d3e0da1354cd5a52f24b12d01011c9f729ebfb989",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/mm/tlsf/tlsf.c": {
+      "sha256": "f7acd9f14362df22d818a553d33ca5a5507f8316a411577a9bc60c01e62151fe",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/mm/tlsf/tlsf_allocator.c": {
+      "sha256": "58977db49f9dcb2c9424bf62c609882d7b793a33c8cba3cd9c2bd2ae86d0095b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/lwip-port/FreeRTOS/sys_arch.c": {
+      "sha256": "24f888db4422ca97a212093edda23358d5f3627a40a20714daf6d9bea5590d16",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/api_lib.c": {
+      "sha256": "0311d3a2775438443a9cae5f556f399b6a1f3e87f246761d6375f3a171b966b6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/api_msg.c": {
+      "sha256": "3f5f4500091131d62bebbf3978be07e3d33049bae417c99055d6d19fa0f3d393",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/err.c": {
+      "sha256": "5dd20e93a89f5cf4492e6cc3de49a5b6de6a9b15136963cef2a08a5e411a1f15",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/netbuf.c": {
+      "sha256": "c5285906a4b52280b127ae1b2a4950e597cad7443668bbfe009c7bb37221df4e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/netdb.c": {
+      "sha256": "9b690ba10a405a02bc654143c200eecd2e693b347fc930f8927fab8713357ac6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/netifapi.c": {
+      "sha256": "8d213b1ef571d55c132c5ce08d4233bdb6ceec06778273d681f2138e48fcce70",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/sockets.c": {
+      "sha256": "8fa7082abdf261ed6d78c17699f0a2a38fedd61f81a75781e63e16acdfdc6ba1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/api/tcpip.c": {
+      "sha256": "7109cacc93bd67ceca2fe65b81f5412f493f5bdaf974c3a2eae5f2d928bd616e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/apps/dhcpd/dhcp_server_raw.c": {
+      "sha256": "2ab9d59b2b02598d635891a6e7f8c53834661ef44080571ac981b629018fe43c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/net/lwip/lwip/src/apps/http/fs.c": {
+      "sha256": "91cee1c0dd66b171e7459ab2d5d3d89483d13f9fb5d5fa77acba80bd68cd8534",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/apps/http/http_client.c": {
+      "sha256": "2c1728ebaa8cb970c9d51d956f18eb0a46cebe021514e1f15ad6e9355ed01761",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/apps/lwiperf/lwiperf.c": {
+      "sha256": "f2b1b21d15ff674af6d47b8ee9594b15edbb8b35fa67f17bfadf53215d53798f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/def.c": {
+      "sha256": "a262c8e884b5b03238cbbad0e09c9406b47795855c5a14b834c0b254e53e8358",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/dns.c": {
+      "sha256": "fd73c6d0868a236c7896de5660b43c38863f76266ecd18132c8a6b458731663e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/inet_chksum.c": {
+      "sha256": "5dc6ec80183ee66e03517d6ff2a531634f60f48f8e4b56baa1ee7519884d9617",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/init.c": {
+      "sha256": "e71ef8ff62d28145409cd74901781e5c97f5f64d9153dfd8e1af8221d97ce3f9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ip.c": {
+      "sha256": "82d0fc6b45c6d1af88bdece3229fc9821274263c261369de4f81b8d6c80751e7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/autoip.c": {
+      "sha256": "e0a6a0987e3d85930782a9fb75de28ce519cd300055c50cb55fa426950e4303e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/dhcp.c": {
+      "sha256": "d921448319a0ab420e83110271abe2fbf815b3d6cea21323c8cbc37ec205d89a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/etharp.c": {
+      "sha256": "ee71b132df9e0d67e32110781d748bb9360145f31b4b48f76f09975fa69e301e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/icmp.c": {
+      "sha256": "6717ae27532a3d453c07c7aa46f5862062539bca70d86d3d7d6a7de3f8e35976",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/igmp.c": {
+      "sha256": "61930d0c32969daa45d1935f568812b8dabe97b89508e3e93a6b38c6376efddd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/ip4.c": {
+      "sha256": "f5a648ddfe3abf46a95c45aded94a0ac98cbbb93f1c0e0116394d8f844a96f9d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/ip4_addr.c": {
+      "sha256": "44d5dabfeda2558860fe831107040148f111b20bf372dfedaa370086e0aa588f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/ip4_frag.c": {
+      "sha256": "5213b1b9cdc6ce8a093543e8da5d3056e1f5fad8aa76c8f9ae36beb2b2b1d72e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv4/ip4_napt.c": {
+      "sha256": "6ace706af9158af97e60d5308721ea371df00ab37d3fb004eb9c9b23abc1937e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/dhcp6.c": {
+      "sha256": "b0cb4a65caaac859f78d81e92542ed00917ed7d222d6549d9d0e9a293beb2a43",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/ethip6.c": {
+      "sha256": "548b460688f824015b5b30401cf907828f1dc088a8442d8ee43e4049c1e1401d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/icmp6.c": {
+      "sha256": "a769507890cf1bcdff894b1c6a7a79e306c5ab1a5e95cca113c0ce9b039f23e0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/inet6.c": {
+      "sha256": "3f7676e46413586fc3d07438b51c0dcd46bb3ba24644892362cf47f84fc15390",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/ip6.c": {
+      "sha256": "b93662194a314ba415a2751ce49b1d5b400f1a4c79a40c5857147147918a7794",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/ip6_addr.c": {
+      "sha256": "fb4be0a5b3b048bc4b9ad1b4a18ff18f56c80c0337bd4a88fcca5f029872f46c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/ip6_frag.c": {
+      "sha256": "502e9ae8c5ebef9e2360aa53832a5a3a8213d760c8e88334f4d0a508f6ead1bf",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/mld6.c": {
+      "sha256": "88c46d6913d5c118887fbd1ce610c1427e1df1b329b09e868ba9cac216e79805",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/ipv6/nd6.c": {
+      "sha256": "95406151cd4cbd65991576ffe31612472b773a0b05ad6f3eb98090d9fb9e1bb3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/mem.c": {
+      "sha256": "9330d60a9fca806e91f8e97aa063c918a8bc20e9e8a3ef6161011bf8a838e75c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/memp.c": {
+      "sha256": "ab3e03a66ef836671b8b633f5e51bed015fd6a7060b43dd18ea0fefc434359eb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/netif.c": {
+      "sha256": "b7964acec00bd6db1bae18e75a21ef369e74957e03b9c8a7026310ea9a8f0e95",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/pbuf.c": {
+      "sha256": "a8a6fce6dd0fb265a65edaa70f824fe65b200c805ef439fcd431d1a1a9d92aa3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/raw.c": {
+      "sha256": "f980b5174b99a946c4da182f6921f6159097e09696e2551a89263ff1922e8f36",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/stats.c": {
+      "sha256": "dafbc1e7c7aa596b6df970d1483a37de7e0b9a60058e53a2a6671d34637a79bf",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/sys.c": {
+      "sha256": "db8e9cc75747d9fc0352fd9e9adc493d8c4292e79942160ceec370003bce587f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/tcp.c": {
+      "sha256": "f89a1ddf277d4af38e015fa7ae11ad7617c7bb8ce2881ada374edcb327c3ea21",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/tcp_in.c": {
+      "sha256": "05eda8d99284fdc3ad8f851123b215505b54a9ac84f2e67d860ecb6fe3338920",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/tcp_out.c": {
+      "sha256": "1ab7b8f5ec74641fe57df7e3f43fca867168b7b57002230939bae830e74d917d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/timeouts.c": {
+      "sha256": "0f2e4b3bb5683cc9a6b7cd411c2a80932ec76f7e2fc05db6f6f29499111c1cea",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/core/udp.c": {
+      "sha256": "88145772899c4cc5c32edfe0b7a4844263bc66ffcb825bcd2c504964d9b2397d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/netif/bridgeif.c": {
+      "sha256": "09fd1edc2b368adac1d7c6ab07ef4e5a26312712cc69935cd7eb32c58f8e1842",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/netif/bridgeif_fdb.c": {
+      "sha256": "81b31722c2f9c89d4404d65f526700769a419be100ec4925c0e0d45a3b0a2273",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip/src/netif/ethernet.c": {
+      "sha256": "21c1bb7f2f5d92b1e8c419a2ccf7bc346d4c1a2dbcf5ec79b8a06e52826ae705",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/net/lwip/lwip_apps/ping/ping.c": {
+      "sha256": "4698289b895d24814ce9368b23e0436190765311c56d67ec641376bb2a576a48",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/croutine.c": {
+      "sha256": "93daeded40bcfb61e3d92eb8a497b0bbe43f5c331263893b3a68b6a3fcc0f0c1",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/event_groups.c": {
+      "sha256": "6d99257ff1abf2e1030291e59f4881494e4dcce3385c5c5f682ca064d334ad26",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/freertos_port.c": {
+      "sha256": "ac5b3ba9523004099b112a1f4be470f3c34cf4e5916f070b7249b7eccb1f38bc",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/os/freertos/list.c": {
+      "sha256": "fe99e013ba914cc1f9e3821e05f39eb7ee9e5d76fad3939bf6e38321e427f119",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/portable/GCC/RISC-V/common/port.c": {
+      "sha256": "3b5844bb6962fae21ed5b5892a916b7b1646f80e29c731eacd006c433412b1dc",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/portable/MemMang/heap_3.c": {
+      "sha256": "0bfa3862afb875adace8ca1d6178903bc8e1b0e060a406d2e37bc8c89a8da907",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_clock.c": {
+      "sha256": "18672fbbd8b65ad1beda22d328ac39119e35b3a102165eb0b29affa853672ea0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_mqueue.c": {
+      "sha256": "9625348813008c2b8d72a8b0a2310837131a044c433bece90dad1fdc011aaf47",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_pthread.c": {
+      "sha256": "6b59679e61e3950e90cc213e371ae0064643444652f665a9c9793131125871bb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_pthread_barrier.c": {
+      "sha256": "9c408ac40818a19247ee683e2469b2fe4f3b591af7ca6d09db3f69c57a67cde1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_pthread_cond.c": {
+      "sha256": "9966bdb10a62f026ffcf50d369786b395f6e04c86a781070ddc23d0e8b4c0575",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_pthread_mutex.c": {
+      "sha256": "3870bb6330fd3f3331d0b4de43c6def705c2ef315005986b3ca0282aa936ecb2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_sched.c": {
+      "sha256": "43ec8ae4a5a05990a92bb963d3a2a409a553aedeeda6603fa941ff4bf95d8414",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_semaphore.c": {
+      "sha256": "73a312d0bf80228927dff229501ac6845ad5ea4c91c9556532e89d06cf8c11fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_timer.c": {
+      "sha256": "2e8640852d0c36e69c46a8d6810a5172ced6f3e7801858aef185c8fb43eed8f5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_unistd.c": {
+      "sha256": "b1f3172b8acc2412ead1c65e4f18072a743cf7a6771153bb7eb7cdba9a9d3a69",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/posix/source/FreeRTOS_POSIX_utils.c": {
+      "sha256": "ea4de7a536291fca15f32b80f0a81725d4efc4f394526ff343c87a3dbf8f406a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/queue.c": {
+      "sha256": "232e61fa38a7be764e6522f1e023dfcaa4a65d143057400258dfd0b9c91f3221",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/stream_buffer.c": {
+      "sha256": "b4b95eedc6251ef2de116ff4c7812437c1648e47df8afde7d775687f6fa9c4bf",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/tasks.c": {
+      "sha256": "bf168a177fdb5f56218d41aaca09d594013c7a523b92b7321c7f4fbb4b3f7fbf",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/os/freertos/timers.c": {
+      "sha256": "09b077bc19ec2665b1701a4d70faf811b5f1149dbeec1bd8c66881635622de78",
+      "spdx": [
+        "MIT"
+      ],
+      "header_present": true
+    },
+    "sdk/components/sysinit/sysinit.c": {
+      "sha256": "19ada3a699094bdc1d2e4fc1c20b3020b70080a3fb32b7a4325acee542a124b0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/usb/cherryusb/class/cdc/usbd_cdc_acm.c": {
+      "sha256": "cf483b1962b7c8d4c1047935d40c6ef14ed3d6e78dd72d6b22879ff682972879",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/usb/cherryusb/class/hid/usbd_hid.c": {
+      "sha256": "ac421271e0f2e4b0a47507be66a9f0bfbec896eaff7d34c2ff7c2a16c7d3e312",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/usb/cherryusb/core/usbd_core.c": {
+      "sha256": "409b74d21a58335d67c19e01cab99447c05443d408b94aad72d3627e34793f56",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/usb/cherryusb/osal/usb_osal_freertos.c": {
+      "sha256": "ffb3affdb0820ea7040ef99cc6de1a3c1d8c49cd7661cd71c07b1f9002bae62f",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/utils/async_event/async_event.c": {
+      "sha256": "8cf9b950f96ad491603f9f22bb96e755f0f6dab40b9cd5c84e1b4fb171edb179",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/async_event/rtos_al.c": {
+      "sha256": "b4b3b224d7703f93d0d61748e06f9fe6b589971459ed72cfc5ae235fba3ac6b6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/bflb_block_pool/bflb_block_pool.c": {
+      "sha256": "37da077adee075aea6a1eb60ef9131dae01801f1c6e02bbaf05840e7a82b90b1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/bflb_mtd/bflb_boot2.c": {
+      "sha256": "eabd3eb81fa4ff00e58451a65b38fb6cea79af24eb169c81eaf2bcf5e1973bf7",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/bflb_mtd/bflb_mtd.c": {
+      "sha256": "5a0dd1dd7aa5caadd869fefb5b2d1f6e20b895f3ab955f20d4f1c7b0ccd8fa91",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/bflb_timestamp/bflb_timestamp.c": {
+      "sha256": "6ff432a591f7c27e4f0bb97104705cecd4bb968d23634f483148e38effa286fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/cjson/cJSON.c": {
+      "sha256": "736f01134c42bdb5992a7d541e9fbdb81fcf3efe24cd3f0e608cabe9fffb8d92",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/cjson/cJSON_Utils.c": {
+      "sha256": "c405ae37f92d738796badefd9692d081a3564d3d7cc5a856278bf471067267c6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/coredump/bin_fmt_v1.c": {
+      "sha256": "cdd6e0679629d9cfc5e309dbf37e6e9085d8c9087d52a1a75727f3ff03825004",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/coredump/coredump.c": {
+      "sha256": "51d80cd9f7797932a3a35ea7d67da3b3d6c050bcaab4197df6988b6820af3f61",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/coredump/encoder_v1.c": {
+      "sha256": "e47d21183b1f423a0e65e5ffeba478ec780fa33f7ea80d3c011719315f49a84e",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/getopt/utils_getopt.c": {
+      "sha256": "9e0d08425153b7bb02db133b81088780b25d4909460354290a8e776eee82968b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/list/utils_list.c": {
+      "sha256": "e20435f97a21d841672f0dbb1b902adcab3919002716ad36f1094c81f346d348",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/log/log.c": {
+      "sha256": "5b79c0b0fd398f1d7f01df0fce3281866028227e8ad7e17b74b2c26c79ef7906",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/math/src/utils_base64.c": {
+      "sha256": "4dc9dc87222d95e4260a9bdb3f466247b046dda1f47ee158c3b599db317d3a4c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/math/src/utils_crc.c": {
+      "sha256": "23b6e457d598a41d3c2a3f566e36b82844fcaa61f6d77e62a39550573f495af0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/math/src/utils_hex.c": {
+      "sha256": "5eb446465e671201d0ebd012089ff47d85eb6dd091bd1b332ad7bd2991c0b7e2",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/utils/partition/partition.c": {
+      "sha256": "90716280563fa4f0b02702f2f4318a975bcb5403b05c9e9189753cb559ed9c58",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/utils/ring_buffer/ring_buffer.c": {
+      "sha256": "b9907c36b847e7ddd434bb23d5cdab20f2379d064985a176a2360f20f6797d3f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/bl_hci_wrapper/bl_hci_wrapper.c": {
+      "sha256": "c5f6d7c283bcb0c2a86e1772e5d078f5d52049d4fb4e2eda7bd65a8735c07b6c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/atomic_c.c": {
+      "sha256": "368b3d62b3db82a9133ec5473ae22570dbfa7af467a78a2bc324e2c812fedf54",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/buf.c": {
+      "sha256": "99768b0b66b8dc03ccc99f66a278e53cd35b3abf2716ad8d822167e998f7d3c1",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/dec.c": {
+      "sha256": "40c3140a4370f4dc2f14476faf6a21982c87158ef5191e75042686dcad82da60",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/dummy.c": {
+      "sha256": "366105fc5b3fd785ec8216d31c22234a5b6bec2138f8f7b88438db8fecf46c78",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/log.c": {
+      "sha256": "2a2b184fa1a7bb4ff5aa56979d70968c643e4cc81ccb8bc1833f566a10ef54d7",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/poll.c": {
+      "sha256": "45ecb5abe84a7d435f01695d059a939c04a0d77a36af2ec585cea07ff7f16f0d",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/rpa.c": {
+      "sha256": "179f81ce071748315347c7ac427a0574ce1dc000c5ef505b1a353574b8ba863a",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/aes_decrypt.c": {
+      "sha256": "edad5e3570012bcc1da57869fdb2bc4e0c6e733fb67f7b362bcc71f88d0af017",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/aes_encrypt.c": {
+      "sha256": "86d30defbc1bbc7f14c5fc9779a864e61fdccf30fdd2ec363f657eec5ed95cf6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/cbc_mode.c": {
+      "sha256": "70d6a1b1d5492f35a134e43880f13ae426911dc47304e49049789bab09a6abe1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ccm_mode.c": {
+      "sha256": "a8f4be75d2816a50b57b9a33e9cef4e2fcb9b6c006feec3dff85ec9be94a4386",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/cmac_mode.c": {
+      "sha256": "1c1d32586ef8d7247b11be795dd1738c0f286f99feba7600ee3844022fcb707a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ctr_mode.c": {
+      "sha256": "32a5ad0609b3ac41551217fcb5d279915af8c69f95d570987c13955e3aff37f3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ctr_prng.c": {
+      "sha256": "a605c4f279b9b7423d57b2bab0b7386e0d07e9cc2fd3cf577759bde8fba3915d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ecc.c": {
+      "sha256": "9baa6635527de2e5a01a5c25eb4c2dbd49420500419ae69398f32e6291b8adc6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ecc_dh.c": {
+      "sha256": "90625592178fd32589eacc3edeb6fc0b9cb0c8101b8c3dab3aca3c8e0a86fd58",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ecc_dsa.c": {
+      "sha256": "f5bb9cdada1f28da3bec4f13a706617abdfede7c61d47662b40b053a660ea12c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/ecc_platform_specific.c": {
+      "sha256": "17f454ecc206f2ac532c517b13beb56ff730e71efb93eb70b20ee71617a8eb7b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/hmac.c": {
+      "sha256": "b26855d4af64ac374087718ffe90c61dc82e96c04f6e2f2c428a5645b0eedd20",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/hmac_prng.c": {
+      "sha256": "4967c6789bc1daae38c25442174592bcedf794e866a6982f05629fc3fcc69990",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/sha256.c": {
+      "sha256": "338f666d1d9b76a9f8cac01e935aaebcb472142625ee3d3524d0e126d6df9d01",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/tinycrypt/source/utils.c": {
+      "sha256": "3b271003b365bf3a9318c816bd6aba226c8989161ecc0dc3f6593204c32501e1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/utils.c": {
+      "sha256": "caa8f435c388a7c7f6d857eae45d8159a97fefcb757a5e80bfd7a4974af3f8da",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/common/work_q.c": {
+      "sha256": "7f19169a504cfebbb31c04ff10166aede5fb05e9bc47a9669e3c750a6d76c69f",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/hci_onchip/hci_driver.c": {
+      "sha256": "b2969f2112470b26cc48e8ddd0131c710059a3bfeeb28a89004506660c5e7a62",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/att.c": {
+      "sha256": "863b268b229a35c6105e2aa19487ceb50a3acd001387b62ddfd83e82795c3142",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/conn.c": {
+      "sha256": "a494a7ebecb6da6dd34f718456fc2f22e2f93cfb6e78d647d3f2c02a53bbe2d3",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/crypto.c": {
+      "sha256": "c57276c3a1c90d69c8982fa305f39159cf22907b69a3e090316d502c8bf25a51",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/gatt.c": {
+      "sha256": "a147c1f98dfa47d0ecc3635eff348e1c3bc693da2c14ac390bc547445d379ea6",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/hci_core.c": {
+      "sha256": "e3ae3a752624705296fc6a1166a93d60378caff15a30f42dcbc8f7026325e891",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/hci_ecc.c": {
+      "sha256": "59a972bbb17fb6bbcf79b43c870c17be1f21053338c19d4c27578fe6eb25b955",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/keys.c": {
+      "sha256": "ce55966675efb542a2936bbac24973b07fbb0d7fda4b8f54d96dbd3ca0926103",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/l2cap.c": {
+      "sha256": "62ac6062847f88ea6a9138e33c69a49a7fbf9edb9ff981411ea8dfa225464bc2",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/settings.c": {
+      "sha256": "87af37ce37ac9f2eb1a5a8bf3a20c74c4006f28844cc5f5188fc3377edfc193f",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/smp.c": {
+      "sha256": "ad0242880010bc6bb1ea82bc6e046994a5f403832c3fbcd94e244179b6a62716",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/host/uuid.c": {
+      "sha256": "6e41cf220f060a2b8efd4eb85ee323c593e31addb383adf1c44b1c54b4021f6d",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/blestack/src/port/bl_port.c": {
+      "sha256": "8f0689e32537e98d3a72cab44f0064ec433f7401efebbf4b05ecb1d19ce34f8d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/btblecontroller_port/btblecontroller_port.c": {
+      "sha256": "aab383efc1ddc4e0cde6d3b922bbab05fbdab07dd4d250326373caffef91f4ef",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/btblecontroller_port/btblecontroller_port_freertos_os.c": {
+      "sha256": "13cbb9acebd5445ab13ec6c3e2ee53ee4ecdae342c6674d9d7fbe41817461994",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci.c": {
+      "sha256": "9ec5f5d17d554794b82de78f2e693dccf5378c4ccb341bc2f9c2aa17c8550da9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci_fc.c": {
+      "sha256": "5c7da5f6f7aafb279f459c9fa3ff1220eba256d7314ab6794dca2149b97e5716",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci_msg.c": {
+      "sha256": "5ef2b56805850132621f94bee89718ab426ac03e879c7032d9f0210d0dbc3001",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci_onchip.c": {
+      "sha256": "410236586efef92fd9905a8053ff5cfcff491f6c260d32072cc24cfbb80c690d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci_tl.c": {
+      "sha256": "533c33c796623a406299a78c87dd9f3034750bbb629b6eded85c52d5aaaa7108",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/hci/src/hci_util.c": {
+      "sha256": "e703686f2e97b76a42564f44c4cade827c6f817b3ae6a9cd00d06ba36fdc56ab",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/co/ble_util.c": {
+      "sha256": "e84727e722bbb003c53255f3fcee18590b580702aa71df1ffd3e6cf43043f86e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/co/ble_util_buf.c": {
+      "sha256": "90edb7b3d0646f911d854e373267baa52f089c3866646cf4d8e63797c59a98bb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/co/rwble.c": {
+      "sha256": "3f1484183141691ee4b0ae66357dd890764ae40416d233e0147e8e3629a0b9b0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/em_map_ble_dynamic.c": {
+      "sha256": "289c6f1dc2e1eab98ceb42360e5af42dd5c12df1d7f10f43e9a218765f4301f9",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc.c": {
+      "sha256": "f55e3375bb35869ec1c4cc6dd381a9e002229ef41ffce95cc908db41e6be0d70",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_chmap_upd.c": {
+      "sha256": "44fc06465ca4a75dc6525148d97f36367d91bf15643b135e849878c8bc197916",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_cis.c": {
+      "sha256": "a3a21ca4ebe226a0d35972fb9eb6e5adac9998c4d1b4c480a9f7efd3ea82fa8b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_clk_acc.c": {
+      "sha256": "e993569b4d0c9290770bf84faff06c1249085ea053eea7860591a71d9d0bb3ff",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_con_upd.c": {
+      "sha256": "5c4bbb072ef71a194b85f69804fffd85dbba708862537438cc94297842601b3a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_cte.c": {
+      "sha256": "b4dea013aca8640a7fcd08fe534072a47f469bc3b95bfbd17bae939a048e46df",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_dbg.c": {
+      "sha256": "8f4a796d18fa39532a3dd54402ea6af8227148ad3137423e20639341d256fab6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_disconnect.c": {
+      "sha256": "4a9e798440b3085a658482aa12194d8905036d9f81bb3bb7949225e2ba3a99ad",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_dl_upd.c": {
+      "sha256": "a6c2f78f2b960ef8b143cbfd18743c3d0923a9e6b2db04f6e534ac4158bb1834",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_encrypt.c": {
+      "sha256": "c82941e73b58f4a626e04cf52f0abdc47bbb3d7fc7588816c9c1dc08f17d5951",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_feat_exch.c": {
+      "sha256": "d971a9f6e19a8d554dcf99756b5096e30b06cabdac95cf2ce7dab16b67701ca3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_hci.c": {
+      "sha256": "5dc0cc32004cef4b4161b4ef8ade9683354146ed6c536e44d286d52dbea7793c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_le_ping.c": {
+      "sha256": "9578078b7cffab393ffe4fe311ff62080c17fa179a00a1379dcb95584c8cddf3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_llcp.c": {
+      "sha256": "ef2d7b81a52ff84afd8f9331f62deeed34c8db51ef5bf111a588566718b3afef",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_phy_upd.c": {
+      "sha256": "7ffba82d31fb6564952576701eb13a470840208ade85c0e8b07cdde1d3da9366",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_pwr.c": {
+      "sha256": "951c7ca04f28437681562363358d7a5bff449c8fe95016c3defe00df5f275cb0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_task.c": {
+      "sha256": "fa12c2122f202373ae11b056980c8ed4f22de3fb9594aa1488de0dbb06c74038",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llc/llc_ver_exch.c": {
+      "sha256": "8917b20742b1bc34130c4e3928019f88c1920a5870c15fb2540cfdeb60302f0d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld.c": {
+      "sha256": "99958967703c611532362538d8e2492a9d39982529ad72b31ada9265da71dadd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_adv.c": {
+      "sha256": "44db2b77ce7ed00684854aae6d0a2ff268d7e6452b81038519caa921892b405d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_bi.c": {
+      "sha256": "2f46f3c7a256f1ae22ecf76a043c5c7850cc14bb458b4d819c67e3b23905c18b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_ci.c": {
+      "sha256": "307b3a0c98ae53a5f266f44ecb8729983f6a7006277adf2d5d904da5f3e9a455",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_con.c": {
+      "sha256": "5b45c5b01b4535f8c40cf0a2986a8161afac1e298c51dec252fee57b426a3818",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_init.c": {
+      "sha256": "0637d7320f809a89830e3a24c6e5ee0a4cdf7b4be5f9ad3593eabb41e5fb3ddc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_iso.c": {
+      "sha256": "45e18352578f809dd1025a10eeb78c0fd5e1f761495fe6b93488f7a10bbfc3b2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_isoal.c": {
+      "sha256": "5d6e2ac64c5f9237b97e3ee014864a9f8c5963ffd3597dcb0a9fb4c90a3e96ed",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_scan.c": {
+      "sha256": "8d92c8ed73c079e7d8b0efad090621c1b089ca40a3c7e1c58b247972cde1a949",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lld/lld_test.c": {
+      "sha256": "ad0a45bfe28448fd2df77c52fa0740851ec72cb0cd6dac8574ee74fbf04888f9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli.c": {
+      "sha256": "21f2d72db4945c9afd6fbee9c11a33d5dabe11bb2e0e5a419d13e0b67777ce6e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_am0.c": {
+      "sha256": "c5b999e8c1efc2edce56239d2c7c8e80470248d6e40f4d2a08e83b8ab025c5c8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_bi.c": {
+      "sha256": "64f239e1ffe26bd01bfca49191550ceac16b2a1a21ff9203b9b1de4ef56d83cf",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_ci.c": {
+      "sha256": "e7b61d2640fc3058cd83e12e64051f851b4aaed85a94a51dd95dd0c235be216f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_data_path.c": {
+      "sha256": "287b6e84a629c4b4f36acac364c49ebb5590cfb3d4a8c9278fc9aa0ba4534533",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_task.c": {
+      "sha256": "26fa25f576eff55684a0a54630c342167e7aa93ef81861ef313a4d3abea7206f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/lli/lli_test.c": {
+      "sha256": "e6caf8e577e354adb34fc5a3c324d8f0ab7743bfd1736f95aae1d4558747272d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm.c": {
+      "sha256": "fbf3e7f0a0df652689382a6a6c486b32dfd0d7c2f5026e0c0c18ad8958e338e5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_adv.c": {
+      "sha256": "424651e6937004ac6427f610da0286e112c9892530d90c0e09d4e484d230a67e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_hci.c": {
+      "sha256": "0480653ae416caff8747b4eccfa9e1b96b440b8437c65d4e394f417f132ae390",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_init.c": {
+      "sha256": "539e209e6aaeb0d5f1105a9861a87619874454be7bd92ab28dd4a46e16bfde8b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_scan.c": {
+      "sha256": "207eb695b631f492cebc92ef469464d67d4cf5264d33b2df1893511c0f11f6c5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_task.c": {
+      "sha256": "aca634e25a74c9dc2ec21259fc1e470ef9a803f63ec5cca01fb3af979a5d57aa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/ble/src/llm/llm_test.c": {
+      "sha256": "f81dcbed26009737409dbba9f15ea58cd83c1a8751162b7991fe4cd5de9c433b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/data_path.c": {
+      "sha256": "d61e35e0e1123f574cd9768fda3b42089c94440237d3cd1e3e87241292b1fbea",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isogen/src/isogen.c": {
+      "sha256": "9197ed18d6fe720d33689ad4051e9bfe67fb51f36698384e5b51b1d055e3df4f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isogen/src/isogen_rx.c": {
+      "sha256": "7d6e36f793ca173193c489cfac903e14ac91819374ec42511ec70cbee8f7485d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isogen/src/isogen_tx.c": {
+      "sha256": "6181a3da4acedb346fd68883ca418d7f29a46e40f65d5c008a92b054c77b6a8c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isoohci/src/isoohci.c": {
+      "sha256": "f21f67110987905f43ca929b6e7afb86bd94e5628f44c79647b232782d1f4b53",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isoohci/src/isoohci_in.c": {
+      "sha256": "dfd4b358d5eeaca20d9b0b61dd69e462f576184b0efd095c617f606cae0feb0f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/data_path/isoohci/src/isoohci_out.c": {
+      "sha256": "0d42359f63e6b8db2c04f03fe12287166fc4d045d488b58e9b9c5cbdd8ea6c80",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/sch/src/sch_alarm.c": {
+      "sha256": "901fe527945408e365793c427f8f506987fc87e6319a2786e9196a7e67f35844",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/sch/src/sch_arb.c": {
+      "sha256": "946b15f54d267bfb535d1d6e77abe36e87b65fa442a50406adb7299fec9cf9d8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/sch/src/sch_plan.c": {
+      "sha256": "d04dfbb200ad2e255d10a6301f5735a68ea86734530a78fee103e35ab9824adb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/sch/src/sch_prog.c": {
+      "sha256": "6610b371d0b0652cfbe9b4a0da252b3486b0ca5c3d80dfbdc439fc64e4f82e3a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/ip/ll/sch/src/sch_slice.c": {
+      "sha256": "810669f2d0c81bffb12a610fb1177e585028accb6eea78ac68af90412b732217",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes.c": {
+      "sha256": "e0cbf59a2e76f65036862357f5f368c2fd3995d7c6955663f2ecbc28dc31db27",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_c1.c": {
+      "sha256": "9e9d291672e985c500edeea34a889e87b0dac2c4766123787dd163e9c7d278ad",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_ccm.c": {
+      "sha256": "162afe186f76d6a3c2d864e11bedbb2032e20d802775dc383eab71dabfd1319f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_cmac.c": {
+      "sha256": "0f73059d946804ff6882049f38166ea6808249c2078616dfda137b5643630020",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_f4.c": {
+      "sha256": "15b801662631f3cc647b91a712aeb829c1c3a94402f30b0558e9434901411d1b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_f5.c": {
+      "sha256": "4494535449636f98d8718a6706df29f1f03a3af14b94f50fda0b9d655a462e4f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_f6.c": {
+      "sha256": "d0abbdf52287a0a1b455602249319cf87981fc63aef36516251bc52738ccdc2b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_g2.c": {
+      "sha256": "e00a71a5ba682bc39a5ef7080fbcea773384a7de67defa6d2efc77b87675220a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_h6.c": {
+      "sha256": "1c975504096e56b6b30d04bc91604e9e6caabc46ad28eda34cb5cd2023392ddf",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_h7.c": {
+      "sha256": "eeb9a38bd24bfe271ca138112d89e7921f05a9835ee760846785fb1ac1096458",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_h8.c": {
+      "sha256": "7fb7f0bcb8c417867f7c871a0b60dbd3cbc239b081f7de471f74724b83da502e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_h9.c": {
+      "sha256": "321b33197bcdd73aead4f0c6edcb576416c2329c085f52d16d959865fe7ece97",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_k1.c": {
+      "sha256": "fb05deebecf113ddcee39740218a458879fbc55181114f571595963bbc201897",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_k2.c": {
+      "sha256": "710d8144f5dc373936aefe21d7b0930fd75d4f53ff8b3ba9409644ee21a15744",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_k3.c": {
+      "sha256": "d8ede62e393caa0349c4925a16d6dba38f5d47f3f3a161e4b8e7cb74a59c32af",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_k4.c": {
+      "sha256": "dacb76d6bde805202b34f62ea8cdf33195009897e5267164bfeb8b81f96a7150",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_rpa.c": {
+      "sha256": "3fb47bb57843993a5471e7834de84bd86449f7fee639afaf42715f54e8de8c0b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/aes/src/aes_s1.c": {
+      "sha256": "96d25394b17edd72151434eaf1395015b011689b2541086e2676ec68c5aaa091",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/common/src/co_buf.c": {
+      "sha256": "a07f1fab41f722d17cb4cc52d6e6789deee2b486024839c018472939768be7fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/common/src/co_djob.c": {
+      "sha256": "b1d1043707b935cd0c08942c26c5f26a5e54d1b364376a79a11f97cf1e6cfee8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/common/src/co_list.c": {
+      "sha256": "caf770b18926fbf8dd907b17e184aca232160b2212b939196b4b5d3ebf0c11d7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/common/src/co_time.c": {
+      "sha256": "e418fd8a6fe6b28c18c7307699d7c873c2fe4e7e9e8e727b9d6878a1f8701f93",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/common/src/co_utils.c": {
+      "sha256": "c90d2e3b59da024ac9af85b82d33b244611dd7d262f3b7b14888863dcc4b9388",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg.c": {
+      "sha256": "91df3ded618bfe8f0bb90f4d78eda43ce69420bd0e8ddb6afb78dbe30c8f08f7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_iqgen.c": {
+      "sha256": "1b59c4f3caaa3c3e20a6222425b5119c71e8cc86565403c9f1cd2a12d088376a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_mwsgen.c": {
+      "sha256": "0ee11608922a917cacf214208b798f02bfd6993572ad2fe1572691f1cb86489a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_swdiag.c": {
+      "sha256": "0537562d455d451ed8ee4121935f63cf0d3f379749fb18b90a8b5677d5328139",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_task.c": {
+      "sha256": "775a6c54b4b4c00561477981cd92aa69bde36bfa8801d1e5d61f910e08ca2054",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_trc.c": {
+      "sha256": "36687e8d45b82465a1e62e1db5a113f21172e49b7a978b1d5917fda0e61e35db",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_trc_mem.c": {
+      "sha256": "d2d5b97f4ce443f1aa0bf7dabdbfd58d0d7336111ca72a5bf2a42e0566d91a82",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/dbg/src/dbg_trc_tl.c": {
+      "sha256": "b47ac04b0fe71c9e149b25d5157eda6404a3bca81f49efd2ad6eeea495b529fc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ecc_p256/src/ecc_p256.c": {
+      "sha256": "df65d5d3ce7cf32854119318c66a87ef2bc9f199337917ed85bd3178299e2bef",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/h4tl/src/h4tl.c": {
+      "sha256": "4fa26b2f2aada31cb02e76dc1e1a95c982b5716a400e8614f5002c0b108f0f57",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke.c": {
+      "sha256": "422fc26737eb17e74e7dec1c7fd913c48eeea17b7e61f859c3ae07d02f7b0d1c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_event.c": {
+      "sha256": "9b181d02f06be086abd7e74a5924da4fcd8b89df158d86e25cf542faeb6d07b7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_mem.c": {
+      "sha256": "3ee4ccd83bd8821e128fa2c037199e8b9758136ef09a7aa5ee25187ae8afaed4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_msg.c": {
+      "sha256": "8d32ccddb5621919c2b603f818c513b6d9a4dc3d636cdffc6f5fc14e517f3017",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_queue.c": {
+      "sha256": "7026995ac8aef0da750b517a24c2909854494eed3722621378fdfef13030f761",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_task.c": {
+      "sha256": "7edaacf3c514f18c11e4b867ea626c568ccf40beefac9f59b3540e1951ebdba1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/ke/src/ke_timer.c": {
+      "sha256": "504740451beb2ea4132e12d307caae9e6ed083cef46a69f06bbf227010b45585",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/rf/src/rf_bouffalo.c": {
+      "sha256": "0de1597088b0fe19c2df4b139645db6b43363550ce1055eef6b170b8e96e0911",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/rwip/src/rwip.c": {
+      "sha256": "7da0c402ff46cbe2caa01d98b8888656d93da7855ec900adf21fad0afa7c27db",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/modules/rwip/src/rwip_driver.c": {
+      "sha256": "7250f97ca7e0f410a9cada8eef8ceef11de230717591d05fbe6c7a4ad741e92c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/plf/refip/src/arch/main/arch_main.c": {
+      "sha256": "1ac0be2802b747e61be9fbc9fc0dd8a3139c456bc8113ad13e78f0fbd189a91d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/btblecontroller/plf/refip/src/data_path/plf_data_path.c": {
+      "sha256": "d6e017e5b7f8d67ff3a020894b16c29973e7996269b530f1118015d3c88065b7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/bluetooth/version_btble_component.c": {
+      "sha256": "48d7a605ddef0973518531150c15d6425d7840b35171541b248f84cac6a9b17e",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/export/export_func.c": {
+      "sha256": "022c80fc7bd70db976a74d7374fa454f77bf218ccb93a9b9c66fdab204831846",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/bfr/bfr.c": {
+      "sha256": "129544e18216d796b3b4e08d8d93ea3d96b48b5e739f0064f9533c31b46447fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/chan/chan.c": {
+      "sha256": "5e3564a33aa429df4f5aae2fa3cd6e4c2d432ebc0d63698b16bb65ec4ddebbb2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/hal/hal_desc.c": {
+      "sha256": "538332d5e111f79aefce30af78d5d7aee8f2e030ae93f365d896a21ac74f908d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/hal/hal_machw.c": {
+      "sha256": "472c7a39a355d1d9b65338d05899859a2e1a976455719c7add7a2caee0083024",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/hal/hal_mib.c": {
+      "sha256": "06a921b202ff316855862b2fc0ce4895c28a779fde2e9b40b1fb1d6162a73b3f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/macsw/macsw.c": {
+      "sha256": "de9bc4b96d64ab3d547d3a7087be4c543c16aa230e2217f55e16f4e34f2f1b9b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/mm/mm.c": {
+      "sha256": "aa11fc99ae2eab9f3408ea8fd5f6fb2a15f73e2c6f4ba0e612ce8e626245aed5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/mm/mm_bcn.c": {
+      "sha256": "6598296941504d5afdaa603bef72a3f7eb6069c4ecd49157f7804b7482121d61",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/mm/mm_task.c": {
+      "sha256": "db43813ad1efe3794aa509258b41e8af95f55ee3a734c6361e202727e23c6cab",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/mm/mm_timer.c": {
+      "sha256": "ea5386b875dab9d236fbfe0de3913b04d190ec5b58cd58fa27db4c0f9a6b6e94",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/p2p/p2p.c": {
+      "sha256": "cec620a70e446aad29810f814620e30f85149a2c7573b3aa2bb1bd7f451d8ae7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/ps/ps.c": {
+      "sha256": "9d96f14f6600416300ed299411b2cb2d0cd9abdc927bc371711ac16e98c1418b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/rd/rd.c": {
+      "sha256": "10e9c632c06c76106893a285da691eee9040bff9e2c6826ac69c83b332c493fe",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/rx/rxl/rxl_cntrl.c": {
+      "sha256": "0d312afb50cd95f23d534e8770d577ce8196a767cd7bb45ac5aa560bec099d4e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/rx/rxl/v20/rxl_hwdesc.c": {
+      "sha256": "0c346ac1a9e38f3f603a6fd2c83f8622f10cc24be59363588a363cf881cdef00",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/scan/scan.c": {
+      "sha256": "9416f98d8ed5da129bf0d383853a40def8bba2293c0fc6287bc433b95c719261",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/scan/scan_shared.c": {
+      "sha256": "6dde16ad62dad0f92a169b9ee35be80d8d147639c6abbc90d80e05ed0206a2c6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/scan/scan_task.c": {
+      "sha256": "2615bf0ff8e0c000251eb7b2cdd1a8977af7c4f7559abb64383a2270fa92de59",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/sta/sta_mgmt.c": {
+      "sha256": "8d5bfdf8a40696d2190bd280709f3bdf49fcd56b7397e0e99addb0fb2e72baf5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/td/td.c": {
+      "sha256": "6500e415fad4883a57c59a6f37d7058b7ca7eb8240b4b8f16238e01ede5924f2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tdls/tdls.c": {
+      "sha256": "581aef860095f313aeeffe3f25aba4e34ae4c41a721bce40e914709309fc9e76",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tdls/tdls_task.c": {
+      "sha256": "cd70791b567e810f466da86716f057e61cccc9696ddbe90140fee0deeb7b1993",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tpc/tpc.c": {
+      "sha256": "1550ebb0ca77e829601ccab651c935366a888c4a96b63e1cb9295246af46293a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/tx_swdesc.c": {
+      "sha256": "413b2122a56fb58dda711ea34d8e760ac7da352f25f481b545365d678e93defe",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_agg.c": {
+      "sha256": "c2bf1e57a892e59db5560472ef674170a3baca53d6265d1e15dadac89c9ed952",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_buffer.c": {
+      "sha256": "61cf792f640d178701e860381762c22d5cc8499ba4108e97297aacfe3829d2e9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_buffer_shared.c": {
+      "sha256": "e9c7164845fa43982b34b52fe7fa02cc419dfdee2e1f44e1419213f0163877ae",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_cfm.c": {
+      "sha256": "40a61f5102d9c5839a2031cee8cc3bf174cbc76627c30bbcd61a2332484736ca",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_cntrl.c": {
+      "sha256": "96d618886e9d22b6cdc9c6cda9e6546cdb59bfa020e8f990f648ecd64b1ce21c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_frame.c": {
+      "sha256": "99ac935dae835fdcbc3dc6cadb3b1ac240f9473e86936c442ddfb95f96676805",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_frame_shared.c": {
+      "sha256": "dd21b4a6d6cc8bf4460ad6309d37a9656b2ce189754f3a1fcbbcd3ad671c16da",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/tx/txl/txl_he.c": {
+      "sha256": "475d0a881bdbb1da9acc1f2fca87ffdf94fd3b87bdf8c0c728cfffa509a2e2fd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/uf/uf.c": {
+      "sha256": "c093d6fdfb0565d5d1c286ea62221e276e46969f191d23212cb633bbf865e2c2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/lmac/src/vif/vif_mgmt.c": {
+      "sha256": "4ce5a3f17ab15f6cc80dccc2750e74e55d240f4de9e113b1bd41a5d5b38ddb49",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/apm/apm.c": {
+      "sha256": "75079e75d3e88f3ad7726f38a5da51b8f37bec9dfa0754c3ae7bea56fa27b9a2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/apm/apm_task.c": {
+      "sha256": "c0f65fd415a8693a79a350559e94bf6955fbef055ef5ad2bf2c2b599e54d2709",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/bam/bam.c": {
+      "sha256": "54bb1300be8f896ae738e63543638770bd095dc35774cddc2b3573fae20aff56",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/bam/bam_task.c": {
+      "sha256": "faa6bcfc6a2ff024ecdf2c9c0e222e9de0e6491fb797ddbdcf548456b89c8191",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/ftm/ftm.c": {
+      "sha256": "dd37503475b7660cee92c0c01ea9e49ecb11f9e2e8359c75e26793aa74a0d326",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/ftm/ftm_task.c": {
+      "sha256": "de1e6d6c4fc63f188063751aea59298450bd3af8ea871883fe16eb0bd46e960a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/hsu/hsu.c": {
+      "sha256": "94dc886c57f089ecce8735ba4bb01cbce125394089e398a768dc4b62bbf4244f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/llc/llc.c": {
+      "sha256": "01aa5b47162f15ed882dfc1d056a2c412baf347ad045acc4f3ae7735d806f4f1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/me/me.c": {
+      "sha256": "d24f9227a6710724f24ac086e10dfed48cb79ce05eb397e5118fdcd7c72718ff",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/me/me_mgmtframe.c": {
+      "sha256": "11a50653b36e70fa81e4bb723fc4e70e0bfa76428362c3d6cc64a0540852e77b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/me/me_mic.c": {
+      "sha256": "07ed6450dee5a9780ed4fae38e04c764959820df1c3dd4edf3b0c1f5743bb343",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/me/me_task.c": {
+      "sha256": "7b9c67ceab86785e4e34ad12843009aa45982d785358731c83791d2efdadfcd6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/me/me_utils.c": {
+      "sha256": "ed3743ae5a89a25ef3d4c0132c0858437b8c3a819370645c50422e30a229a40f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/mfp/mfp.c": {
+      "sha256": "d16f0112a55c73199c83801a97279b2917f60d8b6f25a097c36064b008927b25",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/mfp/mfp_bip.c": {
+      "sha256": "e5db52c83b8cc375f8ab2bbf3dab0345f51f4bd29ea73c021f83eed750644600",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rc/rc.c": {
+      "sha256": "7cc394faf1ccfde356663563bdaf6552088bbd3454e9c5fe8f61c30b9c96ac1d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rc/rc_alg.c": {
+      "sha256": "7f36e72d4a04ce110ce3afa936ce78ef2b53656afd31b9361054a305fe1a2fec",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rc/rc_common.c": {
+      "sha256": "bc8753b40265f62a38d587840f4bb82712d3754304cf91256acbc14d43db5477",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rc/rc_ez.c": {
+      "sha256": "13ac4b8fd5e7e6860740bebb64555630f1f4f05b9074ee330803ec8e1f81d7c3",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rm/rm.c": {
+      "sha256": "d01eb626309bb9aa446884004a3a85dcb4cdd9121791f2334be137f2f26cb6f5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rm/rm_task.c": {
+      "sha256": "b4ac9f957a280c626928fbb3237ecbb99a77726cfca4d78dd3bb4b4202d40776",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/rxu/rxu_cntrl.c": {
+      "sha256": "965b150af417384d8ba866b3b863c3c7366873d2b280cdccf0ce2a9f9ed125a5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/scanu/scanu.c": {
+      "sha256": "abbe6b64ac834d35b3fccc7167d36126a4403be41e6f5cad04d661a6cebe1fa7",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/scanu/scanu_shared.c": {
+      "sha256": "5762459114680949bc2b5f86117a28b5973f960a911aa0dd2988b07a5f2b8c1b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/scanu/scanu_task.c": {
+      "sha256": "91f98b7d5adc8ea52dcbea49a169ad4bef1c161238d120ab98c50b3635dddc53",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/sm/sm.c": {
+      "sha256": "9936d2a490b017b2099c7f832466131bcae24a4849e802ae6dc4c77407ffce5c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/sm/sm_task.c": {
+      "sha256": "14d27ae40f158b7d08781c274bb7b7607133e378b83c48f25c06d299d5619521",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/twt/twt.c": {
+      "sha256": "f378e890a1e2ad6ad18858fdda6fe7af4abbb8860484c8b98acb490e59cf087f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/twt/twt_task.c": {
+      "sha256": "7c8a7ac9b32353205794fad134758c979224e75bf206c1772a667c30f9efb460",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/ip/umac/src/txu/txu_cntrl.c": {
+      "sha256": "b51b6f7790164ed36ce01a1ebb5826703c5d6d8e26e38493f994a810ad1ae9e4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/coexist/coexist.c": {
+      "sha256": "8ea3e846d3c42b7169b19ad67b84c307d617c7b2486eac0ec957c68188b9ff31",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/coexm/src/coex_coord.c": {
+      "sha256": "eb9acbc0e0db0eb2b1334ee2c091936864f00f7be58860497f2254b35fc910b6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/coexm/src/coex_protect.c": {
+      "sha256": "a744d32a5d506b7a596ac8e6dc8316a135c95a31aa2c2728e66d407c7bee530e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/coexm/src/coexm.c": {
+      "sha256": "5e2f0db3ec804ec57c86c07660ebc23cebc77f17f3af62aecae8f7f755ac1da9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/coexm/src/timeslice_stats.c": {
+      "sha256": "8a1f95f363f01d6ac78986e467e3d967d0a1f37510bd55f7ce2d8239ac76011d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/common/src/co_dlist.c": {
+      "sha256": "3f21aaf5cb367a54178aad2a92b7a97dc7eda1e116032b87c3853662194372f3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/common/src/co_list.c": {
+      "sha256": "9cd45ba97022b264da73bfa5bb30bc6b4ece6179a06147c1ef5715fd85d30cfc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/common/src/co_math.c": {
+      "sha256": "8d725f7c59c21e410b58d5ae3400aad66348d9cf60d55cc7dfc2433e17118c82",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/common/src/co_pool.c": {
+      "sha256": "cfbfae15cf5803c0803b52270407900800aab2f761e79f75d47ad111de3d453f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/common/src/co_ring.c": {
+      "sha256": "c3b088c190a2aacb64d7a2dfbcb002bd867e1ae6b4b57de8be745571783303b3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/dbg.c": {
+      "sha256": "fb8bb8f98d5c441e5fe83b19b0ab9a09d9312965bc0ca7f95f4f9f3135b84415",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/dbg_assert.c": {
+      "sha256": "c0b4a2563586d0e21def911a3338b780102d4c61171540e727fe6d6374a62e8f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/dbg_print.c": {
+      "sha256": "8f6f8772111cf58a640ceab7f318d580bd22635b069ab18037adeb5470543229",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/dbg_profiling.c": {
+      "sha256": "e42e7e54eedf070a02f53de8cf0aa2f0d8ac73bf5c716d53850f7a88454ee458",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/dbg_task.c": {
+      "sha256": "0dc1463a2b8824d9abc4f63d0058f1e34b21dc14c779063a3e640b0515e5de1b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/dbg/src/trace.c": {
+      "sha256": "fc00901eed202caf0aa30a83a155f3fe1469da269e09ca3f6fff0e451afee15e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_env.c": {
+      "sha256": "effafe01dc14f355ef89d2d52fd765d46873d1d166a62f297d769bcc8e7eb11e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_event.c": {
+      "sha256": "762b231e92b1ea4c8df694ceb3ab676bc911c73dbbc68d49dacac785fd96913a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_msg.c": {
+      "sha256": "f4e42269730ef5dbd83118b5533076ac8f45f0cc86eb9d830fc3474ecf9a8a70",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_queue.c": {
+      "sha256": "b1a09a2a19b7eb42e832cd0ef75dcd2ea52a10760f33653e53d0c24ccf612a7a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_task.c": {
+      "sha256": "182d647c0a7ec65412ee66287fd6e5418a122761cf0b34607e59f01568d342f1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/ke/src/ke_timer.c": {
+      "sha256": "3f1f415d459ca8c0c453a981e3768d037e087566c2b5db110861af073de7a005",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/mac/src/mac.c": {
+      "sha256": "a87ca4f05e981466f23f9cfe54e67c395c49d75ec6b2ce69661a00b654c0d21f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/mac/src/mac_ie.c": {
+      "sha256": "34731befc380338925234eb3e9ae96780aad6834f21b00d9f5ba780a2fe957bc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/modules/macif/src/macif.c": {
+      "sha256": "3db3f6cfa491692cb8932b3666b4f51f5e95dc0df76def63933b4b840e5befde",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/modules/macsw_config/src/macsw_config.c": {
+      "sha256": "64c3133846e4fb1236b39f63912e2d7d81bc41bd4166eeb7b92ff9eb37d3fdd3",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/modules/statistics/src/co_stats.c": {
+      "sha256": "37bfebe0fdfd02ef23e29998ae9485ab9ee8d7a3e63051d4f1800696abf246b5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/arch/risc-v/arch_main.c": {
+      "sha256": "0fae462b6055dead54c3a7cc4f81a10cc165633d5e01c2b3d95467c00aa71f76",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/bl616cl.c": {
+      "sha256": "1b182e2b82bfec1b066d822007cae1c222d6ca0da7708c7b505800e5bb31bcfb",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/crm/v30/crm.c": {
+      "sha256": "eb9502394a6e01e6e70e3febc6991a14e42a6a7bb9b36c4c7193ba04e3b78da0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/csidma/csidata.c": {
+      "sha256": "200d575f0fb58d90d4076c83f9f010b1b88408ff29fe0ebf67844a8a5babea2c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/csidma/csidma.c": {
+      "sha256": "4b950c0989002104949edf8992a4380f6d35223aed29ec9e02cc179daf3d42ca",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/csidma/csidma_cli.c": {
+      "sha256": "a612b19e8454dccd5b50f5a6cc78d56cb93c7a4abd5e0d1287f260faaba0dc9c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/dma/dma.c": {
+      "sha256": "a2dd158deaf56c5e507a8e16274476d4b7e0e87fab5eaf9dfe8bbb8c6e39baba",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/intc/risc-v/intc.c": {
+      "sha256": "27dd03a88ba95f8c9c63e50e4f053033a3f038470079c2be63f75a414532a980",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/la/la.c": {
+      "sha256": "95515f8f792937f83b7a9ec9600b1d60fe8255a3620c1317e275a7b37a402f9d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/la/la_mem_mac.c": {
+      "sha256": "d1555d76dccb0b03b0b7845daa088bb995c0e4386c1e60e3ad806aa53e761e3a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/la/la_shared.c": {
+      "sha256": "0ae139d39c6b52334adafdf57e55eb9501657f48ed966afc1c7f35f1f1f8f3c1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/macsw_platform.c": {
+      "sha256": "8f939f3faf62d9181d3679a5457bae3abd960d9b525af0db6b1073884349612e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/phy/phy_bl616rf.c": {
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/sysctrl/sysctrl.c": {
+      "sha256": "e3942dc5b68817fce2c64d27c0a67aeb960567d1ee5fbb9e7e8a5e46e4163551",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw/plf/refip/src/driver/time/macsw_time.c": {
+      "sha256": "dec1be2667ca6a774400d72ddeee85d5d185e2578ea9c164dc96a10fc97981d2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/macsw_plat.c": {
+      "sha256": "0816067c1a2d7a66c584ae4314f00fe26c50ea4d5a37a3b156cdff0113c7ca4d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost/src/application/fhost_connect.c": {
+      "sha256": "22105d2f3e880a4423cf7e6600470ee3e1a58871859253c40d3dc3103b8bb166",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/application/wifi_country_config.c": {
+      "sha256": "b427cc953918be1ea48e8a75cdcef1e73640587dce9469a6a382bf09f8d64fa3",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost/src/application/wifi_mgmr.c": {
+      "sha256": "18cb11650ed6ac0ada75e8c12e8e8e1b801dd63acb7aacc79a0c4f801d0d012d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost/src/application/wifi_mgmr_cli.c": {
+      "sha256": "8f8c20cfc842108c53c9857891dcf53b364a0a71b14110e2d7b379dc884f53b6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c": {
+      "sha256": "82525262b459c99f5a9851ee86644a649928bc527aaab62af91636cf2ed55735",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost.c": {
+      "sha256": "c3b3185eb2425f0948a749c46f41f09390ec48d8d2e10d7b7b582eea42b5bc43",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost_cntrl.c": {
+      "sha256": "bde6984c01a10f9b184f202e3c3ae54aebaf9131d5e9505e9ba2e76f5ecfad2e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost_config.c": {
+      "sha256": "23c13250aec22edc45864667c8a7a7ca538f260f23d9d5d230ccedd5eb0de8c6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost_rx.c": {
+      "sha256": "8d899001a1d041ff5b2326b0c0315c39a2c830d9a59fee6cca5e783b5d77213a",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost_tx.c": {
+      "sha256": "4fb8b48e1be6c3b17d80db864fb22f8a2148387878384a58bf7a13f0ff8bc21b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/fhost_wpa.c": {
+      "sha256": "7252b324f4819cdc2d04627d0dd654d37e16a745d7cfbf2ced91e196d085c608",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/fhost/src/macif_fhost.c": {
+      "sha256": "0498b90c5401223c94fbe57809382c351ef3f8b54eea6130a2f4c953ef91f8fc",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/fhost_config/fhost_config_buffer.c": {
+      "sha256": "613feb99c18ecea0233c6d8bfcde3f5bf33a13a0c14d01e0a351d9a795f71fa5",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/macsw_os_adapter/src/platform_bouffalo_sdk.c": {
+      "sha256": "94d578a2bef2f425dcd8ed0136fb70c6baf0708a4b5087b57e132c2a97083752",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/macsw_os_adapter/src/rtos_al.c": {
+      "sha256": "a8316839d0cae294e5d374a1b89d8a4619d00ccb32165660efa58103973001e2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wifi6_lwip_adapter/net_al.c": {
+      "sha256": "870128a2c75df1bb30b4e0e9500e813fbf5fa28635e2490e58c14635bb3ea11d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wifi6_lwip_adapter/net_al_ext.c": {
+      "sha256": "3933e9e8a0c276c90ba68d779dc6e1f52abf8b93ea4403495921b4fc9d20159a",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/wifi6_lwip_adapter/pbuf_custom_ref.c": {
+      "sha256": "967e17f9cbe6597ae19d5f142f1456605609b87ff8875888271553f41c025637",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/wifi6_lwip_adapter/tx_buffer_copy.c": {
+      "sha256": "700d2b2ba4ad4c558d7b5f0c25fa1599505e7eb823de325adbc9d4b4ec962c7a",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/wifi6_lwip_adapter/wifi_pkt_hooks.c": {
+      "sha256": "a5e6a3151365a8e9a380d20dd426d3736b970505eebadd2e29ae2c805b812fe6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ap_config.c": {
+      "sha256": "d53ae6f7f4517200c8e0670575346d8381a23d0d6a126da4eb677abf6ba8a5a4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ap_drv_ops.c": {
+      "sha256": "3296129698fd771ba3b4ec64ab875a5489a65272fe9bc51bbf6ecf2932489838",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ap_list.c": {
+      "sha256": "21bb46cf71a3542d8c9f50cb027b46782da56d8d18e3b507494e0edd69702797",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ap_mlme.c": {
+      "sha256": "44c9c7bfc06550c149715372e73183d2fdf107223f9e68ff021387a8e3a331dd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/authsrv.c": {
+      "sha256": "2e7144c9f45b0149967e4c54d6dfbd1119add29c4039a3483b2f2ff5418c1c4d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/beacon.c": {
+      "sha256": "19cc6d7ee0bfc7679907011f9164b09517f359015e5971ab628f7bef422944bd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/bss_load.c": {
+      "sha256": "50f2d4be09886c5d65f3697db501b43f463df8b9f770ac6cd319b30e3bb67427",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ctrl_iface_ap.c": {
+      "sha256": "4d2abbb23b211377edc1170af0de36985433770de6f909ede743f137bb5f2a73",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/dfs.c": {
+      "sha256": "ff011dc18171cb018179c20218aad72bafc566a3a12acd022fb74ad8d95b1338",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/drv_callbacks.c": {
+      "sha256": "8b5b76d1651ce5c12c2f1aab0c05b417e75b251bf3f87c859c9c88c5fce88035",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/eap_user_db.c": {
+      "sha256": "bc4f1dce1b47f146a0bbdb6e71978ee532337a857868e1e5050887322c74abc2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/hostapd.c": {
+      "sha256": "199c80e0a8d1b05146085907c2001db6f0d7845122d561e538aa4e240a9d62bc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/hw_features.c": {
+      "sha256": "dbe205a7ba836d4f237b9bb9da692d1b8587968c24253c2e6fbac62fa8218bc1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11.c": {
+      "sha256": "92fc0e3202efde5fb315beae840b86651c5510a137b2a11cb0e35c5871c530aa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11_auth.c": {
+      "sha256": "ea944f925e1d97009646b8d81a23684f01a6e4e744f210d06ac86995e4028504",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11_he.c": {
+      "sha256": "613dc81a63572f68f679eae1c8b6e0cfb369b8f65b03a9f256277d0e6ccd0959",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11_ht.c": {
+      "sha256": "adf2a4094df650185f824e70be78307cc0a80ac3aa5a82120f55891029765bbe",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11_shared.c": {
+      "sha256": "1704e2773d00c1558d0f1fe5a82d62f236d3d34f92db1e4b461f7ed6f2a0fe0b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_11_vht.c": {
+      "sha256": "810f40244cf72b6b029a8fea7af78a7a818cc9628f3c1c78171c412f9ce976c6",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/ieee802_1x.c": {
+      "sha256": "6f3b429f9258629db1caf0af3af20bc740396b3b160bd57ac90404beb2d3e947",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/neighbor_db.c": {
+      "sha256": "21024adb0cda17543ddc9f12c5184abe45ddd3f66df183b696015dec9d20710c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/pmksa_cache_auth.c": {
+      "sha256": "07f464cd73ff5ff63dd5795eebaa1797796b0519ec782e02788e3626216985f9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/sta_info.c": {
+      "sha256": "64008cc0c69bd84471a996b404665bd99e9dc0a94b65d4d879bf1b14b8e45113",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/tkip_countermeasures.c": {
+      "sha256": "a22cb825409093c3250be86c14afe6200fc2d6be87b8cec5f8260820d6e9648c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/utils.c": {
+      "sha256": "35fb9fc000a076bb6d49153df411431b58b0eb72d8e2901edf16aadd0fa9e4ae",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/wmm.c": {
+      "sha256": "320c1fff4cefd9150b76eeedc90fc8cab1c72d996afa4436e9636ef719fef76e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/wpa_auth.c": {
+      "sha256": "5e4d1478d978510b4c2175678e225620b4b84ffb4a9f325d38a5361c90d84ca2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/wpa_auth_glue.c": {
+      "sha256": "33811a5d49a4d238a730fccf70e63aa90ab8a8bf0a4e44b421a6ace14b598b99",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/ap/wpa_auth_ie.c": {
+      "sha256": "4367612b0b6f79c7c7137266ccf7e6d7894753de40bc4f7c59226ae33f462810",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/common/dragonfly.c": {
+      "sha256": "f70790e8029f8cd5ed376a2a38eddc1eb2dd5fdee74146af05bc839b698aadfc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/common/hw_features_common.c": {
+      "sha256": "66e8a20ef1601e5c02246e55c89ad3dc5a38a6e29a3d894d254765ca230c86fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/common/ieee802_11_common.c": {
+      "sha256": "96f9371e7ec3a648ae290bce61a528acc92c8c7916ad7fa06c1ce1202639c505",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/common/sae.c": {
+      "sha256": "ff5065f6824fe485ceaf64d3c97bec06aed7655b2acfb90621f55d3f46741d93",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/common/wpa_common.c": {
+      "sha256": "f1341e4fa8906991cb88df4887fa49cfdb5e73c418746ff3d018a82edb1193bd",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_common.c": {
+      "sha256": "52bafc6bcd94f01a68f71a6dcd0107e9ac4e8f24872d7dde2e6516e8df50571f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/drivers/driver_macsw.c": {
+      "sha256": "84daaf91bf85479404d831de3146d4cd009693535eeb507060c2832745209bf1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/drivers/drivers.c": {
+      "sha256": "2a7fd5448d50bf7e062567344408209893c4350f3ba9452c70eda117fc0fd882",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_common/eap_common.c": {
+      "sha256": "4e0f2a2e100a6aa8c13dd02bcc87d12230742eef696b1c3a5e483b267f010c92",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap.c": {
+      "sha256": "174c2ec0f7911921104ac83446a4551e1052e2de68ea6f13b44688203615a017",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_peer/eap_methods.c": {
+      "sha256": "fc052efc6905718aa0d501207d844e9d871370ffcc646c0cea595851c8fac3dc",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_server/eap_server.c": {
+      "sha256": "652a2ad1c3488c1969f91a4962d654f88559ed372925e7a58473b02d98b57834",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_server/eap_server_identity.c": {
+      "sha256": "5c5596fa8ffeb750f6e26178bb3b72cb4c12b850c8c5cf9b5f3960cb41c8e257",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eap_server/eap_server_methods.c": {
+      "sha256": "ec6c90a87074ef2229f84b55f64422524d2ba208a7df70009b6b002343cf9ac1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eapol_auth/eapol_auth_sm.c": {
+      "sha256": "c2b312b602c6b63beaa690954efe1eece1ca9d36c5bc423d9cffc093fb8c075c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/eapol_supp/eapol_supp_sm.c": {
+      "sha256": "b323c4b07f9fec053b65c8a2ac5b6b1ba0006be858c2400fcc644656ca1fe2c3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/l2_packet/l2_packet_macsw.c": {
+      "sha256": "38be9adf733323951df6e08f0557e8eab2722aa08d8caff06e7f0c515700f50e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/rsn_supp/preauth.c": {
+      "sha256": "28f864ec32277192fee76f6177b6f4a1ef5170a061b388f12c694c5c87b59230",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/rsn_supp/wpa.c": {
+      "sha256": "edfe7c4c70fb5b84e093cd6456e727be41202dfa98a85cabf8adce935ed9fa54",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/rsn_supp/wpa_ie.c": {
+      "sha256": "9005e4abe29f3fbed88de5a47283fea5fa553fd89349ad56384a07691b2e0586",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/tls/bignum.c": {
+      "sha256": "32d1af0397557986ab9de70d7ccd2e8c4091cfa74c7b1d657bdfc67d2bd71243",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/base64.c": {
+      "sha256": "04ff981545cde7e23bb3d60aa8c7d3dd5833c9d922cd0023e23ee9a225707e88",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/bitfield.c": {
+      "sha256": "0dea2d23e40f0ce484b000961c70117f0b58bc5361359797657df21b3cece0f0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/common.c": {
+      "sha256": "4f3acfe85d835d6e3c86407ad0909e3be61fbadfce788387bfbf5c66ffe8f41d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/crc32.c": {
+      "sha256": "5a79601c719c1c04a83d64c1496a358f72dbfc776087c84b93185d2b6d03d7d4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c": {
+      "sha256": "73f07194d517d448f8bb989766ec4d06a235397416c55e6887156063d0d2e4b3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/ip_addr.c": {
+      "sha256": "bc5c9ec0cfd73a850189611ea45e2e995bbb0e976d1d5a9ebf13ad265c27adb9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/os_macsw.c": {
+      "sha256": "c3ccc86942f18f0e41e2fd9b472fa788e19afd5374b20cf52bc6c2401b1179e3",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/uuid.c": {
+      "sha256": "63c7a630ceb00197914c9b797df8762a953a5b3666c473b7036ba1d8496e10b5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/wpa_debug.c": {
+      "sha256": "c5d19f87d3d88c08672309b0ccc17d9cfa08bee52fa6fad7504b1e6717798cad",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/utils/wpabuf.c": {
+      "sha256": "959ae9b5d51a03d0ee52ffe6c8eec027abe9db603c99699c4fdea9d867c49e0b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/aes-omac1.c": {
+      "sha256": "7aa7e111406394c81eed0ed70e68bebcba1c73886ac5674455c0b754d2caa3a8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/aes-unwrap.c": {
+      "sha256": "3df86f1b5573998a49e09bcad1b5b6ccccefb86811160aad5b4659f85b2b3202",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/aes-wrap.c": {
+      "sha256": "0ec94ce24727a4f6355c1aeba363485f233577e66acec39aede445b89014200b",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/crypto_mbedtls.c": {
+      "sha256": "ad5cc26eeb0011ea5f850113e1f215762822b86c59c6c6664025b2aa87e2655d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/crypto_mbedtls_misc.c": {
+      "sha256": "81fe77cbc749d534ddbd17fea5adfdc02bc84a6a11c9397500df3e4437b1148e",
+      "spdx": [
+        "Apache-2.0"
+      ],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/dh_group5.c": {
+      "sha256": "92042d1143d556781de4588cfed39a907825994b86c38a82ae53394dcf3fa71f",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/dh_groups.c": {
+      "sha256": "e8e51e27b7e33ef0a325ff2a6ab62cd312d1fff12300b381e4b6663354a1ba03",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/random.c": {
+      "sha256": "fafe96dfb48b53ebcf2bb402c1842d6c4d5e6ca3035866f48432c739ba313477",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/rc4.c": {
+      "sha256": "f73882ee60b7c296d609dd3d57d62c71d5cfb3b1a414f89acf8b19d83098f892",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/sha1-pbkdf2.c": {
+      "sha256": "d66308d0965cd643e18b7878f3dc88e10302983038a71dbc9ca9fd893450a144",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/sha1-prf.c": {
+      "sha256": "47a71e33e3bca4bf41e302f441c023b8534efdf003aba241e1364887d374a890",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/sha256-kdf.c": {
+      "sha256": "6959cfad78bbfa30eae333f760ddfa2ac99d3819815ae1ca856579a52a9a77d8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/sha256-prf.c": {
+      "sha256": "16b164a37ea77b11d4586d1b02537127bdd49f5d86fe28dab63cc8c60927128e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/src/wpa_crypto/tls_none.c": {
+      "sha256": "43bfd3b09cb3f563860efd1bfb1d6a354ba793bb2a101cd8cad171baa4b46e7d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ap.c": {
+      "sha256": "e27e7cce1a41b6f26b2714e5e5f113b2d58241709a3808160e32ab8ac4bf64d0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/bss.c": {
+      "sha256": "0710e5b6a61dcf1b8f27c2ffbaf76cad695db7cc143871af096ce0522388d428",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/bssid_ignore.c": {
+      "sha256": "efabb4df014f0a274582e651fc596e708a957c2b150da7f8217f4db154d7091e",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config.c": {
+      "sha256": "dafd399ad4962b96743a0b6c432d114fca9c31053ae8f4eb0a243a7fd2baaaee",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/config_none.c": {
+      "sha256": "4a59af7657f6ba810ed1cabc9abb269ccf41621ae013df36ad37d7037da2955d",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface.c": {
+      "sha256": "ec717e08d1cc205afbfe7f5b2df8b85c9749a711b4a1589ff6975fe1e9d3c7c5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/ctrl_iface_macsw.c": {
+      "sha256": "a4ab57597506a04c87e4f78bd1539c6172f11f179f22fa0940c32fa00faba6f2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/eap_register.c": {
+      "sha256": "f58e9e92ecc87b96d651df38356f511eb99e62f1b305bea4d8aa1c099de33551",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/events.c": {
+      "sha256": "57449fcfde900aa3fcdb5ef9faafc1325e38b014b1da07f79045e1ecaf6c55f9",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/main_macsw.c": {
+      "sha256": "e3fe5a64601ae2fcb6d24a52bf86929851ec423c5d8b2128eeb26254b193fefb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/notify.c": {
+      "sha256": "c1575c1092b2de3f0191fb5ba716cc695fa5587caf8668497bc8c45367e7e3cb",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/op_classes.c": {
+      "sha256": "37fbe849417e41ca0dcbadbae6789807f1b7a84b8ff3715e167478bb651353ec",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/robust_av.c": {
+      "sha256": "86686434d7a59ee25c4dd05f7866ccb3ea3d459aef7c03e7c00bbee3519cf275",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/scan.c": {
+      "sha256": "1f629f370c4213f0a6bdae6420eca89f157085048afdf43d65adc256eaf506fa",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/sme.c": {
+      "sha256": "9b01d9b0eb2e5290a720bdba8dc1966aa4a34b6d2919731d2e561f985fd9edc5",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wmm_ac.c": {
+      "sha256": "f3ef626a7c96e0b56bb3eee32091238881375395625215abef71c00ba959b3f2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpa_supplicant.c": {
+      "sha256": "6c63e305881848b80bd76921809d155c92e809da1a853c2cbf2901eeaad8348c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/components/wireless/wifi6/wpa_supplicant/wpa_supplicant/wpas_glue.c": {
+      "sha256": "e77ed0e6aa6401fec84f3dbd4c93fcedcfb2b8862ae48cea354d4dfd34798708",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/config/bl616cl/bflb_lhal_romapi_patch.c": {
+      "sha256": "03b90447d56279cd07ffc44e46ff7d2f7948d914462d7746852a7179bf659598",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/config/bl616cl/device_table.c": {
+      "sha256": "05d88bb7e76013baeb7f6c0084c6969cf853337b2a42ba9e4cdf2eb80a95cea2",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/config/lhal_version.c": {
+      "sha256": "4b56f344a4e8c4536b1bc1dfd703795c636792d32fb66b14515d648b4fa79922",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/include/arch/risc-v/t-head/rv_hart.c": {
+      "sha256": "f1f7377750911b06bb9ce6b4ecdaadb0909454904ddbdc946cd59644c2d8ccbe",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/include/arch/risc-v/t-head/rv_pmp.c": {
+      "sha256": "561d6705eda3210ab70cbd5e8ca0e49d11675390e8d21bee656ed3abcce959ea",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_adc_v2.c": {
+      "sha256": "f68abe2308b7436cee314b46dd93256bc7af27f2f80aab34e2f611d45a25e725",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_auadc.c": {
+      "sha256": "1dbc7a99b5d66f10926fd034fc8267b2ee1812ce2fece8979510f1badab9ef06",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_audac.c": {
+      "sha256": "a5b397f0aaf5d15497ac96928e8f5a9771e29f934a15269e5c560fbcc9282eda",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_cam.c": {
+      "sha256": "464f28518dff8333d921e8426a2f25370b0883da1fd1dbe9c82c10caada7cda6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_cks.c": {
+      "sha256": "0d41cf74381c17b0c8885e6fe3824b84a850b2d21911eae00b5ff9e8d5b78d29",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_clock.c": {
+      "sha256": "088ecc75226d49a1285a19ee08e95cf9f7a0137b7f2387720f64ee474460721d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_common.c": {
+      "sha256": "e9705ff73c9f20c50d4f8ba21a6eaaf9eb3e852aa2554c466edbb6e44c43e196",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_dbi.c": {
+      "sha256": "6d58643011c970e162d7539c71f6f18dd70d1503375efa164558e16ab8871a86",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_dma.c": {
+      "sha256": "e132dc9ca82c193fb9424e74a176a5107d06a9559bf1705e5e2fe4fc73bf875c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_ef_ctrl.c": {
+      "sha256": "28fc15a7c285ee1ca21ab61984edacebc8397775a5d15a59a0471d8dd439a5dc",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_emac.c": {
+      "sha256": "a957ce667ceafa083f16c395ae3892910faa7320064c644d3d09b989539105fe",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/bflb_flash.c": {
+      "sha256": "21989e0eb9e59f36cb290dd7888bd64b2218472bfb7385364666722bf3d37c8b",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_gpio.c": {
+      "sha256": "46dc60c2f0b4e5c637c3ef00b787a987b551c020d8f86668f736d7b46d9a40c7",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_i2c.c": {
+      "sha256": "cdd04a184e06ae0b59a4b2cf05d9b056f3fb31745130af0c21ed395b81a2692c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_i2s.c": {
+      "sha256": "2abffe59720b734e86ec11bdfc8947ce06553d5e675ced80aff6bdd22d4be344",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_ir.c": {
+      "sha256": "c1becdd66da71e86de0b54cfab803fc762bb909b3bac3060f6b0a61292f0d7b4",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_irq.c": {
+      "sha256": "27031efe9cf0f739e46e999dc6261976ae208c78d36bb97fa9d4dd5dafaeea6f",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_l1c.c": {
+      "sha256": "fbe97f54ffee0f9758c5447c02f4f1f1f196e45ac973cbda13702966aa655ad2",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_mjpeg.c": {
+      "sha256": "7664e30e2b6c82551ed18f3424c680379c48ff89256a23ccea8372e3ab310a86",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_mtimer.c": {
+      "sha256": "2d31e01d64274eb987930de40c07249e8531ccc41f5a3c19f4da9f43bb6dcb1d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_pwm_v2.c": {
+      "sha256": "acbd941645c357b33522145f7f5b6ba57697382560960494918c48f6a159819f",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_reset.c": {
+      "sha256": "0ac45663fb509c5f1b2b196a6adde5ebc62dbe19ddc3b756d7e884ae6ea5c6eb",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_rtc.c": {
+      "sha256": "079c18b7405dd80254e2e62b4f90b3a7015c3dddf9c66d7f2d2c572d6b64333a",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_rv_privilege.c": {
+      "sha256": "71406b85d241f63b93c2e64b7473cb31e4dee0063f92f746fde781aabbd722c0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sdh.c": {
+      "sha256": "c674dc1d3a66a9c4d725c4e63acb6bd0c0e7fa34bce2110de9a28c69f786c25b",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sdio2.c": {
+      "sha256": "b0f9a84a8c60f7ecc8531d477487c027573b3599edf3a94c79985d7a3336d7d1",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/bflb_sec_aes.c": {
+      "sha256": "b9249d45cefb498b33bfec82d4effce95b914f26a5780c4b6ec9129eec942df4",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sec_gmac.c": {
+      "sha256": "fed7ce07b22d64123f1221483ada1341f970762d94dc621fc54752840724f9af",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sec_mutex.c": {
+      "sha256": "34263f821dfb6975d9dd6c51bf5728216e74d76cdbc65a01da57806e87eb1be7",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sec_sha.c": {
+      "sha256": "e6eb94dfb2e51714c759d45ed10fb92f3e211d731e923ab08f0493674a39a6bc",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_sec_trng.c": {
+      "sha256": "57866069e3e825d9304bb2e2275fc02f1eaf2a13b511bc7ecd4294cf2ed37fc1",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_spi.c": {
+      "sha256": "101c7a0b5a45d36362a40f56bf6c830bd21403b587da559983604d05fc5f4496",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_timer.c": {
+      "sha256": "f51b78364c8da68376515203f230de65e09e2e35165fe2ea3b943bdc929192c0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_touch_v2.c": {
+      "sha256": "97dc9cf06ad4322359d1261df8578f55c61d33d62f1ad8de0a1cd337e0be8de0",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_uart.c": {
+      "sha256": "27f69180719bb27f3d8327e7480a32435a3f2ee7179d01505fc9c3e149952483",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_usb_v2.c": {
+      "sha256": "31a9fc8083be4425d05be50f7678527e5d2626d310db74594fd621d1779f36fa",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_wdg.c": {
+      "sha256": "739ecad0c8bfb16e34bba2f7d5c6f2541a28f099a86bbe5a4f8885b41c25b4e3",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/bflb_wo.c": {
+      "sha256": "04ef1e557a3b61530cf25cc9a42cadea2bb517034b39ff0db6f2238802bdb099",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/lhal/src/flash/bflb_flash_secreg.c": {
+      "sha256": "fb38d0ab911f6bb9f31f56bf3c48d717e52f671af4ade7b911a6404ec736d0e8",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/flash/bflb_flash_secreg_port.c": {
+      "sha256": "2f5512f338aea07cbd407022243a560add2caddc0297ff7751a911d0e64cc5c2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/flash/bflb_sf_cfg.c": {
+      "sha256": "b8e1c9c1fbae1c63dd8f57eae3aaf787bbcf2e05a089672da7832efe4b60a3af",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/flash/bflb_sf_ctrl.c": {
+      "sha256": "c427f58565065d7f88598c9e434b877959391809a3ae589f5274d32464648630",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/flash/bflb_sflash.c": {
+      "sha256": "ff0c701e8ec927ac32183773ce87a2775f656b61463270d6666fe76eff0dcf11",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/lhal/src/flash/bflb_xip_sflash.c": {
+      "sha256": "62f99a86977fe8d9b1090d61845d30e444629bca65866da720f0fd6a547f1fd2",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/rfparam/Src/rfparam_adapter.c": {
+      "sha256": "0a7d566a7a11be067926bb5a4549d5708718d728b7050931777dcec2c9f5acfa",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/rfparam/Src/rfparam_rftlv.c": {
+      "sha256": "ca5b478f089ee746b40f74c7f0774e4776e2b8ef5c5c53ffc683601bcfbc6023",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/port/bl616cl_clock.c": {
+      "sha256": "d634950279dc927138f46b6ce6364f1733c783b789fdb428d7f13b0da0b50359",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/port/bl616cl_reset.c": {
+      "sha256": "a842106f4af1fd0e42672052dc732d4f71003dff1ca86a9916d76ad5eb295bc5",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_mfg_efuse.c": {
+      "sha256": "2e06bebea66e9e20f85a6f091581d46ca7bfd335255eac05a38c26bf84f8a475",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_mfg_flash.c": {
+      "sha256": "37b2bb934051c3b2cc6706922f5732953b5dcf74df8233a796a8da859c2c78bd",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_mfg_media.c": {
+      "sha256": "dae3005568768f77e2a758df296ff9636171537f996516083442680b95d57b45",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_pm.c": {
+      "sha256": "63f17f61b9e557d8e5098c7dc38ca0cbd74f8b89e615bec4626957d35ecef73d",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_psram.c": {
+      "sha256": "cd150eedbe13313bb4538aa278c470be84638d1f55dbc6f3ae1c31471c752aa0",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_romapi_e907.c": {
+      "sha256": "457ad3406597444a952493a3d74b4be801109ab2b48ce928093662e99ea55f1c",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_romapi_patch.c": {
+      "sha256": "1eda40b51835687fee2ea121c8a7bfbc816966502b489209c64a3bef8791dffe",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_sec_dbg.c": {
+      "sha256": "faa4627bd105a661e8010351967d7c565c7d1539a0223e8fb432eded5800bde4",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/soc/bl616cl/std/src/bl616cl_tzc_sec.c": {
+      "sha256": "1d328a96c85ccad39e4e5e35e6e8e3858d9db9250d7669084a85a76eed6be544",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/soc/bl616cl/std/startup/interrupt.c": {
+      "sha256": "2d5ddada26a203d22486de6b9584694c3c465a22fd1b487609380467f28d572c",
+      "spdx": [],
+      "header_present": true
+    },
+    "sdk/drivers/soc/bl616cl/std/startup/start_load.c": {
+      "sha256": "6d0a55ee51ca07f4370f19b1a16226f45f55779c67156cac8f6a76d9c3e29760",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/soc/bl616cl/std/startup/system_bl616cl.c": {
+      "sha256": "1044b287228bdf8279e4bd1a6d41ea5faf865a2f81827396d6d68df7db1a9812",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_32k_trim.c": {
+      "sha256": "3dfcc36ae8aea3f382937ab91fc36bdff27f340e581a710db4d9176cc62dc831",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_app_pds_recovery.c": {
+      "sha256": "db58815fba4f199c954a6bfa2f309e7dcb83ec1386b30f0bebd041388f849576",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_ext_dcdc.c": {
+      "sha256": "d72e4186b949d033160a73186af332a71d5523b53e4823a3dc6cfc45fbf09fe4",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_lp.c": {
+      "sha256": "2db88fb8d751d6a619f46bcde8dd86f047f08e9259bf1a2db055bca7223b86e6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_lp_bcn_tbl.c": {
+      "sha256": "3fbffa3b53b9cf7a8bd8c5840b7bf590f057ff7c94d6d77ff7a486e96f69cb11",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_lp_callback.c": {
+      "sha256": "b42895fb4b5c7d83caa9ae3bc6723cbca1f6f1690b7980ed5ea6b871a7593e39",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_lp_wakeup.c": {
+      "sha256": "e9d1c90f9f3d6b6e27e1eff0c6c214d7ee22855c19d7e5f8be4f506f36c6faf6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_psram_recovery.c": {
+      "sha256": "eed10d780251aba3527ce51979161d37b19b0d383c31e8f0e72a680ff26bc0b6",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_sys.c": {
+      "sha256": "b3511cd8a1a69c10c8a182c993063695f9e93290c5e28c8677608fe695d81af7",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl616cl/bl616cl_xip_recovery.c": {
+      "sha256": "77457d9e49167c02c80b75a15534de9e962d31b2d24a165053edcbb802942dba",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl_lp_bcn.c": {
+      "sha256": "7df5b7ae9fc53fa09533ffa8c7e9616e23de5c794358b95d981c9d68be8f92aa",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl_lp_callback.c": {
+      "sha256": "102b283f8f3154103d094d5fd0787b02a300aa25607c1accd38b2fd98a07b96a",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl_lp_fw_image.c": {
+      "sha256": "4d065850fa32263f277daa119a842313fa616dc64e12320287407b386aab9e1a",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl_lp_time_trace.c": {
+      "sha256": "ec7809626839bfe868d83ea6f7ea2dfaacb5a27d2929abef4f8a743d3726f644",
+      "spdx": [],
+      "header_present": false
+    },
+    "sdk/drivers/sys/bl_pm_wifi.c": {
+      "sha256": "d3597dc2a7b1794e2f3b42b1dbba11665ff244091c23bb066911aa9034f92bf5",
+      "spdx": [],
+      "header_present": false
+    }
+  },
+  "notice": "Original headers are preserved as evidence; absence of SPDX does not assign or negate a license."
+}

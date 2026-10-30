@@ -1,0 +1,154 @@
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -636,6 +636,7 @@
+     int offset = 0;
+     int res = -1;
+     bool bridge_ap_add_network;
++    bool bridge_ap_set_sae_pwe;
+ 
+     if ((fhost_vif_idx < FHOST_WPA_GLOBAL_VIF) &&
+         (!wpa_vif || (wpa_vif->state == FHOST_WPA_STATE_STOPPED))) {
+@@ -649,11 +650,21 @@
+         fhost_bridge_ap_start_progress(151, 0);
+         fhost_bridge_ap_start_heap_before_allocate(600);
+     }
++    bridge_ap_set_sae_pwe = fhost_vif_idx == MGMR_VIF_AP &&
++        strcmp(fmt, "SET sae_pwe 2") == 0;
++    if (bridge_ap_set_sae_pwe) {
++        fhost_bridge_ap_start_progress(204, 0);
++        fhost_bridge_ap_start_heap_before_allocate(600);
++    }
+     req = rtos_malloc(600);
+     if (bridge_ap_add_network) {
+         fhost_bridge_ap_start_heap_after_allocate((uint32_t)(uintptr_t)req);
+         fhost_bridge_ap_start_progress(152, req ? 0 : -1);
+     }
++    if (bridge_ap_set_sae_pwe) {
++        fhost_bridge_ap_start_heap_after_allocate((uint32_t)(uintptr_t)req);
++        fhost_bridge_ap_start_progress(205, req ? 0 : -1);
++    }
+     if (!req) {
+         fhost_printf("alloc msg buf failed\r\n");
+         assert(0);
+@@ -688,9 +699,13 @@
+         fhost_bridge_ap_start_progress(47, 0);
+     if (bridge_ap_add_network)
+         fhost_bridge_ap_start_progress(153, 0);
++    if (bridge_ap_set_sae_pwe)
++        fhost_bridge_ap_start_progress(206, 0);
+     if (eloop_event_commit_sync(ELOOP_EVT_WPA_IFACE_CTRL,
+                             req, req_len + offset + 1, &resp, &len, -1) < 0) {
+         fhost_printf("failed to commit eloop sync event\r\n");
++        if (bridge_ap_set_sae_pwe)
++            fhost_bridge_ap_start_progress(207, -1);
+         res = -3;
+         goto end;
+     }
+@@ -699,6 +714,8 @@
+         fhost_bridge_ap_start_progress(66, 0);
+     if (bridge_ap_add_network)
+         fhost_bridge_ap_start_progress(166, 0);
++    if (bridge_ap_set_sae_pwe)
++        fhost_bridge_ap_start_progress(207, 0);
+     if (strncmp(resp, "FAIL", 4) == 0) {
+         fhost_printf("RESP: FAILED\r\n");
+         res = -4;
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -408,9 +408,15 @@
+       msg != NULL &&
+       strncmp((char *)(msg + 1), "IFNAME=wl2 ADD_NETWORK",
+               sizeof("IFNAME=wl2 ADD_NETWORK") - 1) == 0;
++  int bridge_ap_set_sae_pwe =
++      msg != NULL &&
++      strncmp((char *)(msg + 1), "IFNAME=wl2 SET sae_pwe 2",
++              sizeof("IFNAME=wl2 SET sae_pwe 2") - 1) == 0;
+ 
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(165, 0);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(217, 0);
+   rtos_semaphore_signal(msg->done, 0);
+ }
+ 
+@@ -428,8 +434,17 @@
+       request != NULL &&
+       strncmp(request, "IFNAME=wl2 ADD_NETWORK",
+               sizeof("IFNAME=wl2 ADD_NETWORK") - 1) == 0;
++  int bridge_ap_set_sae_pwe =
++      type == ELOOP_EVT_WPA_IFACE_CTRL &&
++      request != NULL &&
++      strncmp(request, "IFNAME=wl2 SET sae_pwe 2",
++              sizeof("IFNAME=wl2 SET sae_pwe 2") - 1) == 0;
+   struct event_sync_msg * data = os_malloc(sizeof(struct event_sync_msg) + req_len);
+ 
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(208, data ? 0 : -1);
++  if (data == NULL)
++    return -1;
+   memcpy(data + 1, request, req_len);
+ 
+   rtos_semaphore_create(&data->done, 1, 0);
+@@ -446,7 +461,13 @@
+     fhost_bridge_ap_start_progress(154, 0);
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(155, 0);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(209, ret);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(210, 0);
+   rtos_semaphore_wait(data->done, timeout_ms);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(211, 0);
+ 
+ exit:
+   rtos_semaphore_delete(data->done);
+@@ -468,6 +489,7 @@
+   struct eloop_event_request *evreq;
+   struct eloop_event *tmp;
+   int bridge_ap_add_network;
++  int bridge_ap_set_sae_pwe;
+ 
+ retry:
+   rtos_mutex_lock(eloop.mtx);
+@@ -483,6 +505,14 @@
+               sizeof("IFNAME=wl2 ADD_NETWORK") - 1) == 0;
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(156, 0);
++  bridge_ap_set_sae_pwe =
++      evreq->event_id == ELOOP_EVT_WPA_IFACE_CTRL &&
++      evreq->body != NULL &&
++      strncmp((char *)(((struct event_sync_msg *)evreq->body) + 1),
++              "IFNAME=wl2 SET sae_pwe 2",
++              sizeof("IFNAME=wl2 SET sae_pwe 2") - 1) == 0;
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(212, 0);
+ 
+   dl_list_for_each(tmp, &eloop.event_handlers, struct eloop_event, entry) {
+     if (tmp->event_id == evreq->event_id) {
+@@ -490,7 +520,11 @@
+       // invoke handler
+       if (bridge_ap_add_network)
+         fhost_bridge_ap_start_progress(157, 0);
++      if (bridge_ap_set_sae_pwe)
++        fhost_bridge_ap_start_progress(213, 0);
+       tmp->handler(tmp->event_id, tmp->eloop_data, tmp->user_data);
++      if (bridge_ap_set_sae_pwe)
++        fhost_bridge_ap_start_progress(214, 0);
+       if (bridge_ap_add_network)
+         fhost_bridge_ap_start_progress(162, 0);
+       rtos_mutex_lock(eloop.mtx);
+@@ -500,9 +534,13 @@
+   // remove req
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(163, 0);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(215, 0);
+   dl_list_del(&evreq->entry);
+   if (bridge_ap_add_network)
+     fhost_bridge_ap_start_progress(164, 0);
++  if (bridge_ap_set_sae_pwe)
++    fhost_bridge_ap_start_progress(216, 0);
+   rtos_mutex_unlock(eloop.mtx);
+ 
+   // do the req done cb

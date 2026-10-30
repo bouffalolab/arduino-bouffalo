@@ -1,0 +1,233 @@
+--- a/components/wireless/wifi6/fhost/include/fhost.h
++++ b/components/wireless/wifi6/fhost/include/fhost.h
+@@ -468,3 +468,6 @@
+ /// @}
+ 
+ #endif // _FHOST_H_
++
++/* Bridge diagnostic hook: IRQ-safe, no allocator or task inspection. */
++void fhost_bridge_sta_disconnect_stage(uint8_t stage, int result);
+--- a/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
++++ b/components/wireless/wifi6/fhost/src/application/wifi_mgmr_ext.c
+@@ -345,19 +345,24 @@
+ 
+ int wifi_sta_disconnect(void)
+ {
++    fhost_bridge_sta_disconnect_stage(1, 0);
+     if (!wifi_mgmr_sta_state_get()) {
++        fhost_bridge_sta_disconnect_stage(7, -2);
+         fhost_printf("Not connected\r\n");
+         return -2;
+     }
+-    // Disable network connection
+-    if (fhost_wpa_disable_network(MGMR_VIF_STA)) {
+-       return -1;
+-    }
+-    if (fhost_wpa_remove_vif(MGMR_VIF_STA)) {
+-       return -1;
+-    }
++    fhost_bridge_sta_disconnect_stage(2, 0);
++    int result = fhost_wpa_disable_network(MGMR_VIF_STA);
++    fhost_bridge_sta_disconnect_stage(3, result);
++    if (result)
++        return -1;
++    fhost_bridge_sta_disconnect_stage(4, 0);
++    result = fhost_wpa_remove_vif(MGMR_VIF_STA);
++    fhost_bridge_sta_disconnect_stage(5, result);
++    if (result)
++        return -1;
++    fhost_bridge_sta_disconnect_stage(6, 0);
+     fhost_printf("WiFi disconnect\r\n");
+-
+     return 0;
+ }
+ 
+--- a/components/wireless/wifi6/fhost/src/fhost_wpa.c
++++ b/components/wireless/wifi6/fhost/src/fhost_wpa.c
+@@ -289,7 +289,13 @@
+             (uint32_t)(uintptr_t)target, (uint32_t)(uintptr_t)target->task,
+             (uint32_t)(uintptr_t)rtos_get_task_handle(), 0,
+             wpa_vif ? wpa_vif->state : 0xff);
++    const bool bridge_sta_disconnect = fhost_vif_idx == MGMR_VIF_STA &&
++                                       target->event == FHOST_WPA_DISCONNECTED;
++    if (bridge_sta_disconnect)
++        fhost_bridge_sta_disconnect_stage(20, event);
+     rtos_task_notify(target->task, false);
++    if (bridge_sta_disconnect)
++        fhost_bridge_sta_disconnect_stage(21, event);
+     if (bridge_ap_wait)
+         fhost_bridge_ap_start_wpa_wait(
+             11, fhost_vif_idx, target->event, event,
+@@ -397,6 +403,21 @@
+             16, fhost_vif_idx, event, wpa_vif->state, -1, -1, -1, 0, 0xff);
+     for (i = 0 ; i < FHOST_WPA_EVENT_CB_CNT; i++, cb++)
+     {
++        /* A finite STA wait may unregister its stack-owned target on another
++         * task. Keep selection through callback return atomic on this single-
++         * core port, including notification, so timeout cannot unwind the
++         * target while the WPA callback still references it. Other callbacks
++         * retain their original execution context. */
++        if (fhost_vif_idx == MGMR_VIF_STA) {
++            uint32_t protection = rtos_protect();
++            if (cb->func == fhost_wpa_wait_event) {
++                if (cb->events & CO_BIT(event))
++                    cb->func(fhost_vif_idx, event, param, cb->arg);
++                rtos_unprotect(protection);
++                continue;
++            }
++            rtos_unprotect(protection);
++        }
+         if (cb->events & CO_BIT(event)) {
+             if (fhost_vif_idx == MGMR_VIF_AP)
+                 fhost_bridge_ap_start_wpa_event_path(
+@@ -1289,6 +1310,9 @@
+ int fhost_wpa_disable_network(int fhost_vif_idx)
+ {
+     struct fhost_wpa_target_event target;
++    const bool bridge_sta = fhost_vif_idx == MGMR_VIF_STA;
++    int result;
++    uint32_t protection = 0;
+     struct fhost_wpa_vif_tag *wpa_vif = fhost_wpa_get_vif(fhost_vif_idx);
+     if (fhost_vif_idx == MGMR_VIF_AP) {
+         fhost_bridge_ap_start_hostapd_lifecycle(
+@@ -1303,20 +1327,55 @@
+     if (wpa_vif->state != FHOST_WPA_STATE_CONNECTED)
+         return 0;
+ 
+-    if (fhost_wpa_wait_event_register(fhost_vif_idx, FHOST_WPA_DISCONNECTED, &target))
+-        return -1;
+-
+-    if (fhost_wpa_execute_cmd(fhost_vif_idx, NULL, NULL, "DISABLE_NETWORK %d ",
+-                              wpa_vif->network_id))
+-    {
++    if (bridge_sta) {
++        fhost_bridge_sta_disconnect_stage(10, 0);
++        protection = rtos_protect();
++    }
++    result = fhost_wpa_wait_event_register(fhost_vif_idx, FHOST_WPA_DISCONNECTED, &target);
++    if (bridge_sta) {
++        rtos_unprotect(protection);
++        fhost_bridge_sta_disconnect_stage(11, result);
++    }
++    if (result)
++        return -1;
++
++    if (bridge_sta)
++        fhost_bridge_sta_disconnect_stage(12, 0);
++    result = fhost_wpa_execute_cmd(fhost_vif_idx, NULL, NULL, "DISABLE_NETWORK %d ",
++                                 wpa_vif->network_id);
++    if (bridge_sta)
++        fhost_bridge_sta_disconnect_stage(13, result);
++    if (result)
++    {
++        if (bridge_sta) protection = rtos_protect();
+         fhost_wpa_wait_event_unregister(fhost_vif_idx);
+-        return -1;
+-    }
+-
+-    if (rtos_task_wait_notification(-1) == 0)
+-    {
++        if (bridge_sta) rtos_unprotect(protection);
++        return -1;
++    }
++
++    if (bridge_sta)
++        fhost_bridge_sta_disconnect_stage(14, 0);
++    result = rtos_task_wait_notification(bridge_sta ? 10000 : -1);
++    if (bridge_sta) {
++        fhost_bridge_sta_disconnect_stage(15, result);
++        /* A pre-existing task notification is not proof that our callback
++         * ran. Always retire this stack target, even on a nonzero wake-up. */
++        protection = rtos_protect();
++        fhost_wpa_wait_event_unregister(fhost_vif_idx);
++        rtos_unprotect(protection);
++        if (result != 0 && wpa_vif->state == FHOST_WPA_STATE_CONNECTED) {
++            fhost_bridge_sta_disconnect_stage(17, -1);
++            return -1;
++        }
++    }
++    if (result == 0)
++    {
++        if (bridge_sta)
++            fhost_bridge_sta_disconnect_stage(16, -1);
+         //TRACE_FHOST(WPA_INFO, "WPA network %d: disconnection timeout", wpa_vif->network_id);
++        if (bridge_sta) protection = rtos_protect();
+         fhost_wpa_wait_event_unregister(fhost_vif_idx);
++        if (bridge_sta) rtos_unprotect(protection);
+         return -1;
+     }
+     else if (wpa_vif->state == FHOST_WPA_STATE_STOPPED) // FIXME remove it
+--- a/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
++++ b/components/wireless/wifi6/wpa_supplicant/src/utils/eloop_rtos.c
+@@ -21,6 +21,7 @@
+ #undef wpa_printf
+ #define wpa_printf(l, f, ...) printf(f, ##__VA_ARGS__)
+ 
++extern void fhost_bridge_sta_disconnect_stage(uint8_t stage, int result);
+ extern void fhost_bridge_ap_start_progress(uint8_t stage, int result);
+ extern void fhost_bridge_ap_start_eloop_post(
+     uint8_t phase, uint32_t body, uint32_t body_length, uint8_t event_type,
+@@ -467,10 +468,22 @@
+   return evreq->body_len;
+ }
+ 
++/* Bridge STA teardown telemetry; command wait ownership stays unchanged. */
++static int bridge_sta_teardown_request(const char *request)
++{
++  return request &&
++      (strncmp(request, "IFNAME=wl1 DISABLE_NETWORK ",
++               sizeof("IFNAME=wl1 DISABLE_NETWORK ") - 1) == 0 ||
++       strcmp(request, "INTERFACE_REMOVE wl1") == 0);
++}
++
+ /* sync done cb */
+ static void event_commit_sync_done(void *data) {
+   struct event_sync_msg *msg = data;
+   int signal_result;
++  const int bridge_sta_teardown = bridge_sta_teardown_request((char *)(msg + 1));
++  if (bridge_sta_teardown)
++    fhost_bridge_sta_disconnect_stage(32, 0);
+   int bridge_ap_add_network =
+       msg != NULL &&
+       strncmp((char *)(msg + 1), "IFNAME=wl2 ADD_NETWORK",
+@@ -536,7 +549,11 @@
+   if (bridge_ap_enable_network || bridge_ap_interface_add)
+     fhost_bridge_ap_start_trace(2, (uint32_t)(uintptr_t)msg->done, 0,
+                                 rtos_semaphore_get_count(msg->done));
++  if (bridge_sta_teardown)
++    fhost_bridge_sta_disconnect_stage(33, 0);
+   signal_result = rtos_semaphore_signal(msg->done, 0);
++  if (bridge_sta_teardown)
++    fhost_bridge_sta_disconnect_stage(34, signal_result);
+   if (bridge_ap_enable_network)
+     fhost_bridge_ap_start_progress(235, signal_result);
+   if (bridge_ap_enable_network) {
+@@ -559,6 +576,7 @@
+                             char **resp, int *resp_len, int timeout_ms) {
+   int ret = 0;
+   int wait_result;
++  const int bridge_sta_teardown = bridge_sta_teardown_request(request);
+   int bridge_ap_interface_add =
+       type == ELOOP_EVT_WPA_IFACE_CTRL &&
+       request != NULL &&
+@@ -643,6 +661,8 @@
+         4, (uint32_t)(uintptr_t)data,
+         (uint32_t)(uintptr_t)data->waiting_task,
+         1, data->use_task_notification, ret);
++  if (bridge_sta_teardown)
++    fhost_bridge_sta_disconnect_stage(30, ret);
+   if (ret) {
+     goto exit;
+   }
+@@ -694,7 +714,11 @@
+     if (bridge_ap_enable_network || bridge_ap_interface_add)
+       fhost_bridge_ap_start_trace(1, (uint32_t)(uintptr_t)data->done, 0,
+                                   rtos_semaphore_get_count(data->done));
++    if (bridge_sta_teardown)
++      fhost_bridge_sta_disconnect_stage(31, 0);
+     wait_result = rtos_semaphore_wait(data->done, timeout_ms);
++    if (bridge_sta_teardown)
++      fhost_bridge_sta_disconnect_stage(35, wait_result);
+     if (bridge_ap_enable_network)
+       fhost_bridge_ap_start_progress(237, wait_result);
+     if (bridge_ap_enable_network)

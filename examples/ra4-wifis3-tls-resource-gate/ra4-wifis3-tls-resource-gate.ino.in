@@ -1,0 +1,1588 @@
+#include <WiFiS3.h>
+#include <Modem.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <malloc.h>
+#if @BLE_SCAN@
+#include <ArduinoBLE.h>
+#include <utility/GAP.h>
+extern "C" {
+volatile uint32_t ra4_gap_before_poll[8] = {};
+volatile uint32_t ra4_gap_after_poll[8] = {};
+}
+#endif
+
+#include "ra4_fault_capture.h"
+extern "C" { volatile uint32_t ra4_heap_snapshot[8] = {}; }
+extern "C" { volatile uint32_t ra4_boundary_snapshot[7] = {}; }
+// Fixed numeric preparation state only; safe to read with the matching ELF.
+// stage, last WiFi status, BLE before/after counts, stage tick, outcome,
+// failure cleanup finished, layout version. No credentials or payload.
+extern "C" { volatile uint32_t ra4_preparation_snapshot[8] = {0, 0, 0, 0, 0, 0, 0, 1}; }
+extern "C" {
+extern uint32_t __HeapLimit;
+void *_sbrk(int increment);
+volatile uint32_t ra4_stack_snapshot[6] = {};
+}
+
+namespace {
+
+constexpr size_t kCommandCapacity = 256U;
+constexpr size_t kTlsClientCount = 8U;
+constexpr int kTlsSocketBase = 2000;
+constexpr size_t kMiddleClientIndex = 3U;
+constexpr size_t kTlsResourceRounds = @TLS_RESOURCE_ROUNDS@U;
+constexpr size_t kReceiveBurstBytes = @RECEIVE_BURST_BYTES@U;
+constexpr bool kStaIdleRecovery = @STA_IDLE_RECOVERY@;
+constexpr bool kStaQueueRecovery = @STA_QUEUE_RECOVERY@;
+constexpr bool kMixedProbe = @MIXED_PROBE@;
+constexpr bool kAllTcpSlots = @ALL_TCP_SLOTS@;
+constexpr bool kMixedUdpSend = @MIXED_UDP_SEND@;
+constexpr bool kMixedUdpVariedPayload = @MIXED_UDP_VARIED_PAYLOAD@;
+constexpr bool kSoftAp = @SOFTAP@;
+constexpr bool kUsbEcho = @USB_ECHO@;
+constexpr bool kAtTrace = @AT_TRACE@;
+constexpr bool kBleScan = @BLE_SCAN@;
+constexpr bool kRa4HeapDiagnostics = @RA4_HEAP_DIAGNOSTICS@;
+constexpr bool kRa4StackGuard = @RA4_STACK_GUARD@;
+uint32_t boundary_round = 0U;
+uint32_t boundary_min_msp = UINT32_MAX;
+uint32_t boundary_max_heap = 0U;
+void sample_ra4_boundary(uint32_t stage) {
+  if (!kRa4HeapDiagnostics) return;
+  const uint32_t heap_end = reinterpret_cast<uint32_t>(_sbrk(0));
+  const uint32_t msp = __get_MSP();
+  if (msp < boundary_min_msp) boundary_min_msp = msp;
+  if (heap_end > boundary_max_heap) boundary_max_heap = heap_end;
+  const uint32_t values[] = {boundary_round, stage,
+      reinterpret_cast<uint32_t>(&__HeapLimit), heap_end, msp,
+      boundary_min_msp, boundary_max_heap};
+  for (size_t i = 0U; i < 7U; ++i) ra4_boundary_snapshot[i] = values[i];
+}
+bool ra4_stack_guard_ready = false;
+bool ra4_stack_boundary_written = false;
+void initialize_stack_guard() {
+  if (!kRa4StackGuard) return;
+  const uintptr_t boundary = reinterpret_cast<uintptr_t>(&__HeapLimit);
+  // Only the unused bottom 32 bytes of the linker-reserved main stack.
+  // _sbrk never allocates at/above HeapLimit. Do not touch an active frame.
+  if (boundary & 3U || __get_MSP() <= boundary + 288U) return;
+  volatile uint32_t *guard = &__HeapLimit;
+  for (size_t index = 0U; index < 8U; ++index) guard[index] = 0xa51c0000U + index;
+  ra4_stack_guard_ready = true;
+}
+void observe_stack_guard(size_t round, uint32_t stage) {
+  if (!kRa4StackGuard) return;
+  uint32_t changed = 0U;
+  if (ra4_stack_guard_ready) {
+    volatile uint32_t *guard = &__HeapLimit;
+    for (size_t index = 0U; index < 8U; ++index)
+      if (guard[index] != 0xa51c0000U + index) ++changed;
+  }
+  const uint32_t values[] = {static_cast<uint32_t>(round), stage,
+      reinterpret_cast<uint32_t>(&__HeapLimit), __get_MSP(),
+      reinterpret_cast<uint32_t>(_sbrk(0)), changed};
+  for (size_t index = 0U; index < 6U; ++index) ra4_stack_snapshot[index] = values[index];
+  if (!ra4_stack_guard_ready || (changed && !ra4_stack_boundary_written)) {
+    Serial.print("RA4_TLS_RESOURCE:STACK_GUARD=");
+    Serial.print(ra4_stack_guard_ready ? 1 : 0);
+    for (uint32_t value : values) { Serial.print(','); Serial.print(value); }
+    Serial.println();
+  }
+  if (changed) ra4_stack_boundary_written = true;
+}
+constexpr bool kInterruptAfterEightOpen = @INTERRUPT_AFTER_EIGHT_OPEN@;
+constexpr uint16_t kMixedTcpPort = 18445U;
+constexpr uint16_t kMixedUdpPort = 25080U;
+constexpr uint16_t kMixedServerPort = 25081U;
+constexpr unsigned long kWifiTimeoutMs = 30000UL;
+constexpr unsigned long kDnsTimeoutMs = 15000UL;
+constexpr unsigned long kDnsRetryIntervalMs = 250UL;
+constexpr unsigned long kTlsConnectionTimeoutMs = 10000UL;
+constexpr unsigned long kReadTimeoutMs = 10000UL;
+constexpr unsigned long kReadyRepeatIntervalMs = 1000UL;
+void print_ra4_heap(size_t round, uint32_t stage) {
+  observe_stack_guard(round, stage);
+  if (!kRa4HeapDiagnostics) return;
+  boundary_round = static_cast<uint32_t>(round);
+  sample_ra4_boundary(stage);
+  Serial.print("RA4_TLS_RESOURCE:RA4_BOUNDARY=");
+  for (size_t i = 0U; i < 7U; ++i) {
+    if (i) Serial.print(',');
+    Serial.print(ra4_boundary_snapshot[i]);
+  }
+  Serial.println();
+  const struct mallinfo heap = mallinfo();
+  const uint32_t values[] = {stage, static_cast<uint32_t>(round),
+      static_cast<uint32_t>(heap.arena), static_cast<uint32_t>(heap.uordblks),
+      static_cast<uint32_t>(heap.fordblks), static_cast<uint32_t>(heap.ordblks),
+      static_cast<uint32_t>(heap.keepcost), reinterpret_cast<uint32_t>(&heap)};
+  Serial.print("RA4_TLS_RESOURCE:RA4_HEAP=");
+  for (size_t index = 0U; index < 8U; ++index) {
+    ra4_heap_snapshot[index] = values[index];
+    if (index) Serial.print(',');
+    Serial.print(values[index]);
+  }
+  Serial.println();
+}
+constexpr char kRequest[] = "bl616cl-tls-resource-ping";
+constexpr char kReply[] = "bl616cl-tls-resource-echo";
+
+const char kTrustedCa[] =
+@TLS_TRUSTED_CA_LITERAL@;
+
+const char kUntrustedCa[] =
+@TLS_UNTRUSTED_CA_LITERAL@;
+
+char command[kCommandCapacity] = {};
+size_t command_size = 0U;
+bool completed = false;
+const char *failure_reason = nullptr;
+bool connect_by_hostname = true;
+bool softap_prepared = false;
+bool softap_armed = false;
+bool preparation_queried = false;
+unsigned long softap_arm_deadline_ms = 0UL;
+unsigned long next_ready_announcement_ms = 0UL;
+void print_preparation_state() {
+  Serial.print("RA4_TLS_RESOURCE:PREP_STATE=");
+  for (size_t index = 0U; index < 8U; ++index) {
+    if (index) Serial.print(',');
+    Serial.print(ra4_preparation_snapshot[index]);
+  }
+  Serial.println();
+}
+void preparation_stage(uint32_t stage) {
+  ra4_preparation_snapshot[0] = stage;
+  ra4_preparation_snapshot[4] = millis();
+  print_preparation_state();
+}
+class DiagnosticTlsClient : public WiFiSSLClient {
+ public:
+  int socket() const { return _sock; }
+  // Inspect only RA4's existing FIFO; never query or consume the modem.
+  size_t buffered_bytes() const { return rx_buffer ? rx_buffer->available() : 0U; }
+};
+DiagnosticTlsClient clients[kTlsClientCount];
+// Negative handshake and reuse occur only after this slot is closed. Reuse
+// its RA4M1 wrapper too; two otherwise idle wrappers each reserve a 1 KiB
+// WiFiS3 RX FIFO throughout the eight-slot mixed/BLE pressure peak.
+WiFiSSLClient &failed_client = clients[kMiddleClientIndex];
+WiFiSSLClient &reused_client = clients[kMiddleClientIndex];
+WiFiClient mixed_tcp;
+WiFiUDP mixed_udp;
+WiFiServer mixed_server(kMixedServerPort);
+// Both wrappers are initially closed. Share the idle FIFO until accept()
+// assigns the inbound client's own FIFO; no live streams share a buffer.
+WiFiClient mixed_inbound(mixed_tcp);
+uint32_t mixed_udp_sequence = 0U;
+// Keep only the last UDP-write trace in fixed memory, without USB output
+// during the operation or any credential/PKI commands.
+class UdpWriteTrace : public Stream {
+ public:
+  size_t write(uint8_t byte) override {
+    bytes_[next_] = byte;
+    next_ = (next_ + 1U) % sizeof(bytes_);
+    if (size_ < sizeof(bytes_)) ++size_;
+    return 1U;
+  }
+  int available() override { return 0; }
+  int read() override { return -1; }
+  int peek() override { return -1; }
+  void flush() override {}
+  void reset() { next_ = size_ = 0U; }
+  void dump() const {
+    Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_TRACE=");
+    const size_t start = (next_ + sizeof(bytes_) - size_) % sizeof(bytes_);
+    for (size_t index = 0U; index < size_; ++index) {
+      const uint8_t byte = bytes_[(start + index) % sizeof(bytes_)];
+      if (byte == '\r') Serial.print("<CR>");
+      else if (byte == '\n') Serial.print("<LF>");
+      else Serial.write(byte);
+    }
+    Serial.println();
+  }
+ private:
+  uint8_t bytes_[256] = {};
+  size_t next_ = 0U;
+  size_t size_ = 0U;
+};
+UdpWriteTrace udp_write_trace;
+
+#if @BLE_SCAN@
+bool ble_began = false;
+void snapshot_gap_prefix(volatile uint32_t *snapshot) {
+  // Opaque fixed control prefix only. No String contents, payload, allocation,
+  // or changes to GAP behavior. The matching ELF supplies layout information.
+  static_assert(sizeof(GAPClass) >= 32U, "GAP control prefix size");
+  uint32_t prefix[8];
+  memcpy(prefix, &GAP, sizeof(prefix));
+  for (size_t index = 0U; index < 8U; ++index) snapshot[index] = prefix[index];
+}
+void close_ble() {
+  if (ble_began) {
+    BLE.stopScan();
+    BLE.end();
+    ble_began = false;
+  }
+}
+size_t observe_ble() {
+  ra4_test_phase = 1U;
+  size_t reports = 0U;
+  const unsigned long started_at = millis();
+  while (millis() - started_at < 2000UL) {
+    ra4_test_phase = 2U;
+    snapshot_gap_prefix(ra4_gap_before_poll);
+    sample_ra4_boundary(10U);
+    BLE.poll();
+    sample_ra4_boundary(11U);
+    snapshot_gap_prefix(ra4_gap_after_poll);
+    ra4_test_phase = 3U;
+    sample_ra4_boundary(12U);
+    if (BLE.available()) ++reports;
+    sample_ra4_boundary(13U);
+    ra4_test_phase = 4U;
+    delay(5);
+  }
+  return reports;
+}
+#else
+void close_ble() {}
+#endif
+
+bool usb_echo(size_t round) {
+  if (!kUsbEcho) return true;
+  char expected[32] = {};
+  snprintf(expected, sizeof(expected), "USB %u", static_cast<unsigned int>(round));
+  Serial.print("RA4_TLS_RESOURCE:USB_ECHO_READY=");
+  Serial.println(round);
+  char reply[32] = {};
+  size_t count = 0U;
+  const unsigned long started_at = millis();
+  while (millis() - started_at < 5000UL) {
+    if (!Serial.available()) { delay(1); continue; }
+    const int value = Serial.read();
+    if (value == '\r') continue;
+    if (value == '\n') {
+      if (strcmp(reply, expected) != 0) return false;
+      Serial.print("RA4_TLS_RESOURCE:USB_ECHO_PASS=");
+      Serial.println(round);
+      return true;
+    }
+    if (value < 0 || count + 1U >= sizeof(reply)) return false;
+    reply[count++] = static_cast<char>(value);
+  }
+  return false;
+}
+
+void fail(const char *reason) {
+  failure_reason = reason;
+  if (kSoftAp && !softap_prepared) {
+    ra4_preparation_snapshot[5] = 1U;
+    print_preparation_state();
+  }
+  close_ble();
+  if (kSoftAp && !softap_prepared) ra4_preparation_snapshot[6] = 1U;
+  Serial.print("RA4_TLS_RESOURCE:RESULT=FAIL:");
+  Serial.println(reason);
+  completed = true;
+}
+
+bool read_command_line() {
+  while (Serial.available() > 0) {
+    const int value = Serial.read();
+    if (value < 0) {
+      return false;
+    }
+    if (value == '\r') {
+      continue;
+    }
+    // Only the pre-pressure query has this resynchronization delimiter.
+    if (kSoftAp && softap_prepared && !preparation_queried && value == '@') {
+      command_size = 0U;
+      continue;
+    }
+    if (value == '\n') {
+      command[command_size] = '\0';
+      command_size = 0U;
+      return true;
+    }
+    if (command_size + 1U >= sizeof(command)) {
+      command_size = 0U;
+      fail("COMMAND");
+      return false;
+    }
+    command[command_size++] = static_cast<char>(value);
+  }
+  return false;
+}
+
+int hex_value(char value) {
+  if (value >= '0' && value <= '9') {
+    return value - '0';
+  }
+  if (value >= 'a' && value <= 'f') {
+    return value - 'a' + 10;
+  }
+  if (value >= 'A' && value <= 'F') {
+    return value - 'A' + 10;
+  }
+  return -1;
+}
+
+bool decode_hex(char *encoded) {
+  const size_t encoded_size = strlen(encoded);
+  if ((encoded_size & 1U) != 0U) {
+    return false;
+  }
+  const size_t decoded_size = encoded_size / 2U;
+  for (size_t index = 0U; index < decoded_size; ++index) {
+    const int high = hex_value(encoded[index * 2U]);
+    const int low = hex_value(encoded[index * 2U + 1U]);
+    if (high < 0 || low < 0) {
+      return false;
+    }
+    encoded[index] = static_cast<char>((high << 4U) | low);
+  }
+  encoded[decoded_size] = '\0';
+  return decoded_size != 0U;
+}
+
+bool parse_ip(const char *text, IPAddress &address) {
+  return text != nullptr && address.fromString(text);
+}
+
+bool parse_start(
+    char *&ssid,
+    char *&password,
+    char *&hostname,
+    IPAddress &dns_ip,
+    uint16_t &port) {
+  constexpr char kHostnamePrefix[] = "START ";
+  constexpr char kIpPrefix[] = "STARTIP ";
+  constexpr char kPreparePrefix[] = "PREPAP ";
+  const char *prefix = nullptr;
+  if (kSoftAp && strncmp(command, kPreparePrefix, sizeof(kPreparePrefix) - 1U) == 0) {
+    prefix = kPreparePrefix;
+    connect_by_hostname = false;
+  } else if (strncmp(command, kIpPrefix, sizeof(kIpPrefix) - 1U) == 0) {
+    prefix = kIpPrefix;
+    connect_by_hostname = false;
+  } else if (strncmp(
+                 command,
+                 kHostnamePrefix,
+                 sizeof(kHostnamePrefix) - 1U) == 0) {
+    prefix = kHostnamePrefix;
+    connect_by_hostname = true;
+  } else {
+    return false;
+  }
+  char *fields[5] = {};
+  fields[0] = command + strlen(prefix);
+  for (size_t index = 1U; index < sizeof(fields) / sizeof(fields[0]); ++index) {
+    fields[index] = strchr(fields[index - 1U], ' ');
+    if (fields[index] == nullptr) {
+      return false;
+    }
+    *fields[index]++ = '\0';
+  }
+  if (strchr(fields[4], ' ') != nullptr) {
+    return false;
+  }
+
+  ssid = fields[0];
+  password = fields[1];
+  hostname = fields[2];
+  const unsigned long parsed_port = strtoul(fields[4], nullptr, 10);
+  return decode_hex(ssid) &&
+      decode_hex(password) &&
+      hostname[0] != '\0' &&
+      parsed_port > 0U &&
+      parsed_port <= 65535U &&
+      parse_ip(fields[3], dns_ip) &&
+      (port = static_cast<uint16_t>(parsed_port), true);
+}
+
+bool wait_for_station() {
+  const unsigned long started_at = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) {
+      return false;
+    }
+    delay(20);
+  }
+  return true;
+}
+
+bool resolve_hostname(const char *hostname, IPAddress &resolved) {
+  const unsigned long started_at = millis();
+  do {
+    if (WiFi.hostByName(hostname, resolved) == 1) {
+      return true;
+    }
+    delay(kDnsRetryIntervalMs);
+  } while (millis() - started_at < kDnsTimeoutMs);
+  return false;
+}
+
+bool query_tls_slot_connected(int socket, bool expected) {
+  std::string response;
+  modem.begin();
+  if (!modem.write(
+          "+SSLCLIENTCONNECTED:",
+          response,
+          "AT+SSLCLIENTCONNECTED=%d\r\n",
+          socket)) {
+    return false;
+  }
+  return (atoi(response.c_str()) != 0) == expected;
+}
+
+bool query_tls_slot_closed(int socket, std::string *unexpected_response = nullptr) {
+  std::string response;
+  modem.begin();
+  const bool command_succeeded = modem.write(
+      "+SSLCLIENTCONNECTED:",
+      response,
+      "AT+SSLCLIENTCONNECTED=%d\r\n",
+      socket);
+  if (unexpected_response != nullptr) {
+    *unexpected_response = response;
+  }
+  return !command_succeeded;
+}
+
+bool query_tls_failure_diagnostic(int socket) {
+  std::string response;
+  modem.begin();
+  if (!modem.write(
+          "+SSLCLIENTDIAG:",
+          response,
+          "AT+SSLCLIENTDIAG=%d\r\n",
+          socket)) {
+    return false;
+  }
+  const size_t separator = response.find(',');
+  if (separator == std::string::npos) {
+    return false;
+  }
+  // A socket/pool failure never exercises the intentionally untrusted CA.
+  // Require mbedTLS certificate rejection and NOT_TRUSTED evidence.
+  if (atoi(response.c_str() + separator + 1U) != -9984) return false;
+  response.clear();
+  return modem.write("+SSLCLIENTVERIFYFLAGS:", response,
+                     "AT+SSLCLIENTVERIFYFLAGS=%d\r\n", socket) &&
+      (strtoul(response.c_str(), nullptr, 10) & 8UL) != 0UL;
+}
+
+void print_tls_diagnostic(const char *label, int socket) {
+  std::string response;
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTDIAG:",
+          response,
+          "AT+SSLCLIENTDIAG=%d\r\n",
+          socket)) {
+    Serial.print("RA4_TLS_RESOURCE:");
+    Serial.print(label);
+    Serial.print("_DIAG=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.print("RA4_TLS_RESOURCE:");
+    Serial.print(label);
+    Serial.println("_DIAG=UNAVAILABLE");
+  }
+
+  modem.begin();
+  if (modem.write(
+          "+SSLCLIENTVERIFYFLAGS:",
+          response,
+          "AT+SSLCLIENTVERIFYFLAGS=%d\r\n",
+          socket)) {
+    Serial.print("RA4_TLS_RESOURCE:");
+    Serial.print(label);
+    Serial.print("_VERIFY_FLAGS=");
+    Serial.println(response.c_str());
+  } else {
+    Serial.print("RA4_TLS_RESOURCE:");
+    Serial.print(label);
+    Serial.println("_VERIFY_FLAGS=UNAVAILABLE");
+  }
+}
+
+bool wait_for_reply(WiFiSSLClient &client) {
+  char received[sizeof(kReply)] = {};
+  size_t received_size = 0U;
+  const unsigned long started_at = millis();
+  while (received_size + 1U < sizeof(received) &&
+         millis() - started_at < kReadTimeoutMs) {
+    const int available = client.available();
+    if (available <= 0) {
+      delay(20);
+      continue;
+    }
+    const int value = client.read();
+    if (value < 0) {
+      return false;
+    }
+    received[received_size++] = static_cast<char>(value);
+  }
+  received[received_size] = '\0';
+  return strcmp(received, kReply) == 0;
+}
+
+void close_all_clients() {
+  mixed_inbound.stop();
+  mixed_server.end();
+  mixed_udp.stop();
+  mixed_tcp.stop();
+  for (size_t index = 0U; index < kTlsClientCount; ++index) {
+    clients[index].stop();
+  }
+}
+
+bool run_mixed_probe(const IPAddress &endpoint) {
+  mixed_tcp.setConnectionTimeout(5000UL);
+  if (mixed_tcp.connect(endpoint, kMixedTcpPort) != 1) {
+    print_tls_diagnostic("MIXED_TCP_FAILURE", kTlsSocketBase + 7);
+    return false;
+  }
+  Serial.println("RA4_TLS_RESOURCE:MIXED_TCP_PASS");
+  if (mixed_udp.begin(kMixedUdpPort) != 1) {
+    print_tls_diagnostic("MIXED_UDP_BEGIN_FAILURE", kTlsSocketBase + 7);
+    return false;
+  }
+  Serial.println("RA4_TLS_RESOURCE:MIXED_UDP_BEGIN_PASS");
+  if (mixed_udp.beginPacket(endpoint, kMixedUdpSend ? 18448U : kMixedUdpPort) != 1) {
+    print_tls_diagnostic("MIXED_UDP_PACKET_FAILURE", kTlsSocketBase + 7);
+    return false;
+  }
+  Serial.println("RA4_TLS_RESOURCE:MIXED_UDP_PACKET_PASS");
+  uint8_t payload[256] = {};
+  const uint32_t sequence = ++mixed_udp_sequence;
+  if (kMixedUdpSend) {
+    for (size_t index = 0U; index < 4U; ++index) {
+      payload[index] = static_cast<uint8_t>(sequence >> (index * 8U));
+    }
+  }
+  for (size_t offset = 0U; offset < 16384U; offset += sizeof(payload)) {
+    if (kMixedUdpVariedPayload) {
+      for (size_t index = 0U; index < sizeof(payload); ++index) {
+        payload[index] = static_cast<uint8_t>(sequence - 1U + (offset + index) * 19U);
+      }
+      if (offset == 0U) {
+        for (size_t index = 0U; index < 4U; ++index)
+          payload[index] = static_cast<uint8_t>(sequence >> (index * 8U));
+      }
+    }
+    if (kAtTrace) {
+      udp_write_trace.reset();
+      modem.debug(udp_write_trace, 2);
+    }
+    const unsigned long write_started = millis();
+    const size_t written = mixed_udp.write(payload, sizeof(payload));
+    if (kAtTrace) modem.noDebug();
+    if (written != sizeof(payload)) {
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_FAILURE_OFFSET=");
+      Serial.println(offset);
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_FAILURE_BYTES=");
+      Serial.println(written);
+      if (kAtTrace) udp_write_trace.dump();
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_FAILURE_ELAPSED_MS=");
+      Serial.println(millis() - write_started);
+      std::string response;
+      modem.begin();
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_FAILURE_DEBUG=");
+      if (modem.write("+UDPDEBUG:", response, "AT+UDPDEBUG=0\r\n")) {
+        Serial.println(response.c_str());
+      } else Serial.println("UNAVAILABLE");
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_FAILURE_UART=");
+      if (modem.write("+UARTDIAG:", response, "AT+UARTDIAG?\r\n")) {
+        Serial.println(response.c_str());
+      } else Serial.println("UNAVAILABLE");
+      const struct mallinfo heap = mallinfo();
+      Serial.print("RA4_TLS_RESOURCE:UDP_WRITE_RA4_HEAP=");
+      Serial.print(heap.arena); Serial.print(',');
+      Serial.print(heap.uordblks); Serial.print(','); Serial.println(heap.fordblks);
+      print_tls_diagnostic("MIXED_UDP_BUFFER_FAILURE", kTlsSocketBase + 7);
+      return false;
+    }
+    memset(payload, 0, sizeof(payload));
+  }
+  Serial.println("RA4_TLS_RESOURCE:MIXED_UDP_16K_BUFFER_PASS");
+  if (kAtTrace) modem.debug(Serial, 1);
+  Serial.println("RA4_TLS_RESOURCE:MIXED_SERVER_BEGIN_ENTER");
+  mixed_server.begin();
+  Serial.println("RA4_TLS_RESOURCE:MIXED_SERVER_BEGIN_RETURN");
+  const unsigned long started_at = millis();
+  print_ra4_heap(sequence, 3U);
+  while (millis() - started_at < 10000UL) {
+    // A no-connection result also owns a FIFO. Destroy it each iteration
+    // instead of retaining it while the next accept() allocates another.
+    WiFiClient accepted = mixed_server.accept();
+    if (accepted) {
+      mixed_inbound = accepted;
+      break;
+    }
+    delay(20);
+  }
+  if (!mixed_inbound) {
+    modem.noDebug();
+    print_tls_diagnostic("MIXED_SERVER_FAILURE", kTlsSocketBase + 7);
+    return false;
+  }
+  modem.noDebug();
+  Serial.println("RA4_TLS_RESOURCE:MIXED_SERVER_ACCEPT_PASS");
+  print_tls_diagnostic("MIXED_PEAK", kTlsSocketBase + 7);
+  if (kMixedUdpSend) {
+    if (mixed_udp.endPacket() != 1) {
+      std::string udp_diagnostic;
+      modem.begin();
+      Serial.print("RA4_TLS_RESOURCE:MIXED_UDP_SEND_DIAG=");
+      if (modem.write("+UDPDEBUG:", udp_diagnostic, "AT+UDPDEBUG=0\r\n")) {
+        Serial.println(udp_diagnostic.c_str());
+      } else {
+        Serial.println("UNAVAILABLE");
+      }
+      print_tls_diagnostic("MIXED_UDP_SEND_FAILURE", kTlsSocketBase + 7);
+      return false;
+    }
+    bool acknowledged = false;
+    unsigned ack_polls = 0U;
+    int last_ack_size = 0;
+    int last_ack_read = -1;
+    bool last_ack_peer = false;
+    uint32_t last_ack_sequence = 0U;
+    const unsigned long sent_at = millis();
+    while (millis() - sent_at < kReadTimeoutMs) {
+      ++ack_polls;
+      last_ack_size = mixed_udp.parsePacket();
+      if (last_ack_size == 4) {
+        uint8_t ack[4] = {};
+        last_ack_peer = mixed_udp.remoteIP() == endpoint && mixed_udp.remotePort() == 18448U;
+        if (last_ack_peer) last_ack_read = mixed_udp.read(ack, sizeof(ack));
+        if (last_ack_peer && last_ack_read == 4) {
+          uint32_t observed = 0U;
+          for (size_t index = 0U; index < 4U; ++index) {
+            observed |= static_cast<uint32_t>(ack[index]) << (index * 8U);
+          }
+          acknowledged = observed == sequence;
+          last_ack_sequence = observed;
+          if (acknowledged) {
+            break;
+          }
+        }
+      }
+      delay(10);
+    }
+    if (!acknowledged) {
+      Serial.print("RA4_TLS_RESOURCE:MIXED_UDP_ACK_STATE=");
+      Serial.print(ack_polls); Serial.print(','); Serial.print(last_ack_size);
+      Serial.print(','); Serial.print(last_ack_peer ? 1 : 0);
+      Serial.print(','); Serial.print(last_ack_read); Serial.print(',');
+      Serial.println(last_ack_sequence);
+      std::string udp_diagnostic;
+      modem.begin();
+      Serial.print("RA4_TLS_RESOURCE:MIXED_UDP_ACK_DIAG=");
+      if (modem.write("+UDPDEBUG:", udp_diagnostic, "AT+UDPDEBUG=0\r\n")) {
+        Serial.println(udp_diagnostic.c_str());
+      } else {
+        Serial.println("UNAVAILABLE");
+      }
+      print_tls_diagnostic("MIXED_UDP_ACK_FAILURE", kTlsSocketBase + 7);
+      Serial.print("RA4_TLS_RESOURCE:MIXED_UDP_ACK_UART=");
+      if (modem.write("+UARTDIAG:", udp_diagnostic, "AT+UARTDIAG?\r\n")) {
+        Serial.println(udp_diagnostic.c_str());
+      } else Serial.println("UNAVAILABLE");
+      return false;
+    }
+    Serial.print("RA4_TLS_RESOURCE:MIXED_UDP_16K_SEND_PASS=");
+    Serial.println(sequence);
+  }
+  mixed_inbound.stop();
+  mixed_server.end();
+  mixed_udp.stop();
+  mixed_tcp.stop();
+  // WiFiClient::stop() closes the socket but retains its 1 KiB FIFO. Release
+  // that idle inbound FIFO before the next BLE/TLS allocation peak.
+  mixed_inbound = mixed_tcp;
+  return true;
+}
+
+bool close_all_clients_and_verify(size_t round) {
+  close_all_clients();
+  for (size_t index = 0U; index < kTlsClientCount; ++index) {
+    const int socket = kTlsSocketBase + static_cast<int>(index);
+    std::string unexpected_response;
+    if (query_tls_slot_closed(socket, &unexpected_response)) {
+      continue;
+    }
+    Serial.print("RA4_TLS_RESOURCE:ROUND=");
+    Serial.print(round);
+    Serial.print(":CLOSE_FAILURE_SLOT=");
+    Serial.println(socket);
+    Serial.print("RA4_TLS_RESOURCE:CLOSE_FAILURE_RESPONSE=");
+    Serial.println(
+        unexpected_response.empty()
+            ? "EMPTY"
+            : unexpected_response.c_str());
+    print_tls_diagnostic("CLOSE_FAILURE", socket);
+    return false;
+  }
+  return true;
+}
+
+bool print_idle_tcp_diagnostic(const char *label) {
+  std::string response;
+  modem.begin();
+  if (!modem.write("+SSLBEGINCLIENT:", response, "AT+SSLBEGINCLIENT\r\n")) {
+    return false;
+  }
+  const int socket = atoi(response.c_str());
+  if (socket < kTlsSocketBase || socket >= kTlsSocketBase + 8) {
+    return false;
+  }
+  // An unconnected diagnostic slot owns no TCP PCB or TLS record buffers.
+  print_tls_diagnostic(label, socket);
+  return modem.write("+SSLCLIENTCLOSE:", response,
+                     "AT+SSLCLIENTCLOSE=%d\r\n", socket);
+}
+
+bool connect_client(
+    WiFiSSLClient &client,
+    const char *hostname,
+    const IPAddress &endpoint,
+    uint16_t port) {
+  return connect_by_hostname
+      ? client.connect(hostname, port) == 1
+      : client.connect(endpoint, port) == 1;
+}
+
+bool observe_send_queue() {
+  std::string response;
+  if (!modem.write("+SSLCLIENTDIAG:", response,
+                   "AT+SSLCLIENTDIAG=%d\r\n", kTlsSocketBase)) {
+    return false;
+  }
+  size_t start = 0U;
+  for (size_t field = 0U; field <= 41U; ++field) {
+    if ((field == 40U || field == 41U) &&
+        strtoul(response.c_str() + start, nullptr, 10) > 0UL) {
+      return true;
+    }
+    const size_t comma = response.find(',', start);
+    if (comma == std::string::npos) {
+      return false;
+    }
+    start = comma + 1U;
+  }
+  return false;
+}
+
+bool disconnect_with_send_queue(size_t round) {
+  uint8_t payload[1024] = {};
+  const char hold[] = "bl616cl-queue-hold";
+  memcpy(payload, hold, sizeof(hold) - 1U);
+  bool queued = kStaIdleRecovery;
+  for (size_t sent = 0U; !kStaIdleRecovery && sent < 16384U; sent += sizeof(payload)) {
+    if (clients[0].write(payload, sizeof(payload)) != sizeof(payload)) {
+      print_tls_diagnostic("QUEUE_WRITE_FAILURE", kTlsSocketBase);
+      return false;
+    }
+    memset(payload, 0, sizeof(payload));
+    // Require sustained backpressure, not just the first transient packet.
+    if (sent >= 4096U && observe_send_queue()) {
+      queued = true;
+      break;
+    }
+  }
+  print_tls_diagnostic("BEFORE_STA_DISCONNECT", kTlsSocketBase);
+  if (!queued) {
+    return false;
+  }
+  Serial.print(kStaIdleRecovery ? "RA4_TLS_RESOURCE:STA_IDLE_CONTROL="
+                               : "RA4_TLS_RESOURCE:STA_QUEUE_OBSERVED=");
+  Serial.println(round);
+  WiFi.disconnect();
+  const unsigned long started_at = millis();
+  while (WiFi.status() == WL_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) {
+      return false;
+    }
+    delay(20);
+  }
+  print_tls_diagnostic("AFTER_STA_DISCONNECT", kTlsSocketBase);
+  Serial.print("RA4_TLS_RESOURCE:STA_DISCONNECTED=");
+  Serial.println(round);
+  return true;
+}
+
+void print_scan_window_diagnostic(const char *label) {
+  std::string response;
+  modem.begin();
+  Serial.print("RA4_TLS_RESOURCE:");
+  Serial.print(label);
+  Serial.print("_COEX_DIAG=");
+  if (modem.write("+COEXDIAG:", response, "AT+COEXDIAG?\r\n")) {
+    Serial.println(response.c_str());
+  } else {
+    Serial.println("UNAVAILABLE");
+  }
+}
+
+bool print_tcp_rx_budget(const char *label, size_t round) {
+  if (!@TCP_RX_BUDGET@) return true;
+  std::string response;
+  if (!modem.write("+TCPRXBUDGET:", response, "AT+TCPRXBUDGET?\r\n") ||
+      response.compare(0, 4, "1,1,") != 0) return false;
+  Serial.print("RA4_TLS_RESOURCE:TCP_RX_BUDGET=");
+  Serial.print(round); Serial.print(','); Serial.print(label); Serial.print(',');
+  Serial.println(response.c_str());
+  return true;
+}
+
+bool print_tls_window_timing(const char *label, size_t round) {
+  if (!@TLS_WINDOW_TIMING@) return true;
+  std::string response;
+  if (!modem.write("+TLSWINDOWDIAG:", response, "AT+TLSWINDOWDIAG?\r\n") ||
+      response.compare(0, 6, "1,1,0,") != 0) return false;
+  Serial.print("RA4_TLS_RESOURCE:TLS_WINDOW_TIMING=");
+  Serial.print(round); Serial.print(','); Serial.print(label); Serial.print(',');
+  Serial.println(response.c_str());
+  return true;
+}
+
+#if @BLE_BEFORE_AP@
+bool scan_window_restored(const std::string &response, bool &restored) {
+  const char *cursor = response.c_str();
+  unsigned long values[11] = {};
+  for (size_t index = 0U; index < 11U; ++index) {
+    if (*cursor < '0' || *cursor > '9') return false;
+    char *end = nullptr;
+    values[index] = strtoul(cursor, &end, 10);
+    if (*end != ',' && !(index == 10U && *end == '\0')) return false;
+    cursor = *end == ',' ? end + 1 : end;
+  }
+  restored = values[8] == values[10];
+  // New candidates append an AP join priority window at field 29. Older
+  // firmware has only the original 29 fields and remains usable as a control.
+  for (size_t index = 11U; index <= 29U && *cursor != '\0'; ++index) {
+    if (*cursor < '0' || *cursor > '9') return false;
+    char *end = nullptr;
+    const unsigned long value = strtoul(cursor, &end, 10);
+    if (*end != ',' && *end != '\0') return false;
+    if (index == 29U && value != 0U) restored = false;
+    cursor = *end == ',' ? end + 1 : end;
+  }
+  return true;
+}
+
+bool wait_for_ap_scan_restore() {
+  const unsigned long started_at = millis();
+  while (millis() - started_at < 10000UL) {
+    std::string response;
+    bool restored = false;
+    if (!modem.write("+COEXDIAG:", response, "AT+COEXDIAG?\r\n") ||
+        !scan_window_restored(response, restored)) return false;
+    if (restored) {
+      Serial.println("RA4_TLS_RESOURCE:AP_SCAN_RESTORED");
+      // Consume reports queued before/during AP startup. Count only reports
+      // observed in the separate receive window after this bounded drain.
+      const unsigned long drain_started_at = millis();
+      while (millis() - drain_started_at < 250UL) {
+        BLE.poll();
+        BLE.available();
+        delay(5);
+      }
+      return true;
+    }
+    delay(20);
+  }
+  return false;
+}
+#endif
+
+#include "all_tcp_slots.h"
+
+bool receive_burst(size_t round) {
+  if (kReceiveBurstBytes == 0U) return true;
+  constexpr char request[] = "bl616cl-rx-burst";
+  // Request every stream before draining any, retaining input across all PCBs.
+  for (size_t slot = 0; slot < kTlsClientCount; ++slot) {
+    if (clients[slot].write(reinterpret_cast<const uint8_t *>(request), sizeof(request)-1U) !=
+        sizeof(request)-1U) {
+      Serial.print("RA4_TLS_RESOURCE:RX_BURST_REQUEST_FAILURE_SLOT=");
+      Serial.println(kTlsSocketBase + slot);
+      print_tls_diagnostic("RX_BURST_REQUEST_FAILURE", kTlsSocketBase + slot);
+      return false;
+    }
+  }
+  print_tls_diagnostic("RX_BURST_PENDING", kTlsSocketBase);
+  size_t received[kTlsClientCount] = {};
+  // Fixed stack counters only. Classify AT paths using the existing FIFO,
+  // without extra modem queries or USB output during the receive deadline.
+  struct ReadBudget {
+    uint32_t available_calls, available_at_calls, available_empty_calls;
+    uint32_t available_ms, available_at_ms;
+    uint32_t read_calls, refill_calls, read_ms, refill_ms, fetched_bytes;
+  } budget[kTlsClientCount] = {};
+  uint32_t first_read_ms[kTlsClientCount];
+  uint32_t last_read_ms[kTlsClientCount] = {};
+  uint32_t max_available_ms[kTlsClientCount] = {};
+  uint32_t max_read_ms[kTlsClientCount] = {};
+  for (size_t slot = 0U; slot < kTlsClientCount; ++slot) first_read_ms[slot] = UINT32_MAX;
+  size_t completed = 0U;
+  const unsigned long started = millis();
+  uint8_t chunk[256];
+  while (completed < kTlsClientCount && millis() - started < kReadTimeoutMs) {
+    for (size_t slot = 0; slot < kTlsClientCount; ++slot) {
+      if (received[slot] == kReceiveBurstBytes) continue;
+      const bool available_uses_at = clients[slot].buffered_bytes() == 0U;
+      const unsigned long available_started = millis();
+      const int available = clients[slot].available();
+      const uint32_t available_ms = millis() - available_started;
+      ++budget[slot].available_calls;
+      budget[slot].available_ms += available_ms;
+      if (available_uses_at) {
+        ++budget[slot].available_at_calls;
+        budget[slot].available_at_ms += available_ms;
+      }
+      if (available <= 0) ++budget[slot].available_empty_calls;
+      if (available_ms > max_available_ms[slot]) max_available_ms[slot] = available_ms;
+      if (available <= 0) continue;
+      size_t count = kReceiveBurstBytes - received[slot];
+      if (count > sizeof(chunk)) count = sizeof(chunk);
+      if (count > static_cast<size_t>(available)) count = static_cast<size_t>(available);
+      const size_t fifo_before = clients[slot].buffered_bytes();
+      const bool read_refills = fifo_before < count;
+      const unsigned long read_started = millis();
+      const int read = clients[slot].read(chunk, count);
+      const uint32_t read_ms = millis() - read_started;
+      ++budget[slot].read_calls;
+      budget[slot].read_ms += read_ms;
+      if (read_refills) {
+        ++budget[slot].refill_calls;
+        budget[slot].refill_ms += read_ms;
+      }
+      if (read_ms > max_read_ms[slot]) max_read_ms[slot] = read_ms;
+      if (read <= 0 || static_cast<size_t>(read) > count) return false;
+      const size_t fifo_after = clients[slot].buffered_bytes();
+      // WiFiSSLClient::read() only refills then drains this FIFO. This is
+      // plaintext fetched from BL, not encrypted network or UART wire bytes.
+      if (fifo_after + static_cast<size_t>(read) >= fifo_before)
+        budget[slot].fetched_bytes += fifo_after + static_cast<size_t>(read) - fifo_before;
+      for (int i = 0; i < read; ++i) {
+        if (chunk[i] != static_cast<uint8_t>(slot + (received[slot] + i) * 19U))
+          return false;
+      }
+      received[slot] += static_cast<size_t>(read);
+      last_read_ms[slot] = millis() - started;
+      if (first_read_ms[slot] == UINT32_MAX) first_read_ms[slot] = last_read_ms[slot];
+      if (received[slot] == kReceiveBurstBytes) ++completed;
+    }
+    delay(1);
+  }
+  // Freeze the boundary before any USB output or later modem diagnostics.
+  const uint32_t boundary_elapsed = millis() - started;
+  size_t boundary_fifo[kTlsClientCount];
+  for (size_t slot = 0U; slot < kTlsClientCount; ++slot)
+    boundary_fifo[slot] = clients[slot].buffered_bytes();
+  Serial.print("RA4_TLS_RESOURCE:RX_BURST_BOUNDARY=");
+  Serial.print(round); Serial.print(','); Serial.print(boundary_elapsed);
+  Serial.print(','); Serial.println(completed);
+  for (size_t slot = 0U; slot < kTlsClientCount; ++slot) {
+    Serial.print("RA4_TLS_RESOURCE:RX_BURST_SLOT_TIMING=");
+    Serial.print(round); Serial.print(','); Serial.print(kTlsSocketBase + slot);
+    Serial.print(','); Serial.print(received[slot]);
+    Serial.print(','); Serial.print(first_read_ms[slot]);
+    Serial.print(','); Serial.print(last_read_ms[slot]);
+    Serial.print(','); Serial.print(max_available_ms[slot]);
+    Serial.print(','); Serial.print(max_read_ms[slot]);
+    Serial.print(','); Serial.println(boundary_fifo[slot]);
+    Serial.print("RA4_TLS_RESOURCE:RX_BURST_SLOT_BUDGET=");
+    Serial.print(round); Serial.print(','); Serial.print(kTlsSocketBase + slot);
+    Serial.print(','); Serial.print(budget[slot].available_calls);
+    Serial.print(','); Serial.print(budget[slot].available_at_calls);
+    Serial.print(','); Serial.print(budget[slot].available_empty_calls);
+    Serial.print(','); Serial.print(budget[slot].available_ms);
+    Serial.print(','); Serial.print(budget[slot].available_at_ms);
+    Serial.print(','); Serial.print(budget[slot].read_calls);
+    Serial.print(','); Serial.print(budget[slot].refill_calls);
+    Serial.print(','); Serial.print(budget[slot].read_ms);
+    Serial.print(','); Serial.print(budget[slot].refill_ms);
+    Serial.print(','); Serial.println(budget[slot].fetched_bytes);
+  }
+  if (completed != kTlsClientCount) {
+    Serial.print("RA4_TLS_RESOURCE:RX_BURST_FAILURE_COUNTS=");
+    for (size_t i = 0; i < kTlsClientCount; ++i) {
+      if (i) Serial.print(',');
+      Serial.print(received[i]);
+    }
+    Serial.println();
+    print_tls_diagnostic("RX_BURST_FAILURE", kTlsSocketBase);
+    for (size_t slot = 0; slot < kTlsClientCount; ++slot) {
+      if (received[slot] == kReceiveBurstBytes) continue;
+      Serial.print("RA4_TLS_RESOURCE:RX_BURST_INCOMPLETE_SLOT=");
+      Serial.println(kTlsSocketBase + slot);
+      print_tls_diagnostic("RX_BURST_INCOMPLETE", kTlsSocketBase + slot);
+    }
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:RX_BURST_PASS=");
+  Serial.print(round); Serial.print(','); Serial.println(kReceiveBurstBytes);
+  return true;
+}
+
+bool run_round(
+    const char *hostname,
+    const IPAddress &endpoint,
+    uint16_t port,
+    size_t round) {
+  if (!print_tcp_rx_budget("BEFORE_OPEN", round)) return false;
+  print_scan_window_diagnostic("BEFORE_TLS");
+  if (round == 1U) {
+    std::string response;
+    modem.begin();
+    Serial.print("RA4_TLS_RESOURCE:BEFORE_TLS_LISTEN_DIAG=");
+    if (modem.write("+TCPLISTENDIAG:", response, "AT+TCPLISTENDIAG?\r\n")) {
+      Serial.println(response.c_str());
+    } else Serial.println("UNAVAILABLE");
+  }
+  for (size_t index = 0U; index < kTlsClientCount; ++index) {
+    clients[index].setCACert(kTrustedCa);
+    clients[index].setConnectionTimeout(kTlsConnectionTimeoutMs);
+    if (kAtTrace && index == 0U) modem.debug(Serial, 1);
+    const bool connected = connect_client(clients[index], hostname, endpoint, port);
+    if (!connected ||
+        !query_tls_slot_connected(
+            kTlsSocketBase + static_cast<int>(index),
+            true)) {
+      Serial.print("RA4_TLS_RESOURCE:EIGHT_FAILURE_SLOT=");
+      Serial.println(kTlsSocketBase + static_cast<int>(index));
+      Serial.print("RA4_TLS_RESOURCE:EIGHT_FAILURE_CONNECT_RESULT=");
+      Serial.println(connected ? 1 : 0);
+      Serial.print("RA4_TLS_RESOURCE:EIGHT_FAILURE_RAW_SOCKET=");
+      Serial.println(clients[index].socket());
+      const struct mallinfo heap = mallinfo();
+      Serial.print("RA4_TLS_RESOURCE:RA4_HEAP_DIAG=");
+      Serial.print(heap.arena); Serial.print(',');
+      Serial.print(heap.uordblks); Serial.print(','); Serial.println(heap.fordblks);
+      print_tls_diagnostic(
+          "EIGHT_FAILURE",
+          kTlsSocketBase + static_cast<int>(index));
+      modem.noDebug();
+      print_scan_window_diagnostic("TLS_FAILURE");
+      close_all_clients();
+      return false;
+    }
+    modem.noDebug();
+    if (index == 0U) print_scan_window_diagnostic("AFTER_FIRST_TLS");
+    if (round == 1U || round == kTlsResourceRounds) {
+      print_tls_diagnostic(
+          "EIGHT_OPEN",
+          kTlsSocketBase + static_cast<int>(index));
+    }
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":EIGHT_OPEN_PASS");
+
+  if (kAllTcpSlots && !open_all_tcp_slots(endpoint, round)) {
+    Serial.println("RA4_TLS_RESOURCE:ALL_TCP_FAILURE=OPEN");
+    close_all_tcp_slots();close_all_clients();return false;
+  }
+  if (!print_tcp_rx_budget("BEFORE_RX", round)) return false;
+  if (!print_tls_window_timing("BEFORE_RX", round)) return false;
+  if (!receive_burst(round)) {
+    (void)print_tls_window_timing("FAILED_RX", round);
+    if (kAllTcpSlots) close_all_tcp_slots();
+    close_all_clients();
+    return false;
+  }
+  if (!print_tls_window_timing("AFTER_RX", round)) return false;
+  if (!print_tcp_rx_budget("AFTER_RX", round)) return false;
+  if (kAllTcpSlots) {
+    const bool valid = verify_all_tcp_slots(round);
+    const bool closed = close_all_tcp_slots();
+    if (!valid || !closed) { Serial.println("RA4_TLS_RESOURCE:ALL_TCP_FAILURE=CONTENT_OR_CLOSE");close_all_clients();return false; }
+    Serial.print("RA4_TLS_RESOURCE:ALL_TCP_CLOSE_PASS=");Serial.println(round);
+  }
+
+  if (kInterruptAfterEightOpen) {
+    print_tls_diagnostic("INTERRUPT", kTlsSocketBase);
+    Serial.println("RA4_TLS_RESOURCE:INTERRUPT_READY");
+    Serial.flush();
+    // The host replaces this Sketch with scan while the eight slots live.
+    // Leave their normal close path untouched to reproduce an interrupted app.
+    while (true) {
+      delay(10);
+    }
+  }
+
+  if (kMixedProbe && !run_mixed_probe(endpoint)) {
+    close_all_clients();
+    return false;
+  }
+
+  std::string allocation_response;
+  modem.begin();
+  if (modem.write(
+          "+SSLBEGINCLIENT:",
+          allocation_response,
+          "AT+SSLBEGINCLIENT\r\n")) {
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":NINTH_EXHAUSTED_PASS");
+
+  clients[kMiddleClientIndex].stop();
+  if (!query_tls_slot_closed(
+          kTlsSocketBase + static_cast<int>(kMiddleClientIndex))) {
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":MIDDLE_CLOSE_PASS");
+
+  failed_client.setCACert(kUntrustedCa);
+  failed_client.setConnectionTimeout(kTlsConnectionTimeoutMs);
+  if (kAtTrace) modem.debug(Serial, 1);
+  const bool negative_connected = connect_client(failed_client, hostname, endpoint, port);
+  const bool negative_failure_diagnostic = !negative_connected &&
+      query_tls_failure_diagnostic(kTlsSocketBase + static_cast<int>(kMiddleClientIndex));
+  if (kAtTrace) modem.noDebug();
+  if (negative_connected || !negative_failure_diagnostic) {
+    Serial.print("RA4_TLS_RESOURCE:NEGATIVE_CONNECT_RESULT=");
+    Serial.println(negative_connected ? 1 : 0);
+    Serial.print("RA4_TLS_RESOURCE:NEGATIVE_RAW_SOCKET=");
+    Serial.println(clients[kMiddleClientIndex].socket());
+    print_tls_diagnostic("NEGATIVE_FAILURE", kTlsSocketBase + static_cast<int>(kMiddleClientIndex));
+    failed_client.stop();
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":FAILED_HANDSHAKE_PASS");
+
+  failed_client.stop();
+  if (!query_tls_slot_closed(
+          kTlsSocketBase + static_cast<int>(kMiddleClientIndex))) {
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":FAILED_CLOSE_PASS");
+
+  reused_client.setCACert(kTrustedCa);
+  reused_client.setConnectionTimeout(kTlsConnectionTimeoutMs);
+  const bool reuse_connected =
+      connect_client(reused_client, hostname, endpoint, port);
+  const bool reuse_slot_connected = reuse_connected &&
+      query_tls_slot_connected(
+          kTlsSocketBase + static_cast<int>(kMiddleClientIndex), true);
+  if (!reuse_slot_connected) {
+    Serial.print("RA4_TLS_RESOURCE:ROUND=");
+    Serial.print(round);
+    Serial.print(":REUSE_CONNECT_RESULT=");
+    Serial.println(reuse_connected ? 1 : 0);
+    print_tls_diagnostic(
+        "REUSE_FAILURE",
+        kTlsSocketBase + static_cast<int>(kMiddleClientIndex));
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":REUSE_SOCKET_PASS");
+
+  if (reused_client.write(
+          reinterpret_cast<const uint8_t *>(kRequest),
+          sizeof(kRequest) - 1U) != sizeof(kRequest) - 1U) {
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":REUSE_WRITE_PASS");
+  if (!wait_for_reply(reused_client)) {
+    Serial.print("RA4_TLS_RESOURCE:ROUND=");
+    Serial.print(round);
+    Serial.println(":REUSE_READ_FAILURE");
+    print_tls_diagnostic(
+        "REUSE_READ_FAILURE",
+        kTlsSocketBase + static_cast<int>(kMiddleClientIndex));
+    Serial.print("RA4_TLS_RESOURCE:REUSE_READ_AVAILABLE=");
+    Serial.println(reused_client.available());
+    Serial.print("RA4_TLS_RESOURCE:REUSE_READ_CONNECTED=");
+    Serial.println(reused_client.connected());
+    close_all_clients();
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":REUSE_READ_PASS");
+
+  if (kStaQueueRecovery && round < kTlsResourceRounds &&
+      !disconnect_with_send_queue(round)) {
+    close_all_clients();
+    return false;
+  }
+  if (!close_all_clients_and_verify(round)) {
+    return false;
+  }
+  if (!print_tcp_rx_budget("AFTER_CLOSE", round)) return false;
+  if ((round == 1U || round == kTlsResourceRounds) &&
+      !print_idle_tcp_diagnostic("AFTER_CLOSE_ALL")) {
+    return false;
+  }
+  Serial.print("RA4_TLS_RESOURCE:ROUND=");
+  Serial.print(round);
+  Serial.println(":CLOSE_ALL_PASS");
+  return true;
+}
+
+void prepare_softap() {
+  preparation_stage(10U);  // BLE begin and scan startup
+#if @BLE_BEFORE_AP@
+  ble_began = BLE.begin() != 0;
+  if (!ble_began || !BLE.setScanParameters(@BLE_SCAN_INTERVAL@U, @BLE_SCAN_WINDOW@U) || BLE.scan(true) == 0) {
+    fail("BLE_BEFORE_AP_SCAN_START");
+    return;
+  }
+  preparation_stage(20U);  // first fresh BLE observation
+  const size_t before_ap = observe_ble();
+  ra4_preparation_snapshot[2] = before_ap;
+  Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_BEFORE_AP=");
+  Serial.println(before_ap);
+  if (before_ap == 0U) { fail("BLE_BEFORE_AP_REPORTS"); return; }
+  print_scan_window_diagnostic("BEFORE_AP_START");
+#if @AP_SCAN_STOP_CONTROL@
+  BLE.stopScan();
+  Serial.println("RA4_TLS_RESOURCE:AP_SCAN_STOP_CONTROL");
+#endif
+#endif
+  char *ssid = nullptr;
+  char *password = nullptr;
+  char *hostname = nullptr;
+  IPAddress unused_ip;
+  uint16_t unused_port = 0U;
+  if (!parse_start(ssid, password, hostname, unused_ip, unused_port)) {
+    fail("SOFTAP_START");
+    return;
+  }
+  // This first-start fixture requires a fixed peer/certificate subnet.
+  // A previous STA setDNS() also writes the saved AP configuration.
+  preparation_stage(30U);  // AP config and begin
+  WiFi.config(IPAddress(192, 168, 4, 1));
+  if (WiFi.beginAP(ssid, password, 1) != WL_AP_LISTENING) {
+    fail("SOFTAP_START");
+    return;
+  }
+  // beginAP acknowledges a queued start. Wait for actual AP state before the
+  // runner asks Windows to scan/rejoin the profile, without pressure retries.
+  preparation_stage(40U);  // native AP readiness
+  const unsigned long native_started_at = millis();
+  while (WiFi.status() != WL_AP_LISTENING && WiFi.status() != WL_AP_CONNECTED) {
+    if (millis() - native_started_at >= kWifiTimeoutMs) {
+      print_scan_window_diagnostic("AP_NATIVE_FAILURE");
+      fail("SOFTAP_NATIVE_READY");
+      return;
+    }
+    delay(10);
+  }
+  if (WiFi.localIP() != IPAddress(192, 168, 4, 1)) {
+    fail("SOFTAP_ADDRESS");
+    return;
+  }
+  Serial.println("RA4_TLS_RESOURCE:SOFTAP_STARTED");
+  preparation_stage(50U);  // peer association
+  const unsigned long started_at = millis();
+  while ((ra4_preparation_snapshot[1] = WiFi.status()) != WL_AP_CONNECTED) {
+    if (millis() - started_at >= kWifiTimeoutMs) {
+      print_scan_window_diagnostic("AP_REJOIN_FAILURE");
+      fail("SOFTAP_PEER_REJOIN");
+      return;
+    }
+    delay(100);
+  }
+#if @BLE_BEFORE_AP@
+#if @AP_SCAN_STOP_CONTROL@
+  if (BLE.scan(true) == 0) { fail("BLE_AFTER_AP_SCAN_START"); return; }
+#endif
+  preparation_stage(60U);  // original scan restore and bounded queue drain
+  if (!wait_for_ap_scan_restore()) {
+    print_scan_window_diagnostic("AP_SCAN_RESTORE_FAILURE");
+    fail("AP_SCAN_RESTORE");
+    return;
+  }
+  preparation_stage(70U);  // fresh post-AP BLE observation
+  const size_t after_ap = observe_ble();
+  ra4_preparation_snapshot[3] = after_ap;
+  Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_AFTER_AP=");
+  Serial.println(after_ap);
+  if (after_ap == 0U) { fail("BLE_AFTER_AP_REPORTS"); return; }
+  print_scan_window_diagnostic("AFTER_AP_START");
+#endif
+  softap_prepared = true;
+  ra4_preparation_snapshot[5] = 2U;
+  preparation_stage(80U);
+  Serial.println("RA4_TLS_RESOURCE:SOFTAP_PEER_READY");
+}
+
+void run_gate() {
+  char *ssid = nullptr;
+  char *password = nullptr;
+  char *hostname = nullptr;
+  IPAddress dns_ip;
+  uint16_t port = 0U;
+  if (!parse_start(ssid, password, hostname, dns_ip, port)) {
+    fail("START");
+    return;
+  }
+
+  WiFi.setTimeout(kWifiTimeoutMs);
+  // Include the private HCI pause/resume completion waits in the AT response
+  // budget, so a genuine TCP timeout cannot spill into the next diagnostic.
+  modem.timeout(kTlsConnectionTimeoutMs + 5000UL);
+  const int wifi_begin_result = kSoftAp ? WiFi.status()
+                                      : WiFi.begin(ssid, password);
+  Serial.print("RA4_TLS_RESOURCE:WIFI_BEGIN_RESULT=");
+  Serial.println(wifi_begin_result);
+  if (kSoftAp) {
+    if (!softap_prepared || wifi_begin_result != WL_AP_CONNECTED) {
+      fail("SOFTAP_NOT_PREPARED");
+      return;
+    }
+    Serial.println("RA4_TLS_RESOURCE:SOFTAP_PREPARED_PASS");
+  } else if (wifi_begin_result != WL_CONNECTED && !wait_for_station()) {
+    fail("WIFI_CONNECT");
+    return;
+  }
+  Serial.println("RA4_TLS_RESOURCE:WIFI_CONNECTED");
+  if (!print_idle_tcp_diagnostic("POST_WIFI_RESET")) {
+    fail("IDLE_DIAGNOSTIC");
+    return;
+  }
+  if (!kSoftAp && !@PRESERVE_STA_DNS@) WiFi.setDNS(dns_ip);
+  if (!kSoftAp && @PRESERVE_STA_DNS@) Serial.println("RA4_TLS_RESOURCE:STA_DNS_PRESERVED_CONTROL");
+  if (connect_by_hostname) {
+    IPAddress resolved;
+    if (!resolve_hostname(hostname, resolved) || resolved != dns_ip) {
+      WiFi.disconnect();
+      fail("DNS");
+      return;
+    }
+    Serial.println("RA4_TLS_RESOURCE:DNS_PASS");
+  } else {
+    Serial.println("RA4_TLS_RESOURCE:DNS_BYPASS");
+  }
+
+#if @BLE_SCAN@
+  print_scan_window_diagnostic("BEFORE_BLE_BEGIN");
+  if (!ble_began) {
+    ble_began = BLE.begin() != 0;
+    if (!ble_began || !BLE.setScanParameters(@BLE_SCAN_INTERVAL@U, @BLE_SCAN_WINDOW@U) || BLE.scan(true) == 0) {
+      fail("BLE_SCAN_START");
+      return;
+    }
+  }
+  print_scan_window_diagnostic("AFTER_BLE_BEGIN");
+  Serial.println("RA4_TLS_RESOURCE:BLE_SCAN_START_PASS");
+  Serial.print("RA4_TLS_RESOURCE:BLE_SCAN_INTERVAL_WINDOW=");
+  Serial.print(@BLE_SCAN_INTERVAL@U); Serial.print(',');
+  Serial.println(@BLE_SCAN_WINDOW@U);
+#endif
+  for (size_t round = 1U; round <= kTlsResourceRounds; ++round) {
+    print_ra4_heap(round, 1U);
+    if (kRa4StackGuard && (!ra4_stack_guard_ready || ra4_stack_boundary_written)) {
+      fail("RA4_STACK_BOUNDARY"); return;
+    }
+#if @BLE_SCAN@
+    const size_t before = observe_ble();
+    Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_BEFORE=");
+    Serial.print(round); Serial.print(','); Serial.println(before);
+    if (before == 0U) { fail("BLE_REPORTS_BEFORE"); return; }
+#endif
+    print_ra4_heap(round, 2U);
+    if (kRa4StackGuard && ra4_stack_boundary_written) { fail("RA4_STACK_BOUNDARY"); return; }
+    if (!run_round(hostname, dns_ip, port, round)) {
+      print_scan_window_diagnostic("ROUND_FAILURE");
+      std::string listen_response;
+      modem.begin();
+      Serial.print("RA4_TLS_RESOURCE:ROUND_FAILURE_LISTEN_DIAG=");
+      if (modem.write("+TCPLISTENDIAG:", listen_response, "AT+TCPLISTENDIAG?\r\n")) {
+        Serial.println(listen_response.c_str());
+      } else Serial.println("UNAVAILABLE");
+      Serial.print("RA4_TLS_RESOURCE:ROUND=");
+      Serial.println(round);
+      WiFi.disconnect();
+      fail("ROUND");
+      return;
+    }
+#if @BLE_SCAN@
+    const size_t after = observe_ble();
+    Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_AFTER=");
+    Serial.print(round); Serial.print(','); Serial.println(after);
+    if (after == 0U) { fail("BLE_REPORTS_AFTER"); return; }
+#endif
+    if (!usb_echo(round)) { fail("USB_ECHO"); return; }
+    print_ra4_heap(round, 4U);
+    if (kRa4StackGuard && ra4_stack_boundary_written) { fail("RA4_STACK_BOUNDARY"); return; }
+    if (kStaQueueRecovery && round < kTlsResourceRounds) {
+      if (!print_idle_tcp_diagnostic("OFFLINE_AFTER_CLOSE")) {
+        fail("OFFLINE_DIAGNOSTIC");
+        return;
+      }
+      Serial.println("RA4_TLS_RESOURCE:STA_RECONNECT_BEGIN");
+      std::string reconnect_response;
+      if (!modem.write("+WIFIMODE:", reconnect_response, "AT+WIFIMODE=1\r\n")) {
+        fail("STA_RECONNECT_MODE");
+        return;
+      }
+      Serial.println("RA4_TLS_RESOURCE:STA_RECONNECT_MODE_PASS");
+      if (!modem.write("+BEGINSTA:", reconnect_response,
+                       "AT+BEGINSTA=%s,%s\r\n", ssid, password)) {
+        fail("STA_RECONNECT_BEGINSTA");
+        return;
+      }
+      Serial.println("RA4_TLS_RESOURCE:STA_RECONNECT_REQUEST_PASS");
+      if (!wait_for_station()) {
+        fail("STA_RECONNECT");
+        return;
+      }
+      Serial.println("RA4_TLS_RESOURCE:STA_RECONNECT_ASSOCIATED");
+      // Verify the bridge restored the override without setting it again.
+      if (WiFi.dnsIP() != dns_ip) {
+        fail("STA_DNS_RESTORE");
+        return;
+      }
+      Serial.print("RA4_TLS_RESOURCE:STA_DNS_RESTORED=");
+      Serial.println(round);
+      if (!print_idle_tcp_diagnostic("AFTER_STA_RECONNECT")) {
+        fail("RECONNECT_DIAGNOSTIC");
+        return;
+      }
+      Serial.print("RA4_TLS_RESOURCE:STA_RECONNECTED=");
+      Serial.println(round);
+    }
+  }
+  close_ble();
+  WiFi.disconnect();
+  Serial.println("RA4_TLS_RESOURCE:EIGHT_OPEN_PASS");
+  Serial.println("RA4_TLS_RESOURCE:NINTH_EXHAUSTED_PASS");
+  Serial.println("RA4_TLS_RESOURCE:MIDDLE_CLOSE_PASS");
+  Serial.println("RA4_TLS_RESOURCE:FAILED_HANDSHAKE_PASS");
+  Serial.println("RA4_TLS_RESOURCE:FAILED_CLOSE_PASS");
+  Serial.println("RA4_TLS_RESOURCE:REUSE_SOCKET_PASS");
+  Serial.println("RA4_TLS_RESOURCE:REUSE_WRITE_PASS");
+  Serial.println("RA4_TLS_RESOURCE:REUSE_READ_PASS");
+  Serial.println("RA4_TLS_RESOURCE:CLOSE_ALL_PASS");
+  Serial.println("RA4_TLS_RESOURCE:RESULT=PASS");
+  completed = true;
+}
+
+} // namespace
+
+void setup() {
+  // Arduino core has relocated its vector table to SRAM before setup().
+  NVIC_SetVector(HardFault_IRQn, reinterpret_cast<uint32_t>(ra4_fault_handler));
+  __DSB();
+  __ISB();
+  initialize_stack_guard();
+  Serial.begin(115200);
+  Serial.println("RA4_TLS_RESOURCE:READY");
+  next_ready_announcement_ms = millis() + kReadyRepeatIntervalMs;
+}
+
+// Return exactly the observations made by this preparation, after a host
+// transport outage. Do not run another scan or replace the fresh receive gate.
+void report_preparation_evidence(const char *nonce) {
+  if (!softap_prepared || strlen(nonce) != 16U) return;
+  for (size_t index = 0U; index < 16U; ++index) {
+    if (!((nonce[index] >= '0' && nonce[index] <= '9') ||
+          (nonce[index] >= 'a' && nonce[index] <= 'f'))) return;
+  }
+  preparation_queried = true;
+  Serial.print("RA4_TLS_RESOURCE:PREP_EVIDENCE_BEGIN="); Serial.println(nonce);
+  Serial.println("RA4_TLS_RESOURCE:PREP_EVIDENCE_ORIGIN=CACHED_PREPARATION");
+  print_preparation_state();
+#if @BLE_BEFORE_AP@
+  // Stage 80 is reached only after scan restore/drain and the separate
+  // positive post-AP observation. Stored counts are from those exact windows.
+  Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_BEFORE_AP=");
+  Serial.println(ra4_preparation_snapshot[2]);
+  Serial.println("RA4_TLS_RESOURCE:AP_SCAN_RESTORED");
+  Serial.print("RA4_TLS_RESOURCE:BLE_REPORTS_AFTER_AP=");
+  Serial.println(ra4_preparation_snapshot[3]);
+#endif
+  Serial.print("RA4_TLS_RESOURCE:PREP_EVIDENCE_END="); Serial.println(nonce);
+}
+
+void loop() {
+  if (completed) {
+    if (failure_reason != nullptr &&
+        static_cast<long>(millis() - next_ready_announcement_ms) >= 0) {
+      Serial.print("RA4_TLS_RESOURCE:RESULT=FAIL:");
+      Serial.println(failure_reason);
+      if (kSoftAp) print_preparation_state();
+      next_ready_announcement_ms = millis() + kReadyRepeatIntervalMs;
+    }
+    delay(10);
+    return;
+  }
+
+  if (static_cast<long>(millis() - next_ready_announcement_ms) >= 0) {
+    Serial.println("RA4_TLS_RESOURCE:READY");
+    // Preparation status survives a host CDC reopen without restarting AP/BLE.
+    if (kSoftAp) print_preparation_state();
+    if (softap_prepared) Serial.println("RA4_TLS_RESOURCE:SOFTAP_PEER_READY");
+    next_ready_announcement_ms = millis() + kReadyRepeatIntervalMs;
+  }
+
+  if (softap_armed) {
+    if (static_cast<long>(millis() - softap_arm_deadline_ms) >= 0) {
+      softap_armed = false;
+      prepare_softap();
+    }
+    return;
+  }
+  if (read_command_line()) {
+    if (kSoftAp && strncmp(command, "ARMPAP ", 7U) == 0) {
+      // Fixture-only scheduling: allow healthy USB/IP removal before radio
+      // startup. The AP association and data deadlines still start normally.
+      memcpy(command, "PREPAP ", 7U);
+      softap_armed = true;
+      softap_arm_deadline_ms = millis() + 5000UL;
+      Serial.println("RA4_TLS_RESOURCE:SOFTAP_ARMED");
+      return;
+    }
+    if (kSoftAp && strncmp(command, "PREPSTATUS ", 11U) == 0) {
+      report_preparation_evidence(command + 11U);
+      return;
+    }
+    if (kSoftAp && strncmp(command, "PREPAP ", 7U) == 0) {
+      prepare_softap();
+      return;
+    }
+    // Classify framing without printing credentials or command contents.
+    Serial.print("RA4_TLS_RESOURCE:COMMAND_LENGTH=");
+    Serial.println(strlen(command));
+    Serial.print("RA4_TLS_RESOURCE:COMMAND_KIND=");
+    if (strncmp(command, "START ", 6U) == 0) Serial.println("START");
+    else if (strncmp(command, "STARTIP ", 8U) == 0) Serial.println("STARTIP");
+    else Serial.println("UNKNOWN");
+    if (kSoftAp && softap_prepared && !preparation_queried &&
+        strncmp(command, "START ", 6U) != 0 && strncmp(command, "STARTIP ", 8U) != 0) {
+      Serial.println("RA4_TLS_RESOURCE:PREPARATION_INPUT_NOISE");
+      return;
+    }
+    Serial.println("RA4_TLS_RESOURCE:START_RECEIVED");
+    run_gate();
+  }
+}

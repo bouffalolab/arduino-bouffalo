@@ -1,3 +1,4 @@
+#if !defined(BL616CL_BRIDGE_PROVISIONAL)
 // Crash diagnosis for the BL616CL bring-up: override the SOC's exception
 // handler, dump mcause/mepc/mtval straight into the CDC IN endpoint (the USB
 // controller transmits from its FIFO autonomously, so the host can still
@@ -92,3 +93,5 @@ extern "C" void compat_boot_marker(void)
     g_crash_info[2] = 0x0000DEAD;
     g_crash_info[3] = 0x0000BEEF;
 }
+
+#endif
