@@ -116,7 +116,7 @@ arduino-lint --project-type platform --compliance strict .
 | 上传（USB，1200 bps touch 自动进入下载模式） | experimental | 用假烧录程序核对过 `arduino-cli upload` 展开的命令行 | 首块板：从手动进入的下载模式上传 1 次、经运行中固件的 USB 串口上传 4 次，均写后校验通过并自动运行新固件；之后软件上电复位回到固件而不是下载模式；早先手动下载模式烧录后读回与 boot2、分区表、固件逐字节一致 |
 | 包索引安装 | experimental | builder 的 `tools/install_check.sh`：本地包索引安装到空目录、移动数据目录、只读安装、修改 Core 后都能编译，工具包与 manifest 一致 | 公网索引未做；0.2.0 起通过构建目录运行副本，安装目录可只读 |
 
-### Program Flash filesystem
+### 程序 Flash 文件系统
 
 平台库 `LittleFS` 与 bridge 独立；具体 API、错误与布局见
 [libraries/LittleFS/README.md](libraries/LittleFS/README.md)。依赖固定包 0.6.0，

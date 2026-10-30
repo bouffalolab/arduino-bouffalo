@@ -1,2 +1,2 @@
-arduino-cli requires a nonempty src/<build.mcu>/ directory to apply ldflags with precompiled=true.
-Controller archives come from the selected bl616cl-libs package; this library's sources are compiled normally.
+arduino-cli 仅在 src/<build.mcu>/ 非空时，才会为 precompiled=true 的库应用 ldflags。
+Controller 归档来自选定的 bl616cl-libs 包；本库源码仍照常编译。
