@@ -1,0 +1,28 @@
+name: platform-source-ci
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check shell and Python sources
+        run: |
+          bash -n tests/compile_check.sh
+          python3 -I -m compileall -q tests
+      - name: Check platform descriptors
+        run: |
+          test -s platform.txt
+          test -s boards.txt
+          test -s libraries/WiFi/library.properties
+          test -s libraries/BLEController/library.properties
