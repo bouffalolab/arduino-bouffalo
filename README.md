@@ -8,7 +8,7 @@ The intended user workflow is installation through Boards Manager / Arduino CLI 
 
 The current platform requires `bl616cl-libs` 0.9.0 and `bl-flash-tools` 0.2.0 (IPv4 IGMP multicast and matching netif ABI, retaining SNTP, DHCP hostname, IPv6, hidden AP, littlefs, and HID/BLE). Update the platform and dependency packages together.
 
-Local shared references: [Documentation](../docs/README.md), [Development rules](../AGENTS.md), and [Confirmed acceptance scope](../docs/project/charter.md). These files live in the parent workspace outside Git. ARDUINO-55/56 saved delivery snapshots according to the candidate inventory; committing this repository does not save shared documentation, so later changes require separate snapshots.
+Public user documentation: [Start here](docs/README.md), [Installation](docs/INSTALL.md), [Support and acceptance scope](docs/SUPPORT.md), [Recovery](docs/RECOVERY.md), and [License notices](docs/LICENSING.md). These files are versioned with the platform and included in its archive.
 
 ## Directory layout
 
@@ -77,7 +77,7 @@ The script copies the platform into a temporary sketchbook, uses bubblewrap to r
 
 ## Feature status
 
-Dependency versions from individual acceptance rounds are retained below; these records do not mean everything was rebuilt from current source. See the [candidate status](../docs/reference/bridge-release-candidate.md) for the frozen 2026-10-30 candidate and scope. ARDUINO-59 changes only comments and documentation, generating no new firmware or hardware acceptance.
+Dependency versions from individual acceptance rounds are retained below; these records do not mean everything was rebuilt from current source. See the [candidate status](docs/RELEASE-NOTES.md) for the frozen 2026-10-30 candidate and scope. ARDUINO-59 changes only comments and documentation, generating no new firmware or hardware acceptance.
 
 Features with build/link evidence but no hardware runtime evidence are marked experimental. Unless otherwise noted, table evidence targets board `unor4wifi_bl616cl` (UNO R4 WiFi, BL616CL module 1V0) and `bl616cl-libs` 0.4.0: build and installation checks were rerun on 0.4.0; TLS hardware evidence uses 0.4.0, and other hardware evidence uses 0.3.2–0.3.5. The host is Linux x86_64; Windows/macOS are untested.
 
