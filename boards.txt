@@ -24,7 +24,7 @@ unor4wifi_bl616cl.upload_port.0.pid=0x0011
 # Precompiled dependency package for the selected chip.
 unor4wifi_bl616cl.build.bl_libs={runtime.tools.bl616cl-libs.path}
 # Image resources come from the package boot/ directory. The DTS uses SDK development-board factory parameters; crystal and RF parameters for the replacement module remain unverified.
-unor4wifi_bl616cl.build.bl_boot2=boot2_bl616cl_isp_release_v8.2.1.bin
+unor4wifi_bl616cl.build.bl_boot2=boot2.bin
 unor4wifi_bl616cl.build.bl_partition=partition_cfg_4M_lfs_v1.toml
 unor4wifi_bl616cl.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
 # Two adjacent 1.5 MiB firmware slots, then 416 KiB littlefs. The linker ram region contains 223 KiB.

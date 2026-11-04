@@ -18,7 +18,7 @@ Keep chip and board behavior separate. General UART, USB, networking, and storag
 
 - Linux x86_64; the current hardware baseline is UNO R4 WiFi with BL616CL module 1V0.
 - Git and Arduino CLI. The reviewed CLI version is 1.5.1.
-- A matching dependency set: currently `bl616cl-libs` 0.10.0, `bl-flash-tools` 0.2.0, and GCC RISC-V 14.3.0 (`gcc-riscv`).
+- A matching dependency set: currently `bl616cl-libs` 0.11.0, `bl-flash-tools` 0.2.1, and GCC RISC-V 14.3.0 (`gcc-riscv`).
 - Python 3 and Bash for source checks; bubblewrap (`bwrap`) for SDK isolation checks.
 - USB access and the matching board for runtime validation.
 

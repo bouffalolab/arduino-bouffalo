@@ -1,7 +1,7 @@
 # LittleFS
 
 Platform storage for BL616CL using the board's program Flash. Requires the fixed
-`bl616cl-libs` 0.6.0 or newer (current local candidate: 0.10.0) and `bl-flash-tools 0.2.0` packages. The library has no bridge/AT/RA4M1
+`bl616cl-libs` 0.6.0 or newer (current local candidate: 0.11.0) and `bl-flash-tools 0.2.1` packages. The library has no bridge/AT/RA4M1
 references. Internal read/program/erase/sync callbacks call the vendor Flash
 API directly. Mount reads the active partition table, finds the `lfs` entry, and
 validates its physical bounds and separation from other partitions. No MTD

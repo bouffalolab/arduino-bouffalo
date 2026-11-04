@@ -35,7 +35,7 @@ arduino-cli upload -b bouffalolab:bl:unor4wifi_bl616cl -p /dev/serial/by-path/YO
 ```
 
 Replace example paths and select the device from its actual USB identity/location.
-The index installs `bl616cl-libs` 0.10.0, `bl-flash-tools` 0.2.0 and GCC RISC-V 14.3.0.
+The index installs `bl616cl-libs` 0.11.0, `bl-flash-tools` 0.2.1 and GCC RISC-V 14.3.0.
 No SDK checkout or Python installation is required by the installed platform.
 
 ## Use the UNO bridge and RA4M1 examples

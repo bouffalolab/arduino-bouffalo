@@ -23,10 +23,12 @@ is outside this acceptance round. Exclusion is not a claim that every embedded
 component was individually audited or is unconditionally Apache-2.0.
 
 Publisher source locations are `bouffalolab/bouffalo_sdk`, `bouffalolab/toolchain`,
-and `bouffalolab/bflb_flash_tools` on GitHub. The builder pins the SDK/toolchain
-and patches in `sources.json`; it does not implicitly follow a moving branch.
-The pinned toolchain archive `gcc-riscv-14.3.0-linux-x86_64.tar.xz` has SHA-256
-`29c01b7fd5a40b15e1816bc34400d110afa0e2290d2e543cfb6aee2ba414060b`.
+and `bouffalolab/bflb_flash_tools` on GitHub (the last mirrors the SDK's
+`tools/bflb_tools`; the builder takes the same files from the SDK release). The
+builder names the SDK release tag, the toolchain and the patches in `sources.json`;
+each package manifest records the SDK commit that tag named. The pinned toolchain
+archive `gcc-riscv-14.3.0-linux-x86_64.tar.xz` has SHA-256
+`93128c0da22cbbcf8473fae8c38b63232ebcd8d51969a14dc8491e77721b63a5`.
 
 Do not distribute a user's Flash backup, saved credentials, private keys, pairing
 keys, or raw personal test data. Such backups are not part of the release archive.

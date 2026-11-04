@@ -3,8 +3,8 @@
 This experimental platform library implements the Arduino WiFiS3/WiFiNINA-style interface on
 BL616CL. Include `WiFi.h` for STA/AP, scan, addressing, DNS and ping, and
 `WiFiClient`, `WiFiServer`, `WiFiUDP` and `WiFiSSLClient` for network I/O.
-The current local candidate pairs platform 0.1.0 with `bl616cl-libs` 0.10.0 and
-`bl-flash-tools` 0.2.0 on Linux x86_64. The board is the BL616CL UNO R4 WiFi 1V0;
+The current local candidate pairs platform 0.1.0 with `bl616cl-libs` 0.11.0 and
+`bl-flash-tools` 0.2.1 on Linux x86_64. The board is the BL616CL UNO R4 WiFi 1V0;
 other host systems and the 1V1 module have not been accepted.
 
 ## Ownership and use
