@@ -3,8 +3,11 @@
 Scope: Linux x86_64, BL616CL UNO R4 WiFi module 1V0, default 4 MiB flash layout.
 The platform is version 0.1.0 with libs 0.11.0, flash tools 0.2.1 and GCC RISC-V 14.3.0.
 The table's hardware evidence was recorded with libs 0.9.0 and Xuantie 2.6.1. The
-GCC 14.3.0 build has so far been retested on hardware for Wi-Fi STA networking,
-C library/TLS runtime checks, and bridge USB/CMSIS-DAP/BLE start only.
+GCC 14.3.0 build (libs 0.11.0, bouffalo_sdk v2.3.38) has so far been retested on
+hardware for Wi-Fi STA networking, C library and per-task TLS runtime checks, HTTPS,
+bridge USB/CMSIS-DAP/BLE start, RA4M1 upload through the bridge, and the RA WiFiS3
+AT network matrix (DHCP, TCP, TLS, mTLS, timeouts). Two of three matrix runs passed
+all 139 checks; one stopped after an 8 s TLS handshake stall, root cause not determined.
 RA tests use Renesas UNO 1.6.0 / WiFiS3 and ArduinoBLE 2.1.0 where applicable.
 Hardware results remain bound to the firmware hashes in the release inventory.
 
