@@ -41,7 +41,7 @@ for sketch in "$ROOT"/tests/sketches/*/; do
     out=$TMP/build-$name
     if "${BWRAP[@]}" arduino-cli compile --config-file "$TMP/arduino-cli.yaml" -b "$FQBN" \
         --build-property "runtime.tools.bl616cl-libs.path=$PKG" \
-        --build-property "runtime.tools.xuantie-gcc-riscv.path=$TC" \
+        --build-property "runtime.tools.gcc-riscv.path=$TC" \
         --build-property "runtime.tools.bl-flash-tools.path=$FT" \
         --build-path "$out" --warnings default "$sketch" >"$TMP/$name.log" 2>&1; then
         echo "PASS $name: 编译"

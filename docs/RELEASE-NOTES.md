@@ -5,6 +5,10 @@ repository's legacy `v0.1` tag. Publication requires owner approval. The public
 release inventory identifies exact source commits, dependency origins and assets;
 never infer binary identity from a matching version string alone.
 
+These notes and their hardware results describe the libs 0.9.0 / Xuantie GCC
+V2.6.1 build. The source baseline has since moved to libs 0.10.0 and GCC RISC-V
+14.3.0; rebuild and re-review the candidate before publication.
+
 - Platform 0.1.0; prebuilt libs 0.9.0; flash tools 0.2.0; Xuantie GCC V2.6.1.
 - SDK commit `1cd1fd514df7ed0dfc1221be871f5aae03f31bbc`, with four pinned patches.
 - Original hardware-tested bridge binary: 1,096,640 bytes, SHA-256

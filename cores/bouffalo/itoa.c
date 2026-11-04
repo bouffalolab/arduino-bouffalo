@@ -1,6 +1,6 @@
 /*
- * newlib supplies itoa/utoa but api/itoa.h also requires ltoa/ultoa. ILP32 makes long and int
- * equally wide, so delegate to newlib.
+ * picolibc supplies itoa/utoa but api/itoa.h also requires ltoa/ultoa. ILP32 makes long and int
+ * equally wide, so delegate to picolibc.
  */
 #include <stdlib.h>
 
@@ -9,7 +9,7 @@
 _Static_assert(sizeof(long) == sizeof(int), "ltoa/ultoa assume ILP32");
 
 /**
- * @brief Convert a signed long to text through the ILP32-compatible newlib integer converter.
+ * @brief Convert a signed long to text through the ILP32-compatible picolibc integer converter.
  */
 char *ltoa(long value, char *string, int radix)
 {
@@ -17,7 +17,7 @@ char *ltoa(long value, char *string, int radix)
 }
 
 /**
- * @brief Convert an unsigned long to text through the ILP32-compatible newlib integer
+ * @brief Convert an unsigned long to text through the ILP32-compatible picolibc integer
  * converter.
  */
 char *ultoa(unsigned long value, char *string, int radix)

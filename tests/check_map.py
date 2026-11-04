@@ -2,7 +2,7 @@
 """Check the Arduino GNU ld map. Usage: check_map.py <package-manifest.json> <map>
 
 [--allow-group <group>]... Fail with status 1 if an unapproved manifest link group is
-included, _malloc_r does not come from the SDK TLSF libc port in libforce_base.a, or
+included, malloc does not come from the SDK TLSF libc port in libforce_base.a, or
 main does not come from Core main.cpp. Start parsing at the first LOAD line rather than
 depending on linker output language.
 """
@@ -90,9 +90,9 @@ def main(argv):
         """Classify a map section's owning component for duplicate-owner verification."""
         return [src for name, _, src in sections if name == section_name]
 
-    malloc_src = origin(".text._malloc_r")
+    malloc_src = origin(".text.malloc")
     good = len(malloc_src) == 1 and archive_member(malloc_src[0]) == ("liblibc.a", "port_memory.c.obj")
-    print("_malloc_r 来自 SDK libc 移植层: %s %s" % ("PASS" if good else "FAIL", malloc_src))
+    print("malloc 来自 SDK libc 移植层: %s %s" % ("PASS" if good else "FAIL", malloc_src))
     ok = ok and good
 
     main_src = origin(".text.startup.main") + origin(".text.main")

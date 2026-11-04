@@ -13,7 +13,7 @@ old binary source snapshots and build/relink evidence references.
 | littlefs | Pinned SDK source and original BSD-3-Clause license; builder profile/patch inputs retained |
 | FreeRTOS, lwIP, mbed TLS, wpa_supplicant, CherryUSB | Original MIT/BSD/component licenses and notices retained with the dependency materials |
 | bl-layout runtime | Original Python 3.9.17, PyInstaller 6.15.0 including its bootloader exception, and tomli 2.2.1 texts |
-| Xuantie GCC 2.6.1 and vendor flash tools | Exact publisher packages and checksums; GCC license/Runtime Library Exception and vendor provenance retained |
+| GCC RISC-V 14.3.0 (picolibc) and vendor flash tools | Exact publisher packages and checksums; GCC license/Runtime Library Exception, picolibc texts in the toolchain's `share/licenses/` and vendor provenance retained |
 
 The project owner confirmed on 2026-10-30 that Bouffalo Lab provides the wireless/
 Controller redistribution and USB-identity permissions for this fixed combination.
@@ -25,8 +25,8 @@ component was individually audited or is unconditionally Apache-2.0.
 Publisher source locations are `bouffalolab/bouffalo_sdk`, `bouffalolab/toolchain`,
 and `bouffalolab/bflb_flash_tools` on GitHub. The builder pins the SDK/toolchain
 and patches in `sources.json`; it does not implicitly follow a moving branch.
-The original toolchain archive's SHA-256 is
-`83817bd7cab693fc249bb98869de5e475c1ede577f4a188869fed96c8dbb8e1a`.
+The pinned toolchain archive `gcc-riscv-14.3.0-linux-x86_64.tar.xz` has SHA-256
+`29c01b7fd5a40b15e1816bc34400d110afa0e2290d2e543cfb6aee2ba414060b`.
 
 Do not distribute a user's Flash backup, saved credentials, private keys, pairing
 keys, or raw personal test data. Such backups are not part of the release archive.

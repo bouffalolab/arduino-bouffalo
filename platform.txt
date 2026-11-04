@@ -8,8 +8,8 @@
 name=Bouffalo Lab BL boards
 version=0.1.0
 
-# Toolchain: Xuantie GCC 10.2.0 V2.6.1.
-compiler.path={runtime.tools.xuantie-gcc-riscv.path}/bin/
+# Toolchain: GCC RISC-V 14.3.0 (bouffalolab/toolchain, picolibc).
+compiler.path={runtime.tools.gcc-riscv.path}/bin/
 compiler.prefix=riscv64-unknown-elf-
 compiler.c.cmd={compiler.prefix}gcc
 compiler.cpp.cmd={compiler.prefix}g++
