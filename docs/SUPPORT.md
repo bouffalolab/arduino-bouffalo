@@ -30,7 +30,9 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | Combined USB/BLE/Wi-Fi/storage | experimental, bounded observation | About 1 h 56 min, 18,843 checks with zero failures; not a 24-hour claim |
 | PhoneMatrix on RA4M1 | experimental, tested | Eleven phone scenarios on Xiaomi 14 Pro, HyperOS 3.0.31, nRF Connect 4.29.1; Android major version not independently verified |
 | Windows/macOS, 1V1, other chips/boards | unaccepted | No support claim from Linux builds or copied pin mappings |
-| OTA, independent full SOFTSE, keyboard/mouse HID | unimplemented / out of this release | Vendor HID is a DAP transport, not a keyboard/mouse |
+| BL616CL application OTA | experimental development build | Ai-M64P-32S-Kit Wi-Fi A/B, serial upload and storage tested with libs 0.12.0 and tools 0.3.0; partial-write power interruption tested; RA4 bridge unaccepted; see [BLUpdate](../libraries/BLUpdate/README.md) |
+| Independent full SOFTSE | unimplemented / out of this release | Not accepted in this platform release |
+| Keyboard/mouse HID | unimplemented / out of this release | Vendor HID is a DAP transport, not a keyboard/mouse |
 | General ADC/PWM/interrupt/bus APIs and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
 
 Missing official BLE cases: LedControl and ButtonLED need button wiring;

@@ -51,3 +51,30 @@ unor4wifi_bl616cl.menu.PartitionScheme.default=Default (dual 1.5 MiB, FS 416 KiB
 unor4wifi_bl616cl.menu.PartitionScheme.default.build.bl_partition_scheme=default
 unor4wifi_bl616cl.menu.PartitionScheme.custom=Custom (sketch partitions.toml)
 unor4wifi_bl616cl.menu.PartitionScheme.custom.build.bl_partition_scheme=custom
+
+# Ai-M64P-32S-Kit: BL616CL, UART0 on GPIO34/35 via the onboard CH340.
+ai_m64p_32s_kit.name=Ai-M64P-32S-Kit (BL616CL)
+ai_m64p_32s_kit.build.core=bouffalo
+ai_m64p_32s_kit.build.variant=ai_m64p_32s_kit
+ai_m64p_32s_kit.build.board=AI_M64P_32S_KIT
+ai_m64p_32s_kit.build.mcu=bl616cl
+ai_m64p_32s_kit.build.f_cpu=320000000L
+ai_m64p_32s_kit.build.extra_flags=
+ai_m64p_32s_kit.build.bl_libs={runtime.tools.bl616cl-libs.path}
+ai_m64p_32s_kit.build.bl_boot2=boot2.bin
+ai_m64p_32s_kit.build.bl_partition=partition_cfg_4M_lfs_v1.toml
+ai_m64p_32s_kit.build.bl_dts=bl_factory_params_IoTKitA_auto.dts
+ai_m64p_32s_kit.upload.maximum_size=1572864
+ai_m64p_32s_kit.upload.maximum_data_size=228352
+# Upload through the onboard CH340; do not issue a USB CDC 1200-baud touch.
+ai_m64p_32s_kit.upload.tool.serial=bl_flash
+ai_m64p_32s_kit.upload.protocol=serial
+ai_m64p_32s_kit.upload.speed=460800
+ai_m64p_32s_kit.upload.use_1200bps_touch=false
+ai_m64p_32s_kit.upload.wait_for_upload_port=false
+ai_m64p_32s_kit.upload.bl_partition_address=0xE000
+ai_m64p_32s_kit.upload.bl_fw_address=0x10000
+ai_m64p_32s_kit.menu.PartitionScheme.default=Default (dual 1.5 MiB, FS 416 KiB)
+ai_m64p_32s_kit.menu.PartitionScheme.default.build.bl_partition_scheme=default
+ai_m64p_32s_kit.menu.PartitionScheme.custom=Custom (sketch partitions.toml)
+ai_m64p_32s_kit.menu.PartitionScheme.custom.build.bl_partition_scheme=custom
