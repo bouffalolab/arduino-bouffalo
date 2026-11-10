@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   build:
-    uses: bouffalolab/arduino-bouffalo-lib-builder/.github/workflows/firmware-ci.yml@9482938d922cc9487f09b813d64675efe60ea221
+    uses: bouffalolab/arduino-bouffalo-lib-builder/.github/workflows/firmware-ci.yml@master
     with:
-      builder-ref: 9482938d922cc9487f09b813d64675efe60ea221
+      builder-ref: master
       platform-ref: ${{ github.sha }}
-      bridge-ref: 8de944b5c1254b0cf4be06f91a1354f1bbc3a33a
+      bridge-ref: master
