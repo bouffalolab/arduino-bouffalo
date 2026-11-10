@@ -15,4 +15,4 @@ jobs:
     with:
       builder-ref: master
       platform-ref: ${{ github.sha }}
-      bridge-ref: master
+      skip-bridge: true
