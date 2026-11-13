@@ -6,7 +6,7 @@
 # Use -iprefix with package-relative include paths so installation roots remain relocatable.
 
 name=Bouffalo Lab BL boards
-version=0.1.0
+version=0.2.0
 
 # Toolchain: GCC RISC-V 14.3.0 (bouffalolab/toolchain, picolibc).
 compiler.path={runtime.tools.gcc-riscv.path}/bin/

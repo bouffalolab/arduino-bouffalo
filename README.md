@@ -60,8 +60,7 @@ void loop() {
 Applications can include the supported Arduino networking and storage libraries when the matching dependency package is installed. USB, UART, Wi-Fi, BLE Controller, filesystem, and Preferences capabilities have different hardware and version scopes; consult the support documentation for the board and release in use.
 
 For the development BL616CL application update API, image format and its
-limitations, see [BLUpdate](libraries/BLUpdate/README.md). Its matching
-dependencies and Ai-M64P board are not part of the existing 0.1.0 bundle.
+limitations, see [BLUpdate](libraries/BLUpdate/README.md). Use platform 0.2.0 with its matching dependencies for the Ai-M64P board.
 
 ## Directory structure
 
