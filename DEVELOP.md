@@ -18,7 +18,7 @@ Keep chip and board behavior separate. General UART, USB, networking, and storag
 
 - Linux x86_64; the current hardware baseline is UNO R4 WiFi with BL616CL module 1V0.
 - Git and Arduino CLI. The reviewed CLI version is 1.5.1.
-- A matching dependency set: currently `bl616cl-libs` 0.11.0, `bl-flash-tools` 0.2.1, and GCC RISC-V 14.3.0 (`gcc-riscv`).
+- A matching dependency set: currently `bl616cl-libs` 0.12.0, `bl-flash-tools` 0.3.0, and GCC RISC-V 14.3.0 (`gcc-riscv`).
 - Python 3 and Bash for source checks; bubblewrap (`bwrap`) for SDK isolation checks.
 - USB access and the matching board for runtime validation.
 
@@ -43,10 +43,10 @@ Install the matched packages into that configuration. Replace the example URL wi
 ```sh
 BL_INDEX_URL="<approved-index-url>"
 arduino-cli --config-file "$PWD/dev/arduino-cli.yaml" core update-index --additional-urls "$BL_INDEX_URL"
-arduino-cli --config-file "$PWD/dev/arduino-cli.yaml" core install bouffalolab:bl@0.1.0 --additional-urls "$BL_INDEX_URL"
+arduino-cli --config-file "$PWD/dev/arduino-cli.yaml" core install bouffalolab:bl@0.2.0 --additional-urls "$BL_INDEX_URL"
 ```
 
-The public index is unavailable until the first approved publication. If no approved index is available, use the builder's [development workflow](https://github.com/bouffalolab/arduino-bouffalo-lib-builder/blob/master/DEVELOP.md) to generate local dependencies and compile against explicit package paths.
+Use the release index from the [installation guide](docs/INSTALL.md), or use the builder's [development workflow](https://github.com/bouffalolab/arduino-bouffalo-lib-builder/blob/master/DEVELOP.md) to generate local dependencies and compile against explicit package paths.
 
 The sketchbook symlink makes the source checkout the active development platform. Check verbose compiler output when changing configurations to confirm which Core and dependency paths are selected.
 

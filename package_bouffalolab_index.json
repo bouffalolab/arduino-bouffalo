@@ -1,0 +1,94 @@
+{
+  "packages": [
+    {
+      "name": "bouffalolab",
+      "maintainer": "Bouffalo Lab",
+      "websiteURL": "https://github.com/bouffalolab",
+      "email": "",
+      "help": {
+        "online": "https://github.com/bouffalolab"
+      },
+      "platforms": [
+        {
+          "name": "Bouffalo Lab BL boards",
+          "architecture": "bl",
+          "version": "0.2.0",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/bouffalolab"
+          },
+          "url": "https://github.com/bouffalolab/arduino-bouffalo/releases/download/v0.2.0/arduino-bl-0.2.0.tar.gz",
+          "archiveFileName": "arduino-bl-0.2.0.tar.gz",
+          "checksum": "SHA-256:74896a21a7143cf7d0523f069535d60b54436d285041645781862b59b9299c17",
+          "size": "175518",
+          "boards": [
+            {
+              "name": "Ai-M64P-32S-Kit (BL616CL)"
+            },
+            {
+              "name": "UNO R4 WiFi (BL616CL coprocessor)"
+            }
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "bouffalolab",
+              "name": "bl616cl-libs",
+              "version": "0.12.0"
+            },
+            {
+              "packager": "bouffalolab",
+              "name": "bl-flash-tools",
+              "version": "0.3.0"
+            },
+            {
+              "packager": "bouffalolab",
+              "name": "gcc-riscv",
+              "version": "14.3.0"
+            }
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "name": "bl616cl-libs",
+          "version": "0.12.0",
+          "systems": [
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://github.com/bouffalolab/arduino-bouffalo-lib-builder/releases/download/v0.12.0/bl616cl-libs-0.12.0.tar.gz",
+              "archiveFileName": "bl616cl-libs-0.12.0.tar.gz",
+              "checksum": "SHA-256:f3b32caaf339d1fcd192526d1baf1352b5bac2b4f23e1ca65c0dbf53596c23c5",
+              "size": "12125163"
+            }
+          ]
+        },
+        {
+          "name": "bl-flash-tools",
+          "version": "0.3.0",
+          "systems": [
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://github.com/bouffalolab/arduino-bouffalo-lib-builder/releases/download/v0.12.0/bl-flash-tools-0.3.0.tar.gz",
+              "archiveFileName": "bl-flash-tools-0.3.0.tar.gz",
+              "checksum": "SHA-256:b922e016484c19a33f8a463fef0e06be721dbd6bb64756143e0b6c1ff5e373cb",
+              "size": "42392641"
+            }
+          ]
+        },
+        {
+          "name": "gcc-riscv",
+          "version": "14.3.0",
+          "systems": [
+            {
+              "host": "x86_64-linux-gnu",
+              "url": "https://github.com/bouffalolab/toolchain/releases/download/default/gcc-riscv-14.3.0-linux-x86_64.tar.xz",
+              "archiveFileName": "gcc-riscv-14.3.0-linux-x86_64.tar.xz",
+              "checksum": "SHA-256:93128c0da22cbbcf8473fae8c38b63232ebcd8d51969a14dc8491e77721b63a5",
+              "size": "79454400"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
