@@ -1,4 +1,4 @@
-# Bouffalo Arduino 0.1.0
+# Bouffalo Arduino 0.2.0
 
 Start with [installation](INSTALL.md), then read the [supported scope](SUPPORT.md).
 Use [recovery](RECOVERY.md) after an interrupted upload. The [release notes](RELEASE-NOTES.md)

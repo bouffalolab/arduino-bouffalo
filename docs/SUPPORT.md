@@ -1,7 +1,8 @@
 # Support and acceptance scope
 
 Scope: Linux x86_64, BL616CL UNO R4 WiFi module 1V0, default 4 MiB flash layout.
-The platform is version 0.1.0 with libs 0.11.0, flash tools 0.2.1 and GCC RISC-V 14.3.0.
+The platform is version 0.2.0 with libs 0.12.0, flash tools 0.3.0 and GCC RISC-V 14.3.0.
+The exact 0.2.0 release archives have not been retested on hardware.
 The table's hardware evidence was recorded with libs 0.9.0 and Xuantie 2.6.1. The
 GCC 14.3.0 build (libs 0.11.0, bouffalo_sdk v2.3.38) has so far been retested on
 hardware for Wi-Fi STA networking, C library and per-task TLS runtime checks, HTTPS,

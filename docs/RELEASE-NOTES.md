@@ -1,22 +1,25 @@
-# 0.1.0 release review
+# 0.2.0 release notes
 
-This is the reviewed initial BL616CL platform/bridge combination, distinct from the
-repository's legacy `v0.1` tag. Publication requires owner approval. The public
-release inventory identifies exact source commits, dependency origins and assets;
-never infer binary identity from a matching version string alone.
+Platform 0.2.0 uses bl616cl-libs 0.12.0, bl-flash-tools 0.3.0,
+bouffalo_sdk v2.3.38 and GCC RISC-V 14.3.0. It includes the experimental
+BLUpdate A/B update API and the Ai-M64P-32S-Kit board definition.
 
-These notes and their hardware results describe the libs 0.9.0 / Xuantie GCC
-V2.6.1 build. The source baseline has since moved to libs 0.11.0, flash tools
-0.2.1, bouffalo_sdk v2.3.38 and GCC RISC-V 14.3.0; rebuild and re-review the
-candidate before publication.
+The published dependencies were built from clean builder sources. The exact
+release archives have not been retested on hardware. Previous Ai-M64P hardware
+OTA, serial update and partial-write power-interruption tests used an earlier
+build with the same dependency versions; RA4M1/bridge OTA was not accepted.
+Earlier UNO bridge evidence applies only to the recorded firmware and package
+versions. Builds and installation checks do not replace hardware acceptance.
+See [support](SUPPORT.md) and the builder release for the detailed boundaries.
 
-- Platform 0.1.0; prebuilt libs 0.9.0; flash tools 0.2.0; Xuantie GCC V2.6.1.
-- SDK commit `1cd1fd514df7ed0dfc1221be871f5aae03f31bbc`, with four pinned patches.
+## Historical bridge reference
+
+The following details describe the earlier libs 0.9.0 / Xuantie GCC V2.6.1
+candidate, not a test of the 0.2.0 release archives:
+
 - Original hardware-tested bridge binary: 1,096,640 bytes, SHA-256
   `9d345c2d1efb2fccfc2f44d076a4c4627c5365737b462156c738677bd350d33c`.
-- That BL binary was built from bridge commit `456feb808f5b80aa2115cf7f501955c90db43781`.
-  Later source comments, RA compatibility material, phone example and CI are
-  separate source changes; the inventory preserves both identities.
+- Bridge source commit `456feb808f5b80aa2115cf7f501955c90db43781`.
 - Renesas core 1.6.0 and ArduinoBLE 2.1.0 are the RA-side reference combination.
 
 ## Known limitations
