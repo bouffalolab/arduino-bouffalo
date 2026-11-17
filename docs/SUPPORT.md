@@ -20,6 +20,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | --- | --- | --- |
 | Standard package installation, dependency selection, compile and upload | supported in the declared combination | Empty CLI installations, SDK-hidden/read-only builds; separate real uploads and user IDE observations |
 | CDC, vendor HID, CMSIS-DAP/SWD and RA4M1 upload | experimental, tested | Real RA4M1 endpoint; other hosts/mappings/frequencies not inferred |
+| Hardware UART `Serial`/`Serial1` (`HardwareSerial`) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0 and tools 0.3.0: UART1 GPIO14-GPIO15 loopback 9,600 to 2,000,000 baud with 4 KiB each; all 24 Arduino `SERIAL_*` formats plus 1.5 stop bits checked bit by bit on the wire; UART0 exchanged all 24 formats and 9,600 to 2,000,000 baud with the onboard CH340. See the limits below |
 | Interrupted write, physical power removal and ROM recovery | experimental, tested | Interrupted FW0 recovery and data/other-region identity verified; historical upload errors remain |
 | External-host HCI, central/peripheral GATT | experimental, tested | Real RA4M1 and AX200; seven official examples passed, five lack accessories/adaptation |
 | Pairing, encryption and RAM-key reconnection | experimental, tested subset | Public addresses; BlueZ without IdKey requires the explicit ArduinoBLE 2.1.0 RA patch |
@@ -35,6 +36,14 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | Independent full SOFTSE | unimplemented / out of this release | Not accepted in this platform release |
 | Keyboard/mouse HID | unimplemented / out of this release | Vendor HID is a DAP transport, not a keyboard/mouse |
 | General ADC/PWM/interrupt/bus APIs and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
+
+UART limits: the UART clock is 40 MHz and the port runs at 40 MHz / round(40 MHz / baud).
+`begin()` rejects requests whose divisor falls outside 2 to 65,534 (below about 611 baud or
+above about 26.6 MBd; divisor 1 corrupted data). Rejected settings, including MARK/SPACE
+parity, leave the port closed and `operator bool` false. Hardware flow control, UART2 and
+receive parity/framing error reporting are unimplemented. The RX ring defaults to 256 bytes
+(`setRxBufferSize()`, `rxOverflowCount()`); writes block once the 32-byte TX FIFO is full.
+UNO R4 WiFi `Serial1`/`Serial2` share this code but were not retested on that board.
 
 Missing official BLE cases: LedControl and ButtonLED need button wiring;
 BatteryMonitor needs a defined A0 input; EncryptedBatteryMonitor also needs
