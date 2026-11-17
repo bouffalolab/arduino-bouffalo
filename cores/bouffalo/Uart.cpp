@@ -93,12 +93,13 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
         return;
     }
     /*
- * bflb_uart_init truncates clock/baud to a divisor in 1..0xfffe; it does not report an out-of-
- * range value.
+ * bflb_uart_init rounds clock/baud to a bit-period divisor and does not report an out-of-range
+ * value. LHAL allows divisors up to 0xfffe; divisor 1 corrupts loopback data on BL616CL, so accept
+ * 2..0xfffe only.
  */
     uint32_t clk = bflb_clk_get_peripheral_clock(BFLB_DEVICE_TYPE_UART, dev->idx);
     uint64_t div = ((uint64_t)clk * 10 / baudrate + 5) / 10;
-    if (div < 1 || div >= 0xffff) {
+    if (div < 2 || div >= 0xffff) {
         return;
     }
     if (rx_buf_ == nullptr) {
@@ -136,7 +137,8 @@ void Uart::begin(unsigned long baudrate, uint16_t config)
 }
 
 /**
- * @brief Disable UART receive interrupts and release its RX ring.
+ * @brief Wait for pending TX, then stop the UART and its receive interrupt. The pins become
+ * available to pinMode(); the RX ring is kept for the next begin().
  */
 void Uart::end()
 {
