@@ -28,7 +28,8 @@ public:
      */
     void begin(unsigned long baudrate, uint16_t config) override;
     /**
-     * @brief Disable UART receive interrupts and release its RX ring.
+     * @brief Wait for pending TX, then stop the UART and its receive interrupt. The pins become
+     * available to pinMode(); the RX ring is kept for the next begin().
      */
     void end() override;
     /**
