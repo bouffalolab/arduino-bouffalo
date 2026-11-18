@@ -10,6 +10,7 @@
 
 #define NUM_DIGITAL_PINS  37 /* GPIO0–GPIO36 */
 #define NUM_ANALOG_INPUTS 0
+#define digitalPinHasPWM(p) 0 /* BL616CL pins route to RA4M1 and RX LED; none is a PWM pin. */
 
 /*
  * Active-low RX LED DL2 connects through 330 ohms to 3.3 V on coprocessor TXD0. It shares Serial1

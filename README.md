@@ -10,7 +10,7 @@ An Arduino-compatible platform for BouffaloLab devices, starting with the BL616C
 
 - Arduino-style sketches with Core, board, and library support for BL616CL.
 - Installation and builds through the Arduino package workflow without requiring a complete Bouffalo SDK checkout.
-- USB serial, hardware UART, GPIO, analog input, timing, hardware timer callbacks, Wi-Fi, networking, filesystem, and preferences APIs.
+- USB serial, hardware UART, GPIO, analog input, PWM output, timing, hardware timer callbacks, Wi-Fi, networking, filesystem, and preferences APIs.
 - Optional BLE Controller support for applications that provide the host side.
 - Versioned prebuilt dependencies supplied by the companion library builder.
 - CI coverage for platform descriptors, source contracts, and integrated firmware builds.
@@ -22,7 +22,7 @@ The current master line is an initial candidate. The first hardware scope is the
 | Board | Target MCU | Validation scope |
 | --- | --- | --- |
 | UNO R4 WiFi (BL616CL coprocessor) | BL616CL | Module 1V0, Linux x86_64; firmware features remain experimental |
-| Ai-M64P-32S-Kit | BL616CL | Development configuration: UART0/CH340, UART1 loopback, analog inputs A0–A9 (mapping and resolution; no external voltage accuracy test), hardware timers and Wi-Fi OTA tested; board support remains experimental |
+| Ai-M64P-32S-Kit | BL616CL | Development configuration: UART0/CH340, UART1 loopback, analog inputs A0–A9 (mapping and resolution; no external voltage accuracy test), PWM on GPIO0–31 (on-board loopback; no instrument test), hardware timers and Wi-Fi OTA tested; board support remains experimental |
 
 This board uses a BL616CL replacement for the original wireless module. Sketches selected for this platform run on BL616CL. RA4M1 sketches use the official Renesas board package. Other module revisions, boards, and chips are not yet validated. See the [support matrix](docs/SUPPORT.md) for feature-specific scope.
 
@@ -64,7 +64,7 @@ limitations, see [BLUpdate](libraries/BLUpdate/README.md). Use platform 0.2.0 wi
 
 ## Directory structure
 
-- **Core** — Arduino lifecycle, runtime, USB serial, UART, GPIO, analog input, and timing.
+- **Core** — Arduino lifecycle, runtime, USB serial, UART, GPIO, analog input, PWM output, and timing.
 - **Libraries** — Wi-Fi, networking, storage, preferences, hardware timers (`BLTimer`), and optional BLE Controller APIs.
 - **Variants** — board pin and resource definitions.
 - **Tools and documentation** — package integration, upload support, examples, and support notes.

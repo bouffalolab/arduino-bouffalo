@@ -30,6 +30,12 @@ void resetToBootloader(void) __attribute__((noreturn));
  * bits the value is padded with zero low bits. Implemented in wiring_analog.cpp.
  */
 void analogReadResolution(int bits);
+
+/**
+ * @brief Set the analogWrite() value width in bits (1–31, default 8). The 1 kHz PWM has 40000
+ * steps, so wider values lose their extra low bits. Implemented in wiring_analog.cpp.
+ */
+void analogWriteResolution(int bits);
 #ifdef __cplusplus
 }
 #endif

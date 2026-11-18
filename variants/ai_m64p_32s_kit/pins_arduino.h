@@ -30,6 +30,15 @@ static const uint8_t A7 = PIN_A7;
 static const uint8_t A8 = PIN_A8;
 static const uint8_t A9 = PIN_A9;
 
+/*
+ * PWM (analogWrite): GPIO0–GPIO31, all at 1 kHz. Each pin carries the active-high output of PWM0
+ * channel GPIO % 4, so pins on the same channel cannot be driven at the same time:
+ *   CH0: 0, 4, 8, 12, 16, 20, 24, 28    CH1: 1, 5, 9, 13, 17, 21, 25, 29
+ *   CH2: 2, 6, 10, 14, 18, 22, 26, 30   CH3: 3, 7, 11, 15, 19, 23, 27, 31
+ * GPIO34/35 (Serial, CH340) and the reserved GPIO32/33/36 are not PWM pins.
+ */
+#define digitalPinHasPWM(p) ((uint32_t)(p) < 32u)
+
 /* The V1.0 schematic maps the blue RGB LED channel to GPIO16. */
 #define LED_BUILTIN 16
 

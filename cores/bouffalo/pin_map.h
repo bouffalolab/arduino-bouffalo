@@ -3,7 +3,8 @@
 /*
  * Map Arduino pin numbers to GPIOs through variant g_pin_map. The Core uses pin_to_gpio rather
  * than reading the table directly. Variants with analog inputs list them in g_analog_pins; the
- * Core maps their GPIOs to ADC channels. Future PWM metadata belongs here and in each variant.
+ * Core maps their GPIOs to ADC channels. Variants declare PWM pins with digitalPinHasPWM(p); the
+ * Core maps their GPIOs to PWM channels.
  */
 #include <stdint.h>
 
@@ -28,6 +29,13 @@ extern const uint8_t g_analog_pins[NUM_ANALOG_INPUTS];
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @brief Stop analogWrite output on a pin before another Core function reconfigures it, and free
+ * its PWM channel. Implemented in wiring_analog.cpp.
+ * @return true if the pin was driving a PWM channel.
+ */
+bool pin_pwm_release(pin_size_t pin);
 
 /**
  * @brief Return the mapped GPIO, or -1 for an invalid or unavailable pin.
