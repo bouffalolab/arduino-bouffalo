@@ -112,7 +112,7 @@ This uses a temporary sketchbook and checks the linker map and generated image. 
 
 Only real hardware establishes functional acceptance. Record the board/module revision, wiring, source and package identities, firmware hash, partition layout, device identity, test configuration, expected behavior, and raw logs.
 
-`tests/hardware/` keeps reproducible hardware probes. For example, upload `tests/hardware/UartAcceptance` to an Ai-M64P-32S-Kit with a GPIO14-GPIO15 jumper, then run `tests/hardware/uart_acceptance.py --port <CH340 tty> --log <file>`; it opens the port once because opening it resets the board. `tests/hardware/TimerAcceptance` with `timer_acceptance.py` checks BLTimer the same way and needs no jumper.
+`tests/hardware/` keeps reproducible hardware probes. For example, upload `tests/hardware/UartAcceptance` to an Ai-M64P-32S-Kit with a GPIO14-GPIO15 jumper, then run `tests/hardware/uart_acceptance.py --port <CH340 tty> --log <file>`; it opens the port once because opening it resets the board. `tests/hardware/TimerAcceptance` with `timer_acceptance.py` checks BLTimer the same way and needs no jumper. `tests/hardware/AdcAcceptance` with `adc_acceptance.py` checks `analogRead()` without jumpers; it covers channel mapping, resolution, invalid pins and readings during Wi-Fi, not accuracy against external voltages.
 
 Report source checks, compilation, image generation, flashing, serial runtime, and end-to-end results separately. Software or fake tests cannot establish wireless behavior or persistent storage. Mark capabilities `supported`, `experimental`, or `unimplemented` according to the [support definitions](docs/SUPPORT.md).
 
