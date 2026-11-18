@@ -13,6 +13,9 @@ using namespace arduino;
 
 #include "pins_arduino.h"
 
+/* analogReference() mode: the GPADC internal reference, 3.2 V single-ended full scale. */
+#define AR_DEFAULT 0
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +24,12 @@ extern "C" {
  * drained. Does not return; implemented in isp_boot.c.
  */
 void resetToBootloader(void) __attribute__((noreturn));
+
+/**
+ * @brief Set the analogRead() result width in bits (1–31, default 10). Above the 12 effective
+ * bits the value is padded with zero low bits. Implemented in wiring_analog.cpp.
+ */
+void analogReadResolution(int bits);
 #ifdef __cplusplus
 }
 #endif

@@ -22,6 +22,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | CDC, vendor HID, CMSIS-DAP/SWD and RA4M1 upload | experimental, tested | Real RA4M1 endpoint; other hosts/mappings/frequencies not inferred |
 | Hardware UART `Serial`/`Serial1` (`HardwareSerial`) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0 and tools 0.3.0: UART1 GPIO14-GPIO15 loopback 9,600 to 2,000,000 baud with 4 KiB each; all 24 Arduino `SERIAL_*` formats plus 1.5 stop bits checked bit by bit on the wire; UART0 exchanged all 24 formats and 9,600 to 2,000,000 baud with the onboard CH340. See the limits below |
 | Hardware timers `BLTimer` (TIMER0/TIMER1 periodic and one-shot callbacks) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0: periods 10 µs to 1 s exact to the tick against `micros()`, match-to-callback latency at most 9 µs with Serial traffic, one-shot, stop/start/period change, two timers and invalid-request failures; not measured on a pin or on UNO R4 WiFi. See [BLTimer](../libraries/BLTimer/README.md) |
+| Analog input `analogRead()` (Ai-M64P-32S-Kit A0–A9) | experimental, partially tested | Ai-M64P-32S-Kit, libs 0.12.0, no external voltage source: channel mapping of all ten inputs, resolution scaling and zero padding, steady-input noise below 1 LSB at 12 bits, `-1` for other pins, and readings while a soft AP or scans run. Zero and full scale per channel with external GND/3V3 and accuracy at intermediate voltages are unaccepted. See the analog limits below |
 | Interrupted write, physical power removal and ROM recovery | experimental, tested | Interrupted FW0 recovery and data/other-region identity verified; historical upload errors remain |
 | External-host HCI, central/peripheral GATT | experimental, tested | Real RA4M1 and AX200; seven official examples passed, five lack accessories/adaptation |
 | Pairing, encryption and RAM-key reconnection | experimental, tested subset | Public addresses; BlueZ without IdKey requires the explicit ArduinoBLE 2.1.0 RA patch |
@@ -36,7 +37,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | BL616CL application OTA | experimental development build | Ai-M64P-32S-Kit Wi-Fi A/B, serial upload and storage tested with libs 0.12.0 and tools 0.3.0; partial-write power interruption tested; RA4 bridge unaccepted; see [BLUpdate](../libraries/BLUpdate/README.md) |
 | Independent full SOFTSE | unimplemented / out of this release | Not accepted in this platform release |
 | Keyboard/mouse HID | unimplemented / out of this release | Vendor HID is a DAP transport, not a keyboard/mouse |
-| General ADC/PWM/interrupt/bus APIs and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
+| General PWM/interrupt/bus APIs and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
 
 UART limits: the UART clock is 40 MHz and the port runs at 40 MHz / round(40 MHz / baud).
 `begin()` rejects requests whose divisor falls outside 2 to 65,534 (below about 611 baud or
@@ -45,6 +46,23 @@ parity, leave the port closed and `operator bool` false. Hardware flow control, 
 receive parity/framing error reporting are unimplemented. The RX ring defaults to 256 bytes
 (`setRxBufferSize()`, `rxOverflowCount()`); writes block once the 32-byte TX FIFO is full.
 UNO R4 WiFi `Serial1`/`Serial2` share this code but were not retested on that board.
+
+Analog limits (Ai-M64P-32S-Kit): A0–A9 are GPIO0–GPIO7, GPIO12 and GPIO13 (ADC channels 0–9;
+headers J2-2, J2-3, J2-16, J1-13, J1-3, J1-4, J2-19, J1-20, J1-5 and J1-6). The single-ended range is
+0 to 3.2 V from the internal reference, the only `analogReference()` mode (`AR_DEFAULT`); other
+modes are ignored. Keep inputs between 0 V and the 3.3 V supply. Inputs at or above 3.2 V read the
+top calibrated code, which depends on the chip's gain trim (1021 at 10 bits on the tested board), not
+exactly 1023. `analogReadResolution()` accepts 1 to 31 bits (default 10) and ignores other values;
+the converter runs its 16-bit oversampled mode with 12 effective bits, so wider results are padded
+with zero low bits. Values are corrected with the efuse offset and gain trims and with ground and
+20 mV points the driver measures once, during the first `analogRead()` (about 7 ms); later calls take
+about 0.23 ms. `analogRead()` switches the pin to analog input, so call `pinMode()` before digital use;
+other pins return -1 and stay unchanged. Do not call it from interrupts or from several tasks at once.
+The input is high impedance: a floating pin keeps a drifting charge. With a soft AP or scans
+running, this board's 3.3 V supply dipped to between 2.9 and 3.2 V in two runs, and readings near
+40 mV moved by up to about 50 mV (standard deviation 1.2 to 2.9 LSB at 12 bits, 0.4 LSB idle).
+UNO R4 WiFi declares no analog inputs; `analogRead()`
+returns -1 there. The IDE's built-in analog examples such as AnalogReadSerial work with A0–A9.
 
 Missing official BLE cases: LedControl and ButtonLED need button wiring;
 BatteryMonitor needs a defined A0 input; EncryptedBatteryMonitor also needs

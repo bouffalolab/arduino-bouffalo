@@ -11,5 +11,8 @@ const uint8_t g_pin_map[] = {
 };
 static_assert(sizeof(g_pin_map) == NUM_DIGITAL_PINS, "g_pin_map must cover all board pins");
 
+const uint8_t g_analog_pins[] = {A0, A1, A2, A3, A4, A5, A6, A7, A8, A9};
+static_assert(sizeof(g_analog_pins) == NUM_ANALOG_INPUTS, "g_analog_pins must list A0 to A(n-1)");
+
 Uart Serial(0, PIN_SERIAL_TX, PIN_SERIAL_RX);
 Uart Serial1(1, PIN_SERIAL1_TX, PIN_SERIAL1_RX);
