@@ -78,7 +78,7 @@ Uploading a platform sketch replaces the running BL bridge. Retain the original 
 | Location | Responsibility |
 | --- | --- |
 | `cores/bouffalo/` | Core entry, C++ runtime, GPIO, clocks, UART, USB, and the retained ArduinoCore-API sources |
-| `libraries/` | Wi-Fi/networking, LittleFS, Preferences, and BLE Controller interfaces and examples |
+| `libraries/` | Wi-Fi/networking, LittleFS, Preferences, BLTimer, and BLE Controller interfaces and examples |
 | `variants/` | Board pin/resource mapping |
 | `boards.txt`, `platform.txt` | Board selection and Arduino build/upload recipes |
 | `tools/` | Host integration, including Linux USB permissions |
