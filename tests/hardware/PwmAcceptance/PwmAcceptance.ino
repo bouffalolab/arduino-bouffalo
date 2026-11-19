@@ -9,7 +9,8 @@
  * with the CPU cycle counter. The CPU clock and the 40 MHz PWM clock come from the same crystal,
  * so frequency checks confirm the PWM configuration, not the crystal. The ADC pins GPIO0-7/12/13
  * stay in PWM function while the GPADC samples them through LHAL, which confirms the GPIO % 4
- * channel map on pins without a jumper, including channel 1.
+ * channel map on pins without a jumper, including channel 1. analogWriteFrequency() commands leave
+ * the frequency at its 1 kHz default when they finish.
  */
 #include <initializer_list>
 #include <stdarg.h>
@@ -175,16 +176,17 @@ static Wave analyze(uint8_t pin, uint32_t n, uint32_t v0, uint32_t vend)
 static void report(const char *tag, uint8_t pin, const Wave &w, uint32_t iters, uint32_t win)
 {
     reply("RESULT %s in=%u rises=%lu falls=%lu lvl0=%lu lvl1=%lu per=%lu per_min=%lu per_max=%lu hi=%lu hi_min=%lu "
-          "hi_max=%lu first_rise=%lu iters=%lu win=%lu cpu=%lu",
+          "hi_max=%lu first_rise=%lu iters=%lu win=%lu cpu=%lu per_sum=%lu per_n=%lu hi_sum=%lu hi_n=%lu",
           tag, pin, w.rises, w.falls, w.lvl0, w.lvl1, w.per_n ? (uint32_t)(w.per_sum / w.per_n) : 0, w.per_min,
           w.per_max, w.hi_n ? (uint32_t)(w.hi_sum / w.hi_n) : 0, w.hi_min, w.hi_max, w.first_rise, iters, win,
-          bflb_clk_get_system_clock(BFLB_SYSTEM_CPU_CLK));
+          bflb_clk_get_system_clock(BFLB_SYSTEM_CPU_CLK), (uint32_t)w.per_sum, w.per_n, (uint32_t)w.hi_sum, w.hi_n);
 }
 
 /**
- * @brief Capture up to three inputs together for 25 ms (25 PWM periods) and report each.
+ * @brief Capture up to three inputs together for `ms` and report each. Sums stay within 32 bits
+ * for windows up to 13 s.
  */
-static void measure(const char *tag, int a, int b = -1, int c = -1)
+static void measure_for(uint32_t ms, const char *tag, int a, int b = -1, int c = -1)
 {
     uint32_t mask = 0;
     for (int p : {a, b, c}) {
@@ -193,12 +195,27 @@ static void measure(const char *tag, int a, int b = -1, int c = -1)
         }
     }
     uint32_t n, iters, win, v0;
-    uint32_t vend = capture(mask, 25, n, iters, win, v0);
+    uint32_t vend = capture(mask, ms, n, iters, win, v0);
     for (int p : {a, b, c}) {
         if (p >= 0) {
             report(tag, p, analyze(p, n, v0, vend), iters, win);
         }
     }
+}
+
+/* 25 ms is 25 periods at the default 1 kHz. */
+static void measure(const char *tag, int a, int b = -1, int c = -1)
+{
+    measure_for(25, tag, a, b, c);
+}
+
+/* Report the running PWM0 counter: divider, period count and LHAL's rounded frequency. */
+static void report_counter(const char *tag)
+{
+    struct bflb_device_s *pwm = bflb_device_get_by_name("pwm_v2_0");
+    reply("RESULT %s div=%lu period=%lu freq=%lu func23=%lu", tag,
+          reg(pwm->reg_base + PWM_MC0_CONFIG0_OFFSET) & 0xffff, reg(pwm->reg_base + PWM_MC0_PERIOD_OFFSET) & 0xffff,
+          bflb_pwm_v2_get_frequency(pwm), gpio_func(23));
 }
 
 /* INFO: clocks, routing register and the variant's PWM pin declaration for pins 0-40. */
@@ -413,6 +430,82 @@ static void cmd_back(void)
     release_all();
 }
 
+/* FREQ hz bits value ms: set the frequency, then write GPIO23 and sample it on GPIO20 for ms; then
+ * time the return to 1 kHz, which waits for the running period to end. */
+static void cmd_freq(uint32_t hz, int bits, long value, uint32_t ms)
+{
+    release_all();
+    analogWriteFrequency(hz);
+    analogWriteResolution(bits);
+    analogWrite(23, (int)value);
+    delay(3);
+    report_counter("FREQCFG");
+    measure_for(ms, "FREQ", 20);
+    release_all();
+    uint32_t t0 = micros();
+    analogWriteFrequency(1000);
+    reply("RESULT FREQBACK us=%lu", micros() - t0);
+    report_counter("FREQBACKCFG");
+}
+
+/* FMULTI hz ms: three channels start at 1 kHz, then the frequency changes under them and back. */
+static void cmd_fmulti(uint32_t hz, uint32_t ms)
+{
+    release_all();
+    analogWriteResolution(8);
+    analogWrite(23, 64);
+    analogWrite(8, 191);
+    analogWrite(14, 128);
+    delay(3);
+    analogWriteFrequency(hz);
+    delay(3);
+    report_counter("FMULTICFG");
+    measure_for(ms, "FMULTI", 20, 22, 15);
+    analogWriteFrequency(1000);
+    delay(3);
+    report_counter("FMULTIBACKCFG");
+    measure("FMULTI_BACK", 20, 22, 15);
+    release_all();
+}
+
+/* FREQINV bad: GPIO23 runs at 20 kHz; an invalid frequency must leave the counter and duty as they are. */
+static void cmd_freqinv(uint32_t bad)
+{
+    struct bflb_device_s *pwm = bflb_device_get_by_name("pwm_v2_0");
+    static const uint32_t offs[] = {PWM_MC0_CONFIG0_OFFSET, PWM_MC0_PERIOD_OFFSET, PWM_MC0_CONFIG1_OFFSET,
+                                    PWM_MC0_CH0_THRE_OFFSET + 4 * 3};
+    uint32_t before[4], changed = 0;
+    release_all();
+    analogWriteFrequency(20000);
+    analogWriteResolution(8);
+    analogWrite(23, 128);
+    delay(3);
+    for (int i = 0; i < 4; i++) {
+        before[i] = reg(pwm->reg_base + offs[i]);
+    }
+    analogWriteFrequency(bad);
+    for (int i = 0; i < 4; i++) {
+        changed |= (reg(pwm->reg_base + offs[i]) != before[i]) << i;
+    }
+    reply("RESULT FREQINV bad=%lu changed=0x%lx", bad, changed);
+    measure_for(5, "FREQINV_RUNNING", 20);
+    release_all();
+    analogWriteFrequency(1000);
+}
+
+/* FREQFIRST: right after reset, set 20 kHz before any analogWrite, then write GPIO23. */
+static void cmd_freqfirst(void)
+{
+    pinMode(20, INPUT); /* The sampling input; leaves PWM untouched. */
+    analogWriteFrequency(20000);
+    analogWrite(23, 128);
+    delay(3);
+    report_counter("FREQFIRSTCFG");
+    measure_for(5, "FREQFIRST", 20);
+    release_all();
+    analogWriteFrequency(1000);
+}
+
 static volatile uint32_t ticks;
 
 static void on_tick()
@@ -453,7 +546,7 @@ static void dispatch(char *line)
     }
     long a[5] = {};
     for (int i = 1; i < argc; i++) {
-        a[i - 1] = strtol(argv[i], nullptr, 0);
+        a[i - 1] = (long)strtoul(argv[i], nullptr, 0); /* Negative values wrap back through long. */
     }
     if (!strcmp(argv[0], "INFO")) {
         cmd_info();
@@ -480,6 +573,14 @@ static void dispatch(char *line)
         cmd_back();
     } else if (!strcmp(argv[0], "TIMER")) {
         cmd_timer();
+    } else if (!strcmp(argv[0], "FREQ") && argc == 5) {
+        cmd_freq(a[0], a[1], a[2], a[3]);
+    } else if (!strcmp(argv[0], "FMULTI") && argc == 3) {
+        cmd_fmulti(a[0], a[1]);
+    } else if (!strcmp(argv[0], "FREQINV") && argc == 2) {
+        cmd_freqinv(a[0]);
+    } else if (!strcmp(argv[0], "FREQFIRST")) {
+        cmd_freqfirst();
     } else {
         reply("RESULT ERR unknown=%s", argv[0]);
     }

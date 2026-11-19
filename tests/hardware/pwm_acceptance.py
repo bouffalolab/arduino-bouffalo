@@ -4,11 +4,13 @@
 Upload tests/hardware/PwmAcceptance first. The board needs its GPIO8-GPIO22, GPIO14-GPIO15,
 GPIO18-GPIO19 and GPIO20-GPIO23 jumpers. The CH340 port is opened once; opening it resets the
 BL616CL, so the whole run happens in this process. The sketch samples each PWM output on its
-jumpered partner and reports edge timing in CPU cycles; this script judges frequency (1 kHz),
-duty against round(value * 40000 / (2^bits - 1)) / 40000, constant levels at 0 and full scale,
-the GPIO % 4 channel map (GPADC sampling on GPIO0-7/12/13), simultaneous channels, conflicts,
-invalid pins, the return to digital use and coexistence with BLTimer. No instrument is attached,
-so edge shape and an independent frequency reference are outside this run. Each check is
+jumpered partner and reports edge timing in CPU cycles; this script judges frequency (1 kHz by
+default), duty against round(value * N / (2^bits - 1)) / N with N counts per period (40000 at
+1 kHz), constant levels at 0 and full scale, the GPIO % 4 channel map (GPADC sampling on
+GPIO0-7/12/13), simultaneous channels, conflicts, invalid pins, the return to digital use,
+coexistence with BLTimer and analogWriteFrequency() from 1 Hz to 1 MHz. The last check reopens the
+port to reset the board. No instrument is attached, so edge shape and an independent frequency
+reference are outside this run. Each check is
 "acceptance" (counts toward the exit status) or "exploratory" (recorded only). The log keeps every
 line exchanged with the board; --json writes the judged results.
 
@@ -23,10 +25,18 @@ import serial
 
 CONTROL_BAUD = 115200
 PERIOD_COUNTS = 40000
-FREQ_TOL = 1e-4  # Mean period within 0.01 % of 1 kHz against the CPU cycle counter.
+XCLK = 40000000  # PWM clock; replaced by the board's INFO report.
+FREQ_TOL = 1e-4  # Mean period within 0.01 % of nominal against the CPU cycle counter.
 JITTER_CYCLES = 64  # Each period within 0.2 us of nominal: about three polling intervals.
 DUTY_TOL_PPM = 100  # Mean duty within 0.01 % of full scale (one 8-bit step is 3922 ppm).
-MIN_PERIODS = 20  # Rising edges expected in a 25 ms window.
+# Each edge is seen up to one polling interval late. Short periods therefore also allow one interval
+# of error in the mean high time, and one interval spread over the measured periods in the mean period.
+MIN_PERIOD_SHARE = 0.8  # Rising edges expected: 80 % of the periods in the window (20 in 25 ms at 1 kHz),
+MAX_MIN_RISES = 100  # capped because the probe keeps 600 edges.
+FREQ_POINTS = [  # hz, bits, value, capture ms
+    (1, 8, 64, 4200), (50, 8, 128, 500), (490, 8, 191, 50), (610, 8, 128, 50), (611, 8, 128, 50),
+    (20000, 12, 2048, 25), (20000, 8, 0, 25), (20000, 8, 255, 25), (100000, 8, 64, 5),
+    (1000000, 8, 128, 2), (1000000, 8, 0, 2), (1000000, 8, 255, 2)]
 ADC_DUTY = [26, 77, 153, 217]  # Channel duties used by ADCMAP, 8-bit values.
 ADC_TOL = 0.03
 JUMPERS = [(23, 20), (20, 23), (8, 22), (22, 8), (14, 15), (15, 14), (18, 19), (19, 18)]
@@ -46,6 +56,14 @@ class Board:
         self.ser.dtr = True  # Run mode on this board: DTR drives BOOT, RTS drives EN.
         self.ser.rts = False
         self.ser.port = port
+        self.ser.open()
+        self.pending = b""
+
+    def reopen(self):
+        """Close and reopen the port, which resets the board like the first open."""
+        self.note("reopen port (board reset)")
+        self.ser.close()
+        time.sleep(0.2)
         self.ser.open()
         self.pending = b""
 
@@ -90,29 +108,39 @@ class Report:
         return [i for i in self.items if i["kind"] == "acceptance" and not i["pass"]]
 
 
-def expected_counts(bits, value):
+def counter(hz):
+    """Return (divider, period counts) that analogWriteFrequency(hz) should program."""
+    div = -(-XCLK // (hz * 65535))
+    return div, (XCLK + div * hz // 2) // (div * hz)
+
+
+def expected_counts(bits, value, period=PERIOD_COUNTS):
     full = (1 << bits) - 1
     level = min(max(value, 0), full)
-    return (level * PERIOD_COUNTS + full // 2) // full
+    return (level * period + full // 2) // full
 
 
-def judge_wave(w, counts):
+def judge_wave(w, counts, period=PERIOD_COUNTS, div=1):
     """Return (ok, detail) for a captured wave against the expected high count per period."""
-    if counts == 0 or counts == PERIOD_COUNTS:
+    if counts == 0 or counts == period:
         level = 1 if counts else 0
         ok = w["rises"] == 0 and w["falls"] == 0 and w["lvl0"] == level and w["lvl1"] == level
         return ok, "constant %s: rises=%d falls=%d lvl0=%d lvl1=%d" % (
             "high" if level else "low", w["rises"], w["falls"], w["lvl0"], w["lvl1"])
-    nominal = w["cpu"] // 1000
-    per = w["per"]
-    duty = w["hi"] * 1e6 / per if per else 0.0
-    want = counts * 1e6 / PERIOD_COUNTS
-    ok = (w["rises"] >= MIN_PERIODS and abs(per - nominal) <= nominal * FREQ_TOL
+    nominal = w["cpu"] * div * period / XCLK  # CPU cycles per PWM period.
+    per = w["per_sum"] / w["per_n"] if w["per_n"] else 0.0
+    duty = w["hi_sum"] / w["hi_n"] * 1e6 / per if per and w["hi_n"] else 0.0
+    want = counts * 1e6 / period
+    interval = w["win"] / w["iters"]
+    per_tol = max(nominal * FREQ_TOL, interval / max(w["per_n"], 1))
+    duty_tol = max(DUTY_TOL_PPM, interval * 1e6 / nominal)
+    min_rises = max(2, min(int(MIN_PERIOD_SHARE * w["win"] / nominal), MAX_MIN_RISES))
+    ok = (w["rises"] >= min_rises and abs(per - nominal) <= per_tol
           and w["per_min"] >= nominal - JITTER_CYCLES and w["per_max"] <= nominal + JITTER_CYCLES
-          and abs(duty - want) <= DUTY_TOL_PPM)
-    return ok, "freq=%.4f Hz duty=%.1f ppm want=%.1f ppm per=[%d,%d] hi=[%d,%d] rises=%d" % (
-        w["cpu"] / per if per else 0.0, duty, want, w["per_min"], w["per_max"], w["hi_min"], w["hi_max"],
-        w["rises"])
+          and abs(duty - want) <= duty_tol)
+    return ok, "freq=%.6f Hz (nominal %.6f) duty=%.1f ppm want=%.1f ppm tol=%.0f per=[%d,%d] hi=[%d,%d] rises=%d" % (
+        w["cpu"] / per if per else 0.0, w["cpu"] / nominal, duty, want, duty_tol, w["per_min"], w["per_max"],
+        w["hi_min"], w["hi_max"], w["rises"])
 
 
 def by_tag(results, tag, pin=None):
@@ -122,9 +150,17 @@ def by_tag(results, tag, pin=None):
     raise KeyError("%s in=%s missing" % (tag, pin))
 
 
-def check_wave(rep, name, w, counts):
-    ok, d = judge_wave(w, counts)
+def check_wave(rep, name, w, counts, period=PERIOD_COUNTS, div=1):
+    ok, d = judge_wave(w, counts, period, div)
     rep.add(name, ok, d)
+
+
+def check_counter(rep, name, cfg, hz):
+    div, per = counter(hz)
+    freq = (XCLK + div * per // 2) // (div * per)
+    rep.add(name, cfg["div"] == div and cfg["period"] == per and cfg["freq"] == freq,
+            "div=%d period=%d freq=%d (want %d/%d/%d, exact %.6f Hz)" % (
+                cfg["div"], cfg["period"], cfg["freq"], div, per, freq, XCLK / (div * per)))
 
 
 def main():
@@ -140,6 +176,8 @@ def main():
         board.wait("READY", 15)
 
         info = by_tag(board.command("INFO"), "INFO")
+        global XCLK
+        XCLK = info["xclk"]
         has = info["has_lo"] | (info["has_hi"] << 32)
         rep.add("variant declares GPIO0-31 as PWM pins, not GPIO32-36 or pins 37-40",
                 has == (1 << 32) - 1, "has=0x%x" % has)
@@ -247,6 +285,55 @@ def main():
         want = f["us"] / 100
         rep.add("BLTimer keeps its 100 us rate while PWM runs", f["began"] == 1 and f["idx_free"] == 1
                 and abs(f["ticks"] - want) <= max(2, want * 0.01), "ticks=%d want=%.1f" % (f["ticks"], want))
+
+        for hz, bits, v, ms in FREQ_POINTS:
+            r = board.command("FREQ %d %d %d %d" % (hz, bits, v, ms))
+            div, per = counter(hz)
+            check_counter(rep, "analogWriteFrequency(%d) programs divider %d, period %d" % (hz, div, per),
+                          by_tag(r, "FREQCFG"), hz)
+            check_wave(rep, "%d Hz: GPIO23 value %d/%d seen on GPIO20" % (hz, v, (1 << bits) - 1), by_tag(r, "FREQ", 20),
+                       expected_counts(bits, v, per), per, div)
+            check_counter(rep, "analogWriteFrequency(1000) after %d Hz restores divider 1, period 40000" % hz,
+                          by_tag(r, "FREQBACKCFG"), 1000)
+            us = by_tag(r, "FREQBACK")["us"]
+            rep.add("returning from %d Hz waits at most one old period" % hz, us <= div * per * 1e6 / XCLK + 2000,
+                    "call took %d us, period %.0f us" % (us, div * per * 1e6 / XCLK), "exploratory")
+
+        for hz, ms in ((20000, 25), (50, 500)):
+            r = board.command("FMULTI %d %d" % (hz, ms))
+            div, per = counter(hz)
+            check_counter(rep, "frequency change to %d Hz with three channels running" % hz, by_tag(r, "FMULTICFG"), hz)
+            waves = {pin: by_tag(r, "FMULTI", pin) for pin in (20, 22, 15)}
+            for pin, out, v in ((20, 23, 64), (22, 8, 191), (15, 14, 128)):
+                check_wave(rep, "after the change to %d Hz: GPIO%d keeps value %d" % (hz, out, v), waves[pin],
+                           expected_counts(8, v, per), per, div)
+            pers = [waves[p]["per_sum"] / waves[p]["per_n"] for p in waves if waves[p]["per_n"]]
+            rep.add("at %d Hz all channels share one period" % hz, len(pers) == 3 and max(pers) - min(pers) <= 16,
+                    "per=%s" % ["%.2f" % p for p in pers])
+            check_counter(rep, "analogWriteFrequency(1000) after %d Hz restores divider 1, period 40000" % hz,
+                          by_tag(r, "FMULTIBACKCFG"), 1000)
+            for pin, out, v in ((20, 23, 64), (22, 8, 191), (15, 14, 128)):
+                check_wave(rep, "back at 1 kHz from %d Hz: GPIO%d keeps value %d" % (hz, out, v),
+                           by_tag(r, "FMULTI_BACK", pin), expected_counts(8, v))
+
+        div, per = counter(20000)
+        for bad in (0, 1000001, 4294967295):
+            r = board.command("FREQINV %d" % bad)
+            f = by_tag(r, "FREQINV")
+            rep.add("analogWriteFrequency(%d) is ignored: counter and threshold registers unchanged" % bad,
+                    f["changed"] == 0, "changed=0x%x" % f["changed"])
+            check_wave(rep, "after analogWriteFrequency(%d): GPIO23 still at 20 kHz, 128/255" % bad,
+                       by_tag(r, "FREQINV_RUNNING", 20), expected_counts(8, 128, per), per, div)
+
+        board.reopen()
+        board.wait("READY", 15)
+        r = board.command("FREQFIRST")
+        cfg = by_tag(r, "FREQFIRSTCFG")
+        check_counter(rep, "after reset, analogWriteFrequency(20000) before any analogWrite", cfg, 20000)
+        rep.add("first analogWrite after it puts GPIO23 in PWM function", cfg["func23"] == 16,
+                "func23=%d" % cfg["func23"])
+        check_wave(rep, "first analogWrite after the frequency call runs at 20 kHz, 128/255",
+                   by_tag(r, "FREQFIRST", 20), expected_counts(8, 128, per), per, div)
 
     failed = rep.failed()
     n_acc = sum(1 for i in rep.items if i["kind"] == "acceptance")
