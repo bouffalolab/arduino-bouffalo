@@ -5,14 +5,16 @@
  * value scaled to analogReadResolution() bits. Single-ended full scale is 3.2 V from the internal
  * reference; inputs at or above it read the top calibrated code. Not for interrupt context.
  *
- * analogWrite on the BL616CL PWM0 controller (LHAL pwm_v2): four channels share one 1 kHz counter.
- * In the single-ended routing selected here, GPIO n carries the active-high output of channel
- * n % 4. Each channel drives one pin at a time; see analogWrite() for rejected requests.
+ * analogWrite on the BL616CL PWM0 controller (LHAL pwm_v2): four channels share one counter, 1 kHz
+ * unless analogWriteFrequency() changes it. In the single-ended routing selected here, GPIO n
+ * carries the active-high output of channel n % 4. Each channel drives one pin at a time; see
+ * analogWrite() for rejected requests.
  */
 #include "bflb_adc_v2.h"
 #include "bflb_clock.h"
 #include "bflb_gpio.h"
 #include "bflb_pwm_v2.h"
+#include "hardware/pwm_v2_reg.h"
 #include "pin_keep.h"
 #include "pin_map.h"
 
@@ -141,16 +143,53 @@ void analogReadResolution(int bits)
     }
 }
 
-/* PWM counter: XCLK 40 MHz, divider 1, 40000 counts per period gives 1 kHz in 25 ns steps. */
-static constexpr uint16_t PWM_PERIOD = 40000;
 static constexpr int PWM_CHANNELS = 4;
 static constexpr uint8_t PWM_NO_PIN = 0xFF;
+static constexpr uint32_t PWM_MAX_HZ = 1000000; /* 40 duty steps at the 40 MHz XCLK. */
 
 static int write_bits = 8;
+static uint32_t write_hz = 1000;
+static uint16_t pwm_period; /* Counts per period of the running counter. */
 static uint8_t pwm_owner[PWM_CHANNELS] = {PWM_NO_PIN, PWM_NO_PIN, PWM_NO_PIN, PWM_NO_PIN};
+static uint32_t pwm_level[PWM_CHANNELS], pwm_full[PWM_CHANNELS]; /* Duty of each owned channel: level / full. */
 
 /**
- * @brief Initialize PWM0 once: single-ended pin routing, 1 kHz counter, active-high outputs.
+ * @brief Stop the counter and set it to write_hz from XCLK. The smallest divider whose period fits
+ * 16 bits keeps the most duty steps: 1 kHz at 40 MHz is divider 1 and 40000 counts (25 ns steps).
+ */
+static void pwm_set_counter(struct bflb_device_s *pwm)
+{
+    uint64_t src = bflb_clk_get_system_clock(BFLB_SYSTEM_XCLK);
+    uint32_t div = (uint32_t)((src + (uint64_t)write_hz * 65535 - 1) / ((uint64_t)write_hz * 65535));
+    uint64_t per_div = (uint64_t)div * write_hz;
+    struct bflb_pwm_v2_config_s cfg = {};
+    uint32_t cfg0 = pwm->reg_base + PWM_MC0_CONFIG0_OFFSET;
+
+    /* The counter stops at the end of its period, up to about 1 s at 1 Hz, but bflb_pwm_v2_init()
+     * gives up after 100 ms without applying the new setting, so wait for the stop here. */
+    putreg32(getreg32(cfg0) | PWM_STOP_EN, cfg0);
+    while ((getreg32(cfg0) & PWM_STS_STOP) == 0) {
+    }
+    pwm_period = (uint16_t)((src + per_div / 2) / per_div);
+    cfg.counter_mode = PWM_COUNTER_MODE_UP;
+    cfg.clk_source = BFLB_SYSTEM_XCLK;
+    cfg.clk_div = (uint16_t)div;
+    cfg.period = pwm_period;
+    bflb_pwm_v2_init(pwm, &cfg);
+}
+
+/**
+ * @brief Set channel ch's output active while the counter is in [0, round(level / full * period)):
+ * 0 stays low and a whole period stays high.
+ */
+static void pwm_apply(struct bflb_device_s *pwm, uint8_t ch)
+{
+    uint64_t high = ((uint64_t)pwm_level[ch] * pwm_period + pwm_full[ch] / 2) / pwm_full[ch];
+    bflb_pwm_v2_channel_set_threshold(pwm, ch, 0, (uint16_t)high);
+}
+
+/**
+ * @brief Initialize PWM0 once: single-ended pin routing, counter at write_hz, active-high outputs.
  */
 static struct bflb_device_s *pwm_dev(void)
 {
@@ -158,7 +197,6 @@ static struct bflb_device_s *pwm_dev(void)
 
     if (dev == nullptr) {
         struct bflb_device_s *pwm = bflb_device_get_by_name("pwm_v2_0");
-        struct bflb_pwm_v2_config_s cfg = {};
         struct bflb_pwm_v2_channel_config_s ch_cfg = {};
 
         if (pwm == nullptr) {
@@ -166,11 +204,7 @@ static struct bflb_device_s *pwm_dev(void)
         }
         /* analogWrite's GPIO % 4 channel map needs this routing; set it rather than rely on board_init. */
         bflb_pwm_v2_feature_control(pwm, PWM_CMD_IO_SEL, PWM_IO_SEL_SINGLE_END);
-        cfg.counter_mode = PWM_COUNTER_MODE_UP;
-        cfg.clk_source = BFLB_SYSTEM_XCLK;
-        cfg.clk_div = 1;
-        cfg.period = PWM_PERIOD;
-        bflb_pwm_v2_init(pwm, &cfg);
+        pwm_set_counter(pwm);
         ch_cfg.positive_polarity = PWM_POLARITY_ACTIVE_HIGH;
         ch_cfg.negative_polarity = PWM_POLARITY_ACTIVE_HIGH;
         for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
@@ -214,11 +248,9 @@ void analogWrite(pin_size_t pin, int value)
         return;
     }
     uint32_t full = (1u << write_bits) - 1;
-    uint32_t level = value <= 0 ? 0 : ((uint32_t)value < full ? (uint32_t)value : full);
-    uint16_t high = (uint16_t)(((uint64_t)level * PWM_PERIOD + full / 2) / full);
-
-    /* The output is active while the counter is in [0, high): 0 stays low, PWM_PERIOD stays high. */
-    bflb_pwm_v2_channel_set_threshold(pwm, ch, 0, high);
+    pwm_level[ch] = value <= 0 ? 0 : ((uint32_t)value < full ? (uint32_t)value : full);
+    pwm_full[ch] = full;
+    pwm_apply(pwm, ch);
     bflb_pwm_v2_channel_positive_start(pwm, ch);
     pwm_owner[ch] = pin;
     pin_release_keep(gpio);
@@ -235,4 +267,26 @@ void analogWriteResolution(int bits)
     if (bits >= 1 && bits <= 31) {
         write_bits = bits;
     }
+}
+
+/**
+ * @brief Set the PWM frequency of every PWM pin to 1 Hz–1 MHz; other values leave it unchanged.
+ * The change waits for the current period to end, then the counter restarts and each running pin
+ * keeps its duty, recomputed for the new period.
+ */
+void analogWriteFrequency(uint32_t hz)
+{
+    struct bflb_device_s *pwm = hz >= 1 && hz <= PWM_MAX_HZ ? pwm_dev() : nullptr;
+
+    if (pwm == nullptr) {
+        return;
+    }
+    write_hz = hz;
+    pwm_set_counter(pwm);
+    for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
+        if (pwm_owner[ch] != PWM_NO_PIN) {
+            pwm_apply(pwm, ch);
+        }
+    }
+    bflb_pwm_v2_start(pwm);
 }

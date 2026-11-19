@@ -23,7 +23,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | Hardware UART `Serial`/`Serial1` (`HardwareSerial`) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0 and tools 0.3.0: UART1 GPIO14-GPIO15 loopback 9,600 to 2,000,000 baud with 4 KiB each; all 24 Arduino `SERIAL_*` formats plus 1.5 stop bits checked bit by bit on the wire; UART0 exchanged all 24 formats and 9,600 to 2,000,000 baud with the onboard CH340. See the limits below |
 | Hardware timers `BLTimer` (TIMER0/TIMER1 periodic and one-shot callbacks) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0: periods 10 µs to 1 s exact to the tick against `micros()`, match-to-callback latency at most 9 µs with Serial traffic, one-shot, stop/start/period change, two timers and invalid-request failures; not measured on a pin or on UNO R4 WiFi. See [BLTimer](../libraries/BLTimer/README.md) |
 | Analog input `analogRead()` (Ai-M64P-32S-Kit A0–A9) | experimental, partially tested | Ai-M64P-32S-Kit, libs 0.12.0, no external voltage source: channel mapping of all ten inputs, resolution scaling and zero padding, steady-input noise below 1 LSB at 12 bits, `-1` for other pins, and readings while a soft AP or scans run. Zero and full scale per channel with external GND/3V3 and accuracy at intermediate voltages are unaccepted. See the analog limits below |
-| PWM output `analogWrite()` (Ai-M64P-32S-Kit GPIO0–31) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0, sampled on the board through its GPIO8-GPIO22, GPIO14-GPIO15, GPIO18-GPIO19 and GPIO20-GPIO23 jumpers: 1 kHz, duty within 0.01 % of full scale from 8 to 31 bits, constant levels at 0 and full scale, three channels at once with a shared period, the GPIO % 4 channel map on GPIO0–7, GPIO12 and GPIO13 by ADC sampling, refused requests and return to digital use. Edges and frequency were not measured with an instrument; the other pins follow the datasheet map. See the PWM limits below |
+| PWM output `analogWrite()` (Ai-M64P-32S-Kit GPIO0–31) and the platform extension `analogWriteFrequency()` | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0, sampled on the board through its GPIO8-GPIO22, GPIO14-GPIO15, GPIO18-GPIO19 and GPIO20-GPIO23 jumpers: 1 kHz by default, duty within 0.01 % of full scale from 8 to 31 bits, constant levels at 0 and full scale, three channels at once with a shared period, the GPIO % 4 channel map on GPIO0–7, GPIO12 and GPIO13 by ADC sampling, refused requests and return to digital use. `analogWriteFrequency()` at 1, 50, 490, 610, 611 and 1000 Hz, 20 kHz, 100 kHz and 1 MHz programmed the documented divider and period; duty was within 0.01 % up to 1 kHz and, above that, within the about 65 ns sampling step; running pins kept their duty across a change, and 0, 1000001 and 4294967295 Hz were ignored. Edges and frequency were not measured with an instrument; the other pins follow the datasheet map. See the PWM limits below |
 | Interrupted write, physical power removal and ROM recovery | experimental, tested | Interrupted FW0 recovery and data/other-region identity verified; historical upload errors remain |
 | External-host HCI, central/peripheral GATT | experimental, tested | Real RA4M1 and AX200; seven official examples passed, five lack accessories/adaptation |
 | Pairing, encryption and RAM-key reconnection | experimental, tested subset | Public addresses; BlueZ without IdKey requires the explicit ArduinoBLE 2.1.0 RA patch |
@@ -65,15 +65,21 @@ running, this board's 3.3 V supply dipped to between 2.9 and 3.2 V in two runs, 
 UNO R4 WiFi declares no analog inputs; `analogRead()`
 returns -1 there. The IDE's built-in analog examples such as AnalogReadSerial work with A0–A9.
 
-PWM limits (Ai-M64P-32S-Kit): `analogWrite()` drives GPIO0–GPIO31 from the PWM0 controller at a
-fixed 1 kHz (40 MHz crystal clock divided by 40000); there is no frequency API. The Core selects the
-single-ended pin routing, in which GPIO n carries the active-high output of channel n % 4 (the table
+PWM limits (Ai-M64P-32S-Kit): `analogWrite()` drives GPIO0–GPIO31 from the PWM0 controller, at
+1 kHz by default (40 MHz crystal clock divided by 40000). `analogWriteFrequency(hz)` is a platform
+extension, not part of the Arduino API; it has the same form as in STM32duino. It sets 1 Hz to 1 MHz
+for every PWM pin at once and ignores other values. It divides the clock by the smallest d (1 to 611)
+that keeps a period within 65535 counts, so a period has N = round(40 MHz / (d × hz)) steps and the
+real frequency is 40 MHz / (d × N): 50 Hz gives 50.000375 Hz with 61538 steps, 490 Hz gives
+490.0039 Hz, 20 kHz has 2000 steps and 1 MHz has 40. The call waits for the current period to end,
+up to about 1 s at 1 Hz; then the counter restarts and running pins keep their duty, recomputed for
+the new period. The Core selects the single-ended pin routing, in which GPIO n carries the active-high output of channel n % 4 (the table
 is in the variant's `pins_arduino.h`). The four channels share one counter, so every output has the
 same frequency and rises at the same time, and each channel drives one pin at a time. A request on
 another pin of a channel in use, on GPIO32–GPIO36 (USB, `Serial` and boot pins) or on a pin outside
 the table is ignored and leaves that pin unchanged; `analogWrite()` returns no status. The duty is
-round(value × 40000 / (2^bits − 1)) / 40000, where `analogWriteResolution()` takes 1 to 31 bits
-(default 8) and ignores other values, so steps are 25 ns and wider values lose their low bits; values
+round(value × N / (2^bits − 1)) / N, where `analogWriteResolution()` takes 1 to 31 bits (default 8)
+and ignores other values, so steps are 25 ns at 1 kHz and wider values lose their low bits; values
 at or below 0 hold the pin low and values at or above full scale hold it high. `pinMode()`,
 `digitalWrite()` and `analogRead()` on a PWM pin stop its output and free its channel;
 `digitalWrite()` leaves the pin a digital output at that level, as on AVR. PWM uses no hardware

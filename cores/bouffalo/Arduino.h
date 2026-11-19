@@ -32,10 +32,21 @@ void resetToBootloader(void) __attribute__((noreturn));
 void analogReadResolution(int bits);
 
 /**
- * @brief Set the analogWrite() value width in bits (1–31, default 8). The 1 kHz PWM has 40000
- * steps, so wider values lose their extra low bits. Implemented in wiring_analog.cpp.
+ * @brief Set the analogWrite() value width in bits (1–31, default 8). The default 1 kHz PWM has
+ * 40000 steps, so wider values lose their extra low bits. Implemented in wiring_analog.cpp.
  */
 void analogWriteResolution(int bits);
+
+/**
+ * @brief Platform extension, not in the Arduino API (same form as STM32duino): set the PWM
+ * frequency of every analogWrite() pin to 1 Hz–1 MHz, default 1 kHz; other values are ignored.
+ * The 40 MHz clock is divided by the smallest d that keeps a period within 65535 counts, so a
+ * period has N = round(40 MHz / (d × hz)) duty steps (40000 at 1 kHz, 40 at 1 MHz) and the real
+ * frequency is 40 MHz / (d × N). All PWM pins share one counter. The call waits for the current
+ * period to end (up to about 1 s at 1 Hz), then the counter restarts and running pins keep their
+ * duty. Implemented in wiring_analog.cpp.
+ */
+void analogWriteFrequency(uint32_t hz);
 #ifdef __cplusplus
 }
 #endif
