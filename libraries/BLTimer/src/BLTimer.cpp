@@ -11,11 +11,9 @@
 #include "bflb_clock.h"
 #include "bflb_irq.h"
 #include "bflb_timer.h"
+#include "hw_timer.h"
 
 #include "BLTimer.h"
-
-static const char *const timer_names[] = { "timer0", "timer1" };
-static BLTimer *owners[2];
 
 /**
  * @brief Stop and release the hardware timer.
@@ -70,13 +68,11 @@ bool BLTimer::configure(void (*plain)(), void (*with_arg)(void *), void *arg, ui
         return false;
     }
     if (dev_ == nullptr) {
-        int index = owners[0] == nullptr ? 0 : owners[1] == nullptr ? 1 : -1;
-        struct bflb_device_s *dev = index < 0 ? nullptr : bflb_device_get_by_name(timer_names[index]);
+        struct bflb_device_s *dev = hw_timer_claim(); /* Shared with the Core's tone(). */
         if (dev == nullptr) {
             return false;
         }
-        owners[index] = this;
-        index_ = (int8_t)index;
+        index_ = (int8_t)dev->idx;
         dev_ = dev;
         bflb_irq_attach(dev_->irq_num, isr, this);
     }
@@ -153,7 +149,7 @@ void BLTimer::end()
     }
     halt();
     bflb_irq_detach(dev_->irq_num);
-    owners[index_] = nullptr;
+    hw_timer_release(dev_);
     dev_ = nullptr;
     index_ = -1;
 }

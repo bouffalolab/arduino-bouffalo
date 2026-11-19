@@ -64,6 +64,7 @@ void pinMode(pin_size_t pin, PinMode mode)
         default:
             return;
     }
+    pin_tone_release(pin);
     pin_pwm_release(pin);
     pin_release_keep(gpio); /* Release low-power retention first, as the SDK does for console pins. */
     bflb_gpio_init(gpio_dev(), gpio, cfg);
@@ -74,7 +75,7 @@ void pinMode(pin_size_t pin, PinMode mode)
 
 /**
  * @brief Remember and apply the output level for a usable variant pin. Like AVR, a pin driven by
- * analogWrite stops its PWM and becomes a digital output at this level.
+ * analogWrite stops its PWM and becomes a digital output at this level; a tone pin stops its tone.
  */
 void digitalWrite(pin_size_t pin, PinStatus status)
 {
@@ -93,6 +94,7 @@ void digitalWrite(pin_size_t pin, PinStatus status)
         pinMode(pin, OUTPUT); /* Applies the remembered level. */
         return;
     }
+    pin_tone_release(pin); /* A tone pin is already an output. */
     write_level(gpio, status != LOW);
 }
 

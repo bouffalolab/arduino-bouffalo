@@ -4,7 +4,7 @@
  * Map Arduino pin numbers to GPIOs through variant g_pin_map. The Core uses pin_to_gpio rather
  * than reading the table directly. Variants with analog inputs list them in g_analog_pins; the
  * Core maps their GPIOs to ADC channels. Variants declare PWM pins with digitalPinHasPWM(p); the
- * Core maps their GPIOs to PWM channels.
+ * Core maps their GPIOs to PWM channels. tone() accepts every mapped pin.
  */
 #include <stdint.h>
 
@@ -36,6 +36,13 @@ extern const uint8_t g_analog_pins[NUM_ANALOG_INPUTS];
  * @return true if the pin was driving a PWM channel.
  */
 bool pin_pwm_release(pin_size_t pin);
+
+/**
+ * @brief Stop tone() output on a pin before another Core function reconfigures it, and return its
+ * timer. The pin keeps its current configuration and level. Implemented in Tone.cpp.
+ * @return true if the pin held the tone timer, sounding or after a timed tone ended.
+ */
+bool pin_tone_release(pin_size_t pin);
 
 /**
  * @brief Return the mapped GPIO, or -1 for an invalid or unavailable pin.

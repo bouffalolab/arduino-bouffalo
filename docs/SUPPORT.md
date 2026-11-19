@@ -24,6 +24,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | Hardware timers `BLTimer` (TIMER0/TIMER1 periodic and one-shot callbacks) | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0: periods 10 µs to 1 s exact to the tick against `micros()`, match-to-callback latency at most 9 µs with Serial traffic, one-shot, stop/start/period change, two timers and invalid-request failures; not measured on a pin or on UNO R4 WiFi. See [BLTimer](../libraries/BLTimer/README.md) |
 | Analog input `analogRead()` (Ai-M64P-32S-Kit A0–A9) | experimental, partially tested | Ai-M64P-32S-Kit, libs 0.12.0, no external voltage source: channel mapping of all ten inputs, resolution scaling and zero padding, steady-input noise below 1 LSB at 12 bits, `-1` for other pins, and readings while a soft AP or scans run. Zero and full scale per channel with external GND/3V3 and accuracy at intermediate voltages are unaccepted. See the analog limits below |
 | PWM output `analogWrite()` (Ai-M64P-32S-Kit GPIO0–31) and the platform extension `analogWriteFrequency()` | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0, sampled on the board through its GPIO8-GPIO22, GPIO14-GPIO15, GPIO18-GPIO19 and GPIO20-GPIO23 jumpers: 1 kHz by default, duty within 0.01 % of full scale from 8 to 31 bits, constant levels at 0 and full scale, three channels at once with a shared period, the GPIO % 4 channel map on GPIO0–7, GPIO12 and GPIO13 by ADC sampling, refused requests and return to digital use. `analogWriteFrequency()` at 1, 50, 490, 610, 611 and 1000 Hz, 20 kHz, 100 kHz and 1 MHz programmed the documented divider and period; duty was within 0.01 % up to 1 kHz and, above that, within the about 65 ns sampling step; running pins kept their duty across a change, and 0, 1000001 and 4294967295 Hz were ignored. Edges and frequency were not measured with an instrument; the other pins follow the datasheet map. See the PWM limits below |
+| Tone output `tone()`/`noTone()` | experimental, tested | Ai-M64P-32S-Kit, libs 0.12.0, sampled on the board through the same jumpers: 1 Hz to 20 kHz at the documented frequency with 50 % duty and every edge within 12 µs of its ideal time; timed tones ending on the nearest half period; `noTone()`, one tone at a time, frequency changes on the sounding pin, `BLTimer` holding both timers, invalid pins and frequencies, switching with `analogWrite()`, `digitalWrite()`, `pinMode()` and `analogRead()`, running beside PWM and a 100 µs `BLTimer`, and the official toneMelody note sequence. Not measured with an instrument or on UNO R4 WiFi. See the tone limits below |
 | Interrupted write, physical power removal and ROM recovery | experimental, tested | Interrupted FW0 recovery and data/other-region identity verified; historical upload errors remain |
 | External-host HCI, central/peripheral GATT | experimental, tested | Real RA4M1 and AX200; seven official examples passed, five lack accessories/adaptation |
 | Pairing, encryption and RAM-key reconnection | experimental, tested subset | Public addresses; BlueZ without IdKey requires the explicit ArduinoBLE 2.1.0 RA patch |
@@ -38,7 +39,7 @@ means unavailable; compilation or a compatibility placeholder does not change th
 | BL616CL application OTA | experimental development build | Ai-M64P-32S-Kit Wi-Fi A/B, serial upload and storage tested with libs 0.12.0 and tools 0.3.0; partial-write power interruption tested; RA4 bridge unaccepted; see [BLUpdate](../libraries/BLUpdate/README.md) |
 | Independent full SOFTSE | unimplemented / out of this release | Not accepted in this platform release |
 | Keyboard/mouse HID | unimplemented / out of this release | Vendor HID is a DAP transport, not a keyboard/mouse |
-| General interrupt/bus APIs, `tone()` and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
+| General interrupt/bus APIs and C++ threading | unimplemented or unaccepted | Consult the platform README; bridge acceptance is not full generic-platform acceptance |
 
 UART limits: the UART clock is 40 MHz and the port runs at 40 MHz / round(40 MHz / baud).
 `begin()` rejects requests whose divisor falls outside 2 to 65,534 (below about 611 baud or
@@ -83,10 +84,33 @@ and ignores other values, so steps are 25 ns at 1 kHz and wider values lose thei
 at or below 0 hold the pin low and values at or above full scale hold it high. `pinMode()`,
 `digitalWrite()` and `analogRead()` on a PWM pin stop its output and free its channel;
 `digitalWrite()` leaves the pin a digital output at that level, as on AVR. PWM uses no hardware
-timer, so `BLTimer` keeps TIMER0 and TIMER1; `tone()` and `noTone()` are not implemented and fail
-to link. Do not call `analogWrite()` from interrupts or from several tasks at once. UNO R4 WiFi
+timer and keeps running on other pins while a `tone()` sounds; `analogWrite()` on the tone pin stops
+the tone. Do not call `analogWrite()` from interrupts or from several tasks at once. UNO R4 WiFi
 declares no PWM pins and ignores `analogWrite()`. The IDE's built-in Fade and AnalogInOutSerial
 examples use pin 9 (GPIO9, channel 1); `LED_BUILTIN` (GPIO16) is on channel 0.
+
+Tone limits: `tone()` toggles its pin from the interrupt of TIMER0 or TIMER1, which count the 40 MHz
+crystal clock. It accepts 1 to 20000 Hz on every pin that `digitalWrite()` accepts; other
+frequencies, including 0 (the rest in the official toneMelody), reserved pins and pins outside the
+table are ignored, and `tone()` returns no status. A half period is round(40 MHz / (2 × hz)) counts,
+so the real frequency is off by at most hz / 40 MHz (25 ppm at 1 kHz, 500 ppm at 20 kHz): 440 Hz
+gives 439.9956 Hz. Because edges come from the interrupt, each can be late by the interrupt latency.
+On the test board the first edge after a tone starts was up to about 11 µs late while its code was
+fetched from flash; later edges stayed within about 1.5 µs of their ideal time, also beside a 100 µs
+`BLTimer`. A 20 kHz tone took about 2 to 5 % of the CPU. `tone()` does not wait for the tone; it returned
+within about 25 µs (65 µs for the first call after reset). A timed tone stops after the whole number
+of half periods nearest to `duration`, at least one, and leaves the pin low. One pin sounds at a time:
+`tone()` on another pin while a tone sounds is ignored. On the sounding pin it changes frequency and
+duration without restarting the wave: the half period in progress ends at the new length, or at once
+if it has already lasted longer, and the duration counts from the call. `noTone()` stops the tone and
+leaves the pin a digital output at LOW; on another pin it does nothing. `pinMode()`, `digitalWrite()`,
+`analogRead()` and an accepted `analogWrite()` on the tone pin stop the tone first. A tone holds one of
+TIMER0/TIMER1 until it is stopped; a timed tone that has ended gives its timer back at the next claim.
+While `BLTimer` objects hold both timers `tone()` is ignored, and while a tone sounds only one
+`BLTimer` can run. PWM uses no timer, so other pins keep their PWM while a tone sounds. Do not call
+`tone()` or `noTone()` from interrupts or from several tasks at once. On UNO R4 WiFi the same code
+drives BL616CL pins wired to RA4M1; it is untested there. The IDE's built-in toneMelody, toneMultiple,
+toneKeyboard and tonePitchFollower examples use pins 6 to 9 and, for the last two, A0 to A2.
 
 Missing official BLE cases: LedControl and ButtonLED need button wiring;
 BatteryMonitor needs a defined A0 input; EncryptedBatteryMonitor also needs

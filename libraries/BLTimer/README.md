@@ -39,7 +39,7 @@ one-shot timer from `loop()`.
 
 Every method that can fail returns `false` and leaves the object unchanged.
 Failures:
-- both timers are already held by other objects;
+- both timers are already held, by other objects or by a sounding `tone()`;
 - a period below `BLTimer::MIN_PERIOD_US`, or a null callback;
 - `setPeriod()`, `start()` or `stop()` on an object that holds no timer;
 - any call from a callback or another interrupt (`end()` does nothing there).
@@ -86,17 +86,22 @@ example only from `setup()` and `loop()`. Objects cannot be copied.
 
 ## Resources
 
-- **TIMER0/TIMER1:** used only by `BLTimer`. A third object fails while two
-  timers are held.
+- **TIMER0/TIMER1:** shared by `BLTimer` objects and the Core's `tone()`
+  through one ownership table in the Core. A claim fails while both timers are
+  held: a third object, a second object while a tone sounds, or `tone()` while
+  two objects hold timers (the tone is then ignored).
 - **PWM:** a separate peripheral; it is not affected.
 - **Watchdog:**
   - It shares the timers' clock gate and two configuration registers.
   - `BLTimer` never disables the shared clock gate and changes only the
     TIMER0/TIMER1 fields of those registers, from task context.
   - A future watchdog library must follow the same rule.
-- **`tone()`:** planned on PWM, not on these timers. Any future platform feature
-  that needs TIMER0/TIMER1 must claim it through `BLTimer`, and fails when both
-  are held.
+- **`tone()`:** holds one timer from `tone()` until `noTone()`, or until
+  `pinMode()`, `digitalWrite()`, `analogWrite()` or `analogRead()` reconfigures
+  the tone pin. A timed tone that has ended gives its timer back at the next
+  claim, so `begin()` succeeds then without `noTone()`. Any other platform
+  feature that needs TIMER0/TIMER1 must claim it through the same table
+  (`hw_timer.h`) and fail when both are held.
 - **Not offered:** pin output, TIMER0 GPIO capture and timer DMA requests.
 
 ## Verification

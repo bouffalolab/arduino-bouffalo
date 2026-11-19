@@ -101,6 +101,7 @@ int analogRead(pin_size_t pin)
     if (adc == nullptr) {
         return -1;
     }
+    pin_tone_release(pin);
     pin_pwm_release(pin);
     pin_release_keep(gpio);
     bflb_gpio_init(bflb_device_get_by_name("gpio"), gpio, GPIO_ANALOG | GPIO_FLOAT | GPIO_SMT_EN | GPIO_DRV_0);
@@ -231,7 +232,7 @@ bool pin_pwm_release(pin_size_t pin)
  * @brief Output PWM on a variant PWM pin with duty value / (2^bits - 1); value <= 0 holds the pin
  * low and values at or above full scale hold it high. Requests for non-PWM, reserved or
  * out-of-range pins, and for a pin whose channel (GPIO % 4) another pin drives, are ignored and
- * leave that pin unchanged. Not for interrupt context.
+ * leave that pin unchanged; an accepted request stops a tone on the pin. Not for interrupt context.
  */
 void analogWrite(pin_size_t pin, int value)
 {
@@ -247,6 +248,7 @@ void analogWrite(pin_size_t pin, int value)
     if (pwm == nullptr) {
         return;
     }
+    pin_tone_release(pin);
     uint32_t full = (1u << write_bits) - 1;
     pwm_level[ch] = value <= 0 ? 0 : ((uint32_t)value < full ? (uint32_t)value : full);
     pwm_full[ch] = full;
