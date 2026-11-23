@@ -1,6 +1,6 @@
 # Sources and licenses
 
-The root Apache-2.0 license does not replace third-party component terms. Preserve
+The root LGPL-2.1 license does not replace third-party component terms. Preserve
 original copyright notices and complete texts in platform libraries, dependency
 packages and the release-materials archive. That archive also includes the exact
 old binary source snapshots and build/relink evidence references.
