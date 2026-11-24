@@ -19,7 +19,7 @@
 /* Receive timeout in bit periods: drain a partial FIFO after roughly four idle character times. */
 #define UART_RX_TIMEOUT_BITS 40
 
-/* Package board_init enables clocks only for uart0 and uart1. */
+/* Package board initialization enables clocks only for uart0 and uart1. */
 static const char *const uart_names[] = { "uart0", "uart1" };
 static const uint8_t uart_tx_funcs[] = { GPIO_UART_FUNC_UART0_TX, GPIO_UART_FUNC_UART1_TX };
 static const uint8_t uart_rx_funcs[] = { GPIO_UART_FUNC_UART0_RX, GPIO_UART_FUNC_UART1_RX };

@@ -92,9 +92,11 @@ bool BLEControllerClass::begin()
     if (running) {
         return true;
     }
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP) /* SYSINIT packages initialize RF before main(). */
     if (board_radio_init() != 0) {
         return false;
     }
+#endif
     host_tx = xStreamBufferCreate(1024, 1);
     host_rx = xStreamBufferCreate(1024, 1);
     reads = xQueueCreate(1, sizeof(ReadRequest));

@@ -5,7 +5,7 @@
  * TCCR/TCDR/TCER/TCMR are shared by both timers (TCCR/TCDR also by the watchdog) and lhal updates
  * them read-modify-write, so only task context touches them. The interrupt handler writes only
  * this timer's TICR and TIER; a one-shot timer keeps counting with its interrupt masked. The
- * shared TIMER0/1/WDG clock gate is enabled by board_init and never disabled here.
+ * shared TIMER0/1/WDG clock gate is enabled by board initialization and never disabled here.
  */
 #include "FreeRTOS.h"
 #include "bflb_clock.h"

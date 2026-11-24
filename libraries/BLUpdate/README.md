@@ -34,7 +34,9 @@ update overwrites any manufacturing image stored there. Both running and new
 firmware must use a compatible layout. Normal serial upload writes the firmware
 to FW0 and resets both partition-table copies; it preserves LittleFS and the
 protected media, parameter, key, data, and factory regions. Keep a backup before
-changing an existing device's layout.
+changing an existing device's layout. With dependency packages that start
+through SDK SYSINIT records (`bl616cl-libs` 0.13.0 and later), the SDK loads the
+partition table before `setup()` and calls `abort()` if neither copy is valid.
 
 SHA-256 detects corruption; the chip label and checksum do **not** authenticate
 firmware. This library provides no signed-image validation, anti-rollback,

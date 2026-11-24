@@ -4,6 +4,7 @@
 extern "C" {
 #include "bflb_flash.h"
 #include "bflb_boot2.h"
+#include "board_overlay.h"
 }
 
 LittleFSClass LittleFS;
@@ -26,7 +27,9 @@ struct fs::File::Handle {
  */
 static int filesystemPartition(uint32_t &address, uint32_t &capacity) {
     address = capacity = 0;
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP) /* SYSINIT packages load the partition table before main(). */
     if (bflb_boot2_init() != 0) return LFS_ERR_IO;
+#endif
     const auto *table = bflb_boot2_get_pt_config();
     if (table->pt_table.entryCnt > PT_ENTRY_MAX) return LFS_ERR_INVAL;
     unsigned found = 0;

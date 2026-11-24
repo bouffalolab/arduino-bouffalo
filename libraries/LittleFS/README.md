@@ -6,7 +6,10 @@ references. Internal read/program/erase/sync callbacks call the vendor Flash
 API directly. Mount reads the active partition table, finds the `lfs` entry, and
 validates its physical bounds and separation from other partitions. No MTD
 read/write wrapper or separate public block-device library is required. A
-missing/invalid partition fails; addresses are never guessed.
+missing/invalid partition fails; addresses are never guessed. With dependency
+packages that start through SDK SYSINIT records (`bl616cl-libs` 0.13.0 and
+later), the SDK loads the partition table before `setup()` and calls `abort()`
+if neither copy is valid; mounting then uses the loaded table.
 
 `begin()` mounts without formatting. `format()` explicitly initializes the
 reserved partition and refuses while mounted. `end()` refuses while files are

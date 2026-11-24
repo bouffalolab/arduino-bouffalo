@@ -1,9 +1,14 @@
 /*
  * Unique firmware entry point. The dependency package owns __start, SystemInit, clocks, Flash,
- * interrupts and heap through board_init(), called by init(); it does not start a console. The
- * Core optionally selects uart2 for debug output, runs global constructors, creates the setup/loop
- * task and starts FreeRTOS. USB starts before setup() when enabled. WiFi initializes networking
- * lazily. Follow the Arduino sequence init(), initVariant(), then setup()/loop().
+ * interrupts and heap; it does not start a console. The Core optionally selects uart2 for debug
+ * output and follows the Arduino sequence init(), global constructors, initVariant(), then
+ * setup()/loop() in its own task. USB starts before setup() when enabled.
+ *
+ * SYSINIT packages (ARDUINO_BL_SYSINIT_STARTUP, SDK v2.3.39 and later) run board initialization as
+ * SYSINIT records, call arduino_bl_core_preinit() before running the constructors, start FreeRTOS,
+ * bring up Wi-Fi when it is linked, and call main() from the SYSINIT task. Older packages
+ * initialize the board in init() through board_init(); main() then runs the constructors and
+ * starts FreeRTOS, and WiFi initializes networking on first use. Each firmware links one path.
  */
 #include <errno.h>
 #include <reent.h>
@@ -26,10 +31,12 @@
 #define ARDUINO_LOOP_PRIORITY 1
 #endif
 
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP)
 /**
  * @brief Run the linked C/C++ initialization arrays before starting the sketch task.
  */
 extern "C" void __libc_init_array(void);
+#endif
 
 /**
  * @brief Initialize the chip before global constructors, which require the heap. Clear the
@@ -37,7 +44,9 @@ extern "C" void __libc_init_array(void);
  */
 void init(void)
 {
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP)
     board_init();
+#endif
     isp_boot_clear();
     wiring_time_init();
 #if defined(ARDUINO_BL_DEBUG_LOG_BAUD) && defined(PIN_DEBUG_LOG_TX)
@@ -130,6 +139,38 @@ extern "C" _ssize_t _read_r(struct _reent *r, int fd, void *buf, size_t size)
 }
 
 /**
+ * @brief Create the setup/loop task; abort when it cannot be created.
+ */
+static void start_loop_task(void)
+{
+    if (xTaskCreate(loop_task, "loop", ARDUINO_LOOP_STACK_SIZE / sizeof(StackType_t), NULL,
+                    ARDUINO_LOOP_PRIORITY, NULL) != pdPASS) {
+        abort();
+    }
+}
+
+#if defined(ARDUINO_BL_SYSINIT_STARTUP)
+/**
+ * @brief Package hook run once by SYSINIT after the heap and before global constructors.
+ */
+extern "C" void arduino_bl_core_preinit(void)
+{
+    init();
+    cxx_runtime_init(); /* Local-static initialization inside constructors requires the guard lock. */
+}
+
+/**
+ * @brief Called by SYSINIT from its task after constructors, with the scheduler running; return so
+ * SYSINIT can deliver its remaining Wi-Fi events and delete its task.
+ */
+int main(void)
+{
+    initVariant();
+    start_loop_task();
+    return 0;
+}
+#else
+/**
  * @brief Initialize the Core and C++ runtime, create the sketch task and start the FreeRTOS
  * scheduler.
  */
@@ -139,11 +180,8 @@ int main(void)
     cxx_runtime_init(); /* Local-static initialization inside constructors requires the guard lock. */
     __libc_init_array();
     initVariant();
-
-    if (xTaskCreate(loop_task, "loop", ARDUINO_LOOP_STACK_SIZE / sizeof(StackType_t), NULL,
-                    ARDUINO_LOOP_PRIORITY, NULL) != pdPASS) {
-        abort();
-    }
+    start_loop_task();
     vTaskStartScheduler();
     abort(); /* The scheduler must not return. */
 }
+#endif

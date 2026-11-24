@@ -186,6 +186,7 @@ static void wifi_event(async_input_event_t ev, void *priv)
     }
 }
 
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP)
 /**
  * @brief Drain deferred radio events while preserving the SDK scheduler exclusion convention.
  */
@@ -226,6 +227,7 @@ static void wifi_init_task(void *arg)
     init_task_done = true;
     vTaskDelete(NULL);
 }
+#endif
 
 /**
  * @brief Initialize the radio and Wi-Fi management once, reporting initialization failure.
@@ -236,6 +238,14 @@ int wifi_port_init(void)
         return init_result;
     }
     init_result = -1;
+#if defined(ARDUINO_BL_SYSINIT_STARTUP)
+    /* SDK SYSINIT attached the Wi-Fi IRQ and started RF, the async event loop, lwIP, the firmware
+     * task and Wi-Fi management before main(); only subscribe to EV_WIFI here. */
+    if (async_register_event_filter(EV_WIFI, wifi_event, NULL) != 0) {
+        return -1;
+    }
+    init_task_done = true;
+#else
     board_wifi_irq_init();
     if (board_radio_init() != 0) {
         return -1;
@@ -247,6 +257,7 @@ int wifi_port_init(void)
     for (uint32_t waited = 0; !init_task_done && waited < INIT_TIMEOUT_MS; waited += 10) {
         vTaskDelay(pdMS_TO_TICKS(10));
     }
+#endif
     if (init_task_done) {
         init_result = 0;
         uint8_t mac[6];

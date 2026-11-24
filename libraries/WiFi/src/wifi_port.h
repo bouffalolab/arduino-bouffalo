@@ -46,8 +46,10 @@ struct wifi_port_ap {
 };
 
 /**
- * @brief Lazily initialize Wi-Fi/networking in the SDK macsw_bare order. Return zero on
- * success; subsequent calls return immediately.
+ * @brief Initialize Wi-Fi/networking once on first use. With a SYSINIT package the SDK has
+ * already started Wi-Fi before main(), so this subscribes to events and applies defaults;
+ * older packages start Wi-Fi here in the SDK macsw_bare order. Return zero on success;
+ * subsequent calls return immediately.
  */
 int wifi_port_init(void);
 /**

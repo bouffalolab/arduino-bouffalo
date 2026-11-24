@@ -203,7 +203,7 @@ static struct bflb_device_s *pwm_dev(void)
         if (pwm == nullptr) {
             return nullptr;
         }
-        /* analogWrite's GPIO % 4 channel map needs this routing; set it rather than rely on board_init. */
+        /* analogWrite's GPIO % 4 channel map needs this routing; set it rather than rely on board init. */
         bflb_pwm_v2_feature_control(pwm, PWM_CMD_IO_SEL, PWM_IO_SEL_SINGLE_END);
         pwm_set_counter(pwm);
         ch_cfg.positive_polarity = PWM_POLARITY_ACTIVE_HIGH;

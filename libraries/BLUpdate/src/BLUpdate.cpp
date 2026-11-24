@@ -5,6 +5,7 @@ extern "C" {
 #include "bflb_boot2.h"
 #include "ota/ota.h"
 #include "utils_crc.h"
+#include "board_overlay.h"
 }
 
 BLUpdateClass BLUpdate;
@@ -16,7 +17,9 @@ static uint32_t read32(const uint8_t *p) {
 
 /** @brief Find two safe firmware slots in the current partition table. */
 static bool capacity(uint32_t &available) {
+#if !defined(ARDUINO_BL_SYSINIT_STARTUP) /* SYSINIT packages load the partition table before main(). */
     if (bflb_boot2_init()) return false;
+#endif
     const auto *table = bflb_boot2_get_pt_config();
     if (table->pt_table.entryCnt > PT_ENTRY_MAX) return false;
     const pt_table_entry_config *fw = nullptr;
