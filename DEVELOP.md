@@ -84,7 +84,7 @@ Uploading a platform sketch replaces the running BL bridge. Retain the original 
 | `tools/` | Host integration, including Linux USB permissions |
 | `tests/` | Sketch compilation, map checks, image checks, and board-specific hardware acceptance probes |
 | `docs/` | Installation, support, recovery, and license information |
-| `.github/workflows/` | Source checks and integrated firmware builds |
+| `.github/workflows/` | Source checks, integrated firmware builds, and public-index installation |
 
 ## Testing
 
@@ -130,4 +130,4 @@ Use English for code comments. Document public C/C++ functions with Doxygen-styl
 
 A Core-only change should reuse the existing dependency package. SDK configuration, ABI, libraries, headers, linker resources, and tool changes must be handled through the builder and released as a matching set.
 
-Firmware CI compiles representative platform sketches and the bridge; it does not flash hardware or publish packages. Releases require reviewed versions, licenses, exact source/package identities, and hardware scope. Follow the builder's [controlled release procedure](https://github.com/bouffalolab/arduino-bouffalo-lib-builder/blob/master/docs/releasing.md).
+Firmware CI compiles representative platform sketches and the bridge; it does not flash hardware or publish packages. The `public-install` workflow installs the latest platform from the committed package index into an empty Arduino CLI environment and compiles test sketches for every board; it runs when the index or the workflow changes, and on demand. Releases require reviewed versions, licenses, exact source/package identities, and hardware scope. Follow the builder's [controlled release procedure](https://github.com/bouffalolab/arduino-bouffalo-lib-builder/blob/master/docs/releasing.md).

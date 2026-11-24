@@ -1,0 +1,77 @@
+name: public-install
+
+# Install bouffalolab:bl from the published package index into an empty Arduino CLI
+# environment, then compile test sketches for every board. This exercises the actual
+# release downloads; the builder's release tool checks assets through GitHub metadata.
+on:
+  push:
+    branches: [master]
+    paths:
+      - package_bouffalolab_index.json
+      - .github/workflows/public-install.yml
+  pull_request:
+    paths:
+      - package_bouffalolab_index.json
+      - .github/workflows/public-install.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    # bl-layout in the released bl-flash-tools 0.3.0 needs glibc 2.38; ubuntu-22.04 has 2.35.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # The index committed at the tested revision. The master URL serves the same file
+      # but may be cached for minutes right after an index update.
+      INDEX_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.pull_request.head.sha || github.sha }}/package_bouffalolab_index.json
+    steps:
+      - uses: arduino/setup-arduino-cli@v2
+        with:
+          version: '1.6.0'
+      - name: Install the latest platform from the index
+        id: install
+        run: |
+          CLI_DIR=$RUNNER_TEMP/arduino
+          mkdir -p "$CLI_DIR/data" "$CLI_DIR/downloads" "$CLI_DIR/user"
+          cat >"$CLI_DIR/arduino-cli.yaml" <<EOF
+          board_manager:
+            additional_urls:
+              - $INDEX_URL
+          directories:
+            data: $CLI_DIR/data
+            downloads: $CLI_DIR/downloads
+            user: $CLI_DIR/user
+          EOF
+          CLI=(arduino-cli --config-file "$CLI_DIR/arduino-cli.yaml")
+          "${CLI[@]}" core update-index
+          "${CLI[@]}" core install bouffalolab:bl
+          version=$("${CLI[@]}" core list --format json | python3 -I -c 'import json, sys
+          print(next(p["installed_version"] for p in json.load(sys.stdin)["platforms"] if p["id"] == "bouffalolab:bl"))')
+          echo "Installed bouffalolab:bl $version"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      # Test sketches and checkers are export-ignored; take them from the installed release's tag.
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ steps.install.outputs.version }}
+          sparse-checkout: tests
+      - name: Compile and check test sketches for every board
+        run: |
+          CLI_DIR=$RUNNER_TEMP/arduino
+          CLI=(arduino-cli --config-file "$CLI_DIR/arduino-cli.yaml")
+          libs=$(echo "$CLI_DIR"/data/packages/bouffalolab/tools/bl616cl-libs/*)
+          boards=$("${CLI[@]}" board listall bouffalolab:bl --format json | python3 -I -c 'import json, sys
+          print(" ".join(b["fqbn"] for b in json.load(sys.stdin)["boards"]))')
+          test -n "$boards"
+          for fqbn in $boards; do
+            for sketch in Blink SerialEcho; do
+              out=$RUNNER_TEMP/build/${fqbn##*:}/$sketch
+              echo "::group::$fqbn $sketch"
+              "${CLI[@]}" compile -b "$fqbn" --build-path "$out" "tests/sketches/$sketch"
+              python3 -I tests/check_map.py "$libs/manifest.json" "$out/$sketch.ino.map"
+              python3 -I tests/check_image.py "$out" "$sketch.ino"
+              echo "::endgroup::"
+            done
+          done
