@@ -54,7 +54,9 @@ recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {compile
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"
 
 # Do not whole-archive every library: ld_libs already retains the required-only-as-a-whole members via libforce_base.a.
-recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -T "{build.path}/layout.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
+# --wrap=bl_sys_reset_por sends calls such as the OTA engine's to __wrap_bl_sys_reset_por in core.a (isp_boot.c), so they
+# do not pull the libsys copy, which would bring in low-power parameters and Wi-Fi startup.
+recipe.c.combine.pattern="{compiler.path}{compiler.c.elf.cmd}" "@{build.bl_libs}/flags/ld_flags" {compiler.c.elf.extra_flags} -Wl,--wrap=bl_sys_reset_por -T "{build.path}/layout.ld" "-L{build.bl_libs}/ld" "-L{build.bl_libs}/lib" "-Wl,-Map={build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" {object_files} -Wl,--start-group "{archive_file_path}" {compiler.libraries.ldflags} "@{build.bl_libs}/flags/ld_libs" -Wl,--end-group
 
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 
