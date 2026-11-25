@@ -12,6 +12,22 @@ all 139 checks; one stopped after an 8 s TLS handshake stall, root cause not det
 RA tests use Renesas UNO 1.6.0 / WiFiS3 and ArduinoBLE 2.1.0 where applicable.
 Hardware results remain bound to the firmware hashes in the release inventory.
 
+The Core source also builds against the unreleased libs 0.13.0 candidate (bouffalo_sdk
+v2.3.39 with SYSINIT startup). On the Ai-M64P-32S-Kit it was retested for boot and reset,
+UART, timers, PWM, tone, ADC, LittleFS, Preferences, controller HCI, Wi-Fi STA on WPA3-SAE
+and WPA2, soft and hidden AP, TLS including certificate and host name rejection, and OTA;
+IPv6, USB and UNO R4 WiFi were not retested. After the bench jumpers were reseated, PWM passed
+all 171 checks in 2 of 3 runs. The third run failed only the 1 MHz check: the on-board sampler
+recorded a maximum period about twice the nominal value, consistent with missed edges. Libs
+0.12.0 failed that check in all 11 runs on the same bench. The 1 MHz output was not measured
+with an instrument.
+With this package a sketch that uses Wi-Fi starts Wi-Fi before `setup()`, which therefore
+runs about 490 ms later. Known issue: the first SNTP sync took 30 s or longer in 10 of 56
+boots, against 1 of 56 with libs 0.12.0; root cause not determined. A sketch without Wi-Fi
+that calls the SDK system functions in libsys (`bl_sys_rstinfo_*`, `bl_sys_reset_system()`)
+also links part of the Wi-Fi startup through the SDK low-power code and stopped before
+`setup()`; this use is unsupported with libs 0.13.0.
+
 `supported` describes the verified installation/build contract. Firmware features
 remain `experimental` even when the listed hardware scenario passed. `unimplemented`
 means unavailable; compilation or a compatibility placeholder does not change that.
